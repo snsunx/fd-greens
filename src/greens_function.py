@@ -19,7 +19,7 @@ class GreensFunction:
 
         #self.n_orb = self.hamiltonian.molecule.n_qubits
         self.n_orb = 2 * len(self.hamiltonian.active_inds)
-        self.n_occ = 4 # XXX: Why is molecule.n_electrons 0 in an example I tried?
+        self.n_occ = 2 # XXX: Why is molecule.n_electrons 0 in an example I tried?
         self.n_vir = self.n_orb - self.n_occ
         self.inds_occ = list(range(self.n_occ))
         self.inds_vir = list(range(self.n_occ, self.n_orb))
@@ -55,6 +55,7 @@ class GreensFunction:
     def compute_diagonal_amplitudes(self):
         for m in range(self.n_orb):
             circ = build_diagonal_circuits(self.ansatz.copy(), m)
+            print('len(circ) =', len(circ))
             result = self.q_instance.execute(circ)
             psi = reverse_qubit_order(result.get_statevector()) # XXX: Only works for statevector_simulator
             # TODO: Need to truncate the first index of psi
@@ -69,8 +70,8 @@ class GreensFunction:
             #    if abs(psi[i]) > 1e-8:
             #        b = bin(i)[2:]
             #        print('0' * (13 - len(b)) + b, abs(psi[i]))
-            print(np.linalg.norm(psi))
-            print(np.linalg.norm(psi[inds_all]))
+            # print(np.linalg.norm(psi))
+            # print(np.linalg.norm(psi[inds_all]))
             #inds_e1 = get_number_state_indices(self.n_orb, self.n_occ + 1, anc='0')
             #inds_h1 = get_number_state_indices(self.n_orb, self.n_occ - 1, anc='1')
             #print(self.eigenstates_e.shape, psi[inds_e].shape)
@@ -86,8 +87,8 @@ class GreensFunction:
             #print('norm(psi_h1) =', np.linalg.norm(psi[inds_h1]))
             probs_e = np.abs(self.eigenstates_e.conj().T @ psi[inds_e]) ** 2
             probs_h = np.abs(self.eigenstates_h.conj().T @ psi[inds_h]) ** 2
-            print('probs_e =', np.sum(probs_e))
-            print('probs_h =', np.sum(probs_h))
+            # print('probs_e =', np.sum(probs_e))
+            # rint('probs_h =', np.sum(probs_h))
             #print('Total p_e = {:.3f}'.format(np.sum(probs_e)))
             #print('Total p_h = {:.3f}'.format(np.sum(probs_h)))
             #print('')
@@ -104,6 +105,7 @@ class GreensFunction:
             for n in range(self.n_orb):
                 if m != n:
                     circ = build_off_diagonal_circuits(self.ansatz.copy(), m, n)
+                    print('len(circ) =', len(circ))
                     result = self.q_instance.execute(circ)
                     psi = reverse_qubit_order(result.get_statevector()) # XXX: Only works for statevector_simulator
                     inds_hp = get_number_state_indices(self.n_orb, self.n_occ - 1, anc='00')

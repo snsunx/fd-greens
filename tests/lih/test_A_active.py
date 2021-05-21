@@ -1,3 +1,4 @@
+"""Main test script to calculate absorption spectra A(omega) of LiH."""
 import sys
 sys.path.append('../../src/')
 from greens_function import *
@@ -5,21 +6,18 @@ from ansatze import *
 from hamiltonians import *
 from constants import *
 
+#ansatz = build_kosugi_lih_ansatz(2)
 ansatz = build_ne2_ansatz(4)
-hamiltonian = MolecularHamiltonian('H 0 0 0; H 0 0 1', 'sto3g')
+hamiltonian = MolecularHamiltonian('Li 0 0 0; H 0 0 1.6', 'sto3g', occupied_inds=[0], active_inds=[1, 2])
 greens_function = GreensFunction(ansatz, hamiltonian)
 greens_function.compute_ground_state()
-print("Ground state finished.")
 greens_function.compute_eh_states()
-print("eh states finished.")
 greens_function.compute_diagonal_amplitudes()
-print("Diagonal amplitudes finished.")
 greens_function.compute_off_diagonal_amplitudes()
-print("Off-diagonal amplitudes finished.")
-omegas = np.arange(-30, 30, 0.1)
+exit()
+omegas = np.arange(-30, 34, 0.1)
 As = []
-broadening = 0.05j
 for omega in omegas:
-    A = greens_function.compute_spectral_function(omega + broadening)
+    A = greens_function.compute_spectral_function(omega + 0.02j * HARTREE_TO_EV)
     As.append(A)
-np.savetxt('A_H2.dat', np.vstack((omegas, As)).T)
+np.savetxt('A_active.dat', np.vstack((omegas, As)).T)
