@@ -2,20 +2,34 @@ import numpy as np
 from scipy.special import binom
 from qiskit import *
 from qiskit.algorithms import VQE
-from qiskit.algorithms.optimizers import L_BFGS_B
+from qiskit.algorithms.optimizers import Optimizer, L_BFGS_B
 from qiskit.aqua import QuantumInstance
 from qiskit.utils import QuantumInstance
+
 from constants import *
+from hamiltonians import MolecularHamiltonian
 from tools import get_number_state_indices, number_state_eigensolver, reverse_qubit_order
 from circuits import build_diagonal_circuits, build_off_diagonal_circuits
 
 class GreensFunction:
-    def __init__(self, ansatz, hamiltonian, optimizer=None, q_instance=None):
+    def __init__(self, 
+                 ansatz: QuantumCircuit, 
+                 hamiltonian: MolecularHamiltonian, 
+                 optimizer: Optimizer = None,
+                 q_instance: QuantumInstance = None):
+        """Initializes an object to do frequency-domain Green's function calculations.
+        
+        Args:
+            ansatz: The parametrized circuit for VQE ansatz.
+            hamiltonian: The Hamiltonian object.
+            optimizer: The optimzier in VQE.
+            q_instance: The quantum instance for execution of the quantum circuit.
+        """
         self.ansatz = ansatz
         self.hamiltonian = hamiltonian
         self.optimizer = optimizer if optimizer is not None else L_BFGS_B()
-        self.backend = Aer.get_backend('statevector_simulator')
-        self.q_instance = QuantumInstance(backend=Aer.get_backend('statevector_simulator'))
+        self.q_instance = (QuantumInstance(backend=Aer.get_backend('statevector_simulator'))
+                if q_instance is None else q_instance)
 
         #self.n_orb = self.hamiltonian.molecule.n_qubits
         self.n_orb = 2 * len(self.hamiltonian.active_inds)
@@ -34,7 +48,8 @@ class GreensFunction:
 
 
     def compute_ground_state(self):
-        vqe = VQE(self.ansatz, optimizer=self.optimizer, quantum_instance=self.backend)
+        """Calculates the ground state of the Hamiltonian using VQE."""
+        vqe = VQE(self.ansatz, optimizer=self.optimizer, quantum_instance=self.q_instance)
         result = vqe.compute_minimum_eigenvalue(self.hamiltonian.to_qiskit_qubit_operator())
         
         self.energy_gs = result.optimal_value * HARTREE_TO_EV
@@ -43,6 +58,7 @@ class GreensFunction:
     
     # TODO: Should use quantum subspace expansion in the general case
     def compute_eh_states(self):
+        """Calculates the quasiparticle states of the Hamiltonian."""
         self.energies_e, self.eigenstates_e = \
             number_state_eigensolver(self.hamiltonian, self.n_occ + 1)
         self.energies_h, self.eigenstates_h = \
@@ -51,8 +67,10 @@ class GreensFunction:
         self.energies_h *= HARTREE_TO_EV
         #print(self.n_e, len(self.energies_e))
         #print(self.n_h, len(self.energies_h))
+        print("Calculations of quasiparticle states finished.")
 
     def compute_diagonal_amplitudes(self):
+        """Calculates diagonal transition amplitudes of the Green's function."""
         for m in range(self.n_orb):
             circ = build_diagonal_circuits(self.ansatz.copy(), m)
             print('len(circ) =', len(circ))
@@ -94,8 +112,10 @@ class GreensFunction:
             #print('')
             self.B_e[m, m] = probs_e
             self.B_h[m, m] = probs_h
+        print("Calculations of diagonal transition amplitudes finished.")
 
     def compute_off_diagonal_amplitudes(self):
+        """Calculates off-diagonal transition amplitudes of the Green's function."""
         D_hp = np.zeros((self.n_orb, self.n_orb, self.n_h))
         D_hm = np.zeros((self.n_orb, self.n_orb, self.n_h))
         D_ep = np.zeros((self.n_orb, self.n_orb, self.n_e))
@@ -135,17 +155,22 @@ class GreensFunction:
                                     np.exp(1j * np.pi / 4) * (D_ep[n, m] - D_em[n, m])
                     self.B_h[m, n] = np.exp(-1j * np.pi / 4) * (D_hp[m, n] - D_hm[m, n]) + \
                                     np.exp(1j * np.pi / 4) * (D_hp[n, m] - D_hm[n, m])
+        print("Calculations of off-diagonal transition amplitudes finished.")
     
     def compute_greens_function(self, z):
+        """Calculates the value of the Green's function at z = omega + 1j * delta."""
         for m in range(self.n_orb):
             for n in range(self.n_orb):
                 self.G_e[m, n] = np.sum(self.B_e[m, n] / (z + self.energy_gs - self.energies_e))
                 self.G_h[m, n] = np.sum(self.B_h[m, n] / (z - self.energy_gs + self.energies_h))
         self.G = self.G_e + self.G_h
+        print("Calculations of Green's functions finished.")
 
     def compute_spectral_function(self, z):
+        """Calculates the spectral function at z = omega + 1j * delta."""
         self.compute_greens_function(z)
         A = - 1 / np.pi * np.imag(np.trace(self.G))
+        print("Calculations of spectral function finished.")
         return A
 
 

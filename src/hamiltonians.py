@@ -11,6 +11,7 @@ from qiskit.opflow.primitive_ops import PauliSumOp
 class MolecularHamiltonian:
     def __init__(self, geometry, basis, multiplicity=1, charge=0, 
                 run_pyscf_options={}, occupied_inds=None, active_inds=None):
+        """Initializes a MolecularHamiltonian object."""
         self.geometry = geometry
         self.basis = basis
         self.multiplicity = multiplicity
@@ -32,6 +33,7 @@ class MolecularHamiltonian:
         self.build()
         
     def _build_openfermion_qubit_operator(self):
+        """Constructs the Openfermion qubit operator."""
         if self.occupied_inds is None and self.active_inds is None:
             self.active_inds = range(self.molecule.n_orbitals)
         hamiltonian = self.molecule.get_molecular_hamiltonian(
@@ -42,6 +44,7 @@ class MolecularHamiltonian:
         self.openfermion_qubit_op = qubit_op
 
     def _build_qiskit_qubit_operator(self):
+        """Constructs the Qiskit qubit operator."""
         if self.openfermion_qubit_op is None:
             self._build_openfermion_qubit_operator()
         table = []
@@ -69,20 +72,24 @@ class MolecularHamiltonian:
         self.qiskit_qubit_op = qiskit_qubit_op
 
     def build(self):
+        """Constructs both the Openfermion and the Qiskit qubit operator."""
         self._build_openfermion_qubit_operator()
         self._build_qiskit_qubit_operator()
 
     def to_openfermion_qubit_operator(self):
+        """Returns the Openfermion qubit operator."""
         if self.openfermion_qubit_op is None:
             self._build_openfermion_qubit_operator()
         return self.openfermion_qubit_op
 
     def to_qiskit_qubit_operator(self):
+        """Returns the Qiskit qubit operator."""
         if self.qiskit_qubit_op is None:
             self._build_qiskit_qubit_operator()
         return self.qiskit_qubit_op
 
     def to_array(self, array_type='ndarray'):
+        """Returns the array form of the Hamiltonian."""
         assert array_type in ['sparse', 'matrix', 'array', 'ndarray']
         if self.openfermion_qubit_op is None:
             self._build_openfermion_qubit_operator()

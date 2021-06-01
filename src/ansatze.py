@@ -84,6 +84,7 @@ def build_kosugi_lih_ansatz(num=1):
     return ansatz
 
 def build_kosugi_h2o_ansatz(num=1):
+    """Constructs the UCC1 or UCC2 ansatz for H2O in Kosugi 2020."""
     assert num in [1, 2]
     ansatz = QuantumCircuit(14)
     angles = [Parameter(chr(i)) for i in range(97, 103)]
