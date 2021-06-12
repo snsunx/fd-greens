@@ -29,7 +29,6 @@ def get_number_state_indices(n_orb, n_elec, anc='', return_type='decimal'):
 
 def number_state_eigensolver(hamiltonian, n_elec):
     hamiltonian_arr = hamiltonian.to_array(array_type='sparse')
-    print(type(hamiltonian_arr))
     n_orb = int(np.log2(hamiltonian_arr.shape[0]))
     inds = get_number_state_indices(n_orb, n_elec)
     hamiltonian_subspace = hamiltonian_arr[inds][:, inds].toarray()

@@ -6,7 +6,8 @@ from hamiltonians import *
 from constants import *
 
 ansatz = build_ne2_ansatz(4)
-hamiltonian = MolecularHamiltonian('H 0 0 0; H 0 0 1', 'sto3g')
+hamiltonian = MolecularHamiltonian([['H', (0, 0, 0)], ['H', (0, 0, 0.6)]], 'sto3g')
+print("n_electrons =", hamiltonian.molecule.n_electrons)
 greens_function = GreensFunction(ansatz, hamiltonian)
 greens_function.compute_ground_state()
 print("Ground state finished.")
@@ -14,6 +15,7 @@ greens_function.compute_eh_states()
 print("eh states finished.")
 greens_function.compute_diagonal_amplitudes()
 print("Diagonal amplitudes finished.")
+exit()
 greens_function.compute_off_diagonal_amplitudes()
 print("Off-diagonal amplitudes finished.")
 omegas = np.arange(-30, 30, 0.1)

@@ -17,25 +17,23 @@ class MolecularHamiltonian:
         self.multiplicity = multiplicity
         self.charge = charge
         self.run_pyscf_options = run_pyscf_options
-        self.occupied_inds = occupied_inds
-        self.active_inds = active_inds
-        print('occupied_inds =', self.occupied_inds)
-        print('active_inds =', self.active_inds)
-
-        self.molecule = None
-        self.openfermion_qubit_op = None
-        self.qiskit_qubit_op = None
-
-        molecule = MolecularData(self.geometry, self.basis, self.multiplicity, self.charge)
+        molecule = MolecularData(
+            self.geometry, self.basis, 
+            self.multiplicity, self.charge)
         run_pyscf(molecule)
         self.molecule = molecule
 
+        self.occupied_inds = [] if occupied_inds is None else occupied_inds
+        self.active_inds = range(self.molecule.n_orbitals) if active_inds is None else active_inds
+
+        self.openfermion_qubit_op = None
+        self.qiskit_qubit_op = None
         self.build()
         
     def _build_openfermion_qubit_operator(self):
         """Constructs the Openfermion qubit operator."""
-        if self.occupied_inds is None and self.active_inds is None:
-            self.active_inds = range(self.molecule.n_orbitals)
+        # if self.occupied_inds is None and self.active_inds is None:
+        #     self.active_inds = range(self.molecule.n_orbitals)
         hamiltonian = self.molecule.get_molecular_hamiltonian(
             occupied_indices=self.occupied_inds, active_indices=self.active_inds)
         fermion_op = get_fermion_operator(hamiltonian)

@@ -1,7 +1,9 @@
+"""Quantum Phase Estimation."""
+
 import numpy as np
 from qiskit import *
 
-def iqpe(circ, theta, n=3):
+def qpe(circ, n=1):
     """Iterative Quantum Phase Estimation."""
     assert len(circ.qregs) == 2
     qreg_anc = circ.qregs[0]
@@ -28,6 +30,7 @@ def iqpe(circ, theta, n=3):
             circ.p(-2 * np.pi * d / 2 ** (j + 2), qreg_anc[0])
         circ.h(qreg_anc)
         circ.measure(qreg_anc, creg)
+        print(circ)
             
         job = execute(circ, backend=backend)
         result = job.result()
