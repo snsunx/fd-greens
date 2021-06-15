@@ -1,7 +1,10 @@
+from hamiltonians import MolecularHamiltonian
 from qiskit.quantum_info import Pauli, SparsePauliOp
 from qiskit.opflow.primitive_ops import PauliSumOp
 from itertools import combinations
 import numpy as np
+from openfermion.linalg import get_sparse_operator
+from openfermion.ops.operators.qubit_operator import QubitOperator
 
 def reverse_qubit_order(arr):
     dim = arr.shape[0]
@@ -28,7 +31,13 @@ def get_number_state_indices(n_orb, n_elec, anc='', return_type='decimal'):
         return inds
 
 def number_state_eigensolver(hamiltonian, n_elec):
-    hamiltonian_arr = hamiltonian.to_array(array_type='sparse')
+    # XXX: Need to change this if structure.
+    if isinstance(hamiltonian, MolecularHamiltonian):
+        hamiltonian_arr = hamiltonian.to_array(array_type='sparse')
+    elif isinstance(hamiltonian, QubitOperator):
+        hamiltonian_arr = get_sparse_operator(hamiltonian)
+    else:
+        hamiltonian_arr = hamiltonian
     n_orb = int(np.log2(hamiltonian_arr.shape[0]))
     inds = get_number_state_indices(n_orb, n_elec)
     hamiltonian_subspace = hamiltonian_arr[inds][:, inds].toarray()

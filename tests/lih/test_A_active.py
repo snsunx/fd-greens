@@ -32,7 +32,7 @@ for _ in [0]:
     greens_function = GreensFunction(ansatz, hamiltonian, q_instance=q_instance)
     greens_function.compute_ground_state()
     greens_function.compute_eh_states()
-    print("h state energies", greens_function.energies_h)
+    print("h state energies", greens_function.energies_h / HARTREE_TO_EV)
     # print("h state energies mod 2pi", greens_function.energies_h % (2 * pi))
     E1 = greens_function.energies_h[0]
     E2 = greens_function.energies_h[2]

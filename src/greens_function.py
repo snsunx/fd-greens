@@ -9,6 +9,7 @@ from qiskit.extensions import UnitaryGate
 from scipy.linalg import expm
 from openfermion.linalg import get_sparse_operator
 from math import pi
+import copy
 
 from constants import *
 from hamiltonians import MolecularHamiltonian
@@ -24,7 +25,9 @@ class GreensFunction:
                  ansatz: QuantumCircuit, 
                  hamiltonian: MolecularHamiltonian, 
                  optimizer: Optimizer = None,
-                 q_instance: QuantumInstance = None):
+                 q_instance: QuantumInstance = None,
+                 scaling_factor: float = 1.,
+                 constant_shift: float = 0.):
         """Initializes an object to do frequency-domain Green's function calculations.
         
         Args:
@@ -35,16 +38,23 @@ class GreensFunction:
         """ 
         self.ansatz = ansatz
         self.hamiltonian = hamiltonian
+
+        self.qiskit_op = self.hamiltonian.qiskit_op.copy()
+        self.openfermion_op = copy.deepcopy(self.hamiltonian.openfermion_op)
+        self.qiskit_op *= scaling_factor
+        self.qiskit_op.primitive.coeffs[0] += constant_shift / HARTREE_TO_EV
+        self.openfermion_op *= scaling_factor
+        self.openfermion_op.terms[()] += constant_shift / HARTREE_TO_EV
+        self.hamiltonian_sparr = get_sparse_operator(self.openfermion_op)
+        self.hamiltonian_arr = get_sparse_operator(self.openfermion_op).toarray()
         
-        factor = pi / 11.641596302830777
-        self.hamiltonian.qiskit_qubit_op *= factor
-        self.hamiltonian.qiskit_qubit_op.primitive.coeffs[0] += (55.68) / HARTREE_TO_EV
-        self.hamiltonian.openfermion_qubit_op *= factor
-        self.hamiltonian.openfermion_qubit_op.terms[()] += (55.68) / HARTREE_TO_EV
         
         self.optimizer = optimizer if optimizer is not None else L_BFGS_B()
-        self.q_instance = (QuantumInstance(backend=Aer.get_backend(
-            'qasm_simulator'), shots=8192) if q_instance is None else q_instance)
+        if q_instance is None:
+            self.q_instance = QuantumInstance(
+                Aer.get_backend('statevector_simulator'))
+        else:
+            self.q_instance = q_instance
 
         self.n_orb = 2 * len(self.hamiltonian.active_inds)
         self.n_occ = (self.hamiltonian.molecule.n_electrons 
@@ -64,10 +74,11 @@ class GreensFunction:
 
     def compute_ground_state(self):
         """Calculates the ground state of the Hamiltonian using VQE."""
+        # XXX: Need to save the coefficient somewhere instead of passing in 
+        # statevector simulator all the time.
         vqe = VQE(self.ansatz, optimizer=self.optimizer, 
                   quantum_instance=Aer.get_backend('statevector_simulator'))
-        result = vqe.compute_minimum_eigenvalue(
-            self.hamiltonian.to_qiskit_qubit_operator())
+        result = vqe.compute_minimum_eigenvalue(self.qiskit_op)
         
         self.energy_gs = result.optimal_value * HARTREE_TO_EV
         self.ansatz.assign_parameters(result.optimal_parameters, inplace=True)
@@ -77,9 +88,9 @@ class GreensFunction:
     def compute_eh_states(self):
         """Calculates the quasiparticle states of the Hamiltonian."""
         self.energies_e, self.eigenstates_e = \
-            number_state_eigensolver(self.hamiltonian, self.n_occ + 1)
+            number_state_eigensolver(self.hamiltonian_sparr, self.n_occ + 1)
         self.energies_h, self.eigenstates_h = \
-            number_state_eigensolver(self.hamiltonian, self.n_occ - 1)
+            number_state_eigensolver(self.hamiltonian_sparr, self.n_occ - 1)
         self.energies_e *= HARTREE_TO_EV
         self.energies_h *= HARTREE_TO_EV
         print("Calculations of quasiparticle states finished.")
@@ -103,9 +114,12 @@ class GreensFunction:
                 print('probs_h =', probs_h)
                 # print('')
             else:
+                """Qasm Simulator Mode.""" # XXX: Not necessarily
                 circ = self.ansatz.copy()
                 circ = build_diagonal_circuits_with_qpe(circ.copy(), m)
-                Umat = expm(1j * self.hamiltonian.to_array() * HARTREE_TO_EV)
+                # XXX
+                # Umat = expm(1j * get_sparse_operator(self.openfermion_op).toarray() * HARTREE_TO_EV)
+                Umat = expm(1j * self.hamiltonian_arr * HARTREE_TO_EV)
                 cUgate = UnitaryGate(Umat).control(1)
                 
                 circ.barrier()
