@@ -45,7 +45,6 @@ class GreensFunction:
         self.qiskit_op.primitive.coeffs[0] += constant_shift / HARTREE_TO_EV
         self.openfermion_op *= scaling_factor
         self.openfermion_op.terms[()] += constant_shift / HARTREE_TO_EV
-        self.hamiltonian_sparr = get_sparse_operator(self.openfermion_op)
         self.hamiltonian_arr = get_sparse_operator(self.openfermion_op).toarray()
         
         
@@ -88,9 +87,9 @@ class GreensFunction:
     def compute_eh_states(self):
         """Calculates the quasiparticle states of the Hamiltonian."""
         self.energies_e, self.eigenstates_e = \
-            number_state_eigensolver(self.hamiltonian_sparr, self.n_occ + 1)
+            number_state_eigensolver(self.hamiltonian_arr, self.n_occ + 1)
         self.energies_h, self.eigenstates_h = \
-            number_state_eigensolver(self.hamiltonian_sparr, self.n_occ - 1)
+            number_state_eigensolver(self.hamiltonian_arr, self.n_occ - 1)
         self.energies_e *= HARTREE_TO_EV
         self.energies_h *= HARTREE_TO_EV
         print("Calculations of quasiparticle states finished.")
@@ -114,7 +113,7 @@ class GreensFunction:
                 print('probs_h =', probs_h)
                 # print('')
             else:
-                """Qasm Simulator Mode.""" # XXX: Not necessarily
+                print("""Qasm Simulator Mode.""") # XXX: Not necessarily
                 circ = self.ansatz.copy()
                 circ = build_diagonal_circuits_with_qpe(circ.copy(), m)
                 # XXX
@@ -205,3 +204,24 @@ class GreensFunction:
         A = - 1 / np.pi * np.imag(np.trace(self.G))
         print("Calculations of spectral function finished.")
         return A
+    
+    @staticmethod
+    def get_hamiltonian_shift_parameters(ansatz, hamiltonian):
+        """Obtains the scaling factor and constant shift for phase estimation."""
+        greens_function = GreensFunction(ansatz.copy(), hamiltonian)
+        greens_function.compute_ground_state()
+        ansatz = greens_function.ansatz
+
+        # Obtains the scaling factor.
+        greens_function.compute_eh_states()
+        E_low = greens_function.energies_h[0]
+        E_high = greens_function.energies_h[2]
+        scaling_factor = np.pi / (E_high - E_low)
+
+        # Obtains the constant shift.
+        greens_function = GreensFunction(
+            ansatz.copy(), hamiltonian, scaling_factor=scaling_factor)
+        greens_function.compute_eh_states()
+        constant_shift = -greens_function.energies_h[0]
+
+        return scaling_factor, constant_shift
