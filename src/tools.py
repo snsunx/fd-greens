@@ -31,13 +31,23 @@ def get_quantum_instance(backend, noise_model_name=None,
     return q_instance
 
 def reverse_qubit_order(arr):
-    dim = arr.shape[0]
-    num = int(np.log2(dim))
-    shape_expanded = (2,) * num
-    inds_transpose = np.flip(np.arange(num))
-    arr = arr.reshape(*shape_expanded)
-    arr = arr.transpose(*inds_transpose)
-    arr = arr.reshape(dim)
+    if len(arr.shape) == 1:
+        dim = arr.shape[0]
+        num = int(np.log2(dim))
+        shape_expanded = (2,) * num
+        inds_transpose = np.flip(np.arange(num))
+        arr = arr.reshape(*shape_expanded)
+        arr = arr.transpose(*inds_transpose)
+        arr = arr.reshape(dim)
+    elif len(arr.shape) == 2:
+        shape_original = arr.shape
+        dim = shape_original[0]
+        num = int(np.log2(dim))
+        shape_expanded = (2,) * 2 * num
+        inds_transpose = list(reversed(range(num))) + list(reversed(range(num, 2 * num)))
+        arr = arr.reshape(*shape_expanded)
+        arr = arr.transpose(*inds_transpose)
+        arr = arr.reshape(*shape_original)
     return arr
 
 def get_number_state_indices(n_orb, n_elec, anc='', return_type='decimal'):
@@ -77,6 +87,19 @@ def number_state_eigensolver(hamiltonian, n_elec):
     eigvals, eigvecs = np.linalg.eigh(hamiltonian_subspace)
     return eigvals, eigvecs
 
+def get_statevector(circ):
+    backend = Aer.get_backend('statevector_simulator')
+    job = execute(circ, backend)
+    result = job.result()
+    statevector = result.get_statevector()
+    return statevector
+
+def get_unitary(circ):
+    backend = Aer.get_backend('unitary_simulator')
+    job = execute(circ, backend)
+    result = job.result()
+    unitary = result.get_unitary()
+    return unitary
 
 
 

@@ -13,12 +13,14 @@ import copy
 
 from constants import *
 from hamiltonians import MolecularHamiltonian
-from tools import (get_number_state_indices, 
+from tools import (get_number_state_indices, get_unitary, 
                    number_state_eigensolver, 
-                   reverse_qubit_order)
+                   reverse_qubit_order,
+                   get_statevector)
 from circuits import (build_diagonal_circuits, 
                       build_diagonal_circuits_with_qpe,
                       build_off_diagonal_circuits)
+from recompilation_dev import recompile_with_statevector, apply_quimb_gates
 
 class GreensFunction:
     def __init__(self, 
@@ -114,24 +116,69 @@ class GreensFunction:
                 print('probs_h =', probs_h)
                 # print('')
             else:
+                recompiled = 1 # XXX: Temporary
+
                 print("Qasm Simulator Mode.") # XXX: Not necessarily
                 circ = self.ansatz.copy()
                 circ = build_diagonal_circuits_with_qpe(circ.copy(), m)
                 Umat = expm(1j * self.hamiltonian_arr * HARTREE_TO_EV)
-                cUgate = UnitaryGate(Umat).control(1)
-                
-                circ.barrier()
-                circ.h(1)
-                #circ.append(cUgate, [1, 5, 4, 3, 2])
-                circ.h(1)
-                circ.barrier()
+                if recompiled == 0:
+                    cUmat = np.kron(np.eye(2), 
+                        np.kron(np.diag([1, 0]), np.eye(2 ** 4))
+                         + np.kron(np.diag([0, 1]), Umat))
+
+                    circ.barrier()
+                    circ.h(1)
+                    statevector = reverse_qubit_order(get_statevector(circ))
+                    quimb_gates = recompile_with_statevector(
+                        statevector, cUmat, n_gate_rounds=6)
+                    circ = apply_quimb_gates(quimb_gates, circ.copy(), reverse=False)
+                    circ.h(1)
+                    circ.barrier()
+
+                    circ_recompiled = get_statevector(circ)
+                    np.save('circ_recompiled.npy', circ_recompiled)
+                elif recompiled == 1:
+                    Umat_rev = reverse_qubit_order(Umat)
+                    cUmat = np.kron(Umat_rev, np.diag([0, 1])) + np.kron(np.eye(2 ** 4), np.diag([1, 0]))
+                    cUmat = np.kron(cUmat, np.eye(2))
+                    '''
+                    cUmat0 = np.kron(np.eye(2), 
+                        np.kron(np.diag([1, 0]), np.eye(2 ** 4))
+                         + np.kron(np.diag([0, 1]), Umat))
+                    cUmat0_rev = reverse_qubit_order(cUmat0)
+                    print(np.allclose(cUmat, cUmat0_rev))
+                    '''
+
+                    circ.barrier()
+                    circ.h(1)
+                    statevector = get_statevector(circ)
+                    quimb_gates = recompile_with_statevector(
+                        statevector, cUmat, n_gate_rounds=6)
+                    circ = apply_quimb_gates(quimb_gates, circ.copy(), reverse=True)
+                    circ.h(1)
+                    circ.barrier()
+
+                    circ_recompiled1 = get_statevector(circ)
+                    np.save('circ_recompiled1.npy', circ_recompiled1)
+                else:
+                    cUgate = UnitaryGate(Umat).control(1)
+
+                    circ.barrier()
+                    circ.h(1)
+                    circ.append(cUgate, [1, 5, 4, 3, 2])
+                    circ.h(1)
+                    circ.barrier()
+
+                    circ_unrecompiled = get_statevector(circ)
+                    np.save('circ_unrecompiled.npy', circ_unrecompiled)
+
                 circ.measure([0, 1], [0, 1])
-                print(circ)
+                # print(circ)
                 print('circ depth =', circ.depth())
 
-                circ_transpiled = self.q_instance.transpile(circ)
-                print('circ transpiled depth =', circ_transpiled[0].depth())
-                exit()
+                # circ_transpiled = self.q_instance.transpile(circ)
+                # print('circ transpiled depth =', circ_transpiled[0].depth())
 
                 result = self.q_instance.execute(circ)
                 counts = result.get_counts()

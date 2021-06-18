@@ -92,12 +92,16 @@ def recompile_with_statevector(statevector: np.ndarray,
     quimb_gates = ansatz_circ.gates
     return quimb_gates
 
-def apply_quimb_gates(quimb_gates, circ, q_map=None):
+def apply_quimb_gates(quimb_gates, circ, reverse=False):
     """Apply quimb gates to a Qiskit circuit."""
-    # TODO: Should q_map not be defined as a kwarg?
-    if q_map is None:
-        qreg = circ.qregs[0]
+    qreg = circ.qregs[0]
+    if reverse:
         q_map = {len(qreg) - i - 1: qreg[i] for i in range(len(qreg))}
+    else:
+        q_map = {i: qreg[i] for i in range(len(qreg))}
+    
+    for key, val in q_map.items():
+        print(key, val)
 
     for gate in quimb_gates:
         if gate[0] == 'RY':
