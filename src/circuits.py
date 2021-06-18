@@ -41,7 +41,7 @@ def get_diagonal_circuits(ansatz, ind, measure=False):
 
 build_diagonal_circuits = get_diagonal_circuits
 
-def build_diagonal_circuits_with_qpe(ansatz, ind, measure=True):
+def build_diagonal_circuits_with_qpe(ansatz, ind, add_barriers=True, measure=False):
     """Builds the quantum circuits to calculate diagonal elements of the 
     Green's function."""
     n_qubits = ansatz.num_qubits
@@ -59,16 +59,21 @@ def build_diagonal_circuits_with_qpe(ansatz, ind, measure=True):
     qubit_op = jordan_wigner(ferm_op)
     terms = list(qubit_op.terms)
 
-    circ.barrier()
+    if add_barriers:
+        circ.barrier()
     circ.h(0)
-    circ.barrier()
+    if add_barriers:
+        circ.barrier()
     apply_cU(circ, terms[0], ctrl=0, offset=2)
-    circ.barrier()
+    if add_barriers:
+        circ.barrier()
     apply_cU(circ, terms[1], ctrl=1, offset=2)
-    circ.barrier()
+    if add_barriers:
+        circ.barrier()
     circ.h(0)
 
-    circ.measure(0, 0)
+    if measure:
+        circ.measure(0, 0)
     
     return circ
 

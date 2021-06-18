@@ -6,8 +6,29 @@ import numpy as np
 from openfermion.linalg import get_sparse_operator
 from openfermion.ops.operators.qubit_operator import QubitOperator
 from scipy.sparse.data import _data_matrix
+from qiskit.utils import QuantumInstance
+from qiskit.providers.aer.noise import NoiseModel
 
-# from greens_function import GreensFunction
+from qiskit import *
+from qiskit.providers.aer.backends.aerbackend import AerBackend
+from qiskit.providers.ibmq.ibmqbackend import IBMQBackend
+
+def get_quantum_instance(backend, noise_model_name=None, 
+                         optimization_level=0, initial_layout=None, shots=1):
+    if isinstance(backend, AerBackend):
+        if noise_model_name is None:
+            q_instance = QuantumInstance(backend=backend, shots=shots)
+        else:
+            IBMQ.load_account()
+            provider = IBMQ.get_provider(hub='ibm-q-research', group='caltech-1', project='main')
+            device = provider.get_backend(noise_model_name)
+            q_instance = QuantumInstance(
+                backend=backend, shots=shots,
+                noise_model=NoiseModel.from_backend(device.properties()),
+                coupling_map=device.configuration().coupling_map,
+                optimization_level=optimization_level,
+                initial_layout=initial_layout)
+    return q_instance
 
 def reverse_qubit_order(arr):
     dim = arr.shape[0]

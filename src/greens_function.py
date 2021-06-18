@@ -28,10 +28,10 @@ class GreensFunction:
                  q_instance: QuantumInstance = None,
                  scaling_factor: float = 1.,
                  constant_shift: float = 0.):
-        """Initializes an object to do frequency-domain Green's function calculations.
+        """Initializes an object to calculate frequency-domain Green's function.
         
         Args:
-            ansatz: The parametrized circuit for VQE ansatz.
+            ansatz: The parametrized circuit as an ansatz to VQE.
             hamiltonian: The Hamiltonian object.
             optimizer: The optimzier in VQE.
             q_instance: The quantum instance for execution of the quantum circuit.
@@ -101,6 +101,7 @@ class GreensFunction:
                 print("Statevector simulator mode")
                 circ = build_diagonal_circuits(self.ansatz.copy(), m)
                 result = self.q_instance.execute(circ)
+
                 psi = reverse_qubit_order(result.get_statevector())
                 
                 inds_e = get_number_state_indices(self.n_orb, self.n_occ + 1, anc='1')
@@ -113,22 +114,25 @@ class GreensFunction:
                 print('probs_h =', probs_h)
                 # print('')
             else:
-                print("""Qasm Simulator Mode.""") # XXX: Not necessarily
+                print("Qasm Simulator Mode.") # XXX: Not necessarily
                 circ = self.ansatz.copy()
                 circ = build_diagonal_circuits_with_qpe(circ.copy(), m)
-                # XXX
-                # Umat = expm(1j * get_sparse_operator(self.openfermion_op).toarray() * HARTREE_TO_EV)
                 Umat = expm(1j * self.hamiltonian_arr * HARTREE_TO_EV)
                 cUgate = UnitaryGate(Umat).control(1)
                 
                 circ.barrier()
                 circ.h(1)
-                circ.append(cUgate, [1, 5, 4, 3, 2])
+                #circ.append(cUgate, [1, 5, 4, 3, 2])
                 circ.h(1)
                 circ.barrier()
-                circ.measure([1], [1])
-                # print(circ)
-                
+                circ.measure([0, 1], [0, 1])
+                print(circ)
+                print('circ depth =', circ.depth())
+
+                circ_transpiled = self.q_instance.transpile(circ)
+                print('circ transpiled depth =', circ_transpiled[0].depth())
+                exit()
+
                 result = self.q_instance.execute(circ)
                 counts = result.get_counts()
                 counts = dict(sorted(counts.items(), key=lambda item: item[1], reverse=True))
