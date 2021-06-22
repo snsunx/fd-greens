@@ -1,7 +1,7 @@
 import numpy as np
 from scipy.linalg import expm
 from qiskit import *
-from recompilation_dev import *
+from recompilation import *
 from tools import *
 
 n_qubits = 6
