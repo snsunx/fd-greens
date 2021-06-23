@@ -14,7 +14,7 @@ import pickle
 
 from constants import *
 from hamiltonians import MolecularHamiltonian
-from tools import (get_number_state_indices, get_unitary, 
+from tools import (get_number_state_indices,
                    number_state_eigensolver, 
                    reverse_qubit_order,
                    get_statevector)
@@ -219,7 +219,7 @@ class GreensFunction:
                         self.B_e[m, m] = [probs['01'], 0., probs['11'], 0.]
                         print("self.B_e =", self.B_e[m, m])
                     print('')
-                    
+
         print("Calculations of diagonal transition amplitudes finished.")
 
     def compute_off_diagonal_amplitudes(self):
@@ -326,7 +326,6 @@ class GreensFunction:
                         shots = sum(counts.values())
                         
                         from itertools import product
-
                         probs = {}
                         for t in product(['0', '1'], repeat=2):
                             key = ''.join(t) + ('0' if self.states == 'h' else '1')

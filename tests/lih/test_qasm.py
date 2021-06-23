@@ -34,10 +34,10 @@ scaling_factor_e, constant_shift_e = \
 # QASM simulator calculation of h states
 greens_function_h = GreensFunction(
     greens_function_sv.ansatz.copy(), hamiltonian, 
-    q_instance=q_instance_qasm, 
+    q_instance=q_instance_noisy, 
     scaling_factor=scaling_factor_h,
     constant_shift=constant_shift_h,
-    recompiled=False)
+    recompiled=True)
 greens_function_h.states = 'h'
 greens_function_h.states_arr = greens_function_sv.states_arr
 greens_function_h.eigenstates_h = greens_function_sv.eigenstates_h
@@ -47,10 +47,10 @@ greens_function_h.compute_off_diagonal_amplitudes()
 # QASM simulator calculation of e states
 greens_function_e = GreensFunction(
     greens_function_sv.ansatz.copy(), hamiltonian, 
-    q_instance=q_instance_qasm, 
+    q_instance=q_instance_noisy, 
     scaling_factor=scaling_factor_e, 
     constant_shift=constant_shift_e,
-    recompiled=False)
+    recompiled=True)
 greens_function_e.states = 'e'
 greens_function_e.states_arr = greens_function_sv.states_arr
 greens_function_h.eigenstates_e = greens_function_sv.eigenstates_e
@@ -76,4 +76,4 @@ As = []
 for omega in omegas:
     A = greens_function_final.compute_spectral_function(omega + 0.02j * HARTREE_TO_EV)
     As.append(A)
-np.savetxt('A_qasm.dat', np.vstack((omegas, As)).T)
+np.savetxt('A_noisy.dat', np.vstack((omegas, As)).T)

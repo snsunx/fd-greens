@@ -15,6 +15,7 @@ from qiskit.providers.ibmq.ibmqbackend import IBMQBackend
 
 def get_quantum_instance(backend, noise_model_name=None, 
                          optimization_level=0, initial_layout=None, shots=1):
+    # TODO: Write the part for IBMQ backends
     if isinstance(backend, AerBackend):
         if noise_model_name is None:
             q_instance = QuantumInstance(backend=backend, shots=shots)
