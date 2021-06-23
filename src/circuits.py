@@ -33,6 +33,8 @@ def build_diagonal_circuits(ansatz, ind, measure=False):
     apply_cU(circ, terms[1], ctrl=1)
     circ.barrier()
     circ.h(0)
+    circ.barrier()
+
     if measure:
         circ.measure(qreg[0], creg_anc)
     # TODO: Implement phase estimation on the system qubits
@@ -69,21 +71,23 @@ def build_diagonal_circuits_with_qpe(ansatz, ind, add_barriers=True, measure=Fal
     if add_barriers:
         circ.barrier()
     circ.h(0)
+    if add_barriers:
+        circ.barrier()
 
     if measure:
         circ.measure(0, 0)
     
     return circ
 
-def build_off_diagonal_circuits(ansatz, ind_left, ind_right, measure=True):
+def build_off_diagonal_circuits(ansatz, ind_left, ind_right, add_barriers=True, measure=True):
     """Returns the quantum circuits to calculate off-diagonal 
     elements of the Green's function."""
     # Create a new circuit with the ancillas as qubits 0 and 1
     n_qubits = ansatz.num_qubits
     qreg = QuantumRegister(n_qubits + 2)
-    creg_anc = ClassicalRegister(2)
-    creg_sys = ClassicalRegister(n_qubits)
-    circ = QuantumCircuit(qreg, creg_anc, creg_sys)
+    creg = ClassicalRegister(2)
+    # creg_sys = ClassicalRegister(n_qubits)
+    circ = QuantumCircuit(qreg, creg)
     for inst, qargs, cargs in ansatz.data:
         qargs = [qubit._index + 2 for qubit in qargs]
         circ.append(inst, qargs, cargs)
@@ -104,7 +108,7 @@ def build_off_diagonal_circuits(ansatz, ind_left, ind_right, measure=True):
 
     # Build the circuit
     circ.barrier()
-    circ.h(qreg[:2])
+    circ.h([0, 1])
     circ.barrier()
     apply_ccU(circ, terms_left[0], ctrl=(0, 0))
     circ.barrier()
@@ -116,10 +120,12 @@ def build_off_diagonal_circuits(ansatz, ind_left, ind_right, measure=True):
     circ.barrier()
     apply_ccU(circ, terms_right[1], ctrl=(1, 1))
     circ.barrier()
-    circ.h(qreg[:2])
+    circ.h([0, 1])
+    if add_barriers:
+        circ.barrier()
+
     if measure:
-        circ.measure(qreg[:2], creg_anc)
-    # TODO: Implement phase estimation on the system qubits
+        circ.measure([0, 1], [0, 1])
 
     return circ 
 

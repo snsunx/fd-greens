@@ -58,11 +58,9 @@ def get_number_state_indices(n_orb, n_elec, anc='', return_type='decimal'):
         bin_str = anc + ''.join(bin_list)
         inds.append(bin_str)
     inds.sort()
-    if return_type == 'binary':
-        return inds
-    else:
+    if return_type == 'decimal':
         inds = [int(s, 2) for s in inds]
-        return inds
+    return inds
 
 def number_state_eigensolver(hamiltonian, n_elec):
     """Exact eigensolver for the Hamiltonian in the subspace of 
