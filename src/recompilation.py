@@ -10,6 +10,9 @@ import quimb.tensor as qtn
 
 from quimb.tensor.optimize_autograd import TNOptimizer
 
+from cache import CacheRecompilation
+
+
 def build_ansatz_circuit(n_qubits: int, 
                          psi0: qtn.Dense1D = None,
                          gate_1q: str ='U3', 
@@ -53,13 +56,23 @@ def recompile_with_statevector(statevector: np.ndarray,
                                gate_1q: str ='U3', 
                                gate_2q: str ='CNOT', 
                                n_gate_rounds: int = 4, 
-                               periodic: bool = False):
-    """Recompiles a unitary with respect to a statevector."""
+                               periodic: bool = False,
+                               cache_options: dict = None):
+    
+    """Recompiles a unitary with respect to a statevector.
+       Optionally provide `cache_options` to use the cache."""
+    
     # If unitary is an identity matrix, no gates need to be added.
     # if not np.any(unitary - np.eye(unitary.shape[0])):
     #     return [], []
 
-    # n_qubits = len(qubits)
+    # If cache read enabled, check if circuit is already cached.
+    if (cache_options is not None) and cache_options['read']:
+        quimb_gates = CacheRecompilation.load_recompiled_circuit(
+            cache_options['hamiltonian'], cache_options['type'])
+        if quimb_gates is not None: return quimb_gates
+
+    # Proceed with recompilation.
     n_qubits = int(np.log2(len(statevector)))
     psi0 = qtn.Dense1D(statevector)
     ansatz_circ = build_ansatz_circuit(
@@ -87,7 +100,14 @@ def recompile_with_statevector(statevector: np.ndarray,
 
     ansatz_circ.update_params_from(psi_recompiled)
     quimb_gates = ansatz_circ.gates
+
+    # If cache write enabled, save the circuit.
+    if (cache_options is not None) and cache_options['write']:
+        CacheRecompilation.save_recompiled_circuit(
+            cache_options['hamiltonian'], cache_options['type'], quimb_gates)
+
     return quimb_gates
+
 
 def apply_quimb_gates(quimb_gates, circ, reverse=False):
     """Apply quimb gates to a Qiskit circuit."""

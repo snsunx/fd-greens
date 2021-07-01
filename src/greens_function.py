@@ -24,6 +24,7 @@ from circuits import (build_diagonal_circuits,
                       build_off_diagonal_circuits_with_qpe)
 from recompilation import recompile_with_statevector, apply_quimb_gates
 
+
 class GreensFunction:
     def __init__(self, 
                  ansatz: QuantumCircuit, 
@@ -113,6 +114,7 @@ class GreensFunction:
         if return_ansatz:
             return self.ansatz
     
+
     def compute_eh_states(self):
         """Calculates the electron- and hole-added states of the Hamiltonian."""
         self.energies_e, self.eigenstates_e = \
@@ -123,8 +125,12 @@ class GreensFunction:
         self.energies_h *= HARTREE_TO_EV
         print("Calculations of electron- and hole-added states finished.")
 
-    def compute_diagonal_amplitudes(self):
-        """Calculates diagonal transition amplitudes of the Green's function."""
+
+    def compute_diagonal_amplitudes(self, cache_read: bool = True, cache_write: bool = True):
+        
+        """Calculates diagonal transition amplitudes of the Green's function.
+           `cache_read`   -- whether to attempt to read recompiled circuits from cache files.
+           `cache_write`  -- whether to save recompiled circuits to cache files."""
         
         for m in range(self.n_orb):
             if self.states is None or self.states in self.states_arr[m, m]:
@@ -170,7 +176,10 @@ class GreensFunction:
                         circ.h(1)
                         statevector = reverse_qubit_order(get_statevector(circ))
                         quimb_gates = recompile_with_statevector(
-                            statevector, cUmat, n_gate_rounds=6)
+                            statevector, cUmat, n_gate_rounds=6,
+                            cache_options = {'read': cache_read, 'write': cache_write, 
+                                             'hamiltonian': self.hamiltonian,
+                                             'type': f'greens-diag-({m})'})
                         circ = apply_quimb_gates(quimb_gates, circ.copy(), reverse=False)
                         circ.h(1)
                         circ.barrier()
@@ -222,8 +231,13 @@ class GreensFunction:
 
         print("Calculations of diagonal transition amplitudes finished.")
 
-    def compute_off_diagonal_amplitudes(self):
-        """Calculates off-diagonal transition amplitudes of the Green's function."""
+
+    def compute_off_diagonal_amplitudes(self, cache_read: bool = True, cache_write: bool = True):
+        
+        """Calculates off-diagonal transition amplitudes of the Green's function.
+           `cache_read`   -- whether to attempt to read recompiled circuits from cache files.
+           `cache_write`  -- whether to save recompiled circuits to cache files."""
+        
         for m in range(self.n_orb):
            for n in range(self.n_orb):
                 if m != n and (self.states is None or self.states in self.states_arr[m, n]):
@@ -285,7 +299,10 @@ class GreensFunction:
                             circ.h(2)
                             statevector = reverse_qubit_order(get_statevector(circ))
                             quimb_gates = recompile_with_statevector(
-                                statevector, cUmat, n_gate_rounds=7)
+                                statevector, cUmat, n_gate_rounds=7,
+                                cache_options = {'read': cache_read, 'write': cache_write,
+                                                 'hamiltonian': self.hamiltonian,
+                                                 'type': f'greens-offdiag-({m}, {n})'})
                             circ = apply_quimb_gates(quimb_gates, circ.copy(), reverse=False)
                             circ.h(2)
                             circ.barrier()
@@ -348,7 +365,8 @@ class GreensFunction:
                         print('')
 
         print("Calculations of off-diagonal transition amplitudes finished.")
-    
+
+
     def compute_greens_function(self, z):
         """Calculates the value of the Green's function at z = omega + 1j * delta."""
         for m in range(self.n_orb):
@@ -370,13 +388,15 @@ class GreensFunction:
         self.G = self.G_e + self.G_h
         print("Calculations of Green's functions finished.")
 
+
     def compute_spectral_function(self, z):
         """Calculates the spectral function at z = omega + 1j * delta."""
         self.compute_greens_function(z)
         A = - 1 / np.pi * np.imag(np.trace(self.G))
         print("Calculations of spectral function finished.")
         return A
-    
+
+
     @staticmethod
     def get_hamiltonian_shift_parameters(hamiltonian, states='e'):
         """Obtains the scaling factor and constant shift of the Hamiltonian 
