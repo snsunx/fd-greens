@@ -47,6 +47,7 @@ class GreensFunction:
         """ 
         self.ansatz = ansatz
         self.hamiltonian = hamiltonian
+        self.molecule = hamiltonian.molecule
 
         self.qiskit_op = self.hamiltonian.qiskit_op.copy()
         self.openfermion_op = copy.deepcopy(self.hamiltonian.openfermion_op)
@@ -116,21 +117,26 @@ class GreensFunction:
     
 
     def compute_eh_states(self):
-        """Calculates the electron- and hole-added states of the Hamiltonian."""
+        """Calculates (N+/-1)-electron states of the Hamiltonian."""
         self.energies_e, self.eigenstates_e = \
             number_state_eigensolver(self.hamiltonian_arr, self.n_occ + 1)
         self.energies_h, self.eigenstates_h = \
             number_state_eigensolver(self.hamiltonian_arr, self.n_occ - 1)
         self.energies_e *= HARTREE_TO_EV
         self.energies_h *= HARTREE_TO_EV
-        print("Calculations of electron- and hole-added states finished.")
+        print("Calculations of (N+/-1)-electron states finished.")
+
+    def compute_Npm1_electron_states(self):
+        self.compute_eh_states()
 
 
     def compute_diagonal_amplitudes(self, cache_read: bool = True, cache_write: bool = True):
+        """Calculates diagonal transition amplitudes in the Green's function.
         
-        """Calculates diagonal transition amplitudes of the Green's function.
-           `cache_read`   -- whether to attempt to read recompiled circuits from cache files.
-           `cache_write`  -- whether to save recompiled circuits to cache files."""
+        Args:
+           cache_read: Whether to attempt to read recompiled circuits from cache files.
+           cache_write: Whether to save recompiled circuits to cache files.
+        """
         
         for m in range(self.n_orb):
             if self.states is None or self.states in self.states_arr[m, m]:
@@ -233,10 +239,12 @@ class GreensFunction:
 
 
     def compute_off_diagonal_amplitudes(self, cache_read: bool = True, cache_write: bool = True):
-        
-        """Calculates off-diagonal transition amplitudes of the Green's function.
-           `cache_read`   -- whether to attempt to read recompiled circuits from cache files.
-           `cache_write`  -- whether to save recompiled circuits to cache files."""
+        """Calculates off-diagonal transition amplitudes in the Green's function.
+
+        Args:
+           cache_read: Whether to attempt to read recompiled circuits from cache files.
+           cache_write: Whether to save recompiled circuits to cache files.
+        """
         
         for m in range(self.n_orb):
            for n in range(self.n_orb):
@@ -255,8 +263,8 @@ class GreensFunction:
                                 self.n_orb, self.n_occ - 1, anc='01')
                             probs_hp = abs(self.eigenstates_h.conj().T @ psi[inds_hp]) ** 2
                             probs_hm = abs(self.eigenstates_h.conj().T @ psi[inds_hm]) ** 2
-                            print("probs_hp =", probs_hp)
-                            print("probs_hm =", probs_hm)
+                            # print("probs_hp =", probs_hp)
+                            # print("probs_hm =", probs_hm)
                             self.D_hp[m, n] = probs_hp
                             self.D_hm[m, n] = probs_hm
 
@@ -267,8 +275,8 @@ class GreensFunction:
                                 self.n_orb, self.n_occ + 1, anc='11')
                             probs_ep = abs(self.eigenstates_e.conj().T @ psi[inds_ep]) ** 2
                             probs_em = abs(self.eigenstates_e.conj().T @ psi[inds_em]) ** 2
-                            print("probs_ep =", probs_ep)
-                            print("probs_em =", probs_em)
+                            # print("probs_ep =", probs_ep)
+                            # print("probs_em =", probs_em)
                             self.D_ep[m, n] = probs_ep
                             self.D_em[m, n] = probs_em
 
@@ -388,14 +396,28 @@ class GreensFunction:
         self.G = self.G_e + self.G_h
         print("Calculations of Green's functions finished.")
 
-
     def compute_spectral_function(self, z):
         """Calculates the spectral function at z = omega + 1j * delta."""
-        self.compute_greens_function(z)
+        if np.sum(self.G) == 0:
+            self.compute_greens_function(z)
         A = - 1 / np.pi * np.imag(np.trace(self.G))
         print("Calculations of spectral function finished.")
         return A
 
+    def compute_self_energy(self, z):
+        """Calculates the self-energy."""
+        #if np.sum(self.G) == 0:
+        self.compute_greens_function(z)
+
+        G_HF = np.zeros((self.n_orb, self.n_orb), dtype=complex)
+        for i in range(self.n_orb):
+            G_HF[i, i] = 1 / (z - self.molecule.orbital_energies[i // 2] * HARTREE_TO_EV)
+
+        #print(np.diag(np.linalg.pinv(G_HF))[::2])
+        #print(np.diag(np.linalg.pinv(self.G))[::2])
+
+        Sigma = np.linalg.pinv(G_HF) - np.linalg.pinv(self.G)
+        return Sigma
 
     @staticmethod
     def get_hamiltonian_shift_parameters(hamiltonian, states='e'):

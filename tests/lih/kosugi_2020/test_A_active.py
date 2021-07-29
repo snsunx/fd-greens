@@ -1,6 +1,7 @@
-"""Main test script to calculate absorption spectra A(omega) of LiH."""
+"""Calculates absorption spectra A(omega) of LiH with only the HOMO and LUMO 
+being the active orbitals."""
 import sys
-sys.path.append('../../src/')
+sys.path.append('../../../src/')
 from greens_function import *
 from ansatze import *
 from hamiltonians import *
@@ -14,8 +15,8 @@ np.set_printoptions(precision=3)
 hamiltonian = MolecularHamiltonian(
     [['Li', (0, 0, 0)], ['H', (0, 0, 1.6)]], 'sto3g', 
     occupied_inds=[0], active_inds=[1, 2])
-qiskit_operator = hamiltonian.to_qiskit_qubit_operator()
-openfermion_operator = hamiltonian.to_openfermion_qubit_operator()
+qiskit_operator = hamiltonian.to_qiskit_operator()
+openfermion_operator = hamiltonian.to_openfermion_operator()
 # print(qiskit_operator.primitive.coeffs)
 # print(type(qiskit_operator))
 # print(qiskit_operator)
@@ -27,7 +28,7 @@ q_instance = QuantumInstance(backend=Aer.get_backend('qasm_simulator'), shots=81
 for _ in [0]:
     ansatz = build_ne2_ansatz(4)
     hamiltonian = MolecularHamiltonian(
-        [['Li', (0, 0, 0)], ['H', (0, 0, 1.6)]], 'sto3g', 
+        'LiH', [['Li', (0, 0, 0)], ['H', (0, 0, 1.6)]], 'sto3g', 
         occupied_inds=[0], active_inds=[1, 2])
     greens_function = GreensFunction(ansatz, hamiltonian, q_instance=q_instance)
     greens_function.compute_ground_state()

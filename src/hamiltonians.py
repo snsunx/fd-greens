@@ -14,17 +14,26 @@ import copy
 
 class MolecularHamiltonian:
     
-    def __init__(self, name: str, geometry: Union[str, Sequence], basis: str, 
-                 multiplicity: int = 1, charge: int = 0, 
+    def __init__(self, 
+                 geometry: Union[str, Sequence], 
+                 basis: str, 
+                 name: str = None,
+                 multiplicity: int = 1, 
+                 charge: int = 0, 
                  run_pyscf_options: dict = {}, 
-                 occupied_inds: Sequence[int] = None, active_inds: Sequence[int] = None):
+                 occupied_inds: Sequence[int] = None, 
+                 active_inds: Sequence[int] = None):
         
         """Initializes a MolecularHamiltonian object.
            `name`      -- unique string identifier (used for saving and loading cached circuits)."""
         
-        self.name = name
         self.geometry = geometry
         self.basis = basis
+        if name is None:
+            self.name = ''.join([geometry[i][0] for i in range(len(geometry))])
+        else:
+            self.name = name
+
         self.multiplicity = multiplicity
         self.charge = charge
         self.run_pyscf_options = run_pyscf_options
@@ -34,8 +43,15 @@ class MolecularHamiltonian:
         run_pyscf(molecule)
         self.molecule = molecule
 
-        self.occupied_inds = [] if occupied_inds is None else occupied_inds
-        self.active_inds = range(self.molecule.n_orbitals) if active_inds is None else active_inds
+        if occupied_inds is None:
+            self.occupied_inds = [] 
+        else:
+            self.occupied_inds = occupied_inds
+        
+        if active_inds is None:
+            self.active_inds = range(self.molecule.n_orbitals)
+        else:
+            self.active_inds = active_inds
 
         self.openfermion_op = None
         self.qiskit_op = None

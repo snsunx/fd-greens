@@ -63,16 +63,16 @@ def add_xxxy_term(ansatz, i, j, k, l, angle):
     ansatz.h([i, j, k])
     ansatz.rx(-np.pi / 2, l)
         
-def build_kosugi_lih_ansatz(num=1):
+def build_kosugi_lih_ansatz(ind=1):
     """Constructs the UCC1 or UCC2 ansatz for LiH in Kosugi 2020."""
-    assert num in [1, 2]
+    assert ind in [1, 2]
     ansatz = QuantumCircuit(12)
     theta1 = Parameter('theta1')
     theta2 = Parameter('theta2')
 
     ansatz.x(range(4))
     ansatz.barrier()
-    if num == 1:
+    if ind == 1:
         add_xxxy_term(ansatz, 2, 3, 4, 5, theta1)
         ansatz.barrier()
         add_xxxy_term(ansatz, 2, 3, 10, 11, theta2)
@@ -83,9 +83,9 @@ def build_kosugi_lih_ansatz(num=1):
 
     return ansatz
 
-def build_kosugi_h2o_ansatz(num=1):
+def build_kosugi_h2o_ansatz(ind=1):
     """Constructs the UCC1 or UCC2 ansatz for H2O in Kosugi 2020."""
-    assert num in [1, 2]
+    assert ind in [1, 2]
     ansatz = QuantumCircuit(14)
     angles = [Parameter(chr(i)) for i in range(97, 103)]
 
@@ -95,7 +95,7 @@ def build_kosugi_h2o_ansatz(num=1):
     add_xxxy_term(ansatz, 8, 9, 10, 11, angles[2])
     add_xxxy_term(ansatz, 8, 9, 12, 13, angles[3])
 
-    if num == 1:
+    if ind == 1:
         add_xxxy_term(ansatz, 4, 5, 10, 11, angles[4])
         add_xxxy_term(ansatz, 4, 5, 12, 13, angles[5])
 
