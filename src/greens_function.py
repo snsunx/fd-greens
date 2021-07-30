@@ -49,6 +49,10 @@ class GreensFunction:
         self.hamiltonian = hamiltonian
         self.molecule = hamiltonian.molecule
 
+        tmp = self.molecule.orbital_energies
+        tmp = np.vstack([tmp, tmp]).reshape(tmp.shape[0] * 2, order='f')
+        self.e_orb = np.diag(tmp) * HARTREE_TO_EV
+
         self.qiskit_op = self.hamiltonian.qiskit_op.copy()
         self.openfermion_op = copy.deepcopy(self.hamiltonian.openfermion_op)
         self.qiskit_op *= scaling_factor
@@ -69,23 +73,33 @@ class GreensFunction:
         self.n_orb = 2 * len(self.hamiltonian.active_inds)
         self.n_occ = (self.hamiltonian.molecule.n_electrons 
                       - 2 * len(self.hamiltonian.occupied_inds))
-
         self.n_vir = self.n_orb - self.n_occ
         self.inds_occ = list(range(self.n_occ))
         self.inds_vir = list(range(self.n_occ, self.n_orb))
         self.n_e = int(binom(self.n_orb, self.n_occ + 1))
         self.n_h = int(binom(self.n_orb, self.n_occ - 1))
 
+        self.h = np.zeros((self.n_orb, self.n_orb), dtype=complex)
+        for i in range(self.n_orb):
+            tmp = np.vstack((self.molecule.one_body_integrals[i // 2], 
+                            np.zeros((self.n_orb // 2, ))))
+            self.h[i] = tmp[::(-1) ** (i % 2)].reshape(self.n_orb, order='f')
+        self.h *= HARTREE_TO_EV
+
         self.B_e = np.zeros((self.n_orb, self.n_orb, self.n_e), dtype=complex)
         self.B_h = np.zeros((self.n_orb, self.n_orb, self.n_h), dtype=complex)
-        self.G_e = np.zeros((self.n_orb, self.n_orb), dtype=complex)
-        self.G_h = np.zeros((self.n_orb, self.n_orb), dtype=complex)
-        self.G = np.zeros((self.n_orb, self.n_orb), dtype=complex)
 
         self.D_hp = np.zeros((self.n_orb, self.n_orb, self.n_h))
         self.D_hm = np.zeros((self.n_orb, self.n_orb, self.n_h))
         self.D_ep = np.zeros((self.n_orb, self.n_orb, self.n_e))
         self.D_em = np.zeros((self.n_orb, self.n_orb, self.n_e))
+
+        self.rho_hf = np.diag([1] * (self.n_occ) + [0] * (self.n_vir))
+        self.rho_gf = None
+
+        self.G_e = np.zeros((self.n_orb, self.n_orb), dtype=complex)
+        self.G_h = np.zeros((self.n_orb, self.n_orb), dtype=complex)
+        self.G = np.zeros((self.n_orb, self.n_orb), dtype=complex)
 
         self.states = None
         self.states_arr = np.empty((self.n_orb, self.n_orb), dtype=np.object)
@@ -126,11 +140,9 @@ class GreensFunction:
         self.energies_h *= HARTREE_TO_EV
         print("Calculations of (N+/-1)-electron states finished.")
 
-    def compute_Npm1_electron_states(self):
-        self.compute_eh_states()
-
-
-    def compute_diagonal_amplitudes(self, cache_read: bool = True, cache_write: bool = True):
+    def compute_diagonal_amplitudes(self, 
+                                    cache_read: bool = True,
+                                    cache_write: bool = True):
         """Calculates diagonal transition amplitudes in the Green's function.
         
         Args:
@@ -238,7 +250,9 @@ class GreensFunction:
         print("Calculations of diagonal transition amplitudes finished.")
 
 
-    def compute_off_diagonal_amplitudes(self, cache_read: bool = True, cache_write: bool = True):
+    def compute_off_diagonal_amplitudes(self, 
+                                        cache_read: bool = True, 
+                                        cache_write: bool = True):
         """Calculates off-diagonal transition amplitudes in the Green's function.
 
         Args:
@@ -372,11 +386,7 @@ class GreensFunction:
                             print("self.D_em =", self.D_em[m, n])
                         print('')
 
-        print("Calculations of off-diagonal transition amplitudes finished.")
-
-
-    def compute_greens_function(self, z):
-        """Calculates the value of the Green's function at z = omega + 1j * delta."""
+        # Unpack D values to B values
         for m in range(self.n_orb):
             for n in range(self.n_orb):
                 if m != n:
@@ -386,38 +396,60 @@ class GreensFunction:
                     self.B_h[m, n] = (
                         np.exp(-1j * np.pi / 4) * (self.D_hp[m, n] - self.D_hm[m, n]) + \
                         np.exp(1j * np.pi / 4) * (self.D_hp[n, m] - self.D_hm[n, m]))
-        
+
+        print("Calculations of off-diagonal transition amplitudes finished.")
+
+    def get_density_matrix(self):
+        """Obtains the density matrix from the hole-added part of the Green's
+        function"""
+        self.rho_gf = np.sum(self.B_h, axis=2)
+        return self.rho_gf
+
+    def compute_greens_function(self, omega):
+        """Calculates the values of the Green's function at frequency omega."""
         for m in range(self.n_orb):
             for n in range(self.n_orb):
                 self.G_e[m, n] = np.sum(
-                    self.B_e[m, n] / (z + self.energy_gs - self.energies_e))
+                    self.B_e[m, n] / (omega + self.energy_gs - self.energies_e))
                 self.G_h[m, n] = np.sum(
-                    self.B_h[m, n] / (z - self.energy_gs + self.energies_h))
+                    self.B_h[m, n] / (omega - self.energy_gs + self.energies_h))
         self.G = self.G_e + self.G_h
+
+        return self.G
         print("Calculations of Green's functions finished.")
 
-    def compute_spectral_function(self, z):
-        """Calculates the spectral function at z = omega + 1j * delta."""
-        if np.sum(self.G) == 0:
-            self.compute_greens_function(z)
+    def compute_spectral_function(self, omega):
+        """Calculates the spectral function at frequency omega."""
+        self.compute_greens_function(omega)
         A = - 1 / np.pi * np.imag(np.trace(self.G))
         print("Calculations of spectral function finished.")
         return A
 
-    def compute_self_energy(self, z):
-        """Calculates the self-energy."""
-        #if np.sum(self.G) == 0:
-        self.compute_greens_function(z)
+    def compute_self_energy(self, omega):
+        """Calculates the self-energy at frequency omega."""
+        self.compute_greens_function(omega)
 
         G_HF = np.zeros((self.n_orb, self.n_orb), dtype=complex)
         for i in range(self.n_orb):
-            G_HF[i, i] = 1 / (z - self.molecule.orbital_energies[i // 2] * HARTREE_TO_EV)
-
-        #print(np.diag(np.linalg.pinv(G_HF))[::2])
-        #print(np.diag(np.linalg.pinv(self.G))[::2])
+            G_HF[i, i] = 1 / (omega - self.molecule.orbital_energies[i // 2] * HARTREE_TO_EV)
 
         Sigma = np.linalg.pinv(G_HF) - np.linalg.pinv(self.G)
         return Sigma
+
+    def compute_correlation_energy(self):
+        self.get_density_matrix()
+
+        E1 = np.trace((self.h + self.e_orb) @
+                      (self.rho_gf - self.rho_hf)) / 2
+
+        E2 = 0
+        for i in range(self.n_h):
+            print('i =', i)
+            e_qp = self.energy_gs - self.energies_h[i]
+            Sigma = self.compute_self_energy(e_qp + 0.000002 * HARTREE_TO_EV * 1j)
+            E2 += np.trace(Sigma @ self.B_h[:,:,i]) / 2
+        return E1, E2
+
 
     @staticmethod
     def get_hamiltonian_shift_parameters(hamiltonian, states='e'):

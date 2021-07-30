@@ -51,6 +51,7 @@ def build_ne2_ansatz(n_qubits):
     return ansatz
 
 def add_xxxy_term(ansatz, i, j, k, l, angle):
+    """An internal function for constructing Kosugi 2020's ansatze."""
     ansatz.h([i, j, k])
     ansatz.rx(np.pi / 2, l)
     ansatz.cx(i, j)
