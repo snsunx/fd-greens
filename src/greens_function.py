@@ -79,13 +79,6 @@ class GreensFunction:
         self.n_e = int(binom(self.n_orb, self.n_occ + 1))
         self.n_h = int(binom(self.n_orb, self.n_occ - 1))
 
-        self.h = np.zeros((self.n_orb, self.n_orb), dtype=complex)
-        for i in range(self.n_orb):
-            tmp = np.vstack((self.molecule.one_body_integrals[i // 2], 
-                            np.zeros((self.n_orb // 2, ))))
-            self.h[i] = tmp[::(-1) ** (i % 2)].reshape(self.n_orb, order='f')
-        self.h *= HARTREE_TO_EV
-
         self.B_e = np.zeros((self.n_orb, self.n_orb, self.n_e), dtype=complex)
         self.B_h = np.zeros((self.n_orb, self.n_orb, self.n_h), dtype=complex)
 
@@ -301,12 +294,14 @@ class GreensFunction:
                             if sum(probs_ep) > 1e-3 or sum(probs_em) > 1e-3:
                                 states_elem.append('e')
                             self.states_arr[m, n] = states_elem
-
+                        
+                        '''
                         if (m, n) == (0, 1):
                             fig = circ.draw(output='mpl')
                             fig.savefig('circ_off_diag_statevector.png')
                             circ_statevector = get_statevector(circ)
                             np.save('circ_off_diag_statevector.npy', circ_statevector)
+                        '''
 
                     else:
                         print("QASM simulator mode.") # XXX: Not necessarily QASM simulator
@@ -328,11 +323,13 @@ class GreensFunction:
                             circ = apply_quimb_gates(quimb_gates, circ.copy(), reverse=False)
                             circ.h(2)
                             circ.barrier()
-
+                            
+                            '''
                             fig = circ.draw(output='mpl')
                             fig.savefig('circ_off_diag_recompiled.png')
                             # circ_recompiled = get_statevector(circ)
                             # np.save('circ_off_diag_recompiled.npy', circ_recompiled)
+                            '''
                                         
                         else:
                             cUgate = UnitaryGate(Umat).control(1)
@@ -343,11 +340,13 @@ class GreensFunction:
                             circ.h(2)
                             circ.barrier()
 
+                            '''
                             if (m, n) == (0, 1):
                                 fig = circ.draw(output='mpl')
                                 fig.savefig('circ_off_diag_unrecompiled.png')
                                 circ_unrecompiled = get_statevector(circ)
                                 np.save('circ_off_diag_unrecompiled.npy', circ_unrecompiled)
+                            '''
 
                         circ.measure([0, 1, 2], [0, 1, 2])
                         # circ.measure(2, 2)
@@ -438,6 +437,17 @@ class GreensFunction:
 
     def compute_correlation_energy(self):
         self.get_density_matrix()
+
+        # XXX: Fill the one-electron integrals with a checkerboard pattern.
+        # Could be done more efficiently.
+        self.h = np.zeros((self.n_orb, self.n_orb), dtype=complex)
+        for i in range(self.n_orb):
+            print('i =', i)
+            print(self.molecule.one_body_integrals[i // 2])
+            tmp = np.vstack((self.molecule.one_body_integrals[i // 2], 
+                            np.zeros((self.n_orb // 2, ))))
+            self.h[i] = tmp[::(-1) ** (i % 2)].reshape(self.n_orb, order='f')
+        self.h *= HARTREE_TO_EV
 
         E1 = np.trace((self.h + self.e_orb) @
                       (self.rho_gf - self.rho_hf)) / 2
