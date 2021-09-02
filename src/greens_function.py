@@ -117,7 +117,7 @@ class GreensFunction:
         self.eigenstates_h = None
 
     def compute_ground_state(self, 
-                             save_params: bool = True,
+                             save_params: bool = False,
                              return_ansatz: bool = False):
         """Calculates the ground state of the Hamiltonian using VQE.
         
@@ -128,12 +128,12 @@ class GreensFunction:
         Returns:
             self.ansatz: Optionally returned VQE ansatz.
         """
-        # TODO: Need to save the coefficient somewhere instead of passing in 
-        # statevector simulator all the time.
         print("Start calculating the ground state using VQE")
         vqe = VQE(self.ansatz, optimizer=self.optimizer, 
                   quantum_instance=Aer.get_backend('statevector_simulator'))
         result = vqe.compute_minimum_eigenvalue(self.qiskit_op)
+        print(f'Ground state energy = {self.energy_gs:.3f} eV')
+        print("Finish calculating the ground state using VQE")
         
         self.energy_gs = result.optimal_value * HARTREE_TO_EV
         self.ansatz.assign_parameters(result.optimal_parameters, inplace=True)
@@ -141,14 +141,12 @@ class GreensFunction:
             f = open('ansatz_params.pkl', 'wb')
             pickle.dump(result.optimal_parameters, f)
             f.close()
-        print(f'Ground state energy = {self.energy_gs:.3f} eV')
-        print("Finish calculating the ground state using VQE")
 
         if return_ansatz:
             return self.ansatz    
 
     def compute_eh_states(self):
-        """Calculates (N +/- 1)-electron states of the Hamiltonian."""
+        """Calculates e/h states of the Hamiltonian."""
         print("Start calculating e/h states")
         self.eigenenergies_e, self.eigenstates_e = \
             number_state_eigensolver(self.hamiltonian_arr, self.n_occ + 1)
@@ -170,9 +168,8 @@ class GreensFunction:
         print("Start calculating diagonal transition amplitudes")
         for m in range(self.n_orb):
             if self.states_str is None or self.states_str in self.states_str_arr[m, m]:
-                print('m =', m)
+                # print('m =', m)
                 if self.q_instance.backend.name() == 'statevector_simulator':
-                    print("Statevector simulator mode")
                     circ = build_diagonal_circuits(self.ansatz.copy(), m)
                     result = self.q_instance.execute(circ)
                     psi = reverse_qubit_order(result.get_statevector())
@@ -200,7 +197,6 @@ class GreensFunction:
                         self.states_str_arr[m, m] = states_elem
 
                 else:
-                    print("QASM simulator mode") # XXX: Not necessarily QASM simulator
                     circ = build_diagonal_circuits_with_qpe(self.ansatz.copy(), m)
                     Umat = expm(1j * self.hamiltonian_arr * HARTREE_TO_EV)
                     if self.recompiled:
@@ -275,16 +271,15 @@ class GreensFunction:
            cache_read: Whether to attempt to read recompiled circuits from cache files.
            cache_write: Whether to save recompiled circuits to cache files.
         """
-        
         print("Start calculating off-diagonal transition amplitudes")
-
         for m in range(self.n_orb):
            for n in range(self.n_orb):
-                if m != n and (self.states_str is None or self.states_str in self.states_str_arr[m, n]):
-                    print('(m, n) =', (m, n))
+                if m != n and (self.states_str is None or 
+                               self.states_str in self.states_str_arr[m, n]):
+                    # print('(m, n) =', (m, n))
                     if self.q_instance.backend.name() == 'statevector_simulator':
-                        print("Statevector simulator mode.")
-                        circ = build_off_diagonal_circuits(self.ansatz.copy(), m, n, measure=False)
+                        circ = build_off_diagonal_circuits(
+                            self.ansatz.copy(), m, n, measure=False)
                         result = self.q_instance.execute(circ)
                         psi = reverse_qubit_order(result.get_statevector())
 
@@ -319,18 +314,10 @@ class GreensFunction:
                             if sum(probs_ep) > 1e-3 or sum(probs_em) > 1e-3:
                                 states_elem.append('e')
                             self.states_str_arr[m, n] = states_elem
-                        
-                        '''
-                        if (m, n) == (0, 1):
-                            fig = circ.draw(output='mpl')
-                            fig.savefig('circ_off_diag_statevector.png')
-                            circ_statevector = get_statevector(circ)
-                            np.save('circ_off_diag_statevector.npy', circ_statevector)
-                        '''
 
                     else:
-                        print("QASM simulator mode") # XXX: Not necessarily QASM simulator
-                        circ = build_off_diagonal_circuits_with_qpe(self.ansatz.copy(), m, n, measure=False)
+                        circ = build_off_diagonal_circuits_with_qpe(
+                            self.ansatz.copy(), m, n, measure=False)
                         Umat = expm(1j * self.hamiltonian_arr * HARTREE_TO_EV)
                         if self.recompiled:
                             cUmat = np.kron(np.eye(4),
@@ -345,16 +332,10 @@ class GreensFunction:
                                 cache_options = {'read': cache_read, 'write': cache_write,
                                                  'hamiltonian': self.hamiltonian,
                                                  'type': f'greens-offdiag-({m}, {n})'})
-                            circ = apply_quimb_gates(quimb_gates, circ.copy(), reverse=False)
+                            circ = apply_quimb_gates(
+                                quimb_gates, circ.copy(), reverse=False)
                             circ.h(2)
                             circ.barrier()
-                            
-                            '''
-                            fig = circ.draw(output='mpl')
-                            fig.savefig('circ_off_diag_recompiled.png')
-                            # circ_recompiled = get_statevector(circ)
-                            # np.save('circ_off_diag_recompiled.npy', circ_recompiled)
-                            '''
                                         
                         else:
                             cUgate = UnitaryGate(Umat).control(1)
@@ -364,14 +345,6 @@ class GreensFunction:
                             circ.append(cUgate, [2, 6, 5, 4, 3])
                             circ.h(2)
                             circ.barrier()
-
-                            '''
-                            if (m, n) == (0, 1):
-                                fig = circ.draw(output='mpl')
-                                fig.savefig('circ_off_diag_unrecompiled.png')
-                                circ_unrecompiled = get_statevector(circ)
-                                np.save('circ_off_diag_unrecompiled.npy', circ_unrecompiled)
-                            '''
 
                         circ.measure([0, 1, 2], [0, 1, 2])
                         # circ.measure(2, 2)
@@ -400,14 +373,14 @@ class GreensFunction:
                         if self.states_str == 'h':
                             self.D_hp[m, n] = [probs['000'], 0.0, probs['100'], 0.0]
                             self.D_hm[m, n] = [probs['010'], 0.0, probs['110'], 0.0]
-                            print("self.D_hp =", self.D_hp[m, n])
-                            print("self.D_hm =", self.D_hm[m, n])
+                            # print("self.D_hp =", self.D_hp[m, n])
+                            # print("self.D_hm =", self.D_hm[m, n])
                         
                         if self.states_str == 'e':
                             self.D_ep[m, n] = [probs['001'], 0., probs['101'], 0.]
                             self.D_em[m, n] = [probs['011'], 0., probs['111'], 0.]
-                            print("self.D_ep =", self.D_ep[m, n])
-                            print("self.D_em =", self.D_em[m, n])
+                            # print("self.D_ep =", self.D_ep[m, n])
+                            # print("self.D_em =", self.D_em[m, n])
                         print('')
 
         # Unpack D values to B values
@@ -446,9 +419,10 @@ class GreensFunction:
         transition amplitudes.
 
         Args:
-            gf: 
-            states_str: 
-            q_instance: 
+            gf: The GreensFunction from statevector simulator calculation.
+            states_str: 'e' or 'h', indicating whether the e or h states are 
+                to be calculated.
+            q_instance: The QuantumInstance for executing the calculation.
         
         Returns:
             gf_new: The new GreensFunction object for calculating the e/h states.
@@ -483,7 +457,7 @@ class GreensFunction:
                      scaling=scaling, shift=shift)
         gf_new.states_str = states_str
         gf_new.states_str_arr = gf.states_str_arr
-        # XXX: Is this right?
+        # XXX: Do we really not need the eigenstates?
         if q_instance.backend.name() == 'statevector_simulator':
             if states_str == 'e':
                 gf_new.eigenstates_e = gf.eigenstates_e
@@ -497,10 +471,10 @@ class GreensFunction:
         observables.
         
         Args:
-            gf_sv:
-            gf_e:
-            gf_h:
-            q_instance: 
+            gf_sv: The GreensFunction from statevector simulator calculation.
+            gf_e: The GreensFunction for e states calculation.
+            gf_h: The GreensFunction for h states calculation.
+            q_instance: The QuantumInstance for executing the calculation.
 
         Returns:
             gf_new: The new GreensFunction object for calculating final 
@@ -539,7 +513,7 @@ class GreensFunction:
         Returns:
             self.G: The Green's function Numpy array.
         """
-        print("Start calculating the Green's function")
+        # print("Start calculating the Green's function")
         for m in range(self.n_orb):
             for n in range(self.n_orb):
                 self.G_e[m, n] = np.sum(
@@ -547,17 +521,17 @@ class GreensFunction:
                 self.G_h[m, n] = np.sum(
                     self.B_h[m, n] / (omega - self.energy_gs + self.eigenenergies_h))
         self.G = self.G_e + self.G_h
-        print("Finish calculating the Green's function")
+        # print("Finish calculating the Green's function")
         return self.G
 
     def compute_spectral_function(self, 
                                   omega: Union[float, complex]
                                   ) -> np.ndarray:
         """Calculates the spectral function at frequency omega."""
-        print("Start calculating the spectral function")
+        #print("Start calculating the spectral function")
         self.compute_greens_function(omega)
         A = - 1 / np.pi * np.imag(np.trace(self.G))
-        print("Finish calculating the spectral function")
+        #print("Finish calculating the spectral function")
         return A
 
     def compute_self_energy(self, omega: Union[float, complex]) -> np.ndarray:
@@ -570,7 +544,7 @@ class GreensFunction:
         Returns:
             Sigma: The self-energy Numpy array.
         """
-        print("Start calculating the self-energy")
+        #print("Start calculating the self-energy")
         self.compute_greens_function(omega)
 
         G_HF = np.zeros((self.n_orb, self.n_orb), dtype=complex)
@@ -578,7 +552,7 @@ class GreensFunction:
             G_HF[i, i] = 1 / (omega - self.molecule.orbital_energies[i // 2] * HARTREE_TO_EV)
 
         Sigma = np.linalg.pinv(G_HF) - np.linalg.pinv(self.G)
-        print("Finish calculating the self-energy")
+        #print("Finish calculating the self-energy")
         return Sigma
 
     def compute_correlation_energy(self) -> Tuple[complex, complex]:
@@ -594,8 +568,8 @@ class GreensFunction:
         # checkerboard pattern. Could be done more efficiently.
         self.h = np.zeros((self.n_orb, self.n_orb), dtype=complex)
         for i in range(self.n_orb):
-            print('i =', i)
-            print(self.molecule.one_body_integrals[i // 2])
+            # print('i =', i)
+            # print(self.molecule.one_body_integrals[i // 2])
             tmp = np.vstack((self.molecule.one_body_integrals[i // 2], 
                             np.zeros((self.n_orb // 2, ))))
             self.h[i] = tmp[::(-1) ** (i % 2)].reshape(self.n_orb, order='f')
@@ -606,7 +580,7 @@ class GreensFunction:
 
         E2 = 0
         for i in range(self.n_h):
-            print('i =', i)
+            # print('i =', i)
             e_qp = self.energy_gs - self.eigenenergies_h[i]
             Sigma = self.compute_self_energy(e_qp + 0.000002 * HARTREE_TO_EV * 1j)
             E2 += np.trace(Sigma @ self.B_h[:,:,i]) / 2
