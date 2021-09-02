@@ -67,10 +67,11 @@ def recompile_with_statevector(statevector: np.ndarray,
     #     return [], []
 
     # If cache read enabled, check if circuit is already cached.
-    if (cache_options is not None) and cache_options['read']:
+    if cache_options is not None and cache_options['read']:
         quimb_gates = CacheRecompilation.load_recompiled_circuit(
             cache_options['hamiltonian'], cache_options['type'])
-        if quimb_gates is not None: return quimb_gates
+        if quimb_gates is not None:
+            return quimb_gates
 
     # Proceed with recompilation.
     n_qubits = int(np.log2(len(statevector)))
@@ -102,7 +103,7 @@ def recompile_with_statevector(statevector: np.ndarray,
     quimb_gates = ansatz_circ.gates
 
     # If cache write enabled, save the circuit.
-    if (cache_options is not None) and cache_options['write']:
+    if cache_options is not None and cache_options['write']:
         CacheRecompilation.save_recompiled_circuit(
             cache_options['hamiltonian'], cache_options['type'], quimb_gates)
 

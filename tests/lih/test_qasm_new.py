@@ -11,7 +11,7 @@ from constants import HARTREE_TO_EV
 
 # User-defined parameters.
 bond_length = 1.6
-cache_read = True
+cache_read = False
 cache_write = True
 
 ansatz = build_ne2_ansatz(4)
@@ -26,15 +26,15 @@ q_instance_noisy = get_quantum_instance(
 
 # Statevector simulator calculation
 gf_sv = GreensFunction(ansatz.copy(), hamiltonian, q_instance=q_instance_sv)
-gf_sv.run()
+gf_sv.run(cache_read=cache_read, cache_write=cache_write)
 
 # QASM simulator calculation of h states
 gf_h = GreensFunction.initialize_eh(gf_sv, 'h', q_instance=q_instance_noisy)
-gf_h.run(compute_energies=False)
+gf_h.run(compute_energies=False, cache_read=cache_read, cache_write=cache_write)
 
 # QASM simulator calculation of e states
 gf_e = GreensFunction.initialize_eh(gf_sv, 'e', q_instance=q_instance_noisy)
-gf_e.run(compute_energies=False)
+gf_e.run(compute_energies=False, cache_read=cache_read, cache_write=cache_write)
 
 # Combining h states and e states results
 gf_final = GreensFunction.initialize_final(
@@ -45,4 +45,4 @@ A_list = []
 for omega in omegas:
     A = gf_final.compute_spectral_function(omega + 0.02j * HARTREE_TO_EV)
     A_list.append(A)
-np.savetxt('A_noisy_new.dat', np.vstack((omegas, A_list)).T)
+np.savetxt('A_noisy_cached.dat', np.vstack((omegas, A_list)).T)

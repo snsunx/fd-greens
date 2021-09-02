@@ -132,8 +132,6 @@ class GreensFunction:
         vqe = VQE(self.ansatz, optimizer=self.optimizer, 
                   quantum_instance=Aer.get_backend('statevector_simulator'))
         result = vqe.compute_minimum_eigenvalue(self.qiskit_op)
-        print(f'Ground state energy = {self.energy_gs:.3f} eV')
-        print("Finish calculating the ground state using VQE")
         
         self.energy_gs = result.optimal_value * HARTREE_TO_EV
         self.ansatz.assign_parameters(result.optimal_parameters, inplace=True)
@@ -142,6 +140,8 @@ class GreensFunction:
             pickle.dump(result.optimal_parameters, f)
             f.close()
 
+        print(f'Ground state energy = {self.energy_gs:.3f} eV')
+        print("Finish calculating the ground state using VQE")
         if return_ansatz:
             return self.ansatz    
 
@@ -402,16 +402,17 @@ class GreensFunction:
         self.rho_gf = np.sum(self.B_h, axis=2)
         return self.rho_gf
 
-    # TODO: Use only one cache variable instead of two
-    def run(self, compute_energies=True, cache=True):
+    def run(self, compute_energies=True, cache_read=True, cache_write=True):
         if compute_energies:
             if self.energy_gs is None:
                 self.compute_ground_state()
             if (self.eigenenergies_e is None or self.eigenenergies_h is None or 
                 self.eigenstates_e is None or self.eigenstates_h is None):
                 self.compute_eh_states()
-        self.compute_diagonal_amplitudes(cache_read=cache, cache_write=cache)
-        self.compute_off_diagonal_amplitudes(cache_read=cache, cache_write=cache)
+        self.compute_diagonal_amplitudes(
+            cache_read=cache_read, cache_write=cache_write)
+        self.compute_off_diagonal_amplitudes(
+            cache_read=cache_read, cache_write=cache_write)
 
     @classmethod
     def initialize_eh(cls, gf, states_str, q_instance=None):
