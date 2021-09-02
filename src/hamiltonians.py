@@ -15,22 +15,35 @@ import copy
 class MolecularHamiltonian:
     
     def __init__(self, 
-                 geometry: Union[str, Sequence], 
+                 geometry: Union[Sequence], 
                  basis: str, 
-                 name: str = None,
                  multiplicity: int = 1, 
                  charge: int = 0, 
+                 name: str = None,
                  run_pyscf_options: dict = {}, 
                  occupied_inds: Sequence[int] = None, 
                  active_inds: Sequence[int] = None):
-        
-        """Initializes a MolecularHamiltonian object.
-           `name`      -- unique string identifier (used for saving and loading cached circuits)."""
-        
+        """Creates a MolecularHamiltonian object.
+
+        Args:
+            geometry: A list of tuples giving the coordinates of each atom.
+            basis: A string giving the basis set.
+            multiplicity: An integer giving the spin multiplicity.
+            charge: An integer giving the total molecular charge. Defaults to 0.
+            name: The string identifer used for saving and loading 
+                cached circuits.
+            run_pyscf_options: A dictionary of keyword arguments passed to the
+                run_pyscf function.
+            occupied_inds: A list of spatial orbital indices
+                indicating which orbitals should be considered doubly occupied.
+            active_inds: A list of spatial orbital indices indicating
+                which orbitals should be considered active.
+        """
         self.geometry = geometry
         self.basis = basis
         if name is None:
-            self.name = ''.join([geometry[i][0] for i in range(len(geometry))])
+            self.name = ''.join(
+                [geometry[i][0] for i in range(len(geometry))])
         else:
             self.name = name
 
@@ -59,19 +72,22 @@ class MolecularHamiltonian:
 
 
     def _build_openfermion_operator(self):
-        """Constructs the Openfermion qubit operator."""
+        """A private method for constructing the Openfermion qubit operator
+        in QubitOperator form. Called by the `build` function."""
         # if self.occupied_inds is None and self.active_inds is None:
         #     self.active_inds = range(self.molecule.n_orbitals)
         hamiltonian = self.molecule.get_molecular_hamiltonian(
-            occupied_indices=self.occupied_inds, active_indices=self.active_inds)
+            occupied_indices=self.occupied_inds, 
+            active_indices=self.active_inds)
         fermion_op = get_fermion_operator(hamiltonian)
         qubit_op = jordan_wigner(fermion_op)
         qubit_op.compress()
-        self.openfermion_op= qubit_op
+        self.openfermion_op = qubit_op
 
 
     def _build_qiskit_operator(self):
-        """Constructs the Qiskit qubit operator."""
+        """A private method for constructing the Qiskit qubit operator 
+        in PauliSumOp form. Called by the `build` function."""
         if self.openfermion_op is None:
             self._build_openfermion_operator()
         table = []
@@ -99,12 +115,23 @@ class MolecularHamiltonian:
         self.qiskit_op = qiskit_op
 
 
-    def build(self):
-        """Constructs both the Openfermion and the Qiskit qubit operators."""
-        self._build_openfermion_operator()
-        self._build_qiskit_operator()
+    def build(self, 
+              build_openfermion_op: bool = True, 
+              build_qiskit_op: bool = True):
+        """Constructs both the Openfermion and the Qiskit qubit operators.
+        
+        Args:
+            build_openfermion_op: Whether to build the Openfermion qubit operator.
+            build_qiskit_op: Whether to build the Qiskit qubit operator.
+        """
+        if build_openfermion_op:
+            self._build_openfermion_operator()
+        if build_qiskit_op:
+            self._build_qiskit_operator()
 
 
+    # TODO: This and the following functions should be written 
+    # with the @property decorator
     def to_openfermion_operator(self):
         """Returns the Openfermion qubit operator."""
         if self.openfermion_op is None:
@@ -119,8 +146,12 @@ class MolecularHamiltonian:
         return self.qiskit_op
 
 
-    def to_array(self, array_type='ndarray'):
-        """Returns the array form of the Hamiltonian."""
+    def to_array(self, array_type: str = 'ndarray'):
+        """Converts the molecular Hamiltonian to an array form.
+        
+        Args:
+            array_type: A string indicating the type of the array.
+        """
         assert array_type in ['sparse', 'matrix', 'array', 'ndarray']
         if self.openfermion_op is None:
             self._build_openfermion_operator()

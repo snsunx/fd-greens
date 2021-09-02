@@ -14,15 +14,17 @@ import cotengra as ctg
 from subroutines import get_psi
 
 
-def ansatz_circuit(n, D, n_layers, gate1='RY', gate2='CNOT', psi=None, periodic=False):
+def ansatz_circuit(n, D, n_layers, gate1: str ='RY', gate2: str = 'CNOT', psi=None, periodic=False):
     """Construct a circuit of single qubit and entangling gates.
     This circuit is optimized later by the compress_unitary function.
+
     Args:
         D: domain size
         n_layers: number of layers
         gate1: Single-qubit gate (default: 'RY')
         gate2: Two-qubit gate (default: 'CNOT')
         periodic: if periodic, insert a long-range two-qubit gate
+    
     Returns:
         circ: Quimb circuit
     """
@@ -101,6 +103,7 @@ def compress_Upsi(D, psi, targ_psi, gate1='RY', n_layers=3):
 def propagate_compressed(qreg, circ, psi, paulis, coeffs, richardson, gate1='RY', n_layers=3):
     r"""Propagate by a unitary operator optimized from
         exp(-i \sum_i x_i \sigma_i)
+
     Args:
         qreg (QuantumRegister): The quantum register
         circ (QuantumCircuit): The quantum circuit
@@ -108,6 +111,7 @@ def propagate_compressed(qreg, circ, psi, paulis, coeffs, richardson, gate1='RY'
         x (np.ndarray): The coefficients vector
         richardson (int): The number of redundant gates used in Richardson
             extrapolation
+
     Returns:
         circ_new (QuantumCircuit): The quantum circ after propagation gates
             are appended

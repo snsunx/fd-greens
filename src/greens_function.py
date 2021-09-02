@@ -1,16 +1,18 @@
-import numpy as np
-from scipy.special import binom
-from qiskit import *
-from qiskit.algorithms import VQE
-from qiskit.algorithms.optimizers import Optimizer, L_BFGS_B
-from qiskit.aqua import QuantumInstance
-from qiskit.utils import QuantumInstance
-from qiskit.extensions import UnitaryGate
-from scipy.linalg import expm
-from openfermion.linalg import get_sparse_operator
-from math import pi
 import copy
 import pickle
+from typing import Union, Tuple
+
+import numpy as np
+from scipy.linalg import expm
+from scipy.special import binom
+
+# from qiskit import *
+from qiskit import QuantumCircuit, Aer
+from qiskit.algorithms import VQE
+from qiskit.algorithms.optimizers import Optimizer, L_BFGS_B
+from qiskit.utils import QuantumInstance
+from qiskit.extensions import UnitaryGate
+from openfermion.linalg import get_sparse_operator
 
 from constants import *
 from hamiltonians import MolecularHamiltonian
@@ -31,35 +33,38 @@ class GreensFunction:
                  hamiltonian: MolecularHamiltonian, 
                  optimizer: Optimizer = None,
                  q_instance: QuantumInstance = None,
-                 scaling_factor: float = 1.,
-                 constant_shift: float = 0.,
+                 scaling: float = 1.,
+                 shift: float = 0.,
                  recompiled: bool = True):
-        """Initializes an object to calculate frequency-domain Green's function.
+        """Creates an object to calculate frequency-domain Green's function.
         
         Args:
             ansatz: The parametrized circuit as an ansatz to VQE.
-            hamiltonian: The Hamiltonian object.
+            hamiltonian: The MolecularHamiltonian object.
             optimizer: The optimzier in VQE.
             q_instance: The quantum instance for execution of the quantum circuit.
-            scaling_factor: Scaling factor of the Hamiltonian.
-            constant_shift: Constant shift of the Hamiltonian.
+            scaling: Scaling factor of the Hamiltonian.
+            shift: Constant shift factor of the Hamiltonian.
             recompiled: Whether the QPE circuit is recompiled or not.
         """ 
         self.ansatz = ansatz
         self.hamiltonian = hamiltonian
         self.molecule = hamiltonian.molecule
 
-        tmp = self.molecule.orbital_energies
-        tmp = np.vstack([tmp, tmp]).reshape(tmp.shape[0] * 2, order='f')
-        self.e_orb = np.diag(tmp) * HARTREE_TO_EV
+        # Extract the orbital energies
+        e_orb = self.molecule.orbital_energies
+        e_orb = np.vstack([e_orb, e_orb]).reshape(e_orb.shape[0] * 2, order='f')
+        self.e_orb = np.diag(e_orb) * HARTREE_TO_EV
 
+        # Extract the Hamiltonian operators and apply shift and scaling factors
         self.qiskit_op = self.hamiltonian.qiskit_op.copy()
         self.openfermion_op = copy.deepcopy(self.hamiltonian.openfermion_op)
-        self.qiskit_op *= scaling_factor
-        self.qiskit_op.primitive.coeffs[0] += constant_shift / HARTREE_TO_EV
-        self.openfermion_op *= scaling_factor
-        self.openfermion_op.terms[()] += constant_shift / HARTREE_TO_EV
-        self.hamiltonian_arr = get_sparse_operator(self.openfermion_op).toarray()
+        self.qiskit_op *= scaling
+        self.qiskit_op.primitive.coeffs[0] += shift / HARTREE_TO_EV
+        self.openfermion_op *= scaling
+        self.openfermion_op.terms[()] += shift / HARTREE_TO_EV
+        self.hamiltonian_arr = get_sparse_operator(
+            self.openfermion_op).toarray()
 
         self.recompiled = recompiled
         
@@ -70,6 +75,7 @@ class GreensFunction:
         else:
             self.q_instance = q_instance
 
+        # Number of orbitals and indices
         self.n_orb = 2 * len(self.hamiltonian.active_inds)
         self.n_occ = (self.hamiltonian.molecule.n_electrons 
                       - 2 * len(self.hamiltonian.occupied_inds))
@@ -79,6 +85,7 @@ class GreensFunction:
         self.n_e = int(binom(self.n_orb, self.n_occ + 1))
         self.n_h = int(binom(self.n_orb, self.n_occ - 1))
 
+        # Define the transition amplitude matrices
         self.B_e = np.zeros((self.n_orb, self.n_orb, self.n_e), dtype=complex)
         self.B_h = np.zeros((self.n_orb, self.n_orb, self.n_h), dtype=complex)
 
@@ -94,20 +101,32 @@ class GreensFunction:
         self.G_h = np.zeros((self.n_orb, self.n_orb), dtype=complex)
         self.G = np.zeros((self.n_orb, self.n_orb), dtype=complex)
 
+        # State arrays
         self.states = None
         self.states_arr = np.empty((self.n_orb, self.n_orb), dtype=np.object)
         # self.states_arr = np.array([[[None] for i in range(self.n_orb)] for j in range(self.n_orb)])
 
+        # Variables to store eigenenergies and eigenstates
         self.energies_e = None
         self.eigenstates_e = None
         self.energies_h = None
         self.eigenstates_h = None
 
+    def compute_ground_state(self, 
+                             save_params: bool = True,
+                             return_ansatz: bool = False):
+        """Calculates the ground state of the Hamiltonian using VQE.
+        
+        Args:
+            save_params: Whether to save the VQE ansatz parameters.
+            return_ansatz: Whether to return the VQE ansatz.
 
-    def compute_ground_state(self, save_params=True, return_ansatz=False):
-        """Calculates the ground state of the Hamiltonian using VQE."""
+        Returns:
+            self.ansatz: Optionally returned VQE ansatz.
+        """
         # TODO: Need to save the coefficient somewhere instead of passing in 
         # statevector simulator all the time.
+        print("Start calculating the ground state using VQE")
         vqe = VQE(self.ansatz, optimizer=self.optimizer, 
                   quantum_instance=Aer.get_backend('statevector_simulator'))
         result = vqe.compute_minimum_eigenvalue(self.qiskit_op)
@@ -119,19 +138,21 @@ class GreensFunction:
             pickle.dump(result.optimal_parameters, f)
             f.close()
         print(f'Ground state energy = {self.energy_gs:.3f} eV')
+        print("Finish calculating the ground state using VQE")
+
         if return_ansatz:
-            return self.ansatz
-    
+            return self.ansatz    
 
     def compute_eh_states(self):
         """Calculates (N+/-1)-electron states of the Hamiltonian."""
+        print("Start calculating (N+/-1)-electron states")
         self.energies_e, self.eigenstates_e = \
             number_state_eigensolver(self.hamiltonian_arr, self.n_occ + 1)
         self.energies_h, self.eigenstates_h = \
             number_state_eigensolver(self.hamiltonian_arr, self.n_occ - 1)
         self.energies_e *= HARTREE_TO_EV
         self.energies_h *= HARTREE_TO_EV
-        print("Calculations of (N+/-1)-electron states finished.")
+        print("Finish calculating (N+/-1)-electron states")
 
     def compute_diagonal_amplitudes(self, 
                                     cache_read: bool = True,
@@ -142,12 +163,12 @@ class GreensFunction:
            cache_read: Whether to attempt to read recompiled circuits from cache files.
            cache_write: Whether to save recompiled circuits to cache files.
         """
-        
+        print("Start calculating diagonal transition amplitudes")
         for m in range(self.n_orb):
             if self.states is None or self.states in self.states_arr[m, m]:
                 print('m =', m)
                 if self.q_instance.backend.name() == 'statevector_simulator':
-                    print("Statevector simulator mode.")
+                    print("Statevector simulator mode")
                     circ = build_diagonal_circuits(self.ansatz.copy(), m)
                     result = self.q_instance.execute(circ)
                     psi = reverse_qubit_order(result.get_statevector())
@@ -175,7 +196,7 @@ class GreensFunction:
                         self.states_arr[m, m] = states_elem
 
                 else:
-                    print("QASM simulator mode.") # XXX: Not necessarily QASM simulator
+                    print("QASM simulator mode") # XXX: Not necessarily QASM simulator
                     circ = build_diagonal_circuits_with_qpe(self.ansatz.copy(), m)
                     Umat = expm(1j * self.hamiltonian_arr * HARTREE_TO_EV)
                     if self.recompiled:
@@ -240,7 +261,7 @@ class GreensFunction:
                         print("self.B_e =", self.B_e[m, m])
                     print('')
 
-        print("Calculations of diagonal transition amplitudes finished.")
+        print("Finish calculating diagonal transition amplitudes")
 
 
     def compute_off_diagonal_amplitudes(self, 
@@ -253,6 +274,8 @@ class GreensFunction:
            cache_write: Whether to save recompiled circuits to cache files.
         """
         
+        print("Start calculating off-diagonal transition amplitudes")
+
         for m in range(self.n_orb):
            for n in range(self.n_orb):
                 if m != n and (self.states is None or self.states in self.states_arr[m, n]):
@@ -304,7 +327,7 @@ class GreensFunction:
                         '''
 
                     else:
-                        print("QASM simulator mode.") # XXX: Not necessarily QASM simulator
+                        print("QASM simulator mode") # XXX: Not necessarily QASM simulator
                         circ = build_off_diagonal_circuits_with_qpe(self.ansatz.copy(), m, n, measure=False)
                         Umat = expm(1j * self.hamiltonian_arr * HARTREE_TO_EV)
                         if self.recompiled:
@@ -396,7 +419,7 @@ class GreensFunction:
                         np.exp(-1j * np.pi / 4) * (self.D_hp[m, n] - self.D_hm[m, n]) + \
                         np.exp(1j * np.pi / 4) * (self.D_hp[n, m] - self.D_hm[n, m]))
 
-        print("Calculations of off-diagonal transition amplitudes finished.")
+        print("Finish calculating off-diagonal transition amplitudes")
 
     def get_density_matrix(self):
         """Obtains the density matrix from the hole-added part of the Green's
@@ -404,8 +427,19 @@ class GreensFunction:
         self.rho_gf = np.sum(self.B_h, axis=2)
         return self.rho_gf
 
-    def compute_greens_function(self, omega):
-        """Calculates the values of the Green's function at frequency omega."""
+    def compute_greens_function(self, 
+                                omega: Union[float, complex]
+                                ) -> np.ndarray:
+        """Calculates the values of the Green's function at frequency omega.
+        
+        Args:
+            omega: The real or complex frequency at which the Green's function
+                is calculated.
+                
+        Returns:
+            self.G: The Green's function Numpy array.
+        """
+        print("Start calculating the Green's function")
         for m in range(self.n_orb):
             for n in range(self.n_orb):
                 self.G_e[m, n] = np.sum(
@@ -413,19 +447,30 @@ class GreensFunction:
                 self.G_h[m, n] = np.sum(
                     self.B_h[m, n] / (omega - self.energy_gs + self.energies_h))
         self.G = self.G_e + self.G_h
-
+        print("Finish calculating the Green's function")
         return self.G
-        print("Calculations of Green's functions finished.")
 
-    def compute_spectral_function(self, omega):
+    def compute_spectral_function(self, 
+                                  omega: Union[float, complex]
+                                  ) -> np.ndarray:
         """Calculates the spectral function at frequency omega."""
+        print("Start calculating the spectral function")
         self.compute_greens_function(omega)
         A = - 1 / np.pi * np.imag(np.trace(self.G))
-        print("Calculations of spectral function finished.")
+        print("Finish calculating the spectral function")
         return A
 
-    def compute_self_energy(self, omega):
-        """Calculates the self-energy at frequency omega."""
+    def compute_self_energy(self, omega: Union[float, complex]) -> np.ndarray:
+        """Calculates the self-energy at frequency omega.
+        
+        Args:
+            omega: The real or complex frequency at which the self-energy 
+                is calculated.
+            
+        Returns:
+            Sigma: The self-energy Numpy array.
+        """
+        print("Start calculating the self-energy")
         self.compute_greens_function(omega)
 
         G_HF = np.zeros((self.n_orb, self.n_orb), dtype=complex)
@@ -433,13 +478,20 @@ class GreensFunction:
             G_HF[i, i] = 1 / (omega - self.molecule.orbital_energies[i // 2] * HARTREE_TO_EV)
 
         Sigma = np.linalg.pinv(G_HF) - np.linalg.pinv(self.G)
+        print("Finish calculating the self-energy")
         return Sigma
 
-    def compute_correlation_energy(self):
+    def compute_correlation_energy(self) -> Tuple[complex, complex]:
+        """Calculates the corelation energy.
+        
+        Returns:
+            E1: The one-electron part (?) of the correlation energy.
+            E2: The two-electron part (?) of the correlation energy.
+        """
         self.get_density_matrix()
 
-        # XXX: Fill the one-electron integrals with a checkerboard pattern.
-        # Could be done more efficiently.
+        # XXX: Now filling in the one-electron integrals with a
+        # checkerboard pattern. Could be done more efficiently.
         self.h = np.zeros((self.n_orb, self.n_orb), dtype=complex)
         for i in range(self.n_orb):
             print('i =', i)
@@ -462,28 +514,42 @@ class GreensFunction:
 
 
     @staticmethod
-    def get_hamiltonian_shift_parameters(hamiltonian, states='e'):
+    def get_hamiltonian_shift_parameters(hamiltonian: MolecularHamiltonian,
+                                         states_str: str = 'e'
+                                         ) -> Tuple[float, float]:
         """Obtains the scaling factor and constant shift of the Hamiltonian 
-        for phase estimation."""
-        # Obtains the scaling factor.
+        for phase estimation.
+        
+        Args:
+            hamiltonian: The MolecularHamiltonian object.
+            states_str: 'e' or 'h', which indicates whether the parameters 
+                are to be obtained for the (N+1)-electron states or the 
+                (N-1)-electron states.
+        
+        Returns:
+            scaling: The scaling factor of the Hamiltonian.
+            shift: The shift factor of the Hamiltonian.
+        """
+        assert states_str in ['e', 'h']
+
+        # Obtain the scaling factor
         greens_function = GreensFunction(None, hamiltonian)
         greens_function.compute_eh_states()
-        if states == 'h':
+        if states_str == 'h':
             E_low = greens_function.energies_h[0]
             E_high = greens_function.energies_h[2]
-        elif states == 'e':
+        elif states_str == 'e':
             E_low = greens_function.energies_e[0]
             E_high = greens_function.energies_e[2]
+        scaling = np.pi / (E_high - E_low)
 
-        scaling_factor = np.pi / (E_high - E_low)
-
-        # Obtains the constant shift.
+        # Obtain the constant shift factor
         greens_function = GreensFunction(
-            None, hamiltonian, scaling_factor=scaling_factor)
+            None, hamiltonian, scaling=scaling)
         greens_function.compute_eh_states()
-        if states == 'h':
-            constant_shift = -greens_function.energies_h[0]
-        elif states == 'e':
-            constant_shift = -greens_function.energies_e[0]
+        if states_str == 'h':
+            shift = -greens_function.energies_h[0]
+        elif states_str == 'e':
+            shift = -greens_function.energies_e[0]
 
-        return scaling_factor, constant_shift
+        return scaling, shift

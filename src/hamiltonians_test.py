@@ -3,9 +3,15 @@ from scipy.sparse.linalg import eigsh
 from constants import HARTREE_TO_EV
 from hamiltonians import *
 
-hamiltonian = MolecularHamiltonian([['Li', (0, 0, 0)], ['H', (0, 0, 1.6)]], 'sto3g', occupied_inds=[0], active_inds=[1, 2])
+hamiltonian = MolecularHamiltonian(
+    [['Li', (0, 0, 0)], ['H', (0, 0, 1.6)]], 
+    'sto3g', 
+    occupied_inds=[0], 
+    active_inds=[1, 2])
 # hamiltonian = MolecularHamiltonian([['Li', (0, 0, 0)], ['H', (0, 0, 1.6)]], 'sto3g')
 hamiltonian.build()
+print(type(hamiltonian.to_openfermion_operator()))
+exit()
 molecule = hamiltonian.molecule
 print('n_orbitals =', molecule.n_orbitals)
 print('n_electrons =', molecule.n_electrons)
@@ -15,7 +21,6 @@ print('n_orb =', 2 * len(hamiltonian.active_inds))
 print('n_occ =', molecule.n_electrons - 2 * len(hamiltonian.occupied_inds))
 # qiskit_op = hamiltonian.to_qiskit_qubit_operator()
 # print(qiskit_op)
-exit()
 print(molecule.hf_energy * HARTREE_TO_EV)
 
 arr = hamiltonian.to_array(return_type='sparse')
