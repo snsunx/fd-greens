@@ -10,7 +10,7 @@ hamiltonian = MolecularHamiltonian(
     active_inds=[1, 2])
 # hamiltonian = MolecularHamiltonian([['Li', (0, 0, 0)], ['H', (0, 0, 1.6)]], 'sto3g')
 hamiltonian.build()
-print(type(hamiltonian.to_openfermion_operator()))
+print(type(hamiltonian.openfermion_op))
 exit()
 molecule = hamiltonian.molecule
 print('n_orbitals =', molecule.n_orbitals)

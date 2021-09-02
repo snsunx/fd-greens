@@ -24,7 +24,8 @@ class CacheRecompilation:
         
 
     @classmethod
-    def save_recompiled_circuit(cls, hamiltonian: MolecularHamiltonian,
+    def save_recompiled_circuit(cls,
+                                hamiltonian: MolecularHamiltonian,
                                 type: str, circuit: str,
                                 verbose: bool = True) -> None:
         """Saves given circuit into cache file."""
@@ -35,11 +36,12 @@ class CacheRecompilation:
 
 
     @classmethod
-    def load_recompiled_circuit(cls, hamiltonian: MolecularHamiltonian,
+    def load_recompiled_circuit(cls, 
+                                hamiltonian: MolecularHamiltonian,
                                 type: str,
                                 verbose: bool = True) -> Union[str, None]:
-        """Loads circuit for given Hamiltonian and `type`.
-           If circuit not found, returns None."""
+        """Loads circuit for given Hamiltonian and `type`. If circuit is not
+        found, returns None."""
         if not os.path.isfile(cls.__filepath(hamiltonian, type)):
             return None   # File does not exist.
         with open(cls.__filepath(hamiltonian, type), 'r') as f:

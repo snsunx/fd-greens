@@ -16,7 +16,6 @@ cache_write = True
 
 ansatz = build_ne2_ansatz(4)
 hamiltonian = MolecularHamiltonian(
-    f'LiH-{bond_length:0.3f}',
     [['Li', (0, 0, 0)], ['H', (0, 0, bond_length)]], 'sto3g', 
     occupied_inds=[0], active_inds=[1, 2])
 q_instance_sv = QuantumInstance(Aer.get_backend('statevector_simulator'))
@@ -30,22 +29,22 @@ greens_function_sv.compute_ground_state()
 greens_function_sv.compute_eh_states()
 greens_function_sv.compute_diagonal_amplitudes(cache_read = cache_read, cache_write = cache_write)
 greens_function_sv.compute_off_diagonal_amplitudes(cache_read = cache_read, cache_write = cache_write)
-print(greens_function_sv.states_arr)
+print(greens_function_sv.states_str_arr)
 
 scaling_factor_h, constant_shift_h = \
-    GreensFunction.get_hamiltonian_shift_parameters(hamiltonian, states='h')
+    GreensFunction.get_hamiltonian_shift_parameters(hamiltonian, states_str='h')
 scaling_factor_e, constant_shift_e = \
-    GreensFunction.get_hamiltonian_shift_parameters(hamiltonian, states='e')
+    GreensFunction.get_hamiltonian_shift_parameters(hamiltonian, states_str='e')
 
 # QASM simulator calculation of h states
 greens_function_h = GreensFunction(
     greens_function_sv.ansatz.copy(), hamiltonian, 
     q_instance=q_instance_noisy, 
-    scaling_factor=scaling_factor_h,
-    constant_shift=constant_shift_h,
+    scaling=scaling_factor_h,
+    shift=constant_shift_h,
     recompiled=True)
-greens_function_h.states = 'h'
-greens_function_h.states_arr = greens_function_sv.states_arr
+greens_function_h.states_str = 'h'
+greens_function_h.states_str_arr = greens_function_sv.states_str_arr
 greens_function_h.eigenstates_h = greens_function_sv.eigenstates_h
 greens_function_h.compute_diagonal_amplitudes(cache_read = cache_read, cache_write = cache_write)
 greens_function_h.compute_off_diagonal_amplitudes(cache_read = cache_read, cache_write = cache_write)
@@ -54,11 +53,11 @@ greens_function_h.compute_off_diagonal_amplitudes(cache_read = cache_read, cache
 greens_function_e = GreensFunction(
     greens_function_sv.ansatz.copy(), hamiltonian, 
     q_instance=q_instance_noisy, 
-    scaling_factor=scaling_factor_e, 
-    constant_shift=constant_shift_e,
+    scaling=scaling_factor_e, 
+    shift=constant_shift_e,
     recompiled=True)
-greens_function_e.states = 'e'
-greens_function_e.states_arr = greens_function_sv.states_arr
+greens_function_e.states_str = 'e'
+greens_function_e.states_str_arr = greens_function_sv.states_str_arr
 greens_function_h.eigenstates_e = greens_function_sv.eigenstates_e
 greens_function_e.compute_diagonal_amplitudes(cache_read = cache_read, cache_write = cache_write)
 greens_function_e.compute_off_diagonal_amplitudes(cache_read = cache_read, cache_write = cache_write)
@@ -66,8 +65,8 @@ greens_function_e.compute_off_diagonal_amplitudes(cache_read = cache_read, cache
 # Combining h states and e states results
 greens_function_final = GreensFunction(ansatz.copy(), hamiltonian)
 greens_function_final.energy_gs = greens_function_sv.energy_gs
-greens_function_final.energies_e = greens_function_sv.energies_e
-greens_function_final.energies_h = greens_function_sv.energies_h
+greens_function_final.eigenenergies_e = greens_function_sv.eigenenergies_e
+greens_function_final.eigenenergies_h = greens_function_sv.eigenenergies_h
 
 greens_function_final.B_e += greens_function_e.B_e
 greens_function_final.D_ep += greens_function_e.D_ep

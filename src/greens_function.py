@@ -35,7 +35,8 @@ class GreensFunction:
                  q_instance: QuantumInstance = None,
                  scaling: float = 1.,
                  shift: float = 0.,
-                 recompiled: bool = True):
+                 recompiled: bool = True,
+                 states_str: Union[str, None] = None):
         """Creates an object to calculate frequency-domain Green's function.
         
         Args:
@@ -88,28 +89,31 @@ class GreensFunction:
         # Define the transition amplitude matrices
         self.B_e = np.zeros((self.n_orb, self.n_orb, self.n_e), dtype=complex)
         self.B_h = np.zeros((self.n_orb, self.n_orb, self.n_h), dtype=complex)
-
         self.D_hp = np.zeros((self.n_orb, self.n_orb, self.n_h))
         self.D_hm = np.zeros((self.n_orb, self.n_orb, self.n_h))
         self.D_ep = np.zeros((self.n_orb, self.n_orb, self.n_e))
         self.D_em = np.zeros((self.n_orb, self.n_orb, self.n_e))
 
+        # Define the density matrices for obtaining the self-energy
         self.rho_hf = np.diag([1] * (self.n_occ) + [0] * (self.n_vir))
         self.rho_gf = None
 
+        # Define the Green's function arrays
         self.G_e = np.zeros((self.n_orb, self.n_orb), dtype=complex)
         self.G_h = np.zeros((self.n_orb, self.n_orb), dtype=complex)
         self.G = np.zeros((self.n_orb, self.n_orb), dtype=complex)
 
-        # State arrays
-        self.states = None
-        self.states_arr = np.empty((self.n_orb, self.n_orb), dtype=np.object)
-        # self.states_arr = np.array([[[None] for i in range(self.n_orb)] for j in range(self.n_orb)])
+        # Define the arrays indicating whether the (N +/- 1)-electron states
+        # are to be calculated
+        self.states_str = states_str
+        self.states_str_arr = np.empty((self.n_orb, self.n_orb), dtype=np.object)
+        # self.states_str_arr = np.array([[[None] for i in range(self.n_orb)] for j in range(self.n_orb)])
 
         # Variables to store eigenenergies and eigenstates
-        self.energies_e = None
+        self.energy_gs = None
+        self.eigenenergies_e = None
         self.eigenstates_e = None
-        self.energies_h = None
+        self.eigenenergies_h = None
         self.eigenstates_h = None
 
     def compute_ground_state(self, 
@@ -144,15 +148,15 @@ class GreensFunction:
             return self.ansatz    
 
     def compute_eh_states(self):
-        """Calculates (N+/-1)-electron states of the Hamiltonian."""
-        print("Start calculating (N+/-1)-electron states")
-        self.energies_e, self.eigenstates_e = \
+        """Calculates (N +/- 1)-electron states of the Hamiltonian."""
+        print("Start calculating e/h states")
+        self.eigenenergies_e, self.eigenstates_e = \
             number_state_eigensolver(self.hamiltonian_arr, self.n_occ + 1)
-        self.energies_h, self.eigenstates_h = \
+        self.eigenenergies_h, self.eigenstates_h = \
             number_state_eigensolver(self.hamiltonian_arr, self.n_occ - 1)
-        self.energies_e *= HARTREE_TO_EV
-        self.energies_h *= HARTREE_TO_EV
-        print("Finish calculating (N+/-1)-electron states")
+        self.eigenenergies_e *= HARTREE_TO_EV
+        self.eigenenergies_h *= HARTREE_TO_EV
+        print("Finish calculating e/h states")
 
     def compute_diagonal_amplitudes(self, 
                                     cache_read: bool = True,
@@ -165,7 +169,7 @@ class GreensFunction:
         """
         print("Start calculating diagonal transition amplitudes")
         for m in range(self.n_orb):
-            if self.states is None or self.states in self.states_arr[m, m]:
+            if self.states_str is None or self.states_str in self.states_str_arr[m, m]:
                 print('m =', m)
                 if self.q_instance.backend.name() == 'statevector_simulator':
                     print("Statevector simulator mode")
@@ -173,27 +177,27 @@ class GreensFunction:
                     result = self.q_instance.execute(circ)
                     psi = reverse_qubit_order(result.get_statevector())
                     
-                    if self.states in ('e', None):
+                    if self.states_str in ('e', None):
                         inds_e = get_number_state_indices(self.n_orb, self.n_occ + 1, anc='1')
                         probs_e = np.abs(self.eigenstates_e.conj().T @ psi[inds_e]) ** 2
                         probs_e[abs(probs_e) < 1e-8] = 0.
                         # print('probs_e =', probs_e)
                         self.B_e[m, m] = probs_e
 
-                    if self.states in ('h', None):                     
+                    if self.states_str in ('h', None):                     
                         inds_h = get_number_state_indices(self.n_orb, self.n_occ - 1, anc='0')
                         probs_h = np.abs(self.eigenstates_h.conj().T @ psi[inds_h]) ** 2
                         probs_h[abs(probs_h) < 1e-8] = 0.
                         # print('probs_h =', probs_h)
                         self.B_h[m, m] = probs_h
 
-                    if self.states is None:
+                    if self.states_str is None:
                         states_elem = []
                         if sum(probs_h) > 1e-3:
                             states_elem.append('h')
                         if sum(probs_e) > 1e-3:
                             states_elem.append('e')
-                        self.states_arr[m, m] = states_elem
+                        self.states_str_arr[m, m] = states_elem
 
                 else:
                     print("QASM simulator mode") # XXX: Not necessarily QASM simulator
@@ -238,13 +242,13 @@ class GreensFunction:
                     result = self.q_instance.execute(circ)
                     counts = result.get_counts()
                     for key in list(counts):
-                        if int(key[-1]) == (self.states == 'h'):
+                        if int(key[-1]) == (self.states_str == 'h'):
                             del counts[key]
                     shots = sum(counts.values())
 
                     probs = {}
                     for t in ['0', '1']:
-                        key = ''.join(t) + ('0' if self.states == 'h' else '1')
+                        key = ''.join(t) + ('0' if self.states_str == 'h' else '1')
                         if key in counts.keys():
                             probs[key] = counts[key] / shots
                         else:
@@ -252,17 +256,15 @@ class GreensFunction:
                     # counts = dict(sorted(counts.items(), 
                     #               key=lambda item: item[1], 
                     #               reverse=True))
-                    if self.states == 'h':
+                    if self.states_str == 'h':
                         self.B_h[m, m] = [probs['00'], 0., probs['10'], 0.]
                         print("self.B_h =", self.B_h[m, m])
                     
-                    if self.states == 'e':
+                    if self.states_str == 'e':
                         self.B_e[m, m] = [probs['01'], 0., probs['11'], 0.]
                         print("self.B_e =", self.B_e[m, m])
                     print('')
-
         print("Finish calculating diagonal transition amplitudes")
-
 
     def compute_off_diagonal_amplitudes(self, 
                                         cache_read: bool = True, 
@@ -278,7 +280,7 @@ class GreensFunction:
 
         for m in range(self.n_orb):
            for n in range(self.n_orb):
-                if m != n and (self.states is None or self.states in self.states_arr[m, n]):
+                if m != n and (self.states_str is None or self.states_str in self.states_str_arr[m, n]):
                     print('(m, n) =', (m, n))
                     if self.q_instance.backend.name() == 'statevector_simulator':
                         print("Statevector simulator mode.")
@@ -286,7 +288,7 @@ class GreensFunction:
                         result = self.q_instance.execute(circ)
                         psi = reverse_qubit_order(result.get_statevector())
 
-                        if self.states in ('h', None):
+                        if self.states_str in ('h', None):
                             inds_hp = get_number_state_indices(
                                 self.n_orb, self.n_occ - 1, anc='00')
                             inds_hm = get_number_state_indices(
@@ -298,7 +300,7 @@ class GreensFunction:
                             self.D_hp[m, n] = probs_hp
                             self.D_hm[m, n] = probs_hm
 
-                        if self.states in ('e', None):
+                        if self.states_str in ('e', None):
                             inds_ep = get_number_state_indices(
                                 self.n_orb, self.n_occ + 1, anc='10')
                             inds_em = get_number_state_indices(
@@ -310,13 +312,13 @@ class GreensFunction:
                             self.D_ep[m, n] = probs_ep
                             self.D_em[m, n] = probs_em
 
-                        if self.states is None:
+                        if self.states_str is None:
                             states_elem = []
                             if sum(probs_hp) > 1e-3 or sum(probs_hm) > 1e-3:
                                 states_elem.append('h')
                             if sum(probs_ep) > 1e-3 or sum(probs_em) > 1e-3:
                                 states_elem.append('e')
-                            self.states_arr[m, n] = states_elem
+                            self.states_str_arr[m, n] = states_elem
                         
                         '''
                         if (m, n) == (0, 1):
@@ -381,7 +383,7 @@ class GreensFunction:
                         counts = result.get_counts()
                         print(counts)
                         for key in list(counts):
-                            if int(key[-1]) == (self.states == 'h'):
+                            if int(key[-1]) == (self.states_str == 'h'):
                                 del counts[key]
                         print(counts)
                         shots = sum(counts.values())
@@ -389,19 +391,19 @@ class GreensFunction:
                         from itertools import product
                         probs = {}
                         for t in product(['0', '1'], repeat=2):
-                            key = ''.join(t) + ('0' if self.states == 'h' else '1')
+                            key = ''.join(t) + ('0' if self.states_str == 'h' else '1')
                             if key in counts.keys():
-                                probs[key] = counts[key] / shots / len(self.states_arr[m, n]) # XXX
+                                probs[key] = counts[key] / shots / len(self.states_str_arr[m, n]) # XXX
                             else:
                                 probs[key] = 0.0
 
-                        if self.states == 'h':
+                        if self.states_str == 'h':
                             self.D_hp[m, n] = [probs['000'], 0.0, probs['100'], 0.0]
                             self.D_hm[m, n] = [probs['010'], 0.0, probs['110'], 0.0]
                             print("self.D_hp =", self.D_hp[m, n])
                             print("self.D_hm =", self.D_hm[m, n])
                         
-                        if self.states == 'e':
+                        if self.states_str == 'e':
                             self.D_ep[m, n] = [probs['001'], 0., probs['101'], 0.]
                             self.D_em[m, n] = [probs['011'], 0., probs['111'], 0.]
                             print("self.D_ep =", self.D_ep[m, n])
@@ -427,6 +429,104 @@ class GreensFunction:
         self.rho_gf = np.sum(self.B_h, axis=2)
         return self.rho_gf
 
+    # TODO: Use only one cache variable instead of two
+    def run(self, compute_energies=True, cache=True):
+        if compute_energies:
+            if self.energy_gs is None:
+                self.compute_ground_state()
+            if (self.eigenenergies_e is None or self.eigenenergies_h is None or 
+                self.eigenstates_e is None or self.eigenstates_h is None):
+                self.compute_eh_states()
+        self.compute_diagonal_amplitudes(cache_read=cache, cache_write=cache)
+        self.compute_off_diagonal_amplitudes(cache_read=cache, cache_write=cache)
+
+    @classmethod
+    def initialize_eh(cls, gf, states_str, q_instance=None):
+        """Creates a GreensFunction object for calculating the e/h states 
+        transition amplitudes.
+
+        Args:
+            gf: 
+            states_str: 
+            q_instance: 
+        
+        Returns:
+            gf_new: The new GreensFunction object for calculating the e/h states.
+        """
+        assert states_str in ['e', 'h']
+        if q_instance is None:
+            q_instance = QuantumInstance(Aer.get_backend('qasm_simulator'))
+        
+        # XXX: The 0 and 2 are hardcoded
+        # Obtain the scaling factor
+        gf_scaling = GreensFunction(None, gf.hamiltonian)
+        gf_scaling.compute_eh_states()
+        if states_str == 'h':
+            E_low = gf_scaling.eigenenergies_h[0]
+            E_high = gf_scaling.eigenenergies_h[2]
+        elif states_str == 'e':
+            E_low = gf_scaling.eigenenergies_e[0]
+            E_high = gf_scaling.eigenenergies_e[2]
+        scaling = np.pi / (E_high - E_low)
+
+        # Obtain the constant shift factor
+        gf_shift = cls(None, gf.hamiltonian, scaling=scaling)
+        gf_shift.compute_eh_states()
+        if states_str == 'h':
+            shift = -gf_shift.eigenenergies_h[0]
+        elif states_str == 'e':
+            shift = -gf_shift.eigenenergies_e[0]
+
+        # Create a new GreensFunction object with scaling and shift
+        gf_new = cls(gf.ansatz.copy(), gf.hamiltonian, 
+                     q_instance=q_instance, 
+                     scaling=scaling, shift=shift)
+        gf_new.states_str = states_str
+        gf_new.states_str_arr = gf.states_str_arr
+        # XXX: Is this right?
+        if q_instance.backend.name() == 'statevector_simulator':
+            if states_str == 'e':
+                gf_new.eigenstates_e = gf.eigenstates_e
+            elif states_str == 'h':
+                gf_new.eigenstates_h = gf.eigenstates_h
+        return gf_new
+
+    @classmethod
+    def initialize_final(cls, gf_sv, gf_e, gf_h, q_instance=None):
+        """Creates a GreensFunction object for calculating final 
+        observables.
+        
+        Args:
+            gf_sv:
+            gf_e:
+            gf_h:
+            q_instance: 
+
+        Returns:
+            gf_new: The new GreensFunction object for calculating final 
+                observables.
+        """
+        # Creates the new GreensFunction object
+        if q_instance is None:
+            q_instance = QuantumInstance(Aer.get_backend('qasm_simulator'))
+        gf_new = cls(None, gf_sv.hamiltonian, q_instance=q_instance)
+
+        # Assign the eigenenergies
+        gf_new.energy_gs = gf_sv.energy_gs
+        gf_new.eigenenergies_e = gf_sv.eigenenergies_e
+        gf_new.eigenenergies_h = gf_sv.eigenenergies_h
+
+        # Add the e states transition amplitudes
+        gf_new.B_e += gf_e.B_e
+        gf_new.D_ep += gf_e.D_ep
+        gf_new.D_em += gf_e.D_em
+
+        # Add the h states transition amplitudes
+        gf_new.B_h += gf_h.B_h
+        gf_new.D_hp += gf_h.D_hp
+        gf_new.D_hm += gf_h.D_hm
+        return gf_new
+
     def compute_greens_function(self, 
                                 omega: Union[float, complex]
                                 ) -> np.ndarray:
@@ -443,9 +543,9 @@ class GreensFunction:
         for m in range(self.n_orb):
             for n in range(self.n_orb):
                 self.G_e[m, n] = np.sum(
-                    self.B_e[m, n] / (omega + self.energy_gs - self.energies_e))
+                    self.B_e[m, n] / (omega + self.energy_gs - self.eigenenergies_e))
                 self.G_h[m, n] = np.sum(
-                    self.B_h[m, n] / (omega - self.energy_gs + self.energies_h))
+                    self.B_h[m, n] / (omega - self.energy_gs + self.eigenenergies_h))
         self.G = self.G_e + self.G_h
         print("Finish calculating the Green's function")
         return self.G
@@ -507,7 +607,7 @@ class GreensFunction:
         E2 = 0
         for i in range(self.n_h):
             print('i =', i)
-            e_qp = self.energy_gs - self.energies_h[i]
+            e_qp = self.energy_gs - self.eigenenergies_h[i]
             Sigma = self.compute_self_energy(e_qp + 0.000002 * HARTREE_TO_EV * 1j)
             E2 += np.trace(Sigma @ self.B_h[:,:,i]) / 2
         return E1, E2
@@ -523,12 +623,12 @@ class GreensFunction:
         Args:
             hamiltonian: The MolecularHamiltonian object.
             states_str: 'e' or 'h', which indicates whether the parameters 
-                are to be obtained for the (N+1)-electron states or the 
-                (N-1)-electron states.
+                are to be obtained for the (N + 1)-electron states or the 
+                (N - 1)-electron states.
         
         Returns:
             scaling: The scaling factor of the Hamiltonian.
-            shift: The shift factor of the Hamiltonian.
+            shift: The constant shift factor of the Hamiltonian.
         """
         assert states_str in ['e', 'h']
 
@@ -536,11 +636,11 @@ class GreensFunction:
         greens_function = GreensFunction(None, hamiltonian)
         greens_function.compute_eh_states()
         if states_str == 'h':
-            E_low = greens_function.energies_h[0]
-            E_high = greens_function.energies_h[2]
+            E_low = greens_function.eigenenergies_h[0]
+            E_high = greens_function.eigenenergies_h[2]
         elif states_str == 'e':
-            E_low = greens_function.energies_e[0]
-            E_high = greens_function.energies_e[2]
+            E_low = greens_function.eigenenergies_e[0]
+            E_high = greens_function.eigenenergies_e[2]
         scaling = np.pi / (E_high - E_low)
 
         # Obtain the constant shift factor
@@ -548,8 +648,8 @@ class GreensFunction:
             None, hamiltonian, scaling=scaling)
         greens_function.compute_eh_states()
         if states_str == 'h':
-            shift = -greens_function.energies_h[0]
+            shift = -greens_function.eigenenergies_h[0]
         elif states_str == 'e':
-            shift = -greens_function.energies_e[0]
+            shift = -greens_function.eigenenergies_e[0]
 
         return scaling, shift
