@@ -1,4 +1,4 @@
-from typing import Union, Sequence
+from typing import Union, Sequence, Optional
 
 import numpy as np
 
@@ -17,10 +17,10 @@ class MolecularHamiltonian:
                  basis: str, 
                  multiplicity: int = 1, 
                  charge: int = 0, 
-                 name: str = None,
+                 name: Optional[str] = None,
                  run_pyscf_options: dict = {}, 
-                 occupied_inds: Sequence[int] = None, 
-                 active_inds: Sequence[int] = None,
+                 occupied_inds: Optional[Sequence[int]] = None, 
+                 active_inds: Optional[Sequence[int]] = None,
                  build_ops: bool = True):
         """Creates a MolecularHamiltonian object.
 

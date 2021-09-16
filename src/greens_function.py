@@ -20,10 +20,7 @@ from tools import (get_number_state_indices,
                    number_state_eigensolver, 
                    reverse_qubit_order,
                    get_statevector)
-from circuits import (build_diagonal_circuits, 
-                      build_diagonal_circuits_with_qpe,
-                      build_off_diagonal_circuits, 
-                      build_off_diagonal_circuits_with_qpe)
+from circuits import build_diagonal_circuits, build_off_diagonal_circuits
 from recompilation import recompile_with_statevector, apply_quimb_gates
 
 
@@ -31,8 +28,8 @@ class GreensFunction:
     def __init__(self, 
                  ansatz: QuantumCircuit, 
                  hamiltonian: MolecularHamiltonian, 
-                 optimizer: Optimizer = None,
-                 q_instance: QuantumInstance = None,
+                 optimizer: Optional[Optimizer] = None,
+                 q_instance: Optional[QuantumInstance] = None,
                  scaling: float = 1.,
                  shift: float = 0.,
                  recompiled: bool = True,
@@ -42,8 +39,9 @@ class GreensFunction:
         Args:
             ansatz: The parametrized circuit as an ansatz to VQE.
             hamiltonian: The MolecularHamiltonian object.
-            optimizer: The optimizer in VQE.
-            q_instance: The quantum instance for execution of the quantum circuit.
+            optimizer: The optimizer in VQE. Default to L_BFGS_B().
+            q_instance: The quantum instance for execution of the quantum 
+                circuit. Default to statevector simulator.
             scaling: Scaling factor of the Hamiltonian.
             shift: Constant shift factor of the Hamiltonian.
             recompiled: Whether the QPE circuit is recompiled or not.
@@ -106,6 +104,7 @@ class GreensFunction:
         # are to be calculated
         self.states_str = states_str
         self.states_str_arr = np.empty((self.n_orb, self.n_orb), dtype=np.object)
+        print('states_str_arr\n', self.states_str_arr)
         # self.states_str_arr = np.array([[[None] for i in range(self.n_orb)] for j in range(self.n_orb)])
 
         # Variables to store eigenenergies and eigenstates
@@ -168,7 +167,7 @@ class GreensFunction:
         for m in range(self.n_orb):
             if self.states_str is None or self.states_str in self.states_str_arr[m, m]:
                 if self.q_instance.backend.name() == 'statevector_simulator':
-                    circ = build_diagonal_circuits(self.ansatz.copy(), m)
+                    circ = build_diagonal_circuits(self.ansatz.copy(), m, with_qpe=False)
                     result = self.q_instance.execute(circ)
                     psi = reverse_qubit_order(result.get_statevector())
                     
@@ -194,14 +193,17 @@ class GreensFunction:
                             states_elem.append('e')
                         self.states_str_arr[m, m] = states_elem
 
-                else:
-                    circ = build_diagonal_circuits_with_qpe(self.ansatz.copy(), m)
+                else: # QASM simulator or hardware
+                    circ = build_diagonal_circuits(self.ansatz.copy(), m)
                     Umat = expm(1j * self.hamiltonian_arr * HARTREE_TO_EV)
                     if self.recompiled:
+                        # Construct the unitary |0><0|⊗I + |1><1|⊗e^{iHt} 
+                        # on the last N-2 qubits
                         cUmat = np.kron(np.eye(2), 
                             np.kron(np.diag([1, 0]), np.eye(2 ** 4))
                             + np.kron(np.diag([0, 1]), Umat))
 
+                        # Append single-qubit QPE circuit
                         circ.barrier()
                         circ.h(1)
                         statevector = reverse_qubit_order(get_statevector(circ))
@@ -217,8 +219,11 @@ class GreensFunction:
                         # circ_recompiled = get_statevector(circ)
                         # np.save('circ_recompiled.npy', circ_recompiled)
                     else:
+                        # Construct the unitary |0><0|⊗I + |1><1|⊗e^{iHt} 
+                        # on the last N-2 qubits
                         cUgate = UnitaryGate(Umat).control(1)
 
+                        # Append single-qubit QPE circuit
                         circ.barrier()
                         circ.h(1)
                         circ.append(cUgate, [1, 5, 4, 3, 2])
@@ -236,6 +241,9 @@ class GreensFunction:
                     result = self.q_instance.execute(circ)
                     counts = result.get_counts()
                     for key in list(counts):
+                        # If calculating (N-1)-electron states, need the first 
+                        # qubit to be in |0>, hence deleting the counts with
+                        # the first qubit in |1>
                         if int(key[-1]) == (self.states_str == 'h'):
                             del counts[key]
                     shots = sum(counts.values())
@@ -277,7 +285,7 @@ class GreensFunction:
                     # print('(m, n) =', (m, n))
                     if self.q_instance.backend.name() == 'statevector_simulator':
                         circ = build_off_diagonal_circuits(
-                            self.ansatz.copy(), m, n, measure=False)
+                            self.ansatz.copy(), m, n, with_qpe=False)
                         result = self.q_instance.execute(circ)
                         psi = reverse_qubit_order(result.get_statevector())
 
@@ -314,22 +322,26 @@ class GreensFunction:
                             self.states_str_arr[m, n] = states_elem
 
                     else:
-                        circ = build_off_diagonal_circuits_with_qpe(
-                            self.ansatz.copy(), m, n, measure=False)
+                        circ = build_off_diagonal_circuits(
+                            self.ansatz.copy(), m, n)
                         Umat = expm(1j * self.hamiltonian_arr * HARTREE_TO_EV)
+
+                        # Append QPE circuit
                         if self.recompiled:
                             cUmat = np.kron(np.eye(4),
                                 np.kron(np.diag([1, 0]), np.eye(2 ** 4))
                                 + np.kron(np.diag([0, 1]), Umat))
-
                             circ.barrier()
                             circ.h(2)
-                            statevector = reverse_qubit_order(get_statevector(circ))
+                            statevector = reverse_qubit_order(
+                                get_statevector(circ))
                             quimb_gates = recompile_with_statevector(
                                 statevector, cUmat, n_gate_rounds=7,
-                                cache_options = {'read': cache_read, 'write': cache_write,
+                                cache_options = {'read': cache_read, 
+                                                 'write': cache_write,
                                                  'hamiltonian': self.hamiltonian,
-                                                 'index': f'{m}-{n}', 'states': self.states_str})
+                                                 'index': f'{m}-{n}', 
+                                                 'states': self.states_str})
                             circ = apply_quimb_gates(
                                 quimb_gates, circ.copy(), reverse=False)
                             circ.h(2)
@@ -392,6 +404,29 @@ class GreensFunction:
                         np.exp(-1j * np.pi / 4) * (self.D_hp[m, n] - self.D_hm[m, n]) + \
                         np.exp(1j * np.pi / 4) * (self.D_hp[n, m] - self.D_hm[n, m]))
 
+        np.set_printoptions(precision=1)
+
+        '''
+        print('B_e\n')
+        #self.B_e[abs(self.B_e) < 1e-8] = 0.
+        B_e = self.B_e.copy()
+        for i in range(B_e.shape[-1]):
+            print(i)
+            print(B_e[:,:,i])
+        B_e[abs(B_e) < 1e-8] = 0
+        for i in range(B_e.shape[-1]):
+            print(i)
+            print(B_e[:,:,i])
+        
+        #print('B_h\n')
+        #self.B_h[abs(self.B_h) < 1e-8] = 0.
+        B_h = self.B_h.copy()
+        for i in range(self.B_h.shape[-1]):
+            print(i)
+            print(abs(self.B_h[:,:,i]) < 1e-8)
+            print(self.B_h[:,:,i])
+        '''
+
         print("Finish calculating off-diagonal transition amplitudes")
 
     def get_density_matrix(self):
@@ -423,8 +458,8 @@ class GreensFunction:
 
     @classmethod
     def initialize_eh(cls, gf, states_str, q_instance=None):
-        """Creates a GreensFunction object for calculating the  states 
-        transition amplitudes.
+        """Creates a GreensFunction object for calculating the (N±1)-electron
+        states transition amplitudes.
 
         Args:
             gf: The GreensFunction from statevector simulator calculation.
@@ -433,7 +468,8 @@ class GreensFunction:
             q_instance: The QuantumInstance for executing the calculation.
         
         Returns:
-            gf_new: The new GreensFunction object for calculating the e/h states.
+            gf_new: The new GreensFunction object for calculating the 
+                (N±1)-electron states.
         """
         assert states_str in ['e', 'h']
         if q_instance is None:
@@ -441,7 +477,7 @@ class GreensFunction:
         
         # XXX: The 0 and 2 are hardcoded
         # Obtain the scaling factor
-        gf_scaling = GreensFunction(None, gf.hamiltonian)
+        gf_scaling = cls(None, gf.hamiltonian)
         gf_scaling.compute_eh_states()
         if states_str == 'h':
             E_low = gf_scaling.eigenenergies_h[0]
@@ -451,7 +487,7 @@ class GreensFunction:
             E_high = gf_scaling.eigenenergies_e[2]
         scaling = np.pi / (E_high - E_low)
 
-        # Obtain the constant shift factor
+        # Obtain the shift factor
         gf_shift = cls(None, gf.hamiltonian, scaling=scaling)
         gf_shift.compute_eh_states()
         if states_str == 'h':
@@ -599,6 +635,8 @@ class GreensFunction:
         return E1, E2
 
 
+
+    # TODO: Deprecate this function
     @staticmethod
     def get_hamiltonian_shift_parameters(hamiltonian: MolecularHamiltonian,
                                          states_str: str = 'e'

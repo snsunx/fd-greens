@@ -21,6 +21,7 @@ ansatz = build_ne2_ansatz(4)
 hamiltonian = MolecularHamiltonian(
     [['Li', (0, 0, 0)], ['H', (0, 0, bond_length)]], 'sto3g', 
     occupied_inds=[0], active_inds=[1, 2])
+
 q_instance_sv = QuantumInstance(Aer.get_backend('statevector_simulator'))
 q_instance_qasm = QuantumInstance(Aer.get_backend('qasm_simulator'), shots=8192)
 q_instance_noisy = get_quantum_instance(
@@ -28,16 +29,22 @@ q_instance_noisy = get_quantum_instance(
     noise_model_name='ibmq_jakarta')
 
 # Statevector simulator calculation
+print("========== Starts statevector simulation ==========")
 gf_sv = GreensFunction(ansatz.copy(), hamiltonian, q_instance=q_instance_sv)
 gf_sv.run(cache_read=cache_read, cache_write=cache_write)
+print(gf_sv.states_str_arr)
 
 # QASM simulator calculation of h states
-gf_h = GreensFunction.initialize_eh(gf_sv, 'h', q_instance=q_instance_noisy)
+print("============ Starts calculating h states ==========")
+gf_h = GreensFunction.initialize_eh(gf_sv, 'h', q_instance=q_instance_sv)
 gf_h.run(compute_energies=False, cache_read=cache_read, cache_write=cache_write)
+print(gf_h.states_str_arr)
 
 # QASM simulator calculation of e states
-gf_e = GreensFunction.initialize_eh(gf_sv, 'e', q_instance=q_instance_noisy)
+print("========== Starts calculating e states ==========")
+gf_e = GreensFunction.initialize_eh(gf_sv, 'e', q_instance=q_instance_sv)
 gf_e.run(compute_energies=False, cache_read=cache_read, cache_write=cache_write)
+print(gf_e.states_str_arr)
 
 # Combining h states and e states results
 gf_final = GreensFunction.initialize_final(
