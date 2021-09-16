@@ -1,3 +1,6 @@
+"""Calculates the spectral function on the active-space LiH Hamilonian 
+using the classmethods."""
+
 import sys
 sys.path.append('../../src/')
 import numpy as np
@@ -11,8 +14,8 @@ from constants import HARTREE_TO_EV
 
 # User-defined parameters.
 bond_length = 1.6
-cache_read = False
-cache_write = True
+cache_read = True
+cache_write = False
 
 ansatz = build_ne2_ansatz(4)
 hamiltonian = MolecularHamiltonian(
@@ -45,4 +48,4 @@ A_list = []
 for omega in omegas:
     A = gf_final.compute_spectral_function(omega + 0.02j * HARTREE_TO_EV)
     A_list.append(A)
-np.savetxt('A_noisy_cached.dat', np.vstack((omegas, A_list)).T)
+np.savetxt('A_noisy_cached2.dat', np.vstack((omegas, A_list)).T)

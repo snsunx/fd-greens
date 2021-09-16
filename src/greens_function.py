@@ -1,6 +1,6 @@
 import copy
 import pickle
-from typing import Union, Tuple
+from typing import Union, Tuple, Optional
 
 import numpy as np
 from scipy.linalg import expm
@@ -36,13 +36,13 @@ class GreensFunction:
                  scaling: float = 1.,
                  shift: float = 0.,
                  recompiled: bool = True,
-                 states_str: Union[str, None] = None):
+                 states_str: Optional[str] = None):
         """Creates an object to calculate frequency-domain Green's function.
         
         Args:
             ansatz: The parametrized circuit as an ansatz to VQE.
             hamiltonian: The MolecularHamiltonian object.
-            optimizer: The optimzier in VQE.
+            optimizer: The optimizer in VQE.
             q_instance: The quantum instance for execution of the quantum circuit.
             scaling: Scaling factor of the Hamiltonian.
             shift: Constant shift factor of the Hamiltonian.
@@ -66,8 +66,6 @@ class GreensFunction:
         self.openfermion_op.terms[()] += shift / HARTREE_TO_EV
         self.hamiltonian_arr = get_sparse_operator(
             self.openfermion_op).toarray()
-
-        self.recompiled = recompiled
         
         self.optimizer = L_BFGS_B() if optimizer is None else optimizer
         if q_instance is None:
@@ -75,6 +73,7 @@ class GreensFunction:
                 Aer.get_backend('statevector_simulator'))
         else:
             self.q_instance = q_instance
+        self.recompiled = recompiled
 
         # Number of orbitals and indices
         self.n_orb = 2 * len(self.hamiltonian.active_inds)
@@ -103,7 +102,7 @@ class GreensFunction:
         self.G_h = np.zeros((self.n_orb, self.n_orb), dtype=complex)
         self.G = np.zeros((self.n_orb, self.n_orb), dtype=complex)
 
-        # Define the arrays indicating whether the (N +/- 1)-electron states
+        # Define the arrays indicating whether the (N±1)-electron states
         # are to be calculated
         self.states_str = states_str
         self.states_str_arr = np.empty((self.n_orb, self.n_orb), dtype=np.object)
@@ -146,29 +145,28 @@ class GreensFunction:
             return self.ansatz    
 
     def compute_eh_states(self):
-        """Calculates e/h states of the Hamiltonian."""
-        print("Start calculating e/h states")
+        """Calculates (N±1)-electron states of the Hamiltonian."""
+        print("Start calculating (N±1)-electron states")
         self.eigenenergies_e, self.eigenstates_e = \
             number_state_eigensolver(self.hamiltonian_arr, self.n_occ + 1)
         self.eigenenergies_h, self.eigenstates_h = \
             number_state_eigensolver(self.hamiltonian_arr, self.n_occ - 1)
         self.eigenenergies_e *= HARTREE_TO_EV
         self.eigenenergies_h *= HARTREE_TO_EV
-        print("Finish calculating e/h states")
+        print("Finish calculating (N±1)-electron states")
 
     def compute_diagonal_amplitudes(self, 
                                     cache_read: bool = True,
                                     cache_write: bool = True):
-        """Calculates diagonal transition amplitudes in the Green's function.
+        """Calculates diagonal transition amplitudes.
         
         Args:
-           cache_read: Whether to attempt to read recompiled circuits from cache files.
-           cache_write: Whether to save recompiled circuits to cache files.
+            cache_read: Whether to read recompiled circuits from cache files.
+            cache_write: Whether to save recompiled circuits to cache files.
         """
         print("Start calculating diagonal transition amplitudes")
         for m in range(self.n_orb):
             if self.states_str is None or self.states_str in self.states_str_arr[m, m]:
-                # print('m =', m)
                 if self.q_instance.backend.name() == 'statevector_simulator':
                     circ = build_diagonal_circuits(self.ansatz.copy(), m)
                     result = self.q_instance.execute(circ)
@@ -211,7 +209,7 @@ class GreensFunction:
                             statevector, cUmat, n_gate_rounds=6,
                             cache_options = {'read': cache_read, 'write': cache_write, 
                                              'hamiltonian': self.hamiltonian,
-                                             'type': f'greens-diag-({m})'})
+                                             'index': str(m), 'states': self.states_str})
                         circ = apply_quimb_gates(quimb_gates, circ.copy(), reverse=False)
                         circ.h(1)
                         circ.barrier()
@@ -265,11 +263,11 @@ class GreensFunction:
     def compute_off_diagonal_amplitudes(self, 
                                         cache_read: bool = True, 
                                         cache_write: bool = True):
-        """Calculates off-diagonal transition amplitudes in the Green's function.
+        """Calculates off-diagonal transition amplitudes.
 
         Args:
-           cache_read: Whether to attempt to read recompiled circuits from cache files.
-           cache_write: Whether to save recompiled circuits to cache files.
+            cache_read: Whether to read recompiled circuits from cache files.
+            cache_write: Whether to save recompiled circuits to cache files.
         """
         print("Start calculating off-diagonal transition amplitudes")
         for m in range(self.n_orb):
@@ -331,7 +329,7 @@ class GreensFunction:
                                 statevector, cUmat, n_gate_rounds=7,
                                 cache_options = {'read': cache_read, 'write': cache_write,
                                                  'hamiltonian': self.hamiltonian,
-                                                 'type': f'greens-offdiag-({m}, {n})'})
+                                                 'index': f'{m}-{n}', 'states': self.states_str})
                             circ = apply_quimb_gates(
                                 quimb_gates, circ.copy(), reverse=False)
                             circ.h(2)
@@ -403,6 +401,15 @@ class GreensFunction:
         return self.rho_gf
 
     def run(self, compute_energies=True, cache_read=True, cache_write=True):
+        """Main function call to compute energies and transition amplitudes.
+        
+        Args:
+            compute_energies: Whether to compute ground- and (N±1)-electron 
+                state energies.
+            cache_read: Whether to read recompiled circuits from cache files.
+            cache_write: Whether to save recompiled circuits to cache files.
+        """
+        # TODO: Some if conditions need to be checked.
         if compute_energies:
             if self.energy_gs is None:
                 self.compute_ground_state()
@@ -416,7 +423,7 @@ class GreensFunction:
 
     @classmethod
     def initialize_eh(cls, gf, states_str, q_instance=None):
-        """Creates a GreensFunction object for calculating the e/h states 
+        """Creates a GreensFunction object for calculating the  states 
         transition amplitudes.
 
         Args:
@@ -528,7 +535,11 @@ class GreensFunction:
     def compute_spectral_function(self, 
                                   omega: Union[float, complex]
                                   ) -> np.ndarray:
-        """Calculates the spectral function at frequency omega."""
+        """Calculates the spectral function at frequency omega.
+        
+        Args:
+            omega: The real or complex frequency at which the spectral 
+                function is calculated."""
         #print("Start calculating the spectral function")
         self.compute_greens_function(omega)
         A = - 1 / np.pi * np.imag(np.trace(self.G))
@@ -543,7 +554,7 @@ class GreensFunction:
                 is calculated.
             
         Returns:
-            Sigma: The self-energy Numpy array.
+            Sigma: The self-energy numpy array.
         """
         #print("Start calculating the self-energy")
         self.compute_greens_function(omega)
@@ -598,8 +609,7 @@ class GreensFunction:
         Args:
             hamiltonian: The MolecularHamiltonian object.
             states_str: 'e' or 'h', which indicates whether the parameters 
-                are to be obtained for the (N + 1)-electron states or the 
-                (N - 1)-electron states.
+                are to be obtained for the (N+1)- or the (N-1)-electron states.
         
         Returns:
             scaling: The scaling factor of the Hamiltonian.

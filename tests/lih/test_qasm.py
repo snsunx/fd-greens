@@ -1,3 +1,8 @@
+"""Calculates the spectral function on the active-space LiH Hamilonian.
+
+This script was written before defining the classmethods to simplify things. 
+For implementation using classmethods see test_qasm_new.py."""
+
 import sys
 sys.path.append('../../src/')
 import numpy as np
