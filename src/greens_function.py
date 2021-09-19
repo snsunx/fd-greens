@@ -6,7 +6,6 @@ import numpy as np
 from scipy.linalg import expm
 from scipy.special import binom
 
-# from qiskit import *
 from qiskit import QuantumCircuit, Aer
 from qiskit.algorithms import VQE
 from qiskit.algorithms.optimizers import Optimizer, L_BFGS_B
@@ -14,7 +13,7 @@ from qiskit.utils import QuantumInstance
 from qiskit.extensions import UnitaryGate
 from openfermion.linalg import get_sparse_operator
 
-from constants import *
+from constants import HARTREE_TO_EV
 from hamiltonians import MolecularHamiltonian
 from tools import (get_number_state_indices,
                    number_state_eigensolver, 
@@ -33,7 +32,7 @@ class GreensFunction:
                  scaling: float = 1.,
                  shift: float = 0.,
                  recompiled: bool = True,
-                 states_str: Optional[str] = None):
+                 states_str: Optional[str] = None) -> None:
         """Creates an object to calculate frequency-domain Green's function.
         
         Args:
@@ -115,8 +114,9 @@ class GreensFunction:
         self.eigenstates_h = None
 
     def compute_ground_state(self, 
-                             save_params: bool = False,
-                             return_ansatz: bool = False):
+                             save_params: bool = False, 
+                             return_ansatz: bool = False
+                             ) -> Optional[QuantumCircuit]:
         """Calculates the ground state of the Hamiltonian using VQE.
         
         Args:
@@ -141,9 +141,9 @@ class GreensFunction:
         print(f'Ground state energy = {self.energy_gs:.3f} eV')
         print("Finish calculating the ground state using VQE")
         if return_ansatz:
-            return self.ansatz    
+            return self.ansatz
 
-    def compute_eh_states(self):
+    def compute_eh_states(self) -> None:
         """Calculates (N±1)-electron states of the Hamiltonian."""
         print("Start calculating (N±1)-electron states")
         self.eigenenergies_e, self.eigenstates_e = \
@@ -156,7 +156,7 @@ class GreensFunction:
 
     def compute_diagonal_amplitudes(self, 
                                     cache_read: bool = True,
-                                    cache_write: bool = True):
+                                    cache_write: bool = True) -> None:
         """Calculates diagonal transition amplitudes.
         
         Args:
@@ -270,7 +270,7 @@ class GreensFunction:
 
     def compute_off_diagonal_amplitudes(self, 
                                         cache_read: bool = True, 
-                                        cache_write: bool = True):
+                                        cache_write: bool = True) -> None:
         """Calculates off-diagonal transition amplitudes.
 
         Args:
@@ -429,13 +429,17 @@ class GreensFunction:
 
         print("Finish calculating off-diagonal transition amplitudes")
 
+    # TODO: Write this as a property function
     def get_density_matrix(self):
         """Obtains the density matrix from the hole-added part of the Green's
         function"""
         self.rho_gf = np.sum(self.B_h, axis=2)
         return self.rho_gf
 
-    def run(self, compute_energies=True, cache_read=True, cache_write=True):
+    def run(self, 
+            compute_energies: bool = True,
+            cache_read: bool = True,
+            cache_write: bool = True) -> None:
         """Main function call to compute energies and transition amplitudes.
         
         Args:
@@ -457,14 +461,18 @@ class GreensFunction:
             cache_read=cache_read, cache_write=cache_write)
 
     @classmethod
-    def initialize_eh(cls, gf, states_str, q_instance=None):
+    def initialize_eh(cls, 
+                      gf: 'GreensFunction', 
+                      states_str: str,
+                      q_instance: Optional[QuantumInstance] = None
+                      ) -> 'GreensFunction':
         """Creates a GreensFunction object for calculating the (N±1)-electron
         states transition amplitudes.
 
         Args:
             gf: The GreensFunction from statevector simulator calculation.
-            states_str: 'e' or 'h', indicating whether the e or h states are 
-                to be calculated.
+            states_str: A string indicating whether the e or h states are 
+                to be calculated. Must be 'e' or 'h'.
             q_instance: The QuantumInstance for executing the calculation.
         
         Returns:
@@ -510,7 +518,12 @@ class GreensFunction:
         return gf_new
 
     @classmethod
-    def initialize_final(cls, gf_sv, gf_e, gf_h, q_instance=None):
+    def initialize_final(cls, 
+                         gf_sv: 'GreensFunction',
+                         gf_e: 'GreensFunction',
+                         gf_h: 'GreensFunction',
+                         q_instance: Optional[QuantumInstance] = None
+                         ) -> 'GreensFunction':
         """Creates a GreensFunction object for calculating final 
         observables.
         
@@ -575,10 +588,11 @@ class GreensFunction:
         
         Args:
             omega: The real or complex frequency at which the spectral 
-                function is calculated."""
+                function is calculated.
+        """
         #print("Start calculating the spectral function")
         self.compute_greens_function(omega)
-        A = - 1 / np.pi * np.imag(np.trace(self.G))
+        A = -1 / np.pi * np.imag(np.trace(self.G))
         #print("Finish calculating the spectral function")
         return A
 
@@ -633,46 +647,3 @@ class GreensFunction:
             Sigma = self.compute_self_energy(e_qp + 0.000002 * HARTREE_TO_EV * 1j)
             E2 += np.trace(Sigma @ self.B_h[:,:,i]) / 2
         return E1, E2
-
-
-
-    # TODO: Deprecate this function
-    @staticmethod
-    def get_hamiltonian_shift_parameters(hamiltonian: MolecularHamiltonian,
-                                         states_str: str = 'e'
-                                         ) -> Tuple[float, float]:
-        """Obtains the scaling factor and constant shift of the Hamiltonian 
-        for phase estimation.
-        
-        Args:
-            hamiltonian: The MolecularHamiltonian object.
-            states_str: 'e' or 'h', which indicates whether the parameters 
-                are to be obtained for the (N+1)- or the (N-1)-electron states.
-        
-        Returns:
-            scaling: The scaling factor of the Hamiltonian.
-            shift: The constant shift factor of the Hamiltonian.
-        """
-        assert states_str in ['e', 'h']
-
-        # Obtain the scaling factor
-        greens_function = GreensFunction(None, hamiltonian)
-        greens_function.compute_eh_states()
-        if states_str == 'h':
-            E_low = greens_function.eigenenergies_h[0]
-            E_high = greens_function.eigenenergies_h[2]
-        elif states_str == 'e':
-            E_low = greens_function.eigenenergies_e[0]
-            E_high = greens_function.eigenenergies_e[2]
-        scaling = np.pi / (E_high - E_low)
-
-        # Obtain the constant shift factor
-        greens_function = GreensFunction(
-            None, hamiltonian, scaling=scaling)
-        greens_function.compute_eh_states()
-        if states_str == 'h':
-            shift = -greens_function.eigenenergies_h[0]
-        elif states_str == 'e':
-            shift = -greens_function.eigenenergies_e[0]
-
-        return scaling, shift

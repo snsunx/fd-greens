@@ -23,5 +23,7 @@ hamiltonian = MolecularHamiltonian(
     occupied_inds=[0], active_inds=[1, 2])
 qiskit_op = hamiltonian.qiskit_op
 print(qiskit_op)
+
+exit()
 z2_symm = Z2Symmetries.find_Z2_symmetries(qiskit_op)
 print(z2_symm)
