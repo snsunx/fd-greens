@@ -11,7 +11,6 @@ from qiskit.algorithms import VQE
 from qiskit.algorithms.optimizers import Optimizer, L_BFGS_B
 from qiskit.utils import QuantumInstance
 from qiskit.extensions import UnitaryGate
-from qiskit.quantum_info import Pauli
 from openfermion.linalg import get_sparse_operator
 
 from constants import HARTREE_TO_EV
@@ -24,7 +23,7 @@ from circuits import build_diagonal_circuits, build_off_diagonal_circuits
 from recompilation import recompile_with_statevector, apply_quimb_gates
 
 
-class GreensFunction:
+class GreensFunctionRestricted:
     def __init__(self, 
                  ansatz: QuantumCircuit, 
                  hamiltonian: MolecularHamiltonian, 
@@ -48,13 +47,13 @@ class GreensFunction:
             states: 'e' or 'h' indicating whether (N+1)- or (N-1)-electron
                 states are to be calculated.
         """ 
+        # Extract the ansatz and Hamiltonian
         self.ansatz = ansatz
         self.hamiltonian = hamiltonian
         self.molecule = hamiltonian.molecule
 
         # Extract the orbital energies
         e_orb = self.molecule.orbital_energies
-        e_orb = np.vstack([e_orb, e_orb]).reshape(e_orb.shape[0] * 2, order='f')
         self.e_orb = np.diag(e_orb) * HARTREE_TO_EV
 
         # Extract the Hamiltonian operators and apply shift and scaling factors
@@ -67,6 +66,7 @@ class GreensFunction:
         self.hamiltonian_arr = get_sparse_operator(
             self.openfermion_op).toarray()
         
+        # Extract other parameters
         self.optimizer = L_BFGS_B() if optimizer is None else optimizer
         if q_instance is None:
             self.q_instance = QuantumInstance(
@@ -76,9 +76,10 @@ class GreensFunction:
         self.recompiled = recompiled
 
         # Number of orbitals and indices
-        self.n_orb = 2 * len(self.hamiltonian.active_inds)
+        self.n_elec = self.molecule.n_electrons
+        self.n_orb = len(self.hamiltonian.active_inds)
         self.n_occ = (self.hamiltonian.molecule.n_electrons 
-                      - 2 * len(self.hamiltonian.occupied_inds))
+                      - len(self.hamiltonian.occupied_inds))
         self.n_vir = self.n_orb - self.n_occ
         self.inds_occ = list(range(self.n_occ))
         self.inds_vir = list(range(self.n_occ, self.n_orb))
@@ -94,7 +95,7 @@ class GreensFunction:
         self.D_em = np.zeros((self.n_orb, self.n_orb, self.n_e))
 
         # Define the density matrices for obtaining the self-energy
-        self.rho_hf = np.diag([1] * self.n_occ + [0] * self.n_vir)
+        self.rho_hf = np.diag([1] * (self.n_occ) + [0] * (self.n_vir))
         self.rho_gf = None
 
         # Define the Green's function arrays
@@ -127,7 +128,7 @@ class GreensFunction:
             return_ansatz: Whether to return the VQE ansatz.
 
         Returns:
-            self.ansatz: Optionally returned VQE ansatz.
+            Optionally returned VQE ansatz.
         """
         print("Start calculating the ground state using VQE")
         vqe = VQE(self.ansatz, optimizer=self.optimizer, 
@@ -155,43 +156,9 @@ class GreensFunction:
             number_state_eigensolver(self.hamiltonian_arr, self.n_occ - 1)
         self.eigenenergies_e *= HARTREE_TO_EV
         self.eigenenergies_h *= HARTREE_TO_EV
-
-        eigenenergies_2, eigenstates_2 = number_state_eigensolver(self.hamiltonian_arr, 2)
-        if True:
-            np.set_printoptions(precision=2)
-            eigenstates = np.zeros((16, 6), dtype=complex)
-            inds = get_number_state_indices(4, 2)
-            for j in range(6):
-                eigenstates[inds, j] = eigenstates_2[:, j]
-            ZIZI = Pauli('ZIZI').to_matrix()
-            IZIZ = Pauli('IZIZ').to_matrix()
-
-            res = eigenstates.conj().T @ ZIZI @ eigenstates
-            res[abs(res) < 1e-8] = 0
-            print('ZIZI values\n')
-            print(res)
-
-            res = eigenstates.conj().T @ IZIZ @ eigenstates
-            res[abs(res) < 1e-8] = 0
-            print('IZIZ values\n')
-            print(res)
-
-        # print(self.eigenstates_e.shape)
-        if True:
-            eigenstates = np.zeros((16, 4), dtype=complex)
-            inds = get_number_state_indices(4, 3)
-            inds = [15 - k for k in inds]
-            for j in range(4):
-                eigenstates[inds, j] = self.eigenstates_e[:, j]
-            ZIZI = Pauli('ZIZI').to_matrix()
-            IZIZ = Pauli('IZIZ').to_matrix()
-            print('ZIZI values\n')
-            print(eigenstates.conj().T @ ZIZI @ eigenstates)
-            print('IZIZ values\n')
-            print(eigenstates.conj().T @ IZIZ @ eigenstates)
         print("Finish calculating (N±1)-electron states")
 
-    def compute_diagonal_amplitudes(self,
+    def compute_diagonal_amplitudes(self, 
                                     cache_read: bool = True,
                                     cache_write: bool = True) -> None:
         """Calculates diagonal transition amplitudes.
@@ -207,7 +174,6 @@ class GreensFunction:
                     circ = build_diagonal_circuits(self.ansatz.copy(), m, with_qpe=False)
                     result = self.q_instance.execute(circ)
                     psi = reverse_qubit_order(result.get_statevector())
-                    #psi = result.get_statevector()
                     
                     if self.states in ('e', None):
                         inds_e = get_number_state_indices(self.n_orb, self.n_occ + 1, anc='1')
@@ -442,16 +408,20 @@ class GreensFunction:
                         np.exp(-1j * np.pi / 4) * (self.D_hp[m, n] - self.D_hm[m, n]) + \
                         np.exp(1j * np.pi / 4) * (self.D_hp[n, m] - self.D_hm[n, m]))
 
+        np.set_printoptions(precision=1)
+
+        '''
         print('B_e\n')
         #self.B_e[abs(self.B_e) < 1e-8] = 0.
         B_e = self.B_e.copy()
-        for m in [0, 2, 1, 3]:
-            for m_ in range(B_e.shape[1]):
-                for lam in range(B_e.shape[2]):
-                    if abs(B_e[m, m_, lam]) > 1e-4:
-                        print(f'm = {m}, m\' = {m_}, lambda = {lam}: {B_e[m, m_, lam]}')
+        for i in range(B_e.shape[-1]):
+            print(i)
+            print(B_e[:,:,i])
+        B_e[abs(B_e) < 1e-8] = 0
+        for i in range(B_e.shape[-1]):
+            print(i)
+            print(B_e[:,:,i])
         
-        '''
         #print('B_h\n')
         #self.B_h[abs(self.B_h) < 1e-8] = 0.
         B_h = self.B_h.copy()

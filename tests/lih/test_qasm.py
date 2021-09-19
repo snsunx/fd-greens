@@ -38,14 +38,14 @@ greens_function_sv.compute_diagonal_amplitudes(
     cache_read=cache_read, cache_write=cache_write)
 greens_function_sv.compute_off_diagonal_amplitudes(
     cache_read=cache_read, cache_write=cache_write)
-print(greens_function_sv.states_str_arr)
+print(greens_function_sv.states_arr)
 
 scaling_factor_h, constant_shift_h = \
     GreensFunction.get_hamiltonian_shift_parameters(
-        hamiltonian, states_str='h')
+        hamiltonian, states='h')
 scaling_factor_e, constant_shift_e = \
     GreensFunction.get_hamiltonian_shift_parameters(
-        hamiltonian, states_str='e')
+        hamiltonian, states='e')
 
 # QASM simulator calculation of h states
 greens_function_h = GreensFunction(
@@ -54,8 +54,8 @@ greens_function_h = GreensFunction(
     scaling=scaling_factor_h,
     shift=constant_shift_h,
     recompiled=True)
-greens_function_h.states_str = 'h'
-greens_function_h.states_str_arr = greens_function_sv.states_str_arr
+greens_function_h.states = 'h'
+greens_function_h.states_arr = greens_function_sv.states_arr
 greens_function_h.eigenstates_h = greens_function_sv.eigenstates_h
 greens_function_h.compute_diagonal_amplitudes(
     cache_read=cache_read, cache_write=cache_write)
@@ -69,8 +69,8 @@ greens_function_e = GreensFunction(
     scaling=scaling_factor_e, 
     shift=constant_shift_e,
     recompiled=True)
-greens_function_e.states_str = 'e'
-greens_function_e.states_str_arr = greens_function_sv.states_str_arr
+greens_function_e.states = 'e'
+greens_function_e.states_arr = greens_function_sv.states_arr
 greens_function_h.eigenstates_e = greens_function_sv.eigenstates_e
 greens_function_e.compute_diagonal_amplitudes(
     cache_read=cache_read, cache_write=cache_write)

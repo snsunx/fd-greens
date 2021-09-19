@@ -32,19 +32,20 @@ q_instance_noisy = get_quantum_instance(
 print("========== Starts statevector simulation ==========")
 gf_sv = GreensFunction(ansatz.copy(), hamiltonian, q_instance=q_instance_sv)
 gf_sv.run(cache_read=cache_read, cache_write=cache_write)
-print(gf_sv.states_str_arr)
+#print(gf_sv.states_arr)
+exit()
 
 # QASM simulator calculation of h states
 print("============ Starts calculating h states ==========")
 gf_h = GreensFunction.initialize_eh(gf_sv, 'h', q_instance=q_instance_sv)
 gf_h.run(compute_energies=False, cache_read=cache_read, cache_write=cache_write)
-print(gf_h.states_str_arr)
+print(gf_h.states_arr)
 
 # QASM simulator calculation of e states
 print("========== Starts calculating e states ==========")
 gf_e = GreensFunction.initialize_eh(gf_sv, 'e', q_instance=q_instance_sv)
 gf_e.run(compute_energies=False, cache_read=cache_read, cache_write=cache_write)
-print(gf_e.states_str_arr)
+print(gf_e.states_arr)
 
 # Combining h states and e states results
 gf_final = GreensFunction.initialize_final(

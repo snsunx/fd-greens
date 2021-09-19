@@ -1,3 +1,5 @@
+from typing import Union, Tuple, List, Iterable
+
 from hamiltonians import MolecularHamiltonian
 from qiskit.quantum_info import Pauli, SparsePauliOp
 from qiskit.opflow.primitive_ops import PauliSumOp
@@ -51,7 +53,23 @@ def reverse_qubit_order(arr):
         arr = arr.reshape(*shape_original)
     return arr
 
-def get_number_state_indices(n_orb, n_elec, anc='', return_type='decimal'):
+def get_number_state_indices(n_orb: int,
+                             n_elec: int,
+                             anc: Iterable[str] = '',
+                             return_type: str = 'decimal',
+                             reverse: bool = True) -> List[int]:
+    """Obtains the indices corresponding to a certain number of electrons.
+    
+    Args:
+        n_orb: An integer indicating the number of orbitals.
+        n_elec: An integer indicating the number of electrons.
+        anc: An iterable of '0' and '1' indicating the state of the
+            ancilla qubit(s).
+        return_type: Type of the indices returned. Must be 'decimal'
+            or 'binary'. Default to 'decimal'.
+        reverse: Whether the qubit indices are reversed because of 
+            Qiskit qubit order. Default to True.
+        """
     assert return_type in ['binary', 'decimal']
     inds = []
     for tup in combinations(range(n_orb), n_elec):
@@ -59,13 +77,30 @@ def get_number_state_indices(n_orb, n_elec, anc='', return_type='decimal'):
         bin_str = anc + ''.join(bin_list)
         inds.append(bin_str)
     inds.sort()
+    print("n_orb =", n_orb)
     if return_type == 'decimal':
         inds = [int(s, 2) for s in inds]
+    print("inds before reverse", inds)
+    #if reverse:
+    #    inds = [2 ** (len(anc) + n_orb) - 1 - i for i in inds]
+    print("inds before return", inds)
     return inds
 
-def number_state_eigensolver(hamiltonian, n_elec):
+def number_state_eigensolver(
+        hamiltonian: Union[MolecularHamiltonian, QubitOperator, np.ndarray], 
+        n_elec: int
+    ) -> Tuple[np.ndarray, np.ndarray]:
     """Exact eigensolver for the Hamiltonian in the subspace of 
-    a certain number of electrons."""
+    a certain number of electrons.
+    
+    Args:
+        hamiltonian: The Hamiltonian of the molecule.
+        n_elec: An integer indicating the number of electrons.
+    
+    Returns:
+        eigvals: The eigenenergies in the number state subspace.
+        eigvecs: The eigenstates in the number state subspace.
+    """
     if isinstance(hamiltonian, MolecularHamiltonian):
         hamiltonian_arr = hamiltonian.to_array(array_type='sparse')
     elif isinstance(hamiltonian, QubitOperator):
@@ -74,8 +109,8 @@ def number_state_eigensolver(hamiltonian, n_elec):
           isinstance(hamiltonian, np.ndarray)):
         hamiltonian_arr = hamiltonian
     else:
-        raise TypeError("""hamiltonian must be one of MolecularHamiltonian, 
-                        QubitOperator, sparse array or ndarray""")
+        raise TypeError("Hamiltonian must be one of MolecularHamiltonian,"
+                        "QubitOperator, sparse array or ndarray")
 
     n_orb = int(np.log2(hamiltonian_arr.shape[0]))
     inds = get_number_state_indices(n_orb, n_elec)
