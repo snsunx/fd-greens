@@ -69,26 +69,29 @@ def get_number_state_indices(n_orb: int,
             or 'binary'. Default to 'decimal'.
         reverse: Whether the qubit indices are reversed because of 
             Qiskit qubit order. Default to True.
-        """
+    """
+    print(anc)
     assert return_type in ['binary', 'decimal']
     inds = []
     for tup in combinations(range(n_orb), n_elec):
-        bin_list = ['1' if (n_orb - 1 - i) in tup else '0' for i in range(n_orb)]
-        bin_str = anc + ''.join(bin_list)
+        bin_list = ['1' if (n_orb - 1 - i) in tup else '0' 
+                    for i in range(n_orb)]
+        if reverse:
+            bin_str = ''.join(bin_list) + anc[::-1]
+        else:
+            bin_str = anc + ''.join(bin_list)
         inds.append(bin_str)
-    inds.sort()
-    print("n_orb =", n_orb)
+    if reverse:
+        inds = sorted(inds, reverse=True)
+    print(inds)
     if return_type == 'decimal':
         inds = [int(s, 2) for s in inds]
-    print("inds before reverse", inds)
-    #if reverse:
-    #    inds = [2 ** (len(anc) + n_orb) - 1 - i for i in inds]
-    print("inds before return", inds)
     return inds
 
 def number_state_eigensolver(
         hamiltonian: Union[MolecularHamiltonian, QubitOperator, np.ndarray], 
-        n_elec: int
+        n_elec: int,
+        reverse: bool = False
     ) -> Tuple[np.ndarray, np.ndarray]:
     """Exact eigensolver for the Hamiltonian in the subspace of 
     a certain number of electrons.
@@ -113,7 +116,7 @@ def number_state_eigensolver(
                         "QubitOperator, sparse array or ndarray")
 
     n_orb = int(np.log2(hamiltonian_arr.shape[0]))
-    inds = get_number_state_indices(n_orb, n_elec)
+    inds = get_number_state_indices(n_orb, n_elec, reverse=reverse)
     hamiltonian_subspace = hamiltonian_arr[inds][:, inds]
     if isinstance(hamiltonian_subspace, _data_matrix):
         hamiltonian_subspace = hamiltonian_subspace.toarray()

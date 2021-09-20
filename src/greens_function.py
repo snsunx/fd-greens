@@ -150,11 +150,13 @@ class GreensFunction:
         """Calculates (N±1)-electron states of the Hamiltonian."""
         print("Start calculating (N±1)-electron states")
         self.eigenenergies_e, self.eigenstates_e = \
-            number_state_eigensolver(self.hamiltonian_arr, self.n_occ + 1)
+            number_state_eigensolver(self.hamiltonian_arr, self.n_occ + 1, reverse=False)
         self.eigenenergies_h, self.eigenstates_h = \
-            number_state_eigensolver(self.hamiltonian_arr, self.n_occ - 1)
+            number_state_eigensolver(self.hamiltonian_arr, self.n_occ - 1, reverse=False)
         self.eigenenergies_e *= HARTREE_TO_EV
         self.eigenenergies_h *= HARTREE_TO_EV
+        print(self.eigenenergies_e)
+        print(self.eigenenergies_h)
 
         eigenenergies_2, eigenstates_2 = number_state_eigensolver(self.hamiltonian_arr, 2)
         if True:
@@ -168,12 +170,12 @@ class GreensFunction:
 
             res = eigenstates.conj().T @ ZIZI @ eigenstates
             res[abs(res) < 1e-8] = 0
-            print('ZIZI values\n')
+            print('ZIZI values')
             print(res)
 
             res = eigenstates.conj().T @ IZIZ @ eigenstates
             res[abs(res) < 1e-8] = 0
-            print('IZIZ values\n')
+            print('IZIZ values')
             print(res)
 
         # print(self.eigenstates_e.shape)
@@ -206,18 +208,18 @@ class GreensFunction:
                 if self.q_instance.backend.name() == 'statevector_simulator':
                     circ = build_diagonal_circuits(self.ansatz.copy(), m, with_qpe=False)
                     result = self.q_instance.execute(circ)
-                    psi = reverse_qubit_order(result.get_statevector())
-                    #psi = result.get_statevector()
+                    #psi = reverse_qubit_order(result.get_statevector())
+                    psi = result.get_statevector()
                     
                     if self.states in ('e', None):
-                        inds_e = get_number_state_indices(self.n_orb, self.n_occ + 1, anc='1')
+                        inds_e = get_number_state_indices(self.n_orb, self.n_occ + 1, anc='1', reverse=True)
                         probs_e = np.abs(self.eigenstates_e.conj().T @ psi[inds_e]) ** 2
                         probs_e[abs(probs_e) < 1e-8] = 0.
                         # print('probs_e =', probs_e)
                         self.B_e[m, m] = probs_e
 
                     if self.states in ('h', None):                     
-                        inds_h = get_number_state_indices(self.n_orb, self.n_occ - 1, anc='0')
+                        inds_h = get_number_state_indices(self.n_orb, self.n_occ - 1, anc='0', reverse=True)
                         probs_h = np.abs(self.eigenstates_h.conj().T @ psi[inds_h]) ** 2
                         probs_h[abs(probs_h) < 1e-8] = 0.
                         # print('probs_h =', probs_h)
@@ -320,18 +322,18 @@ class GreensFunction:
            for n in range(self.n_orb):
                 if m != n and (self.states is None or 
                                self.states in self.states_arr[m, n]):
-                    # print('(m, n) =', (m, n))
                     if self.q_instance.backend.name() == 'statevector_simulator':
                         circ = build_off_diagonal_circuits(
                             self.ansatz.copy(), m, n, with_qpe=False)
                         result = self.q_instance.execute(circ)
-                        psi = reverse_qubit_order(result.get_statevector())
+                        #psi = reverse_qubit_order(result.get_statevector())
+                        psi = result.get_statevector()
 
                         if self.states in ('h', None):
                             inds_hp = get_number_state_indices(
-                                self.n_orb, self.n_occ - 1, anc='00')
+                                self.n_orb, self.n_occ - 1, anc='00', reverse=True)
                             inds_hm = get_number_state_indices(
-                                self.n_orb, self.n_occ - 1, anc='01')
+                                self.n_orb, self.n_occ - 1, anc='01', reverse=True)
                             probs_hp = abs(self.eigenstates_h.conj().T @ psi[inds_hp]) ** 2
                             probs_hm = abs(self.eigenstates_h.conj().T @ psi[inds_hm]) ** 2
                             # print("probs_hp =", probs_hp)
@@ -341,9 +343,9 @@ class GreensFunction:
 
                         if self.states in ('e', None):
                             inds_ep = get_number_state_indices(
-                                self.n_orb, self.n_occ + 1, anc='10')
+                                self.n_orb, self.n_occ + 1, anc='10', reverse=True)
                             inds_em = get_number_state_indices(
-                                self.n_orb, self.n_occ + 1, anc='11')
+                                self.n_orb, self.n_occ + 1, anc='11', reverse=True)
                             probs_ep = abs(self.eigenstates_e.conj().T @ psi[inds_ep]) ** 2
                             probs_em = abs(self.eigenstates_e.conj().T @ psi[inds_em]) ** 2
                             # print("probs_ep =", probs_ep)
@@ -448,7 +450,7 @@ class GreensFunction:
         for m in [0, 2, 1, 3]:
             for m_ in range(B_e.shape[1]):
                 for lam in range(B_e.shape[2]):
-                    if abs(B_e[m, m_, lam]) > 1e-4:
+                    if abs(B_e[m, m_, lam]) > 1e-2:
                         print(f'm = {m}, m\' = {m_}, lambda = {lam}: {B_e[m, m_, lam]}')
         
         '''
