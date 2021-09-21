@@ -1,4 +1,4 @@
-from typing import Union, Tuple, List, Iterable
+from typing import Union, Tuple, List, Iterable, Optional
 import json
 
 from hamiltonians import MolecularHamiltonian
@@ -104,7 +104,7 @@ def number_state_eigensolver(
     Args:
         hamiltonian: The Hamiltonian of the molecule.
         n_elec: An integer indicating the number of electrons.
-    
+    `
     Returns:
         eigvals: The eigenenergies in the number state subspace.
         eigvecs: The eigenstates in the number state subspace.
@@ -127,6 +127,17 @@ def number_state_eigensolver(
         hamiltonian_subspace = hamiltonian_subspace.toarray()
     
     eigvals, eigvecs = np.linalg.eigh(hamiltonian_subspace)
+
+    # TODO: Note that the minus sign below depends on the `reverse` variable. 
+    # Might need to take care of this
+    sort_arr = [(eigvals[i], -np.argmax(np.abs(eigvecs[:, i]))) 
+                for i in range(len(eigvals))]
+    #print(sort_arr)
+    #print(sorted(sort_arr))
+    inds_new = sorted(range(len(sort_arr)), key=sort_arr.__getitem__)
+    #print(inds_new)
+    eigvals = eigvals[inds_new]
+    eigvecs = eigvecs[:, inds_new]
     return eigvals, eigvecs
 
 def get_statevector(circ):
@@ -172,4 +183,3 @@ def save_vqe_result(vqe_result: VQEResult, prefix: str = None) -> None:
         for key, val in params_dict.items():
             params_dict_new.update({str(key): val})
         f.write(json.dumps(params_dict_new))
-    

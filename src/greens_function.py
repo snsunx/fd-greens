@@ -26,6 +26,7 @@ from tools import (get_number_state_indices,
 from circuits import build_diagonal_circuits, build_off_diagonal_circuits
 from recompilation import recompile_with_statevector, apply_quimb_gates
 
+np.set_printoptions(precision=6)
 
 class GreensFunction:
     def __init__(self, 
@@ -145,12 +146,6 @@ class GreensFunction:
                 save_vqe_result(vqe_result, prefix=prefix)
             self.energy_gs = vqe_result.optimal_value * HARTREE_TO_EV
             self.ansatz.assign_parameters(vqe_result.optimal_parameters, inplace=True)
-                #with open('vqe_energy.txt', 'w') as f:
-                #    f.write(json.dumps(self.energy_gs))
-                #with open('vqe_ansatz.txt', 'w') as f:
-                #    ansatz_params = dict_keys_to_strings(result.optimal_parameters)
-                #    f.write(json.dumps(ansatz_params))
-                #exit()
             print("Finish calculating the ground state using VQE")
         
         print(f'Ground state energy = {self.energy_gs:.3f} eV')
@@ -475,7 +470,7 @@ class GreensFunction:
             for m_ in range(B_e.shape[1]):
                 for lam in range(B_e.shape[2]):
                     if abs(B_e[m, m_, lam]) > 1e-4:
-                        print(f'm = {m}, m\' = {m_}, lambda = {lam}: {B_e[m, m_, lam]}')
+                        print(f'm = {m}, m\' = {m_}, lambda = {lam}: {B_e[m, m_, lam]:.6f}')
         
         '''
         #print('B_h\n')
