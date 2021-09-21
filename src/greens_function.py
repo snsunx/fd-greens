@@ -12,8 +12,6 @@ from qiskit.algorithms import VQE
 from qiskit.algorithms.optimizers import Optimizer, L_BFGS_B
 from qiskit.utils import QuantumInstance
 from qiskit.extensions import UnitaryGate
-from qiskit.quantum_info import Pauli
-from openfermion.linalg import get_sparse_operator
 
 from constants import HARTREE_TO_EV
 from hamiltonians import MolecularHamiltonian
@@ -63,13 +61,8 @@ class GreensFunction:
 
         # Extract the Hamiltonian operators and apply shift and scaling factors
         self.qiskit_op = self.hamiltonian.qiskit_op.copy()
-        # self.openfermion_op = copy.deepcopy(self.hamiltonian.openfermion_op)
         self.qiskit_op *= scaling
         self.qiskit_op.primitive.coeffs[0] += shift / HARTREE_TO_EV
-        # self.openfermion_op *= scaling
-        # self.openfermion_op.terms[()] += shift / HARTREE_TO_EV
-        # self.hamiltonian_arr = get_sparse_operator(
-        #    self.openfermion_op).toarray()
         self.hamiltonian_arr = self.qiskit_op.to_matrix()
         
         self.optimizer = L_BFGS_B() if optimizer is None else optimizer

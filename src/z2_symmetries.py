@@ -1,4 +1,5 @@
-from typing import Union, Sequence, Optional
+from typing import Union, Tuple, Sequence, Optional
+from hamiltonians import MolecularHamiltonian
 import numpy as np
 
 from qiskit import *
@@ -54,7 +55,7 @@ def apply_cnot_z2(pauli_sum_op: Union[PauliSumOp, SparsePauliOp],
 def taper(pauli_sum_op: Union[PauliSumOp, SparsePauliOp], 
           inds_tapered: Sequence[int],
           init_state: Optional[Sequence[int]] = None) -> PauliSumOp:
-    """Taper certain qubits off an operator.
+    """Tapers certain qubits off an operator.
 
     Note that the operator in string form follows Qiskit qubit order,
     but in vector (PauliTable) form follows normal qubit order.
@@ -98,3 +99,34 @@ def taper(pauli_sum_op: Union[PauliSumOp, SparsePauliOp],
         np.hstack((x_arr, z_arr)), coeffs=coeffs)
     pauli_sum_op_new = PauliSumOp(sparse_pauli_op_new)
     return pauli_sum_op_new
+
+def transform_4q_hamiltonian(
+        pauli_sum_op: PauliSumOp, spin: str = ''
+    ) -> PauliSumOp:
+    """Converts a four-qubit Hamiltonian to a two-qubit Hamiltonian, 
+    assuming the symmetry operators are ZIZI and IZIZ.
+    
+    Args:
+        pauli_sum_op: A Hamiltonian in PauliSumOp form.
+        spin: A string indicating the spin subspace of the transformed Hamiltonian.
+
+    Returns:
+        A two-qubit Hamiltonian after symmetry reduction.
+    """
+    assert spin in ['', 'up', 'down']
+
+    if spin == '':
+        init_state = [1, 1]
+    elif spin == 'up':
+        init_state = [0, 1]
+    elif spin == 'down':
+        init_state = [1, 0]
+    else:
+        raise ValueError("Spin must be one of '', 'up' or 'down'")
+    
+    pauli_sum_op_new = apply_cnot_z2(apply_cnot_z2(pauli_sum_op, 2, 0), 3, 1)
+    # print("PauliSumOp after CNOT is applied\n", pauli_sum_op_new)
+    pauli_sum_op_new = taper(pauli_sum_op_new, [0, 1], init_state=init_state)
+    # print("PauliSumOp after qubits are tapered\n", pauli_sum_op_new)
+    return pauli_sum_op_new
+

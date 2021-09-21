@@ -15,7 +15,7 @@ from constants import HARTREE_TO_EV
 # User-defined parameters.
 bond_length = 1.6
 save_params = False
-load_params = True
+load_params = False
 cache_read = False
 cache_write = False
 

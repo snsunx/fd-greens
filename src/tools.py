@@ -1,4 +1,4 @@
-from typing import Union, Tuple, List, Iterable, Optional
+from typing import Union, Tuple, List, Iterable, Optional, Sequence
 import json
 
 from hamiltonians import MolecularHamiltonian
@@ -94,10 +94,12 @@ def get_number_state_indices(n_orb: int,
     return inds
 
 def number_state_eigensolver(
-        hamiltonian: Union[MolecularHamiltonian, QubitOperator, np.ndarray], 
-        n_elec: int,
+        hamiltonian: Union[MolecularHamiltonian, QubitOperator, np.ndarray],
+        n_elec: Optional[int] = None,
+        inds: Optional[Sequence[str]] = None,
         reverse: bool = False
     ) -> Tuple[np.ndarray, np.ndarray]:
+    # TODO: Update docstring for n_elec, inds and reverse
     """Exact eigensolver for the Hamiltonian in the subspace of 
     a certain number of electrons.
     
@@ -120,8 +122,9 @@ def number_state_eigensolver(
         raise TypeError("Hamiltonian must be one of MolecularHamiltonian,"
                         "QubitOperator, sparse array or ndarray")
 
-    n_orb = int(np.log2(hamiltonian_arr.shape[0]))
-    inds = get_number_state_indices(n_orb, n_elec, reverse=reverse)
+    if inds is None:
+        n_orb = int(np.log2(hamiltonian_arr.shape[0]))
+        inds = get_number_state_indices(n_orb, n_elec, reverse=reverse)
     hamiltonian_subspace = hamiltonian_arr[inds][:, inds]
     if isinstance(hamiltonian_subspace, _data_matrix):
         hamiltonian_subspace = hamiltonian_subspace.toarray()
@@ -154,6 +157,7 @@ def get_unitary(circ):
     unitary = result.get_unitary()
     return unitary
 
+# FIXME: The load feature is not working due to job ID retrieval problem
 def load_vqe_result(ansatz: QuantumCircuit, prefix: str = None) -> Tuple[float, QuantumCircuit]:
     """Loads the VQE energy and optimal parameters from files."""
     if prefix is None:

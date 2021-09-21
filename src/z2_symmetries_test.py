@@ -23,7 +23,7 @@ qiskit_op_new = apply_cnot_z2(apply_cnot_z2(qiskit_op, 2, 0), 3, 1)
 print(qiskit_op_new[:5])
 
 # Taper off the first two qubits (last two qubits in normal order)
-qiskit_op_tapered_00 = taper(qiskit_op_new, [0, 1], init_state=[0, 0])
+qiskit_op_tapered_00 = taper(qiskit_op_new, [0, 1], init_state=[0, 1])
 #qiskit_op_tapered_01 = taper(qiskit_op_new, [2, 3], init_state=[0, 1])
 #qiskit_op_tapered_10 = taper(qiskit_op_new, [2, 3], init_state=[1, 0])
 #qiskit_op_tapered_11 = taper(qiskit_op_new, [2, 3], init_state=[1, 1])

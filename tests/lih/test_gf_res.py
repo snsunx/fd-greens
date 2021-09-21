@@ -1,22 +1,25 @@
-"""Tests the greens_function_restricted.py module."""
+"""Calculates the spectral function on the active-space LiH Hamilonian 
+using the classmethods."""
 
 import sys
 sys.path.append('../../src/')
 import numpy as np
 from qiskit import *
-from ansatze import build_ne2_ansatz
+from ansatze import *
 from hamiltonians import MolecularHamiltonian
 from qiskit.utils import QuantumInstance
-from greens_function_restricted import GreensFunction
+from greens_function_restricted import GreensFunctionRestricted
 from tools import get_quantum_instance
 from constants import HARTREE_TO_EV
 
 # User-defined parameters.
 bond_length = 1.6
+save_params = True
+load_params = False
 cache_read = False
 cache_write = False
 
-ansatz = build_ne2_ansatz(4)
+ansatz = build_two_local_ansatz(2)
 hamiltonian = MolecularHamiltonian(
     [['Li', (0, 0, 0)], ['H', (0, 0, bond_length)]], 'sto3g', 
     occupied_inds=[0], active_inds=[1, 2])
@@ -29,9 +32,11 @@ q_instance_noisy = get_quantum_instance(
 
 # Statevector simulator calculation
 print("========== Starts statevector simulation ==========")
-gf_sv = GreensFunction(ansatz.copy(), hamiltonian, q_instance=q_instance_sv)
-gf_sv.run(cache_read=cache_read, cache_write=cache_write)
+gf_sv = GreensFunctionRestricted(ansatz.copy(), hamiltonian, q_instance=q_instance_sv)
+gf_sv.run(save_params=save_params, load_params=load_params, 
+		  cache_read=cache_read, cache_write=cache_write)
 #print(gf_sv.states_arr)
+exit()
 
 # QASM simulator calculation of h states
 print("============ Starts calculating h states ==========")
