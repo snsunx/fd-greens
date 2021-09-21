@@ -1,9 +1,13 @@
 from typing import Union, Tuple, List, Iterable
+import json
 
 from hamiltonians import MolecularHamiltonian
 from qiskit.quantum_info import Pauli, SparsePauliOp
 from qiskit.opflow.primitive_ops import PauliSumOp
 from itertools import combinations
+from constants import HARTREE_TO_EV
+from qiskit.algorithms import VQEResult
+
 import numpy as np
 from openfermion.linalg import get_sparse_operator
 from openfermion.ops.operators.qubit_operator import QubitOperator
@@ -70,7 +74,6 @@ def get_number_state_indices(n_orb: int,
         reverse: Whether the qubit indices are reversed because of 
             Qiskit qubit order. Default to True.
     """
-    print(anc)
     assert return_type in ['binary', 'decimal']
     inds = []
     for tup in combinations(range(n_orb), n_elec):
@@ -83,7 +86,9 @@ def get_number_state_indices(n_orb: int,
         inds.append(bin_str)
     if reverse:
         inds = sorted(inds, reverse=True)
-    print(inds)
+    if len(anc) <= 1:
+        print(anc)
+        print(inds)
     if return_type == 'decimal':
         inds = [int(s, 2) for s in inds]
     return inds
@@ -138,5 +143,33 @@ def get_unitary(circ):
     unitary = result.get_unitary()
     return unitary
 
+def load_vqe_result(ansatz: QuantumCircuit, prefix: str = None) -> Tuple[float, QuantumCircuit]:
+    """Loads the VQE energy and optimal parameters from files."""
+    if prefix is None:
+        prefix = 'vqe'
+    with open(prefix + '_energy.txt', 'r') as f:
+        energy_gs = json.loads(f.read())
+    with open(prefix + '_ansatz.txt', 'r') as f:
+        params_dict = json.loads(f.read())
+        params_dict_new = {}
+        for key, val in params_dict.items():
+            for param in ansatz.parameters:
+                if param.name == key:
+                    params_dict_new.update({param: val})
+        ansatz_new = ansatz.assign_parameters(params_dict_new)
+    return energy_gs, ansatz_new
 
-
+def save_vqe_result(vqe_result: VQEResult, prefix: str = None) -> None:
+    """Saves VQE energy and optimal parameters to files."""
+    if prefix is None:
+        prefix = 'vqe'
+    with open(prefix + '_energy.txt', 'w') as f:
+        energy_gs = vqe_result.optimal_value * HARTREE_TO_EV
+        f.write(json.dumps(energy_gs))
+    with open(prefix + '_ansatz.txt', 'w') as f:
+        params_dict = vqe_result.optimal_parameters
+        params_dict_new = {}
+        for key, val in params_dict.items():
+            params_dict_new.update({str(key): val})
+        f.write(json.dumps(params_dict_new))
+    

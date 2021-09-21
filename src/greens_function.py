@@ -1,5 +1,6 @@
 import copy
 import pickle
+import json
 from typing import Union, Tuple, Optional
 
 import numpy as np
@@ -19,7 +20,9 @@ from hamiltonians import MolecularHamiltonian
 from tools import (get_number_state_indices,
                    number_state_eigensolver, 
                    reverse_qubit_order,
-                   get_statevector)
+                   get_statevector, 
+                   load_vqe_result,
+                   save_vqe_result)
 from circuits import build_diagonal_circuits, build_off_diagonal_circuits
 from recompilation import recompile_with_statevector, apply_quimb_gates
 
@@ -118,39 +121,46 @@ class GreensFunction:
         self.eigenstates_h = None
 
     def compute_ground_state(self, 
-                             save_params: bool = False, 
-                             return_ansatz: bool = False
+                             save_params: bool = False,
+                             load_params: bool = False,
+                             prefix: str = None
                              ) -> Optional[QuantumCircuit]:
         """Calculates the ground state of the Hamiltonian using VQE.
         
         Args:
-            save_params: Whether to save the VQE ansatz parameters.
-            return_ansatz: Whether to return the VQE ansatz.
-
-        Returns:
-            self.ansatz: Optionally returned VQE ansatz.
+            save_params: Whether to save the VQE energy and ansatz parameters.
+            load_params: Whether to load the VQE energy and ansatz parameters.
         """
-        print("Start calculating the ground state using VQE")
-        vqe = VQE(self.ansatz, optimizer=self.optimizer, 
-                  quantum_instance=Aer.get_backend('statevector_simulator'))
-        result = vqe.compute_minimum_eigenvalue(self.qiskit_op)
+        if prefix is None:
+            prefix = 'vqe'
+        if load_params:
+            print("Load ground state energy and ansatz from file")
+            self.energy_gs, self.ansatz = load_vqe_result(self.ansatz, prefix=prefix)
+        else:
+            print("Start calculating the ground state using VQE")
+            vqe = VQE(self.ansatz, optimizer=self.optimizer, 
+                      quantum_instance=Aer.get_backend('statevector_simulator'))
+            vqe_result = vqe.compute_minimum_eigenvalue(self.qiskit_op)
+            if save_params:
+                save_vqe_result(vqe_result, prefix=prefix)
+            self.energy_gs = vqe_result.optimal_value * HARTREE_TO_EV
+            self.ansatz.assign_parameters(vqe_result.optimal_parameters, inplace=True)
+                #with open('vqe_energy.txt', 'w') as f:
+                #    f.write(json.dumps(self.energy_gs))
+                #with open('vqe_ansatz.txt', 'w') as f:
+                #    ansatz_params = dict_keys_to_strings(result.optimal_parameters)
+                #    f.write(json.dumps(ansatz_params))
+                #exit()
+            print("Finish calculating the ground state using VQE")
         
-        self.energy_gs = result.optimal_value * HARTREE_TO_EV
-        self.ansatz.assign_parameters(result.optimal_parameters, inplace=True)
-        if save_params:
-            f = open('ansatz_params.pkl', 'wb')
-            pickle.dump(result.optimal_parameters, f)
-            f.close()
-
         print(f'Ground state energy = {self.energy_gs:.3f} eV')
-        print("Finish calculating the ground state using VQE")
-        if return_ansatz:
-            return self.ansatz
+
 
     def compute_eh_states(self) -> None:
         """Calculates (N±1)-electron states of the Hamiltonian."""
         print("Start calculating (N±1)-electron states")
         print("=" * 80)
+        print('e')
         self.eigenenergies_e, self.eigenstates_e = \
             number_state_eigensolver(self.hamiltonian_arr, self.n_occ + 1, reverse=True)
         print("=" * 80)
@@ -159,7 +169,7 @@ class GreensFunction:
         self.eigenenergies_e *= HARTREE_TO_EV
         self.eigenenergies_h *= HARTREE_TO_EV
         print("eigenstates_e\n", self.eigenstates_e)
-        print("eigenstates_h\n", self.eigenstates_h)
+        #print("eigenstates_h\n", self.eigenstates_h)
 
         '''
         eigenenergies_2, eigenstates_2 = number_state_eigensolver(self.hamiltonian_arr, 2)
@@ -214,7 +224,6 @@ class GreensFunction:
                 if self.q_instance.backend.name() == 'statevector_simulator':
                     circ = build_diagonal_circuits(self.ansatz.copy(), m, with_qpe=False)
                     result = self.q_instance.execute(circ)
-                    #psi = reverse_qubit_order(result.get_statevector())
                     psi = result.get_statevector()
                     
                     if self.states in ('e', None):
@@ -342,7 +351,6 @@ class GreensFunction:
                         circ = build_off_diagonal_circuits(
                             self.ansatz.copy(), m, n, with_qpe=False)
                         result = self.q_instance.execute(circ)
-                        #psi = reverse_qubit_order(result.get_statevector())
                         psi = result.get_statevector()
 
                         if self.states in ('h', None):
@@ -463,10 +471,10 @@ class GreensFunction:
         print('B_e\n')
         #self.B_e[abs(self.B_e) < 1e-8] = 0.
         B_e = self.B_e.copy()
-        for m in [0, 2, 1, 3]:
+        for m in [0, 2]:
             for m_ in range(B_e.shape[1]):
                 for lam in range(B_e.shape[2]):
-                    if abs(B_e[m, m_, lam]) > 1e-2:
+                    if abs(B_e[m, m_, lam]) > 1e-4:
                         print(f'm = {m}, m\' = {m_}, lambda = {lam}: {B_e[m, m_, lam]}')
         
         '''
@@ -490,20 +498,25 @@ class GreensFunction:
 
     def run(self, 
             compute_energies: bool = True,
-            cache_read: bool = True,
-            cache_write: bool = True) -> None:
+            save_params: bool = True,
+            load_params: bool = False,
+            cache_write: bool = True,
+            cache_read: bool = False) -> None:
         """Main function call to compute energies and transition amplitudes.
         
         Args:
             compute_energies: Whether to compute ground- and (N±1)-electron 
                 state energies.
+            save_params:
+            load_params: 
             cache_read: Whether to read recompiled circuits from cache files.
             cache_write: Whether to save recompiled circuits to cache files.
         """
         # TODO: Some if conditions need to be checked.
         if compute_energies:
             if self.energy_gs is None:
-                self.compute_ground_state()
+                self.compute_ground_state(save_params=save_params, 
+                                          load_params=load_params)
             if (self.eigenenergies_e is None or self.eigenenergies_h is None or 
                 self.eigenstates_e is None or self.eigenstates_h is None):
                 self.compute_eh_states()

@@ -59,5 +59,3 @@ class CacheRecompilation:
             print('[Cache] Read circuit from'
                   f'{cls.__filepath(hamiltonian, index, states)}')
         return circuit
-
-    
