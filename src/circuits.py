@@ -1,11 +1,15 @@
-from typing import Tuple
+from typing import Tuple, Optional, Iterable
 import numpy as np
 from qiskit import QuantumCircuit, QuantumRegister, ClassicalRegister
 from openfermion.ops import PolynomialTensor
 from openfermion.transforms import get_fermion_operator, jordan_wigner
+from tools import get_pauli_tuple
+
+# Change Term to PauliTuple
+PauliTuple = Tuple[Tuple[str, int]]
 
 def build_diagonal_circuits(ansatz: QuantumCircuit, 
-                            ind: int,
+                            tup_xy: Iterable[PauliTuple],
                             with_qpe: bool = True,
                             add_barriers: bool = True,
                             measure: bool = False) -> QuantumCircuit:
@@ -13,8 +17,7 @@ def build_diagonal_circuits(ansatz: QuantumCircuit,
     
     Args:
         ansatz: The ansatz quantum circuit corresponding to the ground state.
-        ind: An integer indicating the index of the creation/annihilation
-            operator.
+        tup_xy: The creation/annihilation operator of the circuit in tuple form.
         with_qpe: Whether an additional qubit is added for QPE.
         add_barriers: Whether barriers are added to the circuit.
         measure: Whether the ancilla qubits are measured.
@@ -31,25 +34,16 @@ def build_diagonal_circuits(ansatz: QuantumCircuit,
         qargs = [qubit._index + n_anc for qubit in qargs]
         circ.append(inst, qargs, cargs)
 
-    # Define the creation/annihilation term to be appended
-    # TODO: The following can be written more efficiently
-    arr = np.zeros((n_qubits,))
-    arr[ind] = 1.
-    poly_tensor = PolynomialTensor({(0,): arr})
-    ferm_op = get_fermion_operator(poly_tensor)
-    qubit_op = jordan_wigner(ferm_op)
-    terms = list(qubit_op.terms)
-
     # Apply the gates corresponding to the creation/annihilation terms
     if add_barriers:
         circ.barrier()
     circ.h(0)
     if add_barriers:
         circ.barrier()
-    apply_cU(circ, terms[0], ctrl=0, offset=n_anc)
+    apply_cU(circ, tup_xy[0], ctrl=0, offset=n_anc)
     if add_barriers:
         circ.barrier()
-    apply_cU(circ, terms[1], ctrl=1, offset=n_anc)
+    apply_cU(circ, tup_xy[1], ctrl=1, offset=n_anc)
     if add_barriers:
         circ.barrier()
     circ.h(0)
@@ -62,8 +56,8 @@ def build_diagonal_circuits(ansatz: QuantumCircuit,
     return circ
 
 def build_off_diagonal_circuits(ansatz: QuantumCircuit,
-                                ind_left: int,
-                                ind_right: int,
+                                tup_xy_left: Iterable[PauliTuple],
+                                tup_xy_right: Iterable[PauliTuple],
                                 with_qpe: bool = True,
                                 add_barriers: bool = True,
                                 measure: bool = False) -> QuantumCircuit:
@@ -71,10 +65,10 @@ def build_off_diagonal_circuits(ansatz: QuantumCircuit,
     
     Args:
         ansatz: The ansatz quantum circuit corresponding to the ground state.
-        ind_left: An integer indicating the index of the left
-            creation/annihilation operator.
-        ind_right: An integer indicating the index of the right 
-            creation/annihilation operator.
+        tup_xy_left: The left creation/annihilation operator of the circuit 
+            in tuple form.
+        tup_xy_right: The right creation/annihilation operator of the circuit
+            in tuple form.
         with_qpe: Whether an additional qubit is added for QPE.
         add_barriers: Whether barriers are added to the circuit.
         measure: Whether the ancilla qubits are measured.
@@ -91,43 +85,25 @@ def build_off_diagonal_circuits(ansatz: QuantumCircuit,
         qargs = [qubit._index + n_anc for qubit in qargs]
         circ.append(inst, qargs, cargs)
 
-    # Define the left creation/annihilation term to be appended
-    # TODO: The following can be written more efficiently
-    arr = np.zeros((n_qubits,))
-    arr[ind_left] = 1.
-    poly_tensor = PolynomialTensor({(0,): arr})
-    ferm_op = get_fermion_operator(poly_tensor)
-    qubit_op = jordan_wigner(ferm_op)
-    terms_left = list(qubit_op.terms)
-
-    # Define the right creation/annihilation term to be appended
-    # TODO: The following can be written more efficiently
-    arr = np.zeros((n_qubits,))
-    arr[ind_right] = 1.
-    poly_tensor = PolynomialTensor({(0,): arr})
-    ferm_op = get_fermion_operator(poly_tensor)
-    qubit_op = jordan_wigner(ferm_op)
-    terms_right = list(qubit_op.terms)
-
     # Apply the gates corresponding to the creation/annihilation terms
     if add_barriers:
         circ.barrier()
     circ.h([0, 1])
     if add_barriers:
         circ.barrier()
-    apply_ccU(circ, terms_left[0], ctrl=(0, 0), offset=n_anc)
+    apply_ccU(circ, tup_xy_left[0], ctrl=(0, 0), offset=n_anc)
     if add_barriers:
         circ.barrier()
-    apply_ccU(circ, terms_left[1], ctrl=(1, 0), offset=n_anc)
+    apply_ccU(circ, tup_xy_left[1], ctrl=(1, 0), offset=n_anc)
     if add_barriers:
         circ.barrier()
     circ.rz(np.pi / 4, 1)
     if add_barriers:
         circ.barrier()
-    apply_ccU(circ, terms_right[0], ctrl=(0, 1), offset=n_anc)
+    apply_ccU(circ, tup_xy_right[0], ctrl=(0, 1), offset=n_anc)
     if add_barriers:
         circ.barrier()
-    apply_ccU(circ, terms_right[1], ctrl=(1, 1), offset=n_anc)
+    apply_ccU(circ, tup_xy_right[1], ctrl=(1, 1), offset=n_anc)
     if add_barriers:
         circ.barrier()
     circ.h([0, 1])

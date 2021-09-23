@@ -1,6 +1,3 @@
-import copy
-import pickle
-import json
 from typing import Union, Tuple, Optional
 
 import numpy as np
@@ -165,7 +162,6 @@ class GreensFunctionRestricted:
         print('eigenenergies_h\n', self.eigenenergies_h)
         print("eigenstates_e\n", self.eigenstates_e)
         print("eigenstates_h\n", self.eigenstates_h)
-        exit()
 
         '''
         eigenenergies_2, eigenstates_2 = number_state_eigensolver(self.hamiltonian_arr, 2)
@@ -207,7 +203,8 @@ class GreensFunctionRestricted:
 
     def compute_diagonal_amplitudes(self,
                                     cache_read: bool = True,
-                                    cache_write: bool = True) -> None:
+                                    cache_write: bool = True
+                                    ) -> None:
         """Calculates diagonal transition amplitudes.
         
         Args:
@@ -269,7 +266,7 @@ class GreensFunctionRestricted:
                         circ.h(1)
                         statevector = reverse_qubit_order(get_statevector(circ))
                         quimb_gates = recompile_with_statevector(
-                            statevector, cUmat, n_gate_rounds=6,
+                            statevector, cUmat, n_gate_rounds=3,
                             cache_options = {'read': cache_read, 'write': cache_write, 
                                              'hamiltonian': self.hamiltonian,
                                              'index': str(m), 'states': self.states})
@@ -384,19 +381,19 @@ class GreensFunctionRestricted:
                     else:
                         circ = build_off_diagonal_circuits(
                             self.ansatz.copy(), m, n)
-                        Umat = expm(1j * self.hamiltonian_arr * HARTREE_TO_EV)
+                        Umat = expm(1j * self.hamiltonian_arr_up * HARTREE_TO_EV)
 
                         # Append QPE circuit
                         if self.recompiled:
                             cUmat = np.kron(np.eye(4),
-                                np.kron(np.diag([1, 0]), np.eye(2 ** 4))
+                                np.kron(np.diag([1, 0]), np.eye(2 ** 2))
                                 + np.kron(np.diag([0, 1]), Umat))
                             circ.barrier()
                             circ.h(2)
                             statevector = reverse_qubit_order(
                                 get_statevector(circ))
                             quimb_gates = recompile_with_statevector(
-                                statevector, cUmat, n_gate_rounds=7,
+                                statevector, cUmat, n_gate_rounds=3,
                                 cache_options = {'read': cache_read, 
                                                  'write': cache_write,
                                                  'hamiltonian': self.hamiltonian,
@@ -523,10 +520,10 @@ class GreensFunctionRestricted:
 
     @classmethod
     def initialize_eh(cls, 
-                      gf: 'GreensFunction', 
+                      gf: 'GreensFunctionRestricted', 
                       states: str,
                       q_instance: Optional[QuantumInstance] = None
-                      ) -> 'GreensFunction':
+                      ) -> 'GreensFunctionRestricted':
         """Creates a GreensFunction object for calculating the (N±1)-electron
         states transition amplitudes.
 
@@ -550,10 +547,10 @@ class GreensFunctionRestricted:
         gf_scaling.compute_eh_states()
         if states == 'h':
             E_low = gf_scaling.eigenenergies_h[0]
-            E_high = gf_scaling.eigenenergies_h[2]
+            E_high = gf_scaling.eigenenergies_h[1]
         elif states == 'e':
             E_low = gf_scaling.eigenenergies_e[0]
-            E_high = gf_scaling.eigenenergies_e[2]
+            E_high = gf_scaling.eigenenergies_e[1]
         scaling = np.pi / (E_high - E_low)
 
         # Obtain the shift factor
@@ -580,11 +577,11 @@ class GreensFunctionRestricted:
 
     @classmethod
     def initialize_final(cls, 
-                         gf_sv: 'GreensFunction',
-                         gf_e: 'GreensFunction',
-                         gf_h: 'GreensFunction',
+                         gf_sv: 'GreensFunctionRestricted',
+                         gf_e: 'GreensFunctionRestricted',
+                         gf_h: 'GreensFunctionRestricted',
                          q_instance: Optional[QuantumInstance] = None
-                         ) -> 'GreensFunction':
+                         ) -> 'GreensFunctionRestricted':
         """Creates a GreensFunction object for calculating final 
         observables.
         
@@ -679,7 +676,7 @@ class GreensFunctionRestricted:
         return Sigma
 
     def compute_correlation_energy(self) -> Tuple[complex, complex]:
-        """Calculates the corelation energy.
+        """Calculates the correlation energy.
         
         Returns:
             E1: The one-electron part (?) of the correlation energy.

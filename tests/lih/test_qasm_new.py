@@ -36,7 +36,7 @@ gf_sv = GreensFunction(ansatz.copy(), hamiltonian, q_instance=q_instance_sv)
 gf_sv.run(save_params=save_params, load_params=load_params, 
 		  cache_read=cache_read, cache_write=cache_write)
 #print(gf_sv.states_arr)
-
+'''
 # QASM simulator calculation of h states
 print("============ Starts calculating h states ==========")
 gf_h = GreensFunction.initialize_eh(gf_sv, 'h', q_instance=q_instance_sv)
@@ -59,3 +59,4 @@ for omega in omegas:
     A = gf_final.compute_spectral_function(omega + 0.02j * HARTREE_TO_EV)
     A_list.append(A)
 np.savetxt('A_qasm1.dat', np.vstack((omegas, A_list)).T)
+'''

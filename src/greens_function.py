@@ -15,7 +15,7 @@ from qiskit.extensions import UnitaryGate
 
 from constants import HARTREE_TO_EV
 from hamiltonians import MolecularHamiltonian
-from tools import (get_number_state_indices,
+from tools import (get_number_state_indices, get_pauli_tuple,
                    number_state_eigensolver, 
                    reverse_qubit_order,
                    get_statevector, 
@@ -53,6 +53,7 @@ class GreensFunction:
         self.ansatz = ansatz
         self.hamiltonian = hamiltonian
         self.molecule = hamiltonian.molecule
+        self.n_qubits = self.molecule.n_qubits
 
         # Extract the orbital energies
         e_orb = self.molecule.orbital_energies
@@ -157,7 +158,7 @@ class GreensFunction:
         self.eigenenergies_e *= HARTREE_TO_EV
         self.eigenenergies_h *= HARTREE_TO_EV
         print("eigenstates_e\n", self.eigenstates_e)
-        #print("eigenstates_h\n", self.eigenstates_h)
+        print("eigenstates_h\n", self.eigenstates_h)
 
         '''
         eigenenergies_2, eigenstates_2 = number_state_eigensolver(self.hamiltonian_arr, 2)
@@ -208,9 +209,12 @@ class GreensFunction:
         """
         print("Start calculating diagonal transition amplitudes")
         for m in range(self.n_orb):
+            tup_xy = get_pauli_tuple(self.n_qubits, m)
             if self.states is None or self.states in self.states_arr[m, m]:
                 if self.q_instance.backend.name() == 'statevector_simulator':
-                    circ = build_diagonal_circuits(self.ansatz.copy(), m, with_qpe=False)
+                    circ = build_diagonal_circuits(self.ansatz.copy(), 
+                                                   tup_xy=tup_xy, 
+                                                   with_qpe=False)
                     result = self.q_instance.execute(circ)
                     psi = result.get_statevector()
                     
@@ -247,7 +251,7 @@ class GreensFunction:
                         self.states_arr[m, m] = states_elem
 
                 else: # QASM simulator or hardware
-                    circ = build_diagonal_circuits(self.ansatz.copy(), m)
+                    circ = build_diagonal_circuits(self.ansatz.copy(), tup_xy=tup_xy)
                     Umat = expm(1j * self.hamiltonian_arr * HARTREE_TO_EV)
                     if self.recompiled:
                         # Construct the unitary |0><0|⊗I + |1><1|⊗e^{iHt} 
@@ -333,11 +337,14 @@ class GreensFunction:
         print("Start calculating off-diagonal transition amplitudes")
         for m in range(self.n_orb):
            for n in range(self.n_orb):
+                tup_xy_left = get_pauli_tuple(self.n_qubits, m)
+                tup_xy_right = get_pauli_tuple(self.n_qubits, n)
                 if m != n and (self.states is None or 
                                self.states in self.states_arr[m, n]):
                     if self.q_instance.backend.name() == 'statevector_simulator':
                         circ = build_off_diagonal_circuits(
-                            self.ansatz.copy(), m, n, with_qpe=False)
+                            self.ansatz.copy(), tup_xy_left=tup_xy_left,
+                            tup_xy_right=tup_xy_right, with_qpe=False)
                         result = self.q_instance.execute(circ)
                         psi = result.get_statevector()
 
@@ -375,7 +382,9 @@ class GreensFunction:
 
                     else:
                         circ = build_off_diagonal_circuits(
-                            self.ansatz.copy(), m, n)
+                            self.ansatz.copy(), 
+                            tup_xy_left=tup_xy_left,
+                            tup_xy_right=tup_xy_right)
                         Umat = expm(1j * self.hamiltonian_arr * HARTREE_TO_EV)
 
                         # Append QPE circuit

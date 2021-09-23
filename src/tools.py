@@ -1,26 +1,34 @@
 from typing import Union, Tuple, List, Iterable, Optional, Sequence
 import json
-
-from hamiltonians import MolecularHamiltonian
-from qiskit.quantum_info import Pauli, SparsePauliOp
-from qiskit.opflow.primitive_ops import PauliSumOp
 from itertools import combinations
-from constants import HARTREE_TO_EV
-from qiskit.algorithms import VQEResult
 
 import numpy as np
-from openfermion.linalg import get_sparse_operator
-from openfermion.ops.operators.qubit_operator import QubitOperator
 from scipy.sparse.data import _data_matrix
-from qiskit.utils import QuantumInstance
-from qiskit.providers.aer.noise import NoiseModel
+
+from z2_symmetries import apply_cnot_z2
 
 from qiskit import *
+from qiskit.utils import QuantumInstance
+from qiskit.providers.aer.noise import NoiseModel
 from qiskit.providers.aer.backends.aerbackend import AerBackend
-from qiskit.providers.ibmq.ibmqbackend import IBMQBackend
+from qiskit.quantum_info import PauliTable, SparsePauliOp
+# from qiskit.opflow.primitive_ops import PauliSumOp
+from qiskit.algorithms import VQEResult
 
-def get_quantum_instance(backend, noise_model_name=None, 
-                         optimization_level=0, initial_layout=None, shots=1):
+from openfermion.ops import PolynomialTensor
+from openfermion.transforms import get_fermion_operator, jordan_wigner
+from openfermion.linalg import get_sparse_operator
+from openfermion.ops.operators.qubit_operator import QubitOperator
+
+from z2_symmetries import apply_cnot_z2
+from hamiltonians import MolecularHamiltonian
+from constants import HARTREE_TO_EV
+
+def get_quantum_instance(backend, 
+                         noise_model_name=None, 
+                         optimization_level=0, 
+                         initial_layout=None, 
+                         shots=1):
     # TODO: Write the part for IBMQ backends
     if isinstance(backend, AerBackend):
         if noise_model_name is None:
@@ -135,10 +143,11 @@ def number_state_eigensolver(
     # Might need to take care of this
     sort_arr = [(eigvals[i], -np.argmax(np.abs(eigvecs[:, i]))) 
                 for i in range(len(eigvals))]
-    #print(sort_arr)
-    #print(sorted(sort_arr))
+    sort_arr = [x[0] + 1e-4 * x[1] for x in sort_arr] # XXX: Ad-hoc
+    print('sort_arr =', sort_arr)
+    print('sorted(sort_arr) =', sorted(sort_arr))
     inds_new = sorted(range(len(sort_arr)), key=sort_arr.__getitem__)
-    #print(inds_new)
+    # print(inds_new)
     eigvals = eigvals[inds_new]
     eigvecs = eigvecs[:, inds_new]
     return eigvals, eigvecs
@@ -187,3 +196,49 @@ def save_vqe_result(vqe_result: VQEResult, prefix: str = None) -> None:
         for key, val in params_dict.items():
             params_dict_new.update({str(key): val})
         f.write(json.dumps(params_dict_new))
+
+def get_pauli_tuple(n_qubits: int, ind: int
+                    ) -> List[Tuple[str, int]]:
+    """Obtains the tuple form of a Pauli string from number of qubits and 
+    creation/annihilation operator index.
+    
+    Args:
+        n_qubits: The number of qubits.
+        ind: The index of the qubit on which the creation/annihilation
+            operator acts on.
+    
+    Return:
+        The Pauli string in tuple form.
+    """
+    arr = np.zeros((n_qubits,))
+    arr[ind] = 1.
+    poly_tensor = PolynomialTensor({(0,): arr})
+    ferm_op = get_fermion_operator(poly_tensor)
+    qubit_op = jordan_wigner(ferm_op)
+    tup_xy = list(qubit_op.terms)
+    return tup_xy
+
+def label_to_term(label: str) -> List[Tuple[str, int]]:
+    """Converts Pauli string from label form to term form.
+    
+    Args:
+        The Pauli string in label form.
+        
+    Returns:
+        The Pauli string in term form.
+    """
+    term = []
+    for i, c in enumerate(label[::-1]):
+        if c != 'I':
+            term.append((c, i))
+    return term
+
+# XXX: The following function is hardcoded
+def get_term_dictionary():
+    x_ops = SparsePauliOp(PauliTable.from_labels(['IIIX', 'IIXZ', 'IXZZ', 'XZZZ']))
+    y_ops = SparsePauliOp(PauliTable.from_labels(['IIIY', 'IIYZ', 'IYZZ', 'YZZZ']))
+    x_ops_labels = apply_cnot_z2(apply_cnot_z2(x_ops, 2, 0), 3, 1).primitive.table.to_labels()
+    y_ops_labels = apply_cnot_z2(apply_cnot_z2(y_ops, 2, 0), 3, 1).primitive.table.to_labels()
+    x_ops_terms = [label_to_term(l) for l in x_ops_labels]
+    y_ops_terms = [label_to_term(l) for l in y_ops_labels]
+    return x_ops_dict, y_ops_dict
