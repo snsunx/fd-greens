@@ -14,7 +14,7 @@ from qiskit.algorithms import VQEResult
 from openfermion.ops import PolynomialTensor
 from openfermion.transforms import get_fermion_operator, jordan_wigner
 
-from z2_symmetries import apply_cnot_z2
+from z2_symmetries import apply_cnot_z2, transform_4q_hamiltonian
 from constants import HARTREE_TO_EV
 
 PauliTuple = Tuple[Tuple[str, int]]
@@ -105,6 +105,7 @@ def save_vqe_result(vqe_result: VQEResult, prefix: str = None) -> None:
             params_dict_new.update({str(key): val})
         f.write(json.dumps(params_dict_new))
 
+# TODO: Deprecate this function
 def get_pauli_tuple(n_qubits: int, ind: int
                     ) -> Tuple[PauliTuple]:
     """Obtains the tuple form of a Pauli string from number of qubits and 
@@ -126,6 +127,15 @@ def get_pauli_tuple(n_qubits: int, ind: int
     tup_xy = tuple(qubit_op.terms)
     return tup_xy
 
+def get_a_operator(n_qubits: int, ind: int) -> SparsePauliOp:
+    """Returns the creation/annihilation operator."""
+    label_x = 'I' * (n_qubits - ind - 1) + 'X' + 'Z' * ind
+    label_y = 'I' * (n_qubits - ind - 1) + 'Y' + 'Z' * ind
+    print(label_x, label_y)
+    pauli_table = PauliTable.from_labels([label_x, label_y])
+    sparse_pauli_op = SparsePauliOp(pauli_table, coeffs=[1.0, 1.0j])
+    return sparse_pauli_op
+
 def pauli_label_to_tuple(label: str) -> PauliTuple:
     """Converts a Pauli string from label form to tuple form.
     
@@ -143,12 +153,7 @@ def pauli_label_to_tuple(label: str) -> PauliTuple:
     return tup
 
 def get_indices_with_ancilla(inds: Iterable[str], anc: str):
-    """Returns indices with ancillas positions.
-    
-    Args:
-        inds:
-        anc: 
-    """
+    """Returns indices with ancillas positions."""
     print('inds =', inds)
     inds_new = [ind + anc for ind in inds]
     inds_new = [int(ind, 2) for ind in inds_new]
@@ -156,35 +161,19 @@ def get_indices_with_ancilla(inds: Iterable[str], anc: str):
 
 
 # XXX: The following function is hardcoded
+# XXX: Treating the spin this way is not correct. See Markdown document.
 def get_pauli_tuple_dictionary(spin='up'):
     x_labels = ['IIIX', 'IIXZ', 'IXZZ', 'XZZZ']
     y_labels = ['IIIY', 'IIYZ', 'IYZZ', 'YZZZ']
     x_ops = SparsePauliOp(PauliTable.from_labels(x_labels))
     y_ops = SparsePauliOp(PauliTable.from_labels(y_labels))
-    x_ops_trans = apply_cnot_z2(apply_cnot_z2(x_ops, 2, 0), 3, 1)
-    y_ops_trans = apply_cnot_z2(apply_cnot_z2(y_ops, 2, 0), 3, 1)
-    print(x_ops_trans.coeffs)
-    print(y_ops_trans.coeffs)
-    x_labels_trans = x_ops_trans.primitive.table.to_labels()
-    y_labels_trans = y_ops_trans.primitive.table.to_labels()
-    print('x_label_trans =', x_labels_trans)
-    print('y_label_trans =', y_labels_trans)
-    x_labels_trans = [l[:2] for l in x_labels_trans]
-    y_labels_trans = [l[:2] for l in y_labels_trans]
-    print('x_label_trans =', x_labels_trans)
-    print('y_label_trans =', y_labels_trans)
-    exit()
-    tups_x = [pauli_label_to_tuple(l) for l in x_labels_trans]
-    tups_y = [pauli_label_to_tuple(l) for l in y_labels_trans]
+    x_ops_trans = transform_4q_hamiltonian(x_ops) # spin assumed to be ''
+    y_ops_trans = transform_4q_hamiltonian(y_ops)
     dic = {}
     if spin == 'up':
         for i in range(2):
-            tup_x = tups_x[2 * i]
-            tup_y = tups_y[2 * i]
-            dic.update({i: [tup_x, tup_y]})
+            dic.update({i: [x_ops_trans[2 * i], y_ops_trans[2 * i]]})
     else:
         for i in range(2):
-            tup_x = tups_x[2 * i + 1]
-            tup_y = tups_y[2 * i + 1]
-            dic.update({i: [tup_x, tup_y]}) 
+            dic.update({i: [x_ops_trans[2 * i + 1], y_ops_trans[2 * i + 1]]})
     return dic

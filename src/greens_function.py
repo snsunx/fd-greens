@@ -14,7 +14,7 @@ from constants import HARTREE_TO_EV
 from hamiltonians import MolecularHamiltonian
 from number_state_solvers import (get_number_state_indices,
                                   number_state_eigensolver)
-from tools import (get_pauli_tuple,
+from tools import (get_a_operator, get_pauli_tuple,
                    reverse_qubit_order,
                    get_statevector, 
                    load_vqe_result,
@@ -51,7 +51,6 @@ class GreensFunction:
         self.ansatz = ansatz
         self.hamiltonian = hamiltonian
         self.molecule = hamiltonian.molecule
-        self.n_qubits = self.molecule.n_qubits
 
         # Extract the orbital energies
         e_orb = self.molecule.orbital_energies
@@ -74,6 +73,7 @@ class GreensFunction:
 
         # Number of orbitals and indices
         self.n_orb = 2 * len(self.hamiltonian.active_inds)
+        self.n_qubits = self.n_orb # XXX
         self.n_occ = (self.hamiltonian.molecule.n_electrons 
                       - 2 * len(self.hamiltonian.occupied_inds))
         self.n_vir = self.n_orb - self.n_occ
@@ -204,12 +204,10 @@ class GreensFunction:
         """
         print("Start calculating diagonal transition amplitudes")
         for m in range(self.n_orb):
-            tup_xy = get_pauli_tuple(self.n_qubits, m)
+            a_op_m = get_a_operator(self.n_qubits, m)
             if self.states is None or self.states in self.states_arr[m, m]:
                 if self.q_instance.backend.name() == 'statevector_simulator':
-                    circ = build_diagonal_circuits(self.ansatz.copy(), 
-                                                   tup_xy=tup_xy, 
-                                                   with_qpe=False)
+                    circ = build_diagonal_circuits(self.ansatz.copy(), a_op_m, with_qpe=False)
                     result = self.q_instance.execute(circ)
                     psi = result.get_statevector()
                     
@@ -331,15 +329,14 @@ class GreensFunction:
         """
         print("Start calculating off-diagonal transition amplitudes")
         for m in range(self.n_orb):
-           for n in range(self.n_orb):
-                tup_xy_left = get_pauli_tuple(self.n_qubits, m)
-                tup_xy_right = get_pauli_tuple(self.n_qubits, n)
+            a_op_m = get_a_operator(self.n_qubits, m)
+            for n in range(self.n_orb):
+                a_op_n = get_a_operator(self.n_qubits, n)
                 if m != n and (self.states is None or 
                                self.states in self.states_arr[m, n]):
                     if self.q_instance.backend.name() == 'statevector_simulator':
                         circ = build_off_diagonal_circuits(
-                            self.ansatz.copy(), tup_xy_left=tup_xy_left,
-                            tup_xy_right=tup_xy_right, with_qpe=False)
+                            self.ansatz.copy(), a_op_m, a_op_n, with_qpe=False)
                         result = self.q_instance.execute(circ)
                         psi = result.get_statevector()
 

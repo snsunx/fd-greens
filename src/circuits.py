@@ -1,15 +1,18 @@
 from typing import Tuple, Optional, Iterable
+from cmath import polar
+
 import numpy as np
 from qiskit import QuantumCircuit, QuantumRegister, ClassicalRegister
 from openfermion.ops import PolynomialTensor
 from openfermion.transforms import get_fermion_operator, jordan_wigner
-from tools import get_pauli_tuple
+from tools import get_pauli_tuple, pauli_label_to_tuple
+from qiskit.quantum_info import SparsePauliOp
 
 # Change Term to PauliTuple
 PauliTuple = Tuple[Tuple[str, int]]
 
-def build_diagonal_circuits(ansatz: QuantumCircuit, 
-                            tup_xy: Iterable[PauliTuple],
+def build_diagonal_circuits(ansatz: QuantumCircuit,
+                            a_op: SparsePauliOp,
                             with_qpe: bool = True,
                             add_barriers: bool = True,
                             measure: bool = False) -> QuantumCircuit:
@@ -38,20 +41,15 @@ def build_diagonal_circuits(ansatz: QuantumCircuit,
         circ.append(inst, qargs, cargs)
 
     # Apply the gates corresponding to the creation/annihilation terms
-    if add_barriers:
-        circ.barrier()
+    if add_barriers: circ.barrier()
     circ.h(0)
-    if add_barriers:
-        circ.barrier()
-    apply_cU(circ, tup_xy[0], ctrl=0, offset=n_anc)
-    if add_barriers:
-        circ.barrier()
-    apply_cU(circ, tup_xy[1], ctrl=1, offset=n_anc)
-    if add_barriers:
-        circ.barrier()
+    if add_barriers: circ.barrier()
+    apply_multicontrolled_gate(circ, a_op[0], ctrl=[0], offset=n_anc)
+    if add_barriers: circ.barrier()
+    apply_multicontrolled_gate(circ, a_op[1], ctrl=[1], offset=n_anc)
+    if add_barriers: circ.barrier()
     circ.h(0)
-    if add_barriers:
-        circ.barrier()
+    if add_barriers: circ.barrier()
 
     if measure:
         circ.measure(0, 0)
@@ -59,8 +57,8 @@ def build_diagonal_circuits(ansatz: QuantumCircuit,
     return circ
 
 def build_off_diagonal_circuits(ansatz: QuantumCircuit,
-                                tup_xy_left: Iterable[PauliTuple],
-                                tup_xy_right: Iterable[PauliTuple],
+                                a_op_m: SparsePauliOp,
+                                a_op_n: SparsePauliOp,
                                 with_qpe: bool = True,
                                 add_barriers: bool = True,
                                 measure: bool = False) -> QuantumCircuit:
@@ -92,26 +90,19 @@ def build_off_diagonal_circuits(ansatz: QuantumCircuit,
         circ.append(inst, qargs, cargs)
 
     # Apply the gates corresponding to the creation/annihilation terms
-    if add_barriers:
-        circ.barrier()
+    if add_barriers: circ.barrier()
     circ.h([0, 1])
-    if add_barriers:
-        circ.barrier()
-    apply_ccU(circ, tup_xy_left[0], ctrl=(0, 0), offset=n_anc)
-    if add_barriers:
-        circ.barrier()
-    apply_ccU(circ, tup_xy_left[1], ctrl=(1, 0), offset=n_anc)
-    if add_barriers:
-        circ.barrier()
+    if add_barriers: circ.barrier()
+    apply_multicontrolled_gate(circ, a_op_m[0], ctrl=(0, 0), offset=n_anc)
+    if add_barriers: circ.barrier()
+    apply_multicontrolled_gate(circ, a_op_m[1], ctrl=(1, 0), offset=n_anc)
+    if add_barriers: circ.barrier()
     circ.rz(np.pi / 4, 1)
-    if add_barriers:
-        circ.barrier()
-    apply_ccU(circ, tup_xy_right[0], ctrl=(0, 1), offset=n_anc)
-    if add_barriers:
-        circ.barrier()
-    apply_ccU(circ, tup_xy_right[1], ctrl=(1, 1), offset=n_anc)
-    if add_barriers:
-        circ.barrier()
+    if add_barriers: circ.barrier()
+    apply_multicontrolled_gate(circ, a_op_n[0], ctrl=(0, 1), offset=n_anc)
+    if add_barriers: circ.barrier()
+    apply_multicontrolled_gate(circ, a_op_n[1], ctrl=(1, 1), offset=n_anc)
+    if add_barriers: circ.barrier()
     circ.h([0, 1])
 
     if measure:
@@ -119,10 +110,12 @@ def build_off_diagonal_circuits(ansatz: QuantumCircuit,
 
     return circ
 
-def apply_cU(circ: QuantumCircuit, 
-             term: Tuple[Tuple[int, str]], 
-             ctrl: int = 1, 
-             offset: int = 1) -> None:
+def apply_multicontrolled_gate(
+        circ: QuantumCircuit, 
+        op: SparsePauliOp,
+        ctrl: int = [1], 
+        offset: int = 1
+    ) -> None:
     """Applies a controlled-U gate to a quantum circuit.
     
     Args:
@@ -135,96 +128,65 @@ def apply_cU(circ: QuantumCircuit,
         offset: An integer indicating the number of qubits skipped when 
             applying the controlled-U gate.
     """
-    if term == ():
+    assert set(ctrl).issubset({0, 1})
+    assert len(op.coeffs) == 1
+    coeff = op.coeffs[0]
+    label = op.table.to_labels()[0]
+    if coeff == 1 and set(list(label)) == {'I'}:
         return
-        
-    assert ctrl in [0, 1]
-    ind_max = max([t[0] for t in term])
+    amp, angle = polar(coeff)
+    assert amp == 1
+
+    ind_max = len(label) - 1
+    label_tmp = label
+    print(ind_max)
+    print(label)
+    for i in range(len(label)):
+        print('i =', i)
+        if label_tmp[0] == 'I':
+            label_tmp = label_tmp[1:]
+            ind_max -= 1
+            print('ind_max =', ind_max)
 
     # Prepend X gates for control on 0
-    if ctrl == 0:
-        circ.x(0)
+    for i in range(len(ctrl)):
+        if ctrl[i] == 0:
+            circ.x(i)
+
+    # Prepend rotation gates for Pauli X and Y
+    for i, c in enumerate(label[::-1]):
+        if c == 'X':
+            circ.h(i + offset)
+        elif c == 'Y':
+            circ.rx(np.pi / 2, i + offset)
     
-    # Prepend gates for Pauli
-    if term[-1][1] == 'X':
-        circ.h(ind_max + offset)
-    elif term[-1][1] == 'Y':
-        circ.s(0)
-        circ.rx(np.pi / 2, ind_max + offset)
-    
-    # Implement multi-qubit gate
+    # Implement multicontrolled all-Z gate
     for i in range(ind_max + offset, offset, -1):
+        print('i =', i)
         circ.cx(i, i - 1)
-    circ.cz(0, offset)
+    if len(ctrl) == 1:
+        if coeff != 1:
+            circ.p(angle, 0)
+        circ.cz(0, offset)
+    elif len(ctrl) == 2:
+        if coeff != 1:
+            circ.cp(angle, 0, 1)
+        circ.h(offset)
+        circ.ccx(0, 1, offset)
+        circ.h(offset)
+    else:
+        raise ValueError("Control on more than two qubits is not implemented")
     for i in range(offset, ind_max + offset):
         circ.cx(i + 1, i)
-    
-    # Append gates for Pauli
-    if term[-1][1] == 'X':
-        circ.h(ind_max + offset)
-    elif term[-1][1] == 'Y':
-        circ.rx(-np.pi / 2, ind_max + offset)
+
+    # Append rotation gates for Pauli X and Y
+    for i, c in enumerate(label[::-1]):
+        if c == 'X':
+            circ.h(i + offset)
+        elif c == 'Y':
+            circ.rx(-np.pi / 2, i + offset)
     
     # Append X gates for control on 0
-    if ctrl == 0:
-        circ.x(0)
-
-def apply_ccU(circ: QuantumCircuit, 
-              term: Tuple[Tuple[str, int]], 
-              ctrl: Tuple[int, int] = (1, 1), 
-              offset: int = 2) -> None:
-    """Applies a controlled-controlled-U gate to a quantum circuit.
-    
-    Args:
-        circ: The quantum circuit to which the controlled-U gate is appended.
-        term: A tuple specifying the Pauli string corresponding to 
-            the creation/annihilation operator, e.g. Z0Z1X2 is specified as 
-            (('Z', 0), ('Z', 1), ('X', 2)).
-        ctrl: An tuple of two integers indicating the qubit states on which 
-            the controlled-controlled-U gate is controlled on. Both integers 
-            must be 0 or 1.
-        offset: An integer indicating the number of qubits skipped when 
-            applying the controlled-controlled-U gate.    
-    """
-    if term == ():
-        return
-
-    assert set(ctrl).issubset({0, 1})
-    ind_max = max([t[0] for t in term])
-    
-    # Prepend X gates when controlled on 0
-    if ctrl[0] == 0:
-        circ.x(0)
-    if ctrl[1] == 0:
-        circ.x(1)
-
-    #if ctrl[0] == 1:
-    #    circ.s(0)
-
-    # Prepend rotation gates in the case of X, Y
-    if term[-1][1] == 'X':
-        circ.h(ind_max + offset)
-    elif term[-1][1] == 'Y':
-        circ.cp(np.pi / 2, 0, 1)
-        circ.rx(np.pi / 2, ind_max + offset)
-    
-    # Implement multi-qubit gate
-    for i in range(ind_max + offset, offset, -1):
-        circ.cx(i, i - 1)
-    circ.h(offset)
-    circ.ccx(0, 1, offset)
-    circ.h(offset)
-    for i in range(offset, ind_max + offset):
-        circ.cx(i + 1, i)
-    
-    # Append rotation gates in the case of X, Y
-    if term[-1][1] == 'X':
-        circ.h(ind_max + offset)
-    elif term[-1][1] == 'Y':
-        circ.rx(-np.pi / 2, ind_max + offset)
-    
-    # Append X gates when controlled on 0
-    if ctrl[0] == 0:
-        circ.x(0)
-    if ctrl[1] == 0:
-        circ.x(1)
+    for i in range(len(ctrl)):
+        if ctrl[i] == 0:
+            circ.x(i)
