@@ -1,6 +1,3 @@
-import copy
-import pickle
-import json
 from typing import Union, Tuple, Optional
 
 import numpy as np
@@ -15,8 +12,9 @@ from qiskit.extensions import UnitaryGate
 
 from constants import HARTREE_TO_EV
 from hamiltonians import MolecularHamiltonian
-from tools import (get_number_state_indices, get_pauli_tuple,
-                   number_state_eigensolver, 
+from number_state_solvers import (get_number_state_indices,
+                                  number_state_eigensolver)
+from tools import (get_pauli_tuple,
                    reverse_qubit_order,
                    get_statevector, 
                    load_vqe_result,
@@ -148,11 +146,8 @@ class GreensFunction:
     def compute_eh_states(self) -> None:
         """Calculates (N±1)-electron states of the Hamiltonian."""
         print("Start calculating (N±1)-electron states")
-        print("=" * 80)
-        print('e')
         self.eigenenergies_e, self.eigenstates_e = \
             number_state_eigensolver(self.hamiltonian_arr, self.n_occ + 1, reverse=True)
-        print("=" * 80)
         self.eigenenergies_h, self.eigenstates_h = \
             number_state_eigensolver(self.hamiltonian_arr, self.n_occ - 1, reverse=True)
         self.eigenenergies_e *= HARTREE_TO_EV
@@ -227,7 +222,7 @@ class GreensFunction:
                         print('-' * 80)
                         probs_e = np.abs(self.eigenstates_e.conj().T @ psi[inds_e]) ** 2
                         probs_e[abs(probs_e) < 1e-8] = 0.
-                        # print('probs_e =', probs_e)
+                        print('@@@@@ probs_e =', probs_e)
                         self.B_e[m, m] = probs_e
 
                     if self.states in ('h', None):                     

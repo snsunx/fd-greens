@@ -21,6 +21,9 @@ def build_diagonal_circuits(ansatz: QuantumCircuit,
         with_qpe: Whether an additional qubit is added for QPE.
         add_barriers: Whether barriers are added to the circuit.
         measure: Whether the ancilla qubits are measured.
+
+    Returns:
+        A QuantumCircuit with the diagonal Pauli string appended.
     """
     # Create a new circuit along with the quantum registers
     n_qubits = ansatz.num_qubits
@@ -72,6 +75,9 @@ def build_off_diagonal_circuits(ansatz: QuantumCircuit,
         with_qpe: Whether an additional qubit is added for QPE.
         add_barriers: Whether barriers are added to the circuit.
         measure: Whether the ancilla qubits are measured.
+
+    Returns:
+        A QuantumCircuit with the off-diagonal Pauli string appended.
     """
     # Create a new circuit along with the quantum registers
     n_qubits = ansatz.num_qubits
@@ -129,6 +135,9 @@ def apply_cU(circ: QuantumCircuit,
         offset: An integer indicating the number of qubits skipped when 
             applying the controlled-U gate.
     """
+    if term == ():
+        return
+        
     assert ctrl in [0, 1]
     ind_max = max([t[0] for t in term])
 
@@ -177,6 +186,9 @@ def apply_ccU(circ: QuantumCircuit,
         offset: An integer indicating the number of qubits skipped when 
             applying the controlled-controlled-U gate.    
     """
+    if term == ():
+        return
+
     assert set(ctrl).issubset({0, 1})
     ind_max = max([t[0] for t in term])
     

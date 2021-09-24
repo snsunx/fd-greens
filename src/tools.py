@@ -1,13 +1,9 @@
 from typing import Union, Tuple, List, Iterable, Optional, Sequence
 import json
-from itertools import combinations
 
 import numpy as np
-from scipy.sparse.data import _data_matrix
 
-from z2_symmetries import apply_cnot_z2
-
-from qiskit import *
+from qiskit import QuantumCircuit, Aer, IBMQ, execute
 from qiskit.utils import QuantumInstance
 from qiskit.providers.aer.noise import NoiseModel
 from qiskit.providers.aer.backends.aerbackend import AerBackend
@@ -17,12 +13,11 @@ from qiskit.algorithms import VQEResult
 
 from openfermion.ops import PolynomialTensor
 from openfermion.transforms import get_fermion_operator, jordan_wigner
-from openfermion.linalg import get_sparse_operator
-from openfermion.ops.operators.qubit_operator import QubitOperator
 
 from z2_symmetries import apply_cnot_z2
-from hamiltonians import MolecularHamiltonian
 from constants import HARTREE_TO_EV
+
+PauliTuple = Tuple[Tuple[str, int]]
 
 def get_quantum_instance(backend, 
                          noise_model_name=None, 
@@ -64,93 +59,6 @@ def reverse_qubit_order(arr):
         arr = arr.transpose(*inds_transpose)
         arr = arr.reshape(*shape_original)
     return arr
-
-def get_number_state_indices(n_orb: int,
-                             n_elec: int,
-                             anc: Iterable[str] = '',
-                             return_type: str = 'decimal',
-                             reverse: bool = True) -> List[int]:
-    """Obtains the indices corresponding to a certain number of electrons.
-    
-    Args:
-        n_orb: An integer indicating the number of orbitals.
-        n_elec: An integer indicating the number of electrons.
-        anc: An iterable of '0' and '1' indicating the state of the
-            ancilla qubit(s).
-        return_type: Type of the indices returned. Must be 'decimal'
-            or 'binary'. Default to 'decimal'.
-        reverse: Whether the qubit indices are reversed because of 
-            Qiskit qubit order. Default to True.
-    """
-    assert return_type in ['binary', 'decimal']
-    inds = []
-    for tup in combinations(range(n_orb), n_elec):
-        bin_list = ['1' if (n_orb - 1 - i) in tup else '0' 
-                    for i in range(n_orb)]
-        if reverse:
-            bin_str = ''.join(bin_list) + anc[::-1]
-        else:
-            bin_str = anc + ''.join(bin_list)
-        inds.append(bin_str)
-    if reverse:
-        inds = sorted(inds, reverse=True)
-    if len(anc) <= 1:
-        print(anc)
-        print(inds)
-    if return_type == 'decimal':
-        inds = [int(s, 2) for s in inds]
-    return inds
-
-def number_state_eigensolver(
-        hamiltonian: Union[MolecularHamiltonian, QubitOperator, np.ndarray],
-        n_elec: Optional[int] = None,
-        inds: Optional[Sequence[str]] = None,
-        reverse: bool = False
-    ) -> Tuple[np.ndarray, np.ndarray]:
-    # TODO: Update docstring for n_elec, inds and reverse
-    """Exact eigensolver for the Hamiltonian in the subspace of 
-    a certain number of electrons.
-    
-    Args:
-        hamiltonian: The Hamiltonian of the molecule.
-        n_elec: An integer indicating the number of electrons.
-    `
-    Returns:
-        eigvals: The eigenenergies in the number state subspace.
-        eigvecs: The eigenstates in the number state subspace.
-    """
-    if isinstance(hamiltonian, MolecularHamiltonian):
-        hamiltonian_arr = hamiltonian.to_array(array_type='sparse')
-    elif isinstance(hamiltonian, QubitOperator):
-        hamiltonian_arr = get_sparse_operator(hamiltonian)
-    elif (isinstance(hamiltonian, _data_matrix) or 
-          isinstance(hamiltonian, np.ndarray)):
-        hamiltonian_arr = hamiltonian
-    else:
-        raise TypeError("Hamiltonian must be one of MolecularHamiltonian,"
-                        "QubitOperator, sparse array or ndarray")
-
-    if inds is None:
-        n_orb = int(np.log2(hamiltonian_arr.shape[0]))
-        inds = get_number_state_indices(n_orb, n_elec, reverse=reverse)
-    hamiltonian_subspace = hamiltonian_arr[inds][:, inds]
-    if isinstance(hamiltonian_subspace, _data_matrix):
-        hamiltonian_subspace = hamiltonian_subspace.toarray()
-    
-    eigvals, eigvecs = np.linalg.eigh(hamiltonian_subspace)
-
-    # TODO: Note that the minus sign below depends on the `reverse` variable. 
-    # Might need to take care of this
-    sort_arr = [(eigvals[i], -np.argmax(np.abs(eigvecs[:, i]))) 
-                for i in range(len(eigvals))]
-    sort_arr = [x[0] + 1e-4 * x[1] for x in sort_arr] # XXX: Ad-hoc
-    print('sort_arr =', sort_arr)
-    print('sorted(sort_arr) =', sorted(sort_arr))
-    inds_new = sorted(range(len(sort_arr)), key=sort_arr.__getitem__)
-    # print(inds_new)
-    eigvals = eigvals[inds_new]
-    eigvecs = eigvecs[:, inds_new]
-    return eigvals, eigvecs
 
 def get_statevector(circ):
     backend = Aer.get_backend('statevector_simulator')
@@ -198,7 +106,7 @@ def save_vqe_result(vqe_result: VQEResult, prefix: str = None) -> None:
         f.write(json.dumps(params_dict_new))
 
 def get_pauli_tuple(n_qubits: int, ind: int
-                    ) -> List[Tuple[str, int]]:
+                    ) -> Tuple[PauliTuple]:
     """Obtains the tuple form of a Pauli string from number of qubits and 
     creation/annihilation operator index.
     
@@ -215,30 +123,68 @@ def get_pauli_tuple(n_qubits: int, ind: int
     poly_tensor = PolynomialTensor({(0,): arr})
     ferm_op = get_fermion_operator(poly_tensor)
     qubit_op = jordan_wigner(ferm_op)
-    tup_xy = list(qubit_op.terms)
+    tup_xy = tuple(qubit_op.terms)
     return tup_xy
 
-def label_to_term(label: str) -> List[Tuple[str, int]]:
-    """Converts Pauli string from label form to term form.
+def pauli_label_to_tuple(label: str) -> PauliTuple:
+    """Converts a Pauli string from label form to tuple form.
     
     Args:
         The Pauli string in label form.
         
     Returns:
-        The Pauli string in term form.
+        The Pauli string in tuple form.
     """
-    term = []
+    lst = []
     for i, c in enumerate(label[::-1]):
         if c != 'I':
-            term.append((c, i))
-    return term
+            lst.append((i, c))
+    tup = tuple(lst)
+    return tup
+
+def get_indices_with_ancilla(inds: Iterable[str], anc: str):
+    """Returns indices with ancillas positions.
+    
+    Args:
+        inds:
+        anc: 
+    """
+    print('inds =', inds)
+    inds_new = [ind + anc for ind in inds]
+    inds_new = [int(ind, 2) for ind in inds_new]
+    return inds_new
+
 
 # XXX: The following function is hardcoded
-def get_term_dictionary():
-    x_ops = SparsePauliOp(PauliTable.from_labels(['IIIX', 'IIXZ', 'IXZZ', 'XZZZ']))
-    y_ops = SparsePauliOp(PauliTable.from_labels(['IIIY', 'IIYZ', 'IYZZ', 'YZZZ']))
-    x_ops_labels = apply_cnot_z2(apply_cnot_z2(x_ops, 2, 0), 3, 1).primitive.table.to_labels()
-    y_ops_labels = apply_cnot_z2(apply_cnot_z2(y_ops, 2, 0), 3, 1).primitive.table.to_labels()
-    x_ops_terms = [label_to_term(l) for l in x_ops_labels]
-    y_ops_terms = [label_to_term(l) for l in y_ops_labels]
-    return x_ops_dict, y_ops_dict
+def get_pauli_tuple_dictionary(spin='up'):
+    x_labels = ['IIIX', 'IIXZ', 'IXZZ', 'XZZZ']
+    y_labels = ['IIIY', 'IIYZ', 'IYZZ', 'YZZZ']
+    x_ops = SparsePauliOp(PauliTable.from_labels(x_labels))
+    y_ops = SparsePauliOp(PauliTable.from_labels(y_labels))
+    x_ops_trans = apply_cnot_z2(apply_cnot_z2(x_ops, 2, 0), 3, 1)
+    y_ops_trans = apply_cnot_z2(apply_cnot_z2(y_ops, 2, 0), 3, 1)
+    print(x_ops_trans.coeffs)
+    print(y_ops_trans.coeffs)
+    x_labels_trans = x_ops_trans.primitive.table.to_labels()
+    y_labels_trans = y_ops_trans.primitive.table.to_labels()
+    print('x_label_trans =', x_labels_trans)
+    print('y_label_trans =', y_labels_trans)
+    x_labels_trans = [l[:2] for l in x_labels_trans]
+    y_labels_trans = [l[:2] for l in y_labels_trans]
+    print('x_label_trans =', x_labels_trans)
+    print('y_label_trans =', y_labels_trans)
+    exit()
+    tups_x = [pauli_label_to_tuple(l) for l in x_labels_trans]
+    tups_y = [pauli_label_to_tuple(l) for l in y_labels_trans]
+    dic = {}
+    if spin == 'up':
+        for i in range(2):
+            tup_x = tups_x[2 * i]
+            tup_y = tups_y[2 * i]
+            dic.update({i: [tup_x, tup_y]})
+    else:
+        for i in range(2):
+            tup_x = tups_x[2 * i + 1]
+            tup_y = tups_y[2 * i + 1]
+            dic.update({i: [tup_x, tup_y]}) 
+    return dic

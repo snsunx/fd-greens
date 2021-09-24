@@ -12,8 +12,10 @@ from qiskit.extensions import UnitaryGate
 
 from constants import HARTREE_TO_EV
 from hamiltonians import MolecularHamiltonian
-from tools import (get_number_state_indices,
-                   number_state_eigensolver, 
+from number_state_solvers import (get_number_state_indices,
+                                  number_state_eigensolver)
+from tools import (get_indices_with_ancilla, 
+                   get_pauli_tuple_dictionary,
                    reverse_qubit_order,
                    get_statevector, 
                    load_vqe_result,
@@ -23,6 +25,8 @@ from recompilation import recompile_with_statevector, apply_quimb_gates
 from z2_symmetries import transform_4q_hamiltonian
 
 np.set_printoptions(precision=6)
+pauli_tuple_dict = get_pauli_tuple_dictionary()
+print(pauli_tuple_dict)
 
 class GreensFunctionRestricted:
     def __init__(self, 
@@ -76,7 +80,8 @@ class GreensFunctionRestricted:
         self.recompiled = recompiled
 
         # Number of orbitals and indices
-        self.n_orb = 2 * len(self.hamiltonian.active_inds)
+        self.n_orb = len(self.hamiltonian.active_inds)
+        print('self.n_orb =', self.n_orb)
         self.n_occ = (self.hamiltonian.molecule.n_electrons 
                       - 2 * len(self.hamiltonian.occupied_inds))
         self.n_vir = self.n_orb - self.n_occ
@@ -84,6 +89,12 @@ class GreensFunctionRestricted:
         self.inds_vir = list(range(self.n_occ, self.n_orb))
         self.n_e = int(binom(self.n_orb, self.n_occ + 1))
         self.n_h = int(binom(self.n_orb, self.n_occ - 1))
+
+        #self.inds_h = [int(x, 2) for x in ['10', '00']]
+        #self.inds_e = [int(x, 2) for x in ['11', '01']]
+
+        self.inds_h = ['10', '00']
+        self.inds_e = ['11', '01']
 
         # XXX: Dimensions are hardcoded for now
         # Define the transition amplitude matrices
@@ -127,6 +138,7 @@ class GreensFunctionRestricted:
         Args:
             save_params: Whether to save the VQE energy and ansatz parameters.
             load_params: Whether to load the VQE energy and ansatz parameters.
+            prefix: A string specifying the prefix for the saved files.
         """
         if prefix is None:
             prefix = 'vqe'
@@ -150,8 +162,8 @@ class GreensFunctionRestricted:
     def compute_eh_states(self) -> None:
         """Calculates (N±1)-electron states of the Hamiltonian."""
         print("Start calculating (N±1)-electron states")
-        inds_h = [int(x, 2) for x in ['10', '00']]
-        inds_e = [int(x, 2) for x in ['11', '01']]
+        inds_e = [int(x, 2) for x in self.inds_e]
+        inds_h = [int(x, 2) for x in self.inds_h]
         self.eigenenergies_e, self.eigenstates_e = \
             number_state_eigensolver(self.hamiltonian_arr_up, inds=inds_e)
         self.eigenenergies_h, self.eigenstates_h = \
@@ -162,44 +174,6 @@ class GreensFunctionRestricted:
         print('eigenenergies_h\n', self.eigenenergies_h)
         print("eigenstates_e\n", self.eigenstates_e)
         print("eigenstates_h\n", self.eigenstates_h)
-
-        '''
-        eigenenergies_2, eigenstates_2 = number_state_eigensolver(self.hamiltonian_arr, 2)
-        if True:
-            np.set_printoptions(precision=2)
-            eigenstates = np.zeros((16, 6), dtype=complex)
-            inds = get_number_state_indices(4, 2)
-            for j in range(6):
-                eigenstates[inds, j] = eigenstates_2[:, j]
-            ZIZI = Pauli('ZIZI').to_matrix()
-            IZIZ = Pauli('IZIZ').to_matrix()
-
-            res = eigenstates.conj().T @ ZIZI @ eigenstates
-            res[abs(res) < 1e-8] = 0
-            print('ZIZI values')
-            print(res)
-
-            res = eigenstates.conj().T @ IZIZ @ eigenstates
-            res[abs(res) < 1e-8] = 0
-            print('IZIZ values')
-            print(res)
-        
-
-        # print(self.eigenstates_e.shape)
-        if True:
-            eigenstates = np.zeros((16, 4), dtype=complex)
-            inds = get_number_state_indices(4, 3)
-            inds = [15 - k for k in inds]
-            for j in range(4):
-                eigenstates[inds, j] = self.eigenstates_e[:, j]
-            ZIZI = Pauli('ZIZI').to_matrix()
-            IZIZ = Pauli('IZIZ').to_matrix()
-            print('ZIZI values\n')
-            print(eigenstates.conj().T @ ZIZI @ eigenstates)
-            print('IZIZ values\n')
-            print(eigenstates.conj().T @ IZIZ @ eigenstates)
-        print("Finish calculating (N±1)-electron states")
-    '''
 
     def compute_diagonal_amplitudes(self,
                                     cache_read: bool = True,
@@ -213,34 +187,29 @@ class GreensFunctionRestricted:
         """
         print("Start calculating diagonal transition amplitudes")
         for m in range(self.n_orb):
+            print('m =', m)
+            tup_xy = pauli_tuple_dict[m]
             if self.states is None or self.states in self.states_arr[m, m]:
                 if self.q_instance.backend.name() == 'statevector_simulator':
-                    circ = build_diagonal_circuits(self.ansatz.copy(), m, with_qpe=False)
+                    circ = build_diagonal_circuits(self.ansatz.copy(), tup_xy, with_qpe=False)
                     result = self.q_instance.execute(circ)
                     psi = result.get_statevector()
+                    print('BINNNNNNNNNNNN =', bin(np.argmax(np.abs(psi)))[2:])
                     
                     if self.states in ('e', None):
-                        inds_e = get_number_state_indices(
-                            self.n_orb, self.n_occ + 1, anc='1', reverse=True)
-                        print('-' * 80)
-                        print('m =', m)
-                        print(psi[inds_e])
-                        print('-' * 80)
+                        inds_e = get_indices_with_ancilla(self.inds_e, anc='1')
+                        print('inds_e =', inds_e)
                         probs_e = np.abs(self.eigenstates_e.conj().T @ psi[inds_e]) ** 2
                         probs_e[abs(probs_e) < 1e-8] = 0.
-                        # print('probs_e =', probs_e)
+                        print('@@@@@ probs_e =', probs_e)
                         self.B_e[m, m] = probs_e
 
-                    if self.states in ('h', None):                     
-                        inds_h = get_number_state_indices(
-                            self.n_orb, self.n_occ - 1, anc='0', reverse=True)
-                        print('-' * 80)
-                        print('m =', m)
-                        print(psi[inds_h])
-                        print('-' * 80)
+                    if self.states in ('h', None):
+                        inds_h = get_indices_with_ancilla(self.inds_h, anc='0')
+                        print('inds_h =', inds_h)
                         probs_h = np.abs(self.eigenstates_h.conj().T @ psi[inds_h]) ** 2
                         probs_h[abs(probs_h) < 1e-8] = 0.
-                        # print('probs_h =', probs_h)
+                        print('@@@@@ probs_h =', probs_h)
                         self.B_h[m, m] = probs_h
 
                     if self.states is None:
@@ -252,7 +221,7 @@ class GreensFunctionRestricted:
                         self.states_arr[m, m] = states_elem
 
                 else: # QASM simulator or hardware
-                    circ = build_diagonal_circuits(self.ansatz.copy(), m)
+                    circ = build_diagonal_circuits(self.ansatz.copy(), )
                     Umat = expm(1j * self.hamiltonian_arr * HARTREE_TO_EV)
                     if self.recompiled:
                         # Construct the unitary |0><0|⊗I + |1><1|⊗e^{iHt} 
@@ -337,36 +306,30 @@ class GreensFunctionRestricted:
         """
         print("Start calculating off-diagonal transition amplitudes")
         for m in range(self.n_orb):
-           for n in range(self.n_orb):
+            tup_xy_left = pauli_tuple_dict[m]
+            for n in range(self.n_orb):
+                tup_xy_right = pauli_tuple_dict[n]
                 if m != n and (self.states is None or 
-                               self.states in self.states_arr[m, n]):
+                               self.states in self.states_arr[m, n]): # XXX
                     if self.q_instance.backend.name() == 'statevector_simulator':
                         circ = build_off_diagonal_circuits(
-                            self.ansatz.copy(), m, n, with_qpe=False)
+                            self.ansatz.copy(), tup_xy_left, tup_xy_right, with_qpe=False)
                         result = self.q_instance.execute(circ)
                         psi = result.get_statevector()
 
                         if self.states in ('h', None):
-                            inds_hp = get_number_state_indices(
-                                self.n_orb, self.n_occ - 1, anc='00', reverse=True)
-                            inds_hm = get_number_state_indices(
-                                self.n_orb, self.n_occ - 1, anc='01', reverse=True)
+                            inds_hp = get_indices_with_ancilla(self.inds_h, anc='00')
+                            inds_hm = get_indices_with_ancilla(self.inds_h, anc='10')
                             probs_hp = abs(self.eigenstates_h.conj().T @ psi[inds_hp]) ** 2
                             probs_hm = abs(self.eigenstates_h.conj().T @ psi[inds_hm]) ** 2
-                            # print("probs_hp =", probs_hp)
-                            # print("probs_hm =", probs_hm)
                             self.D_hp[m, n] = probs_hp
                             self.D_hm[m, n] = probs_hm
 
                         if self.states in ('e', None):
-                            inds_ep = get_number_state_indices(
-                                self.n_orb, self.n_occ + 1, anc='10', reverse=True)
-                            inds_em = get_number_state_indices(
-                                self.n_orb, self.n_occ + 1, anc='11', reverse=True)
+                            inds_ep = get_indices_with_ancilla(self.inds_e, anc='01')
+                            inds_em = get_indices_with_ancilla(self.inds_e, anc='11')
                             probs_ep = abs(self.eigenstates_e.conj().T @ psi[inds_ep]) ** 2
                             probs_em = abs(self.eigenstates_e.conj().T @ psi[inds_em]) ** 2
-                            # print("probs_ep =", probs_ep)
-                            # print("probs_em =", probs_em)
                             self.D_ep[m, n] = probs_ep
                             self.D_em[m, n] = probs_em
 
@@ -380,7 +343,7 @@ class GreensFunctionRestricted:
 
                     else:
                         circ = build_off_diagonal_circuits(
-                            self.ansatz.copy(), m, n)
+                            self.ansatz.copy(), tup_xy_left, tup_xy_right)
                         Umat = expm(1j * self.hamiltonian_arr_up * HARTREE_TO_EV)
 
                         # Append QPE circuit
@@ -461,25 +424,6 @@ class GreensFunctionRestricted:
                         np.exp(-1j * np.pi / 4) * (self.D_hp[m, n] - self.D_hm[m, n]) +
                         np.exp(1j * np.pi / 4) * (self.D_hp[n, m] - self.D_hm[n, m]))
 
-        print('B_e\n')
-        #self.B_e[abs(self.B_e) < 1e-8] = 0.
-        B_e = self.B_e.copy()
-        for m in [0, 2]:
-            for m_ in range(B_e.shape[1]):
-                for lam in range(B_e.shape[2]):
-                    if abs(B_e[m, m_, lam]) > 1e-4:
-                        print(f'm = {m}, m\' = {m_}, lambda = {lam}: {B_e[m, m_, lam]:.6f}')
-        
-        '''
-        #print('B_h\n')
-        #self.B_h[abs(self.B_h) < 1e-8] = 0.
-        B_h = self.B_h.copy()
-        for i in range(self.B_h.shape[-1]):
-            print(i)
-            print(abs(self.B_h[:,:,i]) < 1e-8)
-            print(self.B_h[:,:,i])
-        '''
-
         print("Finish calculating off-diagonal transition amplitudes")
 
     # TODO: Write this as a property function
@@ -495,13 +439,13 @@ class GreensFunctionRestricted:
             load_params: bool = False,
             cache_write: bool = True,
             cache_read: bool = False) -> None:
-        """Main function call to compute energies and transition amplitudes.
+        """Main function to compute energies and transition amplitudes.
         
         Args:
             compute_energies: Whether to compute ground- and (N±1)-electron 
                 state energies.
-            save_params:
-            load_params: 
+            save_params: Whether to save the VQE energy and ansatz parameters.
+            load_params: Whether to load the VQE energy and ansatz parameters.
             cache_read: Whether to read recompiled circuits from cache files.
             cache_write: Whether to save recompiled circuits to cache files.
         """
