@@ -204,18 +204,19 @@ class GreensFunction:
         """
         print("Start calculating diagonal transition amplitudes")
         for m in range(self.n_orb):
+            print('m =', m)
             a_op_m = get_a_operator(self.n_qubits, m)
             if self.states is None or self.states in self.states_arr[m, m]:
                 if self.q_instance.backend.name() == 'statevector_simulator':
                     circ = build_diagonal_circuits(self.ansatz.copy(), a_op_m, with_qpe=False)
                     result = self.q_instance.execute(circ)
                     psi = result.get_statevector()
+                    print('Index of largest element is', format(np.argmax(np.abs(psi)), '05b'))
                     
                     if self.states in ('e', None):
                         inds_e = get_number_state_indices(
                             self.n_orb, self.n_occ + 1, anc='1', reverse=True)
                         print('-' * 80)
-                        print('m =', m)
                         print(psi[inds_e])
                         print('-' * 80)
                         probs_e = np.abs(self.eigenstates_e.conj().T @ psi[inds_e]) ** 2
@@ -226,13 +227,13 @@ class GreensFunction:
                     if self.states in ('h', None):                     
                         inds_h = get_number_state_indices(
                             self.n_orb, self.n_occ - 1, anc='0', reverse=True)
-                        print('-' * 80)
-                        print('m =', m)
-                        print(psi[inds_h])
-                        print('-' * 80)
+                        #print('-' * 80)
+                        #print('m =', m)
+                        #print(psi[inds_h])
+                        #print('-' * 80)
                         probs_h = np.abs(self.eigenstates_h.conj().T @ psi[inds_h]) ** 2
                         probs_h[abs(probs_h) < 1e-8] = 0.
-                        # print('probs_h =', probs_h)
+                        print('@@@@@ probs_h =', probs_h)
                         self.B_h[m, m] = probs_h
 
                     if self.states is None:

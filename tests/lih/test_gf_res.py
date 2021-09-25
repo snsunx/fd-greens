@@ -14,7 +14,7 @@ from constants import HARTREE_TO_EV
 
 # User-defined parameters.
 bond_length = 1.6
-save_params = True
+save_params = False
 load_params = False
 cache_read = False
 cache_write = False
@@ -36,7 +36,6 @@ gf_sv = GreensFunctionRestricted(ansatz.copy(), hamiltonian, q_instance=q_instan
 gf_sv.run(save_params=save_params, load_params=load_params, 
 		  cache_read=cache_read, cache_write=cache_write)
 #print(gf_sv.states_arr)
-exit()
 
 # QASM simulator calculation of h states
 print("============ Starts calculating h states ==========")

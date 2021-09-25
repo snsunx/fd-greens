@@ -131,7 +131,6 @@ def get_a_operator(n_qubits: int, ind: int) -> SparsePauliOp:
     """Returns the creation/annihilation operator."""
     label_x = 'I' * (n_qubits - ind - 1) + 'X' + 'Z' * ind
     label_y = 'I' * (n_qubits - ind - 1) + 'Y' + 'Z' * ind
-    print(label_x, label_y)
     pauli_table = PauliTable.from_labels([label_x, label_y])
     sparse_pauli_op = SparsePauliOp(pauli_table, coeffs=[1.0, 1.0j])
     return sparse_pauli_op
@@ -163,17 +162,19 @@ def get_indices_with_ancilla(inds: Iterable[str], anc: str):
 # XXX: The following function is hardcoded
 # XXX: Treating the spin this way is not correct. See Markdown document.
 def get_pauli_tuple_dictionary(spin='up'):
-    x_labels = ['IIIX', 'IIXZ', 'IXZZ', 'XZZZ']
-    y_labels = ['IIIY', 'IIYZ', 'IYZZ', 'YZZZ']
-    x_ops = SparsePauliOp(PauliTable.from_labels(x_labels))
-    y_ops = SparsePauliOp(PauliTable.from_labels(y_labels))
-    x_ops_trans = transform_4q_hamiltonian(x_ops) # spin assumed to be ''
-    y_ops_trans = transform_4q_hamiltonian(y_ops)
+    labels_x = ['IIIX', 'IIXZ', 'IXZZ', 'XZZZ']
+    labels_y = ['IIIY', 'IIYZ', 'IYZZ', 'YZZZ']
+    pauli_table = PauliTable.from_labels(labels_x + labels_y)
+    sparse_pauli_op = SparsePauliOp(pauli_table, coeffs=[1.] * 4 + [1j] * 4)
+    for i in range(8):
+        print(sparse_pauli_op[i].coeffs, sparse_pauli_op[i].table)
+
+    sparse_pauli_op = transform_4q_hamiltonian(sparse_pauli_op, init_state=[1, 1])
     dic = {}
     if spin == 'up':
         for i in range(2):
-            dic.update({i: [x_ops_trans[2 * i], y_ops_trans[2 * i]]})
+            dic.update({i: [sparse_pauli_op[2 * i], sparse_pauli_op[2 * i + 4]]})
     else:
         for i in range(2):
-            dic.update({i: [x_ops_trans[2 * i + 1], y_ops_trans[2 * i + 1]]})
+            dic.update({i: [sparse_pauli_op[2 * i + 1].primitive, sparse_pauli_op[2 * i + 1 + 4]]})
     return dic

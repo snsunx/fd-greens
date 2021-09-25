@@ -65,12 +65,17 @@ class GreensFunctionRestricted:
         self.qiskit_op *= scaling
         self.qiskit_op.primitive.coeffs[0] += shift / HARTREE_TO_EV
         
-        self.qiskit_op_transformed = transform_4q_hamiltonian(self.qiskit_op)
+        self.qiskit_op_transformed = transform_4q_hamiltonian(self.qiskit_op, init_state=[1, 1])
         self.hamiltonian_arr = self.qiskit_op_transformed.to_matrix()
-        
-        self.qiskit_op_up = transform_4q_hamiltonian(self.qiskit_op, spin='up')
+
+        self.qiskit_op_none = transform_4q_hamiltonian(self.qiskit_op, init_state=[1, 1])
+
+        self.qiskit_op_up = transform_4q_hamiltonian(self.qiskit_op, init_state=[0, 1])
         self.hamiltonian_arr_up = self.qiskit_op_up.to_matrix()
-        
+
+        self.qiskit_op_down = transform_4q_hamiltonian(self.qiskit_op, init_state=[1, 0])
+        self.hamiltonian_arr_down = self.qiskit_op_down.to_matrix()
+
         self.optimizer = L_BFGS_B() if optimizer is None else optimizer
         if q_instance is None:
             self.q_instance = QuantumInstance(
@@ -149,7 +154,7 @@ class GreensFunctionRestricted:
             print("Start calculating the ground state using VQE")
             vqe = VQE(self.ansatz, optimizer=self.optimizer, 
                       quantum_instance=Aer.get_backend('statevector_simulator'))
-            vqe_result = vqe.compute_minimum_eigenvalue(self.qiskit_op)
+            vqe_result = vqe.compute_minimum_eigenvalue(self.qiskit_op_none)
             if save_params:
                 save_vqe_result(vqe_result, prefix=prefix)
             self.energy_gs = vqe_result.optimal_value * HARTREE_TO_EV
@@ -188,13 +193,14 @@ class GreensFunctionRestricted:
         print("Start calculating diagonal transition amplitudes")
         for m in range(self.n_orb):
             print('m =', m)
-            tup_xy = pauli_tuple_dict[m]
+            a_op_m = pauli_tuple_dict[m]
             if self.states is None or self.states in self.states_arr[m, m]:
                 if self.q_instance.backend.name() == 'statevector_simulator':
-                    circ = build_diagonal_circuits(self.ansatz.copy(), tup_xy, with_qpe=False)
+                    #print(self.ansatz)
+                    circ = build_diagonal_circuits(self.ansatz.copy(), a_op_m, with_qpe=False)
                     result = self.q_instance.execute(circ)
                     psi = result.get_statevector()
-                    print('BINNNNNNNNNNNN =', bin(np.argmax(np.abs(psi)))[2:])
+                    print('Index of largest element is', format(np.argmax(np.abs(psi)), '03b'))
                     
                     if self.states in ('e', None):
                         inds_e = get_indices_with_ancilla(self.inds_e, anc='1')
@@ -306,14 +312,14 @@ class GreensFunctionRestricted:
         """
         print("Start calculating off-diagonal transition amplitudes")
         for m in range(self.n_orb):
-            tup_xy_left = pauli_tuple_dict[m]
+            a_op_m = pauli_tuple_dict[m]
             for n in range(self.n_orb):
-                tup_xy_right = pauli_tuple_dict[n]
+                a_op_n = pauli_tuple_dict[n]
                 if m != n and (self.states is None or 
                                self.states in self.states_arr[m, n]): # XXX
                     if self.q_instance.backend.name() == 'statevector_simulator':
                         circ = build_off_diagonal_circuits(
-                            self.ansatz.copy(), tup_xy_left, tup_xy_right, with_qpe=False)
+                            self.ansatz.copy(), a_op_m, a_op_n, with_qpe=False)
                         result = self.q_instance.execute(circ)
                         psi = result.get_statevector()
 

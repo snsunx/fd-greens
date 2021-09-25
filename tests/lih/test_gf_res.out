@@ -1,0 +1,75 @@
+[1.+0.j] PauliTable: ['IIIX']
+[1.+0.j] PauliTable: ['IIXZ']
+[1.+0.j] PauliTable: ['IXZZ']
+[1.+0.j] PauliTable: ['XZZZ']
+[0.+1.j] PauliTable: ['IIIY']
+[0.+1.j] PauliTable: ['IIYZ']
+[0.+1.j] PauliTable: ['IYZZ']
+[0.+1.j] PauliTable: ['YZZZ']
+
+[1.+0.j] PauliTable: ['IIIX']
+[1.+0.j] PauliTable: ['IZXZ']
+[-1.+0.j] PauliTable: ['ZYZY']
+[-1.+0.j] PauliTable: ['YIYZ']
+[0.+1.j] PauliTable: ['IZIY']
+[0.+1.j] PauliTable: ['ZZYZ']
+[0.+1.j] PauliTable: ['ZXZY']
+[0.+1.j] PauliTable: ['XIYZ']
+
+[1.+0.j] PauliTable: ['II']
+[-1.+0.j] PauliTable: ['IZ']
+[0.+1.j] PauliTable: ['ZY']
+[0.+1.j] PauliTable: ['YI']
+[-1.+0.j] PauliTable: ['IZ']
+[1.-0.j] PauliTable: ['ZZ']
+[1.-0.j] PauliTable: ['ZX']
+[1.-0.j] PauliTable: ['XI']
+{0: [SparsePauliOp([[False, False, False, False]],
+              coeffs=[1.+0.j]), SparsePauliOp([[False, False,  True, False]],
+              coeffs=[-1.+0.j])], 1: [SparsePauliOp([[ True, False,  True,  True]],
+              coeffs=[0.+1.j]), SparsePauliOp([[ True, False, False,  True]],
+              coeffs=[1.-0.j])]}
+========== Starts statevector simulation ==========
+self.n_orb = 2
+Start calculating the ground state using VQE
+Finish calculating the ground state using VQE
+Ground state energy = -213.932 eV
+Start calculating (N±1)-electron states
+eigenenergies_e
+ [-211.809557 -204.526909]
+eigenenergies_h
+ [-206.321719 -194.680123]
+eigenstates_e
+ [[ 0.027975+0.j -0.999609+0.j]
+ [ 0.999609+0.j  0.027975+0.j]]
+eigenstates_h
+ [[-0.1143  +0.j -0.993446+0.j]
+ [ 0.993446+0.j -0.1143  +0.j]]
+Start calculating diagonal transition amplitudes
+m = 0
+Index of largest element is 110
+inds = ['11', '01']
+inds_e = [7, 3]
+@@@@@ probs_e = [0. 0.]
+inds = ['10', '00']
+inds_h = [4, 0]
+@@@@@ probs_h = [0. 0.]
+m = 1
+Index of largest element is 100
+inds = ['11', '01']
+inds_e = [7, 3]
+@@@@@ probs_e = [0. 0.]
+inds = ['10', '00']
+inds_h = [4, 0]
+@@@@@ probs_h = [0.013063 0.986937]
+Finish calculating diagonal transition amplitudes
+Start calculating off-diagonal transition amplitudes
+inds = ['10', '00']
+inds = ['10', '00']
+inds = ['11', '01']
+inds = ['11', '01']
+inds = ['10', '00']
+inds = ['10', '00']
+inds = ['11', '01']
+inds = ['11', '01']
+Finish calculating off-diagonal transition amplitudes

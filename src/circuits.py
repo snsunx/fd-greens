@@ -53,6 +53,8 @@ def build_diagonal_circuits(ansatz: QuantumCircuit,
 
     if measure:
         circ.measure(0, 0)
+
+    print(circ)
     
     return circ
 
@@ -139,14 +141,10 @@ def apply_multicontrolled_gate(
 
     ind_max = len(label) - 1
     label_tmp = label
-    print(ind_max)
-    print(label)
     for i in range(len(label)):
-        print('i =', i)
         if label_tmp[0] == 'I':
             label_tmp = label_tmp[1:]
             ind_max -= 1
-            print('ind_max =', ind_max)
 
     # Prepend X gates for control on 0
     for i in range(len(ctrl)):
@@ -162,7 +160,6 @@ def apply_multicontrolled_gate(
     
     # Implement multicontrolled all-Z gate
     for i in range(ind_max + offset, offset, -1):
-        print('i =', i)
         circ.cx(i, i - 1)
     if len(ctrl) == 1:
         if coeff != 1:
