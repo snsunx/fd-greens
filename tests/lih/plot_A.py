@@ -10,17 +10,19 @@ omegas, A_noisy_new = np.loadtxt('A_noisy_new.dat').T
 omegas, A_noisy_cached = np.loadtxt('A_noisy_cached.dat').T
 omegas, A_noisy_cached1 = np.loadtxt('A_noisy_cached1.dat').T
 omegas, A_noisy_cached2 = np.loadtxt('A_noisy_cached2.dat').T
+omegas, A_red = np.loadtxt('A_red.dat').T
 
 fig, ax = plt.subplots()
 ax.plot(omegas, A_sv, label='Statevector')
-ax.plot(omegas, A_qasm, label='QASM')
-ax.plot(omegas, A_qasm1, label='QASM1')
-ax.plot(omegas, A_noisy, label='Noisy')
+#ax.plot(omegas, A_qasm, label='QASM')
+#ax.plot(omegas, A_qasm1, label='QASM1')
+#ax.plot(omegas, A_noisy, label='Noisy')
 #ax.plot(omegas, A_noisy1, label='Noisy1')
 #ax.plot(omegas, A_noisy_new, label='Noisy New')
 #ax.plot(omegas, A_noisy_cached, label='Noisy Cached')
-ax.plot(omegas, A_noisy_cached1, label='Noisy Cached1')
-ax.plot(omegas, A_noisy_cached2, ls='--', label='Noisy Cached2')
+#ax.plot(omegas, A_noisy_cached1, label='Noisy Cached1')
+#ax.plot(omegas, A_noisy_cached2, ls='--', label='Noisy Cached2')
+ax.plot(omegas, A_red, ls='--', label="Reduced")
 ax.set_xlabel('$\omega$ (eV)')
 ax.set_ylabel("Absorption spectra (eV$^{-1}$)")
 ax.legend()

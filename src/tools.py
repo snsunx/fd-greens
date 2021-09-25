@@ -128,7 +128,16 @@ def get_pauli_tuple(n_qubits: int, ind: int
     return tup_xy
 
 def get_a_operator(n_qubits: int, ind: int) -> SparsePauliOp:
-    """Returns the creation/annihilation operator."""
+    """Returns the creation/annihilation operator.
+    
+    Args:
+        n_qubits: Number of qubits.
+        ind: The index of the creation/annihilation operator.
+        
+    Returns:
+        The X and Y part of the creation/annihilation operator as a 
+            SparsePauliOp.
+    """
     label_x = 'I' * (n_qubits - ind - 1) + 'X' + 'Z' * ind
     label_y = 'I' * (n_qubits - ind - 1) + 'Y' + 'Z' * ind
     pauli_table = PauliTable.from_labels([label_x, label_y])
@@ -153,7 +162,6 @@ def pauli_label_to_tuple(label: str) -> PauliTuple:
 
 def get_indices_with_ancilla(inds: Iterable[str], anc: str):
     """Returns indices with ancillas positions."""
-    print('inds =', inds)
     inds_new = [ind + anc for ind in inds]
     inds_new = [int(ind, 2) for ind in inds_new]
     return inds_new
@@ -178,3 +186,6 @@ def get_pauli_tuple_dictionary(spin='up'):
         for i in range(2):
             dic.update({i: [sparse_pauli_op[2 * i + 1].primitive, sparse_pauli_op[2 * i + 1 + 4]]})
     return dic
+
+    
+

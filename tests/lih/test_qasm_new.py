@@ -52,11 +52,11 @@ gf_e.run(compute_energies=False, cache_read=cache_read, cache_write=cache_write)
 # Combining h states and e states results
 gf_final = GreensFunction.initialize_final(
     gf_sv, gf_e, gf_h, q_instance=q_instance_qasm)
+'''
 
 omegas = np.arange(-30, 34, 0.1)
 A_list = []
 for omega in omegas:
-    A = gf_final.compute_spectral_function(omega + 0.02j * HARTREE_TO_EV)
+    A = gf_sv.compute_spectral_function(omega + 0.02j * HARTREE_TO_EV)
     A_list.append(A)
-np.savetxt('A_qasm1.dat', np.vstack((omegas, A_list)).T)
-'''
+np.savetxt('A_sv.dat', np.vstack((omegas, A_list)).T)

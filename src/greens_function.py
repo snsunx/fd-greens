@@ -216,24 +216,17 @@ class GreensFunction:
                     if self.states in ('e', None):
                         inds_e = get_number_state_indices(
                             self.n_orb, self.n_occ + 1, anc='1', reverse=True)
-                        print('-' * 80)
-                        print(psi[inds_e])
-                        print('-' * 80)
                         probs_e = np.abs(self.eigenstates_e.conj().T @ psi[inds_e]) ** 2
                         probs_e[abs(probs_e) < 1e-8] = 0.
-                        print('@@@@@ probs_e =', probs_e)
+                        print('probs_e =', probs_e)
                         self.B_e[m, m] = probs_e
 
                     if self.states in ('h', None):                     
                         inds_h = get_number_state_indices(
                             self.n_orb, self.n_occ - 1, anc='0', reverse=True)
-                        #print('-' * 80)
-                        #print('m =', m)
-                        #print(psi[inds_h])
-                        #print('-' * 80)
                         probs_h = np.abs(self.eigenstates_h.conj().T @ psi[inds_h]) ** 2
                         probs_h[abs(probs_h) < 1e-8] = 0.
-                        print('@@@@@ probs_h =', probs_h)
+                        print('probs_h =', probs_h)
                         self.B_h[m, m] = probs_h
 
                     if self.states is None:
@@ -376,8 +369,7 @@ class GreensFunction:
                     else:
                         circ = build_off_diagonal_circuits(
                             self.ansatz.copy(), 
-                            tup_xy_left=tup_xy_left,
-                            tup_xy_right=tup_xy_right)
+                            a_op_m, a_op_n)
                         Umat = expm(1j * self.hamiltonian_arr * HARTREE_TO_EV)
 
                         # Append QPE circuit
@@ -466,16 +458,6 @@ class GreensFunction:
                 for lam in range(B_e.shape[2]):
                     if abs(B_e[m, m_, lam]) > 1e-4:
                         print(f'm = {m}, m\' = {m_}, lambda = {lam}: {B_e[m, m_, lam]:.6f}')
-        
-        '''
-        #print('B_h\n')
-        #self.B_h[abs(self.B_h) < 1e-8] = 0.
-        B_h = self.B_h.copy()
-        for i in range(self.B_h.shape[-1]):
-            print(i)
-            print(abs(self.B_h[:,:,i]) < 1e-8)
-            print(self.B_h[:,:,i])
-        '''
 
         print("Finish calculating off-diagonal transition amplitudes")
 

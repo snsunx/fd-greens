@@ -86,22 +86,18 @@ def taper(op: Union[PauliSumOp, SparsePauliOp],
         init_state = [0] * n_tapered
 
     for i in range(n_paulis):
-        print(coeffs[i], sparse_pauli_op[i].table)
         x = x_arr[i]
         z = z_arr[i]
         for j in range(n_tapered):
+            # Z acts on |1>
             if z[j] == True and x[j] == False and init_state[j] == 1:
                 coeffs[i] *= -1.0
-            if z[j] == True and x[j] == True and init_state[j] == 1:
-                print('-'*80)
-                print('got here')
-                print('before', coeffs[i])
-                coeffs[i] *= -1.0j
-                print('after', coeffs[i])
-                print('-'*80)
-            if z[j] == True and x[j] == True and init_state[j] == 0:
-                coeffs[i] *= 1.0j
-        print(coeffs[i])
+            # Y acting on either |0> or |1>
+            if z[j] == True and x[j] == True:
+                if init_state[j] == 0:
+                    coeffs[i] *= 1j
+                elif init_state[j] == 1:
+                    coeffs[i] *= -1j
 
     inds_kept = sorted(set(range(n_qubits)) - set(inds_tapered))
     x_arr = x_arr[:, inds_kept]
@@ -114,7 +110,7 @@ def taper(op: Union[PauliSumOp, SparsePauliOp],
 
 def transform_4q_hamiltonian(
         op: Union[PauliSumOp, SparsePauliOp], init_state
-    ) -> PauliSumOp:
+    ) -> Union[PauliSumOp, SparsePauliOp]:
     """Converts a four-qubit Hamiltonian to a two-qubit Hamiltonian, 
     assuming the symmetry operators are ZIZI and IZIZ.
     

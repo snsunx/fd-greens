@@ -53,8 +53,6 @@ def build_diagonal_circuits(ansatz: QuantumCircuit,
 
     if measure:
         circ.measure(0, 0)
-
-    print(circ)
     
     return circ
 

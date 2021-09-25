@@ -35,27 +35,10 @@ print("========== Starts statevector simulation ==========")
 gf_sv = GreensFunctionRestricted(ansatz.copy(), hamiltonian, q_instance=q_instance_sv)
 gf_sv.run(save_params=save_params, load_params=load_params, 
 		  cache_read=cache_read, cache_write=cache_write)
-#print(gf_sv.states_arr)
-
-# QASM simulator calculation of h states
-print("============ Starts calculating h states ==========")
-gf_h = GreensFunction.initialize_eh(gf_sv, 'h', q_instance=q_instance_sv)
-gf_h.run(compute_energies=False, cache_read=cache_read, cache_write=cache_write)
-#print(gf_h.states_arr)
-
-# QASM simulator calculation of e states
-print("========== Starts calculating e states ==========")
-gf_e = GreensFunction.initialize_eh(gf_sv, 'e', q_instance=q_instance_sv)
-gf_e.run(compute_energies=False, cache_read=cache_read, cache_write=cache_write)
-#print(gf_e.states_arr)
-
-# Combining h states and e states results
-gf_final = GreensFunction.initialize_final(
-    gf_sv, gf_e, gf_h, q_instance=q_instance_qasm)
 
 omegas = np.arange(-30, 34, 0.1)
 A_list = []
 for omega in omegas:
-    A = gf_final.compute_spectral_function(omega + 0.02j * HARTREE_TO_EV)
+    A = gf_sv.compute_spectral_function(omega + 0.02j * HARTREE_TO_EV)
     A_list.append(A)
-np.savetxt('A_qasm1.dat', np.vstack((omegas, A_list)).T)
+np.savetxt('A_red.dat', np.vstack((omegas, A_list)).T)
