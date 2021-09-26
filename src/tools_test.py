@@ -1,5 +1,5 @@
 from qiskit import *
-from tools import *
+from utils import *
 from hamiltonians import *
 
 def get_number_state_indices_test():

@@ -14,15 +14,14 @@ from constants import HARTREE_TO_EV
 from hamiltonians import MolecularHamiltonian
 from number_state_solvers import (get_number_state_indices,
                                   number_state_eigensolver)
-from tools import (get_a_operator,
-                   load_vqe_result,
-                   save_vqe_result)
+from operators import get_a_operator
+from io_utils import load_vqe_result, save_vqe_result
 from circuits import append_qpe_circuit, build_diagonal_circuits, build_off_diagonal_circuits
 
 np.set_printoptions(precision=6)
 
 class GreensFunction:
-    """A class to perform frequency-domain Green's Function calculations."""
+    """A class to perform frequency-domain Green's function calculations."""
     def __init__(self, 
                  ansatz: QuantumCircuit, 
                  hamiltonian: MolecularHamiltonian, 
@@ -70,10 +69,10 @@ class GreensFunction:
         self.recompiled = recompiled
 
         # Number of orbitals and indices
-        self.n_orb = 2 * len(self.hamiltonian.active_inds)
+        self.n_orb = 2 * len(self.hamiltonian.act_inds)
         self.n_qubits = self.n_orb # XXX
         self.n_occ = (self.hamiltonian.molecule.n_electrons 
-                      - 2 * len(self.hamiltonian.occupied_inds))
+                      - 2 * len(self.hamiltonian.occ_inds))
         self.n_vir = self.n_orb - self.n_occ
         self.inds_occ = list(range(self.n_occ))
         self.inds_vir = list(range(self.n_occ, self.n_orb))
@@ -197,7 +196,7 @@ class GreensFunction:
         """Calculates diagonal transition amplitudes.
         
         Args:
-            cache_read: Whether to read recompiled circuits from cache files.
+            cache_read: Whether to read recompiled circuits from io_utils files.
             cache_write: Whether to save recompiled circuits to cache files.
         """
         print("Start calculating diagonal transition amplitudes")
@@ -275,7 +274,7 @@ class GreensFunction:
         """Calculates off-diagonal transition amplitudes.
 
         Args:
-            cache_read: Whether to read recompiled circuits from cache files.
+            cache_read: Whether to read recompiled circuits from io_utils files.
             cache_write: Whether to save recompiled circuits to cache files.
         """
         print("Start calculating off-diagonal transition amplitudes")
@@ -405,7 +404,7 @@ class GreensFunction:
                 state energies.
             save_params:
             load_params: 
-            cache_read: Whether to read recompiled circuits from cache files.
+            cache_read: Whether to read recompiled circuits from io_utils files.
             cache_write: Whether to save recompiled circuits to cache files.
         """
         # TODO: Some if conditions need to be checked.

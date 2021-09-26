@@ -2,7 +2,7 @@ import numpy as np
 from scipy.linalg import expm
 from qiskit import *
 from recompilation import *
-from tools import *
+from utils import *
 
 n_qubits = 6
 n_gate_rounds = 6

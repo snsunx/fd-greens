@@ -5,17 +5,17 @@ from ansatze import build_ne2_ansatz
 from hamiltonians import MolecularHamiltonian
 from qiskit.utils import QuantumInstance
 from greens_function import GreensFunction
-from tools import get_quantum_instance
+from utils import get_quantum_instance
 from constants import HARTREE_TO_EV
 from qiskit.opflow import PauliSumOp, PrimitiveOp, Z2Symmetries
 from qiskit.quantum_info import SparsePauliOp
 from qiskit.quantum_info import Pauli, PauliTable
-from tools import number_state_eigensolver
+from utils import number_state_eigensolver
 
 ansatz = build_ne2_ansatz(4)
 hamiltonian = MolecularHamiltonian(
     [['Li', (0, 0, 0)], ['H', (0, 0, 1.6)]], 'sto3g', 
-    occupied_inds=[0], active_inds=[1, 2])
+    occ_inds=[0], act_inds=[1, 2])
 qiskit_op = hamiltonian.qiskit_op
 
 # Convert IZIZ and ZIZI to IIIZ and IIZI

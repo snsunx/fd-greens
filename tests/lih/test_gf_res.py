@@ -9,7 +9,7 @@ from ansatze import *
 from hamiltonians import MolecularHamiltonian
 from qiskit.utils import QuantumInstance
 from greens_function_restricted import GreensFunctionRestricted
-from tools import get_quantum_instance
+from utils import get_quantum_instance
 from constants import HARTREE_TO_EV
 
 # User-defined parameters.
@@ -22,7 +22,7 @@ cache_write = False
 ansatz = build_two_local_ansatz(2)
 hamiltonian = MolecularHamiltonian(
     [['Li', (0, 0, 0)], ['H', (0, 0, bond_length)]], 'sto3g', 
-    occupied_inds=[0], active_inds=[1, 2])
+    occ_inds=[0], act_inds=[1, 2])
 
 q_instance_sv = QuantumInstance(Aer.get_backend('statevector_simulator'))
 q_instance_qasm = QuantumInstance(Aer.get_backend('qasm_simulator'), shots=8192)

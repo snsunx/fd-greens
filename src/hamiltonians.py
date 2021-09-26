@@ -21,8 +21,8 @@ class MolecularHamiltonian:
                  charge: int = 0, 
                  name: Optional[str] = None,
                  run_pyscf_options: dict = {}, 
-                 occupied_inds: Optional[Sequence[int]] = None, 
-                 active_inds: Optional[Sequence[int]] = None,
+                 occ_inds: Optional[Sequence[int]] = None, 
+                 act_inds: Optional[Sequence[int]] = None,
                  build_ops: bool = True):
         """Initializes a MolecularHamiltonian object.
 
@@ -36,9 +36,9 @@ class MolecularHamiltonian:
                 cached circuits.
             run_pyscf_options: A dictionary of keyword arguments passed to the
                 run_pyscf function.
-            occupied_inds: A list of spatial orbital indices
+            occ_inds: A list of spatial orbital indices
                 indicating which orbitals should be considered doubly occupied.
-            active_inds: A list of spatial orbital indices indicating
+            act_inds: A list of spatial orbital indices indicating
                 which orbitals should be considered active.
         """
         self.geometry = geometry
@@ -58,15 +58,15 @@ class MolecularHamiltonian:
         run_pyscf(molecule)
         self.molecule = molecule
 
-        if occupied_inds is None:
-            self.occupied_inds = [] 
+        if occ_inds is None:
+            self.occ_inds = [] 
         else:
-            self.occupied_inds = occupied_inds
+            self.occ_inds = occ_inds
         
-        if active_inds is None:
-            self.active_inds = range(self.molecule.n_orbitals)
+        if act_inds is None:
+            self.act_inds = range(self.molecule.n_orbitals)
         else:
-            self.active_inds = active_inds
+            self.act_inds = act_inds
 
         self._openfermion_op = None
         self._qiskit_op = None
@@ -76,11 +76,11 @@ class MolecularHamiltonian:
     def _build_openfermion_operator(self):
         """A private method for constructing the Openfermion qubit operator
         in QubitOperator form. Called by the `build` function."""
-        # if self.occupied_inds is None and self.active_inds is None:
-        #     self.active_inds = range(self.molecule.n_orbitals)
+        # if self.occ_inds is None and self.act_inds is None:
+        #     self.act_inds = range(self.molecule.n_orbitals)
         hamiltonian = self.molecule.get_molecular_hamiltonian(
-            occupied_indices=self.occupied_inds, 
-            active_indices=self.active_inds)
+            occupied_indices=self.occ_inds, 
+            active_indices=self.act_inds)
         fermion_op = get_fermion_operator(hamiltonian)
         qubit_op = jordan_wigner(fermion_op)
         qubit_op.compress()

@@ -1,43 +1,41 @@
+"""GreensFunctionRestricted class"""
+
 from typing import Union, Tuple, Optional
 from greens_function import GreensFunction
 
 import numpy as np
-from qubit_indices import QubitIndices
-from scipy.linalg import expm
 from scipy.special import binom
 
 from qiskit import QuantumCircuit, Aer
 from qiskit.algorithms import VQE
 from qiskit.algorithms.optimizers import Optimizer, L_BFGS_B
 from qiskit.utils import QuantumInstance
-from qiskit.extensions import UnitaryGate
 
 from constants import HARTREE_TO_EV
 from greens_function import GreensFunction
 from hamiltonians import MolecularHamiltonian
 from number_state_solvers import number_state_eigensolver
-from tools import (get_operator_dictionary, get_operator_dictionary,
-                   reverse_qubit_order,
-                   get_statevector, 
+from io_utils import (
                    load_vqe_result,
                    save_vqe_result)
-from circuits import append_qpe_circuit, build_diagonal_circuits, build_off_diagonal_circuits
-from recompilation import recompile_with_statevector, apply_quimb_gates
-from z2_symmetries import transform_4q_hamiltonian
+from operators import get_operator_dictionary
 from qubit_indices import QubitIndices
+from circuits import build_diagonal_circuits, build_off_diagonal_circuits
+from z2_symmetries import transform_4q_hamiltonian
 
 np.set_printoptions(precision=6)
 pauli_op_dict = get_operator_dictionary()
 
 class GreensFunctionRestricted(GreensFunction):
+    """A class to perform frequency-domain Green's function calculations
+    with restricted orbitals."""
     def __init__(self, 
                  ansatz: QuantumCircuit, 
                  hamiltonian: MolecularHamiltonian, 
                  optimizer: Optional[Optimizer] = None,
                  q_instance: Optional[QuantumInstance] = None,
-                 recompiled: bool = True,
-                 states: Optional[str] = None) -> None:
-        """Creates an object to calculate frequency-domain Green's function.
+                 recompiled: bool = True) -> None:
+        """Initializes a GreensFunctionRestricted object.
         
         Args:
             ansatz: The parametrized circuit as an ansatz to VQE.
@@ -45,9 +43,7 @@ class GreensFunctionRestricted(GreensFunction):
             optimizer: The optimizer in VQE. Default to L_BFGS_B().
             q_instance: The quantum instance for execution of the quantum 
                 circuit. Default to statevector simulator.
-            recompiled: Whether the QPE circuit is recompiled or not.
-            states: 'e' or 'h' indicating whether (N+1)- or (N-1)-electron
-                states are to be calculated.
+            recompiled: Whether the QPE circuit is recompiled.
         """
         # Define Hamiltonian and related variables
         self.ansatz = ansatz
@@ -67,26 +63,32 @@ class GreensFunctionRestricted(GreensFunction):
         self.recompiled = recompiled
 
         # Number of orbitals and indices
-        self.n_orb = len(self.hamiltonian.active_inds)
-        self.n_occ = (self.hamiltonian.molecule.n_electrons 
-                      - 2 * len(self.hamiltonian.occupied_inds))
+        self.n_orb = len(self.hamiltonian.act_inds)
+        self.n_occ = (self.hamiltonian.molecule.n_electrons // 2
+                      - len(self.hamiltonian.occ_inds))
         self.n_vir = self.n_orb - self.n_occ
         self.inds_occ = list(range(self.n_occ))
         self.inds_vir = list(range(self.n_occ, self.n_orb))
-        self.n_e = int(binom(self.n_orb, self.n_occ + 1))
-        self.n_h = int(binom(self.n_orb, self.n_occ - 1))
+        self.n_e = int(binom(2 * self.n_orb, 2 * self.n_occ + 1)) // 2
+        self.n_h = int(binom(2 * self.n_orb, 2 * self.n_occ - 1)) // 2
+
+        print(f"Number of orbitals is {self.n_orb}")
+        print(f"Number of occupied orbitals is {self.n_occ}")
+        print(f"Number of virtual orbitals is {self.n_vir}")
+        print(f"Number of (N+1)-electron states is {self.n_e}")
+        print(f"Number of (N-1)-electron states is {self.n_h}")
 
         self.inds_h = QubitIndices(['10', '00'], n_qubits=2)
         self.inds_e = QubitIndices(['11', '01'], n_qubits=2)
 
-        # XXX: Dimensions are hardcoded for now
         # Define the transition amplitude matrices
-        self.B_e = np.zeros((2, 2, 2), dtype=complex)
-        self.B_h = np.zeros((2, 2, 2), dtype=complex)
-        self.D_hp = np.zeros((2, 2, 2), dtype=complex)
-        self.D_hm = np.zeros((2, 2, 2), dtype=complex)
-        self.D_ep = np.zeros((2, 2, 2), dtype=complex)
-        self.D_em = np.zeros((2, 2, 2), dtype=complex)
+        self.B_e = np.zeros((self.n_orb, self.n_orb, self.n_e), dtype=complex)
+        self.D_ep = np.zeros((self.n_orb, self.n_orb, self.n_e), dtype=complex)
+        self.D_em = np.zeros((self.n_orb, self.n_orb, self.n_e), dtype=complex)
+
+        self.B_h = np.zeros((self.n_orb, self.n_orb, self.n_h), dtype=complex)
+        self.D_hp = np.zeros((self.n_orb, self.n_orb, self.n_h), dtype=complex)
+        self.D_hm = np.zeros((self.n_orb, self.n_orb, self.n_h), dtype=complex)
 
         # Define the density matrices for obtaining the self-energy
         self.rho_hf = np.diag([1] * self.n_occ + [0] * self.n_vir)
@@ -155,7 +157,7 @@ class GreensFunctionRestricted(GreensFunction):
         """Calculates diagonal transition amplitudes.
         
         Args:
-            cache_read: Whether to read recompiled circuits from cache files.
+            cache_read: Whether to read recompiled circuits from io_utils files.
             cache_write: Whether to save recompiled circuits to cache files.
         """
         print("Start calculating diagonal transition amplitudes")
@@ -181,8 +183,8 @@ class GreensFunctionRestricted(GreensFunction):
             else: # QASM simulator or hardware
                 raise NotImplementedError("QASM or hardware simulation is not implemented")
             
-            print(f'B_e[{m}, {m}] = {self.B_e[m, m]:.6f}')
-            print(f'B_h[{m}, {m}] = {self.B_h[m, m]:.6f}')
+            print(f'B_e[{m}, {m}] = {self.B_e[m, m]}')
+            print(f'B_h[{m}, {m}] = {self.B_h[m, m]}')
         print("Finish calculating diagonal transition amplitudes")
 
     def compute_off_diagonal_amplitudes(self, 
@@ -192,7 +194,7 @@ class GreensFunctionRestricted(GreensFunction):
         """Calculates off-diagonal transition amplitudes.
 
         Args:
-            cache_read: Whether to read recompiled circuits from cache files.
+            cache_read: Whether to read recompiled circuits from io_utils files.
             cache_write: Whether to save recompiled circuits to cache files.
         """
         print("Start calculating off-diagonal transition amplitudes")
@@ -236,6 +238,7 @@ class GreensFunctionRestricted(GreensFunction):
                     B_h_mn += np.exp(1j * np.pi / 4) * (self.D_hp[n, m] - self.D_hm[n, m])
                     B_h_mn[abs(B_h_mn) < 1e-8] = 0
                     self.B_h[m, n] = B_h_mn
+
                     print(f'B_e[{m}, {n}] = {self.B_e[m, n]}')
                     print(f'B_h[{m}, {n}] = {self.B_h[m, n]}')
         print("Finish calculating off-diagonal transition amplitudes")
@@ -261,7 +264,7 @@ class GreensFunctionRestricted(GreensFunction):
                 state energies.
             save_params: Whether to save the VQE energy and ansatz parameters.
             load_params: Whether to load the VQE energy and ansatz parameters.
-            cache_read: Whether to read recompiled circuits from cache files.
+            cache_read: Whether to read recompiled circuits from io_utils files.
             cache_write: Whether to save recompiled circuits to cache files.
         """
         # TODO: Some if conditions need to be checked.
@@ -287,7 +290,7 @@ class GreensFunctionRestricted(GreensFunction):
                 is calculated.
                 
         Returns:
-            The Green's function in numpy.ndarray form.
+            The Green's function in numpy array form.
         """
         for m in range(self.n_orb):
             for n in range(self.n_orb):
@@ -323,7 +326,6 @@ class GreensFunctionRestricted(GreensFunction):
         Returns:
             Sigma: The self-energy numpy array.
         """
-        #print("Start calculating the self-energy")
         self.compute_greens_function(omega)
 
         G_HF = np.zeros((self.n_orb, self.n_orb), dtype=complex)
@@ -331,7 +333,6 @@ class GreensFunctionRestricted(GreensFunction):
             G_HF[i, i] = 1 / (omega - self.molecule.orbital_energies[i // 2] * HARTREE_TO_EV)
 
         Sigma = np.linalg.pinv(G_HF) - np.linalg.pinv(self.G)
-        #print("Finish calculating the self-energy")
         return Sigma
 
     def compute_correlation_energy(self) -> Tuple[complex, complex]:

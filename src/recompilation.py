@@ -10,7 +10,7 @@ import quimb.tensor as qtn
 
 from quimb.tensor.optimize_autograd import TNOptimizer
 
-from cache import CacheRecompilation
+from io_utils import CacheRecompilation
 
 
 def build_ansatz_circuit(n_qubits: int, 

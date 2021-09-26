@@ -14,7 +14,7 @@ from openfermion.ops import PolynomialTensor
 from openfermion.transforms import get_fermion_operator, jordan_wigner
 from qiskit.quantum_info import SparsePauliOp
 
-from tools import reverse_qubit_order, get_statevector
+from utils import reverse_qubit_order, get_statevector
 
 from recompilation import apply_quimb_gates, recompile_with_statevector
 
@@ -217,7 +217,7 @@ def apply_multicontrolled_gate(circ: QuantumCircuit,
         circ.ccx(0, 1, offset)
         circ.h(offset)
     else:
-        raise ValueError("Control on more than two qubits is not implemented")
+        raise NotImplementedError("Control on more than two qubits is not implemented")
     for i in range(offset, ind_max + offset):
         circ.cx(i + 1, i)
 

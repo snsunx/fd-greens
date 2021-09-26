@@ -1,11 +1,11 @@
-from typing import Union, Tuple, Sequence, Optional
-from hamiltonians import MolecularHamiltonian
+"""Z2 symmetry utility functions"""
+
+from typing import Union, Sequence, Optional
 import numpy as np
 
 from qiskit import *
 from qiskit.opflow import PauliSumOp
 from qiskit.quantum_info import SparsePauliOp
-
 
 def apply_cnot_z2(op: Union[PauliSumOp, SparsePauliOp], 
                   ctrl: int, 
@@ -134,4 +134,3 @@ def transform_4q_hamiltonian(
             print(op_new[i].coeffs, op_new[i].table)
     # print("PauliSumOp after qubits are tapered\n", pauli_sum_op_new)
     return op_new
-
