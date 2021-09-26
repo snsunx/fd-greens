@@ -1,30 +1,28 @@
+"""GreensFunction class"""
+
 from typing import Union, Tuple, Optional
 
 import numpy as np
-from scipy.linalg import expm
 from scipy.special import binom
 
-from qiskit import QuantumCircuit, Aer
+from qiskit import QuantumCircuit, Aer, ClassicalRegister
 from qiskit.algorithms import VQE
 from qiskit.algorithms.optimizers import Optimizer, L_BFGS_B
 from qiskit.utils import QuantumInstance
-from qiskit.extensions import UnitaryGate
 
 from constants import HARTREE_TO_EV
 from hamiltonians import MolecularHamiltonian
 from number_state_solvers import (get_number_state_indices,
                                   number_state_eigensolver)
 from tools import (get_a_operator,
-                   reverse_qubit_order,
-                   get_statevector, 
                    load_vqe_result,
                    save_vqe_result)
-from circuits import build_diagonal_circuits, build_off_diagonal_circuits
-from recompilation import recompile_with_statevector, apply_quimb_gates
+from circuits import append_qpe_circuit, build_diagonal_circuits, build_off_diagonal_circuits
 
 np.set_printoptions(precision=6)
 
 class GreensFunction:
+    """A class to perform frequency-domain Green's Function calculations."""
     def __init__(self, 
                  ansatz: QuantumCircuit, 
                  hamiltonian: MolecularHamiltonian, 
@@ -34,7 +32,7 @@ class GreensFunction:
                  shift: float = 0.,
                  recompiled: bool = True,
                  states: Optional[str] = None) -> None:
-        """Creates an object to calculate frequency-domain Green's function.
+        """Initializes a GreensFunction object.
         
         Args:
             ansatz: The parametrized circuit as an ansatz to VQE.
@@ -47,7 +45,7 @@ class GreensFunction:
             recompiled: Whether the QPE circuit is recompiled or not.
             states: 'e' or 'h' indicating whether (N+1)- or (N-1)-electron
                 states are to be calculated.
-        """ 
+        """
         self.ansatz = ansatz
         self.hamiltonian = hamiltonian
         self.molecule = hamiltonian.molecule
@@ -204,11 +202,11 @@ class GreensFunction:
         """
         print("Start calculating diagonal transition amplitudes")
         for m in range(self.n_orb):
-            print('m =', m)
+            print('-' * 30, f'm = {m}', '-' * 30)
             a_op_m = get_a_operator(self.n_qubits, m)
+            circ = build_diagonal_circuits(self.ansatz.copy(), a_op_m)
             if self.states is None or self.states in self.states_arr[m, m]:
                 if self.q_instance.backend.name() == 'statevector_simulator':
-                    circ = build_diagonal_circuits(self.ansatz.copy(), a_op_m, with_qpe=False)
                     result = self.q_instance.execute(circ)
                     psi = result.get_statevector()
                     print('Index of largest element is', format(np.argmax(np.abs(psi)), '05b'))
@@ -218,7 +216,6 @@ class GreensFunction:
                             self.n_orb, self.n_occ + 1, anc='1', reverse=True)
                         probs_e = np.abs(self.eigenstates_e.conj().T @ psi[inds_e]) ** 2
                         probs_e[abs(probs_e) < 1e-8] = 0.
-                        print('probs_e =', probs_e)
                         self.B_e[m, m] = probs_e
 
                     if self.states in ('h', None):                     
@@ -226,7 +223,6 @@ class GreensFunction:
                             self.n_orb, self.n_occ - 1, anc='0', reverse=True)
                         probs_h = np.abs(self.eigenstates_h.conj().T @ psi[inds_h]) ** 2
                         probs_h[abs(probs_h) < 1e-8] = 0.
-                        print('probs_h =', probs_h)
                         self.B_h[m, m] = probs_h
 
                     if self.states is None:
@@ -238,56 +234,21 @@ class GreensFunction:
                         self.states_arr[m, m] = states_elem
 
                 else: # QASM simulator or hardware
-                    circ = build_diagonal_circuits(self.ansatz.copy(), tup_xy=tup_xy)
-                    Umat = expm(1j * self.hamiltonian_arr * HARTREE_TO_EV)
-                    if self.recompiled:
-                        # Construct the unitary |0><0|⊗I + |1><1|⊗e^{iHt} 
-                        # on the last N-2 qubits
-                        cUmat = np.kron(np.eye(2), 
-                            np.kron(np.diag([1, 0]), np.eye(2 ** 4))
-                            + np.kron(np.diag([0, 1]), Umat))
-
-                        # Append single-qubit QPE circuit
-                        circ.barrier()
-                        circ.h(1)
-                        statevector = reverse_qubit_order(get_statevector(circ))
-                        quimb_gates = recompile_with_statevector(
-                            statevector, cUmat, n_gate_rounds=6,
-                            cache_options = {'read': cache_read, 'write': cache_write, 
-                                             'hamiltonian': self.hamiltonian,
-                                             'index': str(m), 'states': self.states})
-                        circ = apply_quimb_gates(quimb_gates, circ.copy(), reverse=False)
-                        circ.h(1)
-                        circ.barrier()
-
-                        # circ_recompiled = get_statevector(circ)
-                        # np.save('circ_recompiled.npy', circ_recompiled)
-                    else:
-                        # Construct the unitary |0><0|⊗I + |1><1|⊗e^{iHt} 
-                        # on the last N-2 qubits
-                        cUgate = UnitaryGate(Umat).control(1)
-
-                        # Append single-qubit QPE circuit
-                        circ.barrier()
-                        circ.h(1)
-                        circ.append(cUgate, [1, 5, 4, 3, 2])
-                        circ.h(1)
-                        circ.barrier()
-
-                        # circ_unrecompiled = get_statevector(circ)
-                        # np.save('circ_unrecompiled.npy', circ_unrecompiled)
-
+                    circ = append_qpe_circuit(circ, self.qiskit_op.to_matrix(), 1, 
+                                              recompiled=self.recompiled, 
+                                              n_gate_rounds=6,
+                                              cache_options = 
+                                              {'read': cache_read, 'write': cache_write, 
+                                               'hamiltonian': self.hamiltonian,
+                                               'index': str(m), 'states': self.states})
+                    circ.add_register(ClassicalRegister(2))
                     circ.measure([0, 1], [0, 1])
-                    # print('circ depth =', circ.depth())
-                    # circ_transpiled = self.q_instance.transpile(circ)
-                    # print('circ transpiled depth =', circ_transpiled[0].depth())
                     
                     result = self.q_instance.execute(circ)
                     counts = result.get_counts()
                     for key in list(counts):
-                        # If calculating (N-1)-electron states, need the first 
-                        # qubit to be in |0>, hence deleting the counts with
-                        # the first qubit in |1>
+                        # If calculating (N-1)-electron states, need the first
+                        # qubit to be in |0>
                         if int(key[-1]) == (self.states == 'h'):
                             del counts[key]
                     shots = sum(counts.values())
@@ -299,17 +260,13 @@ class GreensFunction:
                             probs[key] = counts[key] / shots
                         else:
                             probs[key] = 0.0
-                    # counts = dict(sorted(counts.items(), 
-                    #               key=lambda item: item[1], 
-                    #               reverse=True))
                     if self.states == 'h':
                         self.B_h[m, m] = [probs['00'], 0., probs['10'], 0.]
-                        print("self.B_h =", self.B_h[m, m])
                     
                     if self.states == 'e':
                         self.B_e[m, m] = [probs['01'], 0., probs['11'], 0.]
-                        print("self.B_e =", self.B_e[m, m])
-                    print('')
+            print(f'B_e[{m}, {m}] = {self.B_e[m, m]}')
+            print(f'B_h[{m}, {m}] = {self.B_h[m, m]}')
         print("Finish calculating diagonal transition amplitudes")
 
     def compute_off_diagonal_amplitudes(self, 
@@ -326,11 +283,11 @@ class GreensFunction:
             a_op_m = get_a_operator(self.n_qubits, m)
             for n in range(self.n_orb):
                 a_op_n = get_a_operator(self.n_qubits, n)
+                circ = build_off_diagonal_circuits(self.ansatz.copy(), 
+                                                   a_op_m, a_op_n)
                 if m != n and (self.states is None or 
                                self.states in self.states_arr[m, n]):
                     if self.q_instance.backend.name() == 'statevector_simulator':
-                        circ = build_off_diagonal_circuits(
-                            self.ansatz.copy(), a_op_m, a_op_n, with_qpe=False)
                         result = self.q_instance.execute(circ)
                         psi = result.get_statevector()
 
@@ -341,8 +298,6 @@ class GreensFunction:
                                 self.n_orb, self.n_occ - 1, anc='01', reverse=True)
                             probs_hp = abs(self.eigenstates_h.conj().T @ psi[inds_hp]) ** 2
                             probs_hm = abs(self.eigenstates_h.conj().T @ psi[inds_hm]) ** 2
-                            # print("probs_hp =", probs_hp)
-                            # print("probs_hm =", probs_hm)
                             self.D_hp[m, n] = probs_hp
                             self.D_hm[m, n] = probs_hm
 
@@ -353,8 +308,6 @@ class GreensFunction:
                                 self.n_orb, self.n_occ + 1, anc='11', reverse=True)
                             probs_ep = abs(self.eigenstates_e.conj().T @ psi[inds_ep]) ** 2
                             probs_em = abs(self.eigenstates_e.conj().T @ psi[inds_em]) ** 2
-                            # print("probs_ep =", probs_ep)
-                            # print("probs_em =", probs_em)
                             self.D_ep[m, n] = probs_ep
                             self.D_em[m, n] = probs_em
 
@@ -367,54 +320,21 @@ class GreensFunction:
                             self.states_arr[m, n] = states_elem
 
                     else:
-                        circ = build_off_diagonal_circuits(
-                            self.ansatz.copy(), 
-                            a_op_m, a_op_n)
-                        Umat = expm(1j * self.hamiltonian_arr * HARTREE_TO_EV)
-
-                        # Append QPE circuit
-                        if self.recompiled:
-                            cUmat = np.kron(np.eye(4),
-                                np.kron(np.diag([1, 0]), np.eye(2 ** 4))
-                                + np.kron(np.diag([0, 1]), Umat))
-                            circ.barrier()
-                            circ.h(2)
-                            statevector = reverse_qubit_order(
-                                get_statevector(circ))
-                            quimb_gates = recompile_with_statevector(
-                                statevector, cUmat, n_gate_rounds=7,
-                                cache_options = {'read': cache_read, 
-                                                 'write': cache_write,
-                                                 'hamiltonian': self.hamiltonian,
-                                                 'index': f'{m}-{n}', 
-                                                 'states': self.states})
-                            circ = apply_quimb_gates(
-                                quimb_gates, circ.copy(), reverse=False)
-                            circ.h(2)
-                            circ.barrier()
-                                        
-                        else:
-                            cUgate = UnitaryGate(Umat).control(1)
-
-                            circ.barrier()
-                            circ.h(2)
-                            circ.append(cUgate, [2, 6, 5, 4, 3])
-                            circ.h(2)
-                            circ.barrier()
-
+                        circ = append_qpe_circuit(circ, self.qiskit_op.to_matrix(), 2, 
+                                                recompiled=self.recompiled, 
+                                                n_gate_rounds=7,
+                                                cache_options = 
+                                                {'read': cache_read, 'write': cache_write, 
+                                                'hamiltonian': self.hamiltonian,
+                                                'index': str(m), 'states': self.states})
+                        circ.add_register(ClassicalRegister(3))
                         circ.measure([0, 1, 2], [0, 1, 2])
-                        # circ.measure(2, 2)
-                        # print('circ depth =', circ.depth())
-                        # circ_transpiled = self.q_instance.transpile(circ)
-                        # print('circ transpiled depth =', circ_transpiled[0].depth())
 
                         result = self.q_instance.execute(circ)
                         counts = result.get_counts()
-                        print(counts)
                         for key in list(counts):
                             if int(key[-1]) == (self.states == 'h'):
                                 del counts[key]
-                        print(counts)
                         shots = sum(counts.values())
                         
                         from itertools import product
@@ -429,27 +349,30 @@ class GreensFunction:
                         if self.states == 'h':
                             self.D_hp[m, n] = [probs['000'], 0.0, probs['100'], 0.0]
                             self.D_hm[m, n] = [probs['010'], 0.0, probs['110'], 0.0]
-                            # print("self.D_hp =", self.D_hp[m, n])
-                            # print("self.D_hm =", self.D_hm[m, n])
                         
                         if self.states == 'e':
                             self.D_ep[m, n] = [probs['001'], 0., probs['101'], 0.]
                             self.D_em[m, n] = [probs['011'], 0., probs['111'], 0.]
-                            # print("self.D_ep =", self.D_ep[m, n])
-                            # print("self.D_em =", self.D_em[m, n])
                         print('')
 
         # Unpack D values to B values
         for m in range(self.n_orb):
             for n in range(self.n_orb):
                 if m != n:
-                    self.B_e[m, n] = (
-                        np.exp(-1j * np.pi / 4) * (self.D_ep[m, n] - self.D_em[m, n]) +
-                        np.exp(1j * np.pi / 4) * (self.D_ep[n, m] - self.D_em[n, m]))
-                    self.B_h[m, n] = (
-                        np.exp(-1j * np.pi / 4) * (self.D_hp[m, n] - self.D_hm[m, n]) +
-                        np.exp(1j * np.pi / 4) * (self.D_hp[n, m] - self.D_hm[n, m]))
+                    print('-' * 30, f'm = {m}, n = {n}', '-' * 30)
+                    B_e_mn = np.exp(-1j * np.pi / 4) * (self.D_ep[m, n] - self.D_em[m, n])
+                    B_e_mn += np.exp(1j * np.pi / 4) * (self.D_ep[n, m] - self.D_em[n, m])
+                    B_e_mn[abs(B_e_mn) < 1e-8] = 0
+                    self.B_e[m, n] = B_e_mn
 
+                    B_h_mn = np.exp(-1j * np.pi / 4) * (self.D_hp[m, n] - self.D_hm[m, n])
+                    B_h_mn = np.exp(1j * np.pi / 4) * (self.D_hp[n, m] - self.D_hm[n, m])
+                    B_h_mn[abs(B_h_mn) < 1e-8] = 0
+                    self.B_h[m, n] = B_h_mn
+                    print(f'B_e[{m}, {n}] = {self.B_e[m, n]}')
+                    print(f'B_h[{m}, {n}] = {self.B_h[m, n]}')
+
+        '''
         print('B_e\n')
         #self.B_e[abs(self.B_e) < 1e-8] = 0.
         B_e = self.B_e.copy()
@@ -458,6 +381,7 @@ class GreensFunction:
                 for lam in range(B_e.shape[2]):
                     if abs(B_e[m, m_, lam]) > 1e-4:
                         print(f'm = {m}, m\' = {m_}, lambda = {lam}: {B_e[m, m_, lam]:.6f}')
+        '''
 
         print("Finish calculating off-diagonal transition amplitudes")
 

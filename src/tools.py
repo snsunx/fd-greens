@@ -1,3 +1,5 @@
+"""Utility functions"""
+
 from typing import Union, Tuple, List, Iterable, Optional, Sequence
 import json
 from helpers import deprecate_function
@@ -12,13 +14,14 @@ from qiskit.quantum_info import PauliTable, SparsePauliOp
 # from qiskit.opflow.primitive_ops import PauliSumOp
 from qiskit.algorithms import VQEResult
 
+
 from openfermion.ops import PolynomialTensor
 from openfermion.transforms import get_fermion_operator, jordan_wigner
 
 from z2_symmetries import apply_cnot_z2, transform_4q_hamiltonian
 from constants import HARTREE_TO_EV
 
-def get_quantum_instance(backend, 
+def get_quantum_instance(backend,
                          noise_model_name=None, 
                          optimization_level=0, 
                          initial_layout=None, 
@@ -39,7 +42,15 @@ def get_quantum_instance(backend,
                 initial_layout=initial_layout)
     return q_instance
 
-def reverse_qubit_order(arr):
+def reverse_qubit_order(arr: np.ndarray) -> np.ndarray:
+    """Reverses qubit order in a 1D or 2D array.
+    
+    Args:
+        The array on which the qubit order is to be reversed.
+        
+    Returns:
+        The array after qubit order is reversed.
+    """
     if len(arr.shape) == 1:
         dim = arr.shape[0]
         num = int(np.log2(dim))
@@ -57,20 +68,47 @@ def reverse_qubit_order(arr):
         arr = arr.reshape(*shape_expanded)
         arr = arr.transpose(*inds_transpose)
         arr = arr.reshape(*shape_original)
+    else:
+        raise NotImplementedError("Reversing qubit order of array with more"
+                                  "than two dimensions is not implemented.")
     return arr
 
-def get_statevector(circ):
+def get_statevector(circ: QuantumCircuit, 
+                    reverse: bool = False) -> np.ndarray:
+    """Returns the statevector of a quantum circuit.
+    
+    Args:
+        circ: The circuit on which the state is to be obtained.
+        reverse: Whether qubit order is reversed.
+        
+    Returns:
+        The statevector array of the circuit.
+    """
     backend = Aer.get_backend('statevector_simulator')
     job = execute(circ, backend)
     result = job.result()
     statevector = result.get_statevector()
+    if reverse:
+        statevector = reverse_qubit_order(statevector)
     return statevector
 
-def get_unitary(circ):
+def get_unitary(circ: QuantumCircuit, 
+                reverse: bool = False) -> np.ndarray:
+    """Returns the unitary of a quantum circuit.
+    
+    Args:
+        circ: The circuit on which the unitary is to be obtained.
+        reverse: Whether qubit order is reversed.
+
+    Returns:
+        The unitary array of the circuit.
+    """
     backend = Aer.get_backend('unitary_simulator')
     job = execute(circ, backend)
     result = job.result()
     unitary = result.get_unitary()
+    if reverse:
+        unitary = reverse_qubit_order(unitary)
     return unitary
 
 # FIXME: The load feature is not working due to job ID retrieval problem

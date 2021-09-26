@@ -1,17 +1,19 @@
+"""The """
+
 from typing import Union, Sequence, Optional
 
 import numpy as np
+
+from qiskit.quantum_info import Pauli, SparsePauliOp
+from qiskit.opflow.primitive_ops import PauliSumOp
 
 from openfermion import MolecularData, QubitOperator
 from openfermionpyscf import run_pyscf
 from openfermion.transforms import jordan_wigner, get_fermion_operator
 from openfermion.linalg import get_sparse_operator
 
-from qiskit.quantum_info import Pauli, SparsePauliOp
-from qiskit.opflow.primitive_ops import PauliSumOp
-
 class MolecularHamiltonian:
-    
+    """A class to hold a molecular Hamiltonian."""
     def __init__(self, 
                  geometry: Union[Sequence], 
                  basis: str, 
@@ -22,7 +24,7 @@ class MolecularHamiltonian:
                  occupied_inds: Optional[Sequence[int]] = None, 
                  active_inds: Optional[Sequence[int]] = None,
                  build_ops: bool = True):
-        """Creates a MolecularHamiltonian object.
+        """Initializes a MolecularHamiltonian object.
 
         Args:
             geometry: A list of tuples giving the coordinates of each atom. 

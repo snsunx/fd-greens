@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-omegas, A_sv = np.loadtxt('A_sv.dat').T
+#omegas, A_sv = np.loadtxt('A_sv.dat').T
 omegas, A_qasm = np.loadtxt('A_qasm.dat').T
 omegas, A_qasm1 = np.loadtxt('A_qasm1.dat').T
 omegas, A_noisy = np.loadtxt('A_noisy.dat').T
@@ -13,8 +13,8 @@ omegas, A_noisy_cached2 = np.loadtxt('A_noisy_cached2.dat').T
 omegas, A_red = np.loadtxt('A_red.dat').T
 
 fig, ax = plt.subplots()
-ax.plot(omegas, A_sv, label='Statevector')
-#ax.plot(omegas, A_qasm, label='QASM')
+#ax.plot(omegas, A_sv, label='Statevector')
+ax.plot(omegas, A_qasm, label='QASM')
 #ax.plot(omegas, A_qasm1, label='QASM1')
 #ax.plot(omegas, A_noisy, label='Noisy')
 #ax.plot(omegas, A_noisy1, label='Noisy1')
