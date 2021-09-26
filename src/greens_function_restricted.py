@@ -15,10 +15,8 @@ from qiskit.extensions import UnitaryGate
 from constants import HARTREE_TO_EV
 from greens_function import GreensFunction
 from hamiltonians import MolecularHamiltonian
-from number_state_solvers import (get_number_state_indices,
-                                  number_state_eigensolver)
-from tools import (get_indices_with_ancilla, 
-                   get_pauli_tuple_dictionary,
+from number_state_solvers import number_state_eigensolver
+from tools import (get_operator_dictionary, get_operator_dictionary,
                    reverse_qubit_order,
                    get_statevector, 
                    load_vqe_result,
@@ -29,7 +27,7 @@ from z2_symmetries import transform_4q_hamiltonian
 from qubit_indices import QubitIndices
 
 np.set_printoptions(precision=6)
-pauli_tuple_dict = get_pauli_tuple_dictionary()
+pauli_op_dict = get_operator_dictionary()
 
 class GreensFunctionRestricted(GreensFunction):
     def __init__(self, 
@@ -37,8 +35,6 @@ class GreensFunctionRestricted(GreensFunction):
                  hamiltonian: MolecularHamiltonian, 
                  optimizer: Optional[Optimizer] = None,
                  q_instance: Optional[QuantumInstance] = None,
-                 scaling: float = 1.,
-                 shift: float = 0.,
                  recompiled: bool = True,
                  states: Optional[str] = None) -> None:
         """Creates an object to calculate frequency-domain Green's function.
@@ -49,24 +45,16 @@ class GreensFunctionRestricted(GreensFunction):
             optimizer: The optimizer in VQE. Default to L_BFGS_B().
             q_instance: The quantum instance for execution of the quantum 
                 circuit. Default to statevector simulator.
-            scaling: Scaling factor of the Hamiltonian.
-            shift: Constant shift factor of the Hamiltonian.
             recompiled: Whether the QPE circuit is recompiled or not.
             states: 'e' or 'h' indicating whether (N+1)- or (N-1)-electron
                 states are to be calculated.
-        """ 
+        """
+        # Define Hamiltonian and related variables
         self.ansatz = ansatz
         self.hamiltonian = hamiltonian
         self.molecule = hamiltonian.molecule
-
-        # Extract the orbital energies
-        e_orb = self.molecule.orbital_energies
-        self.e_orb = np.diag(e_orb) * HARTREE_TO_EV
-
-        # Extract the Hamiltonian operators and apply shift and scaling factors
+        self.e_orb = np.diag(self.molecule.orbital_energies) * HARTREE_TO_EV
         self.qiskit_op = self.hamiltonian.qiskit_op.copy()
-        self.qiskit_op *= scaling
-        self.qiskit_op.primitive.coeffs[0] += shift / HARTREE_TO_EV
         self.qiskit_op_gs = transform_4q_hamiltonian(self.qiskit_op, init_state=[1, 1])
         self.qiskit_op_up = transform_4q_hamiltonian(self.qiskit_op, init_state=[0, 1])
 
@@ -80,7 +68,6 @@ class GreensFunctionRestricted(GreensFunction):
 
         # Number of orbitals and indices
         self.n_orb = len(self.hamiltonian.active_inds)
-        print('self.n_orb =', self.n_orb)
         self.n_occ = (self.hamiltonian.molecule.n_electrons 
                       - 2 * len(self.hamiltonian.occupied_inds))
         self.n_vir = self.n_orb - self.n_occ
@@ -110,13 +97,6 @@ class GreensFunctionRestricted(GreensFunction):
         self.G_h = np.zeros((self.n_orb, self.n_orb), dtype=complex)
         self.G = np.zeros((self.n_orb, self.n_orb), dtype=complex)
 
-        # Define the arrays indicating whether the (N±1)-electron states
-        # are to be calculated
-        self.states = states
-        self.states_arr = np.empty((self.n_orb, self.n_orb), dtype=np.object)
-        # print('states_arr\n', self.states_arr)
-        # self.states_arr = np.array([[[None] for i in range(self.n_orb)] for j in range(self.n_orb)])
-
         # Variables to store eigenenergies and eigenstates
         self.energy_gs = None
         self.eigenenergies_e = None
@@ -128,7 +108,7 @@ class GreensFunctionRestricted(GreensFunction):
                              save_params: bool = False,
                              load_params: bool = False,
                              prefix: str = None
-                             ) -> Optional[QuantumCircuit]:
+                             ) -> None:
         """Calculates the ground state of the Hamiltonian using VQE.
         
         Args:
@@ -163,11 +143,10 @@ class GreensFunctionRestricted(GreensFunction):
             self.qiskit_op_up.to_matrix(), inds=self.inds_h.int_form)
         self.eigenenergies_e *= HARTREE_TO_EV
         self.eigenenergies_h *= HARTREE_TO_EV
-        # print('eigenenergies_e\n', self.eigenenergies_e)
-        # print('eigenenergies_h\n', self.eigenenergies_h)
-        # print("eigenstates_e\n", self.eigenstates_e)
-        # print("eigenstates_h\n", self.eigenstates_h)
         print("Finish calculating (N±1)-electron states")
+
+        print(f"(N+1)-electron energies are {self.eigenenergies_e}")
+        print(f"(N-1)-electron energies are {self.eigenenergies_e}")
 
     def compute_diagonal_amplitudes(self,
                                     cache_read: bool = True,
@@ -181,117 +160,91 @@ class GreensFunctionRestricted(GreensFunction):
         """
         print("Start calculating diagonal transition amplitudes")
         for m in range(self.n_orb):
+            print('-' * 80)
             print('m =', m)
-            a_op_m = pauli_tuple_dict[m]
-            if self.states is None or self.states in self.states_arr[m, m]:
-                if self.q_instance.backend.name() == 'statevector_simulator':
-                    circ = build_diagonal_circuits(self.ansatz.copy(), a_op_m, with_qpe=False)
-                    result = self.q_instance.execute(circ)
-                    psi = result.get_statevector()
-                    print('Index of largest element is', format(np.argmax(np.abs(psi)), '03b'))
-                    
-                    if self.states in ('e', None):
-                        inds_e = self.inds_e.include_ancilla('1')
-                        #inds_e = get_indices_with_ancilla(self.inds_e.str_form, anc='1')
-                        probs_e = np.abs(self.eigenstates_e.conj().T @ psi[inds_e.int_form]) ** 2
-                        probs_e[abs(probs_e) < 1e-8] = 0.
-                        print('probs_e =', probs_e)
-                        self.B_e[m, m] = probs_e
+            a_op_m = pauli_op_dict[m]
+            circ = build_diagonal_circuits(self.ansatz.copy(), a_op_m, with_qpe=False)
+            if self.q_instance.backend.name() == 'statevector_simulator':
+                result = self.q_instance.execute(circ)
+                psi = result.get_statevector()
+                # print('Index of largest element is', format(np.argmax(np.abs(psi)), '03b'))
+                
+                inds_e = self.inds_e.include_ancilla('1')
+                probs_e = np.abs(self.eigenstates_e.conj().T @ psi[inds_e.int_form]) ** 2
+                probs_e[abs(probs_e) < 1e-8] = 0.
+                self.B_e[m, m] = probs_e
 
-                    if self.states in ('h', None):
-                        inds_h = self.inds_h.include_ancilla('0')
-                        #inds_h = get_indices_with_ancilla(self.inds_h.str_form, anc='0')
-                        probs_h = np.abs(self.eigenstates_h.conj().T @ psi[inds_h.int_form]) ** 2
-                        probs_h[abs(probs_h) < 1e-8] = 0.
-                        print('probs_h =', probs_h)
-                        self.B_h[m, m] = probs_h
+                inds_h = self.inds_h.include_ancilla('0')
+                probs_h = np.abs(self.eigenstates_h.conj().T @ psi[inds_h.int_form]) ** 2
+                probs_h[abs(probs_h) < 1e-8] = 0.
+                self.B_h[m, m] = probs_h
 
-                    if self.states is None:
-                        states_elem = []
-                        if sum(probs_h) > 1e-3:
-                            states_elem.append('h')
-                        if sum(probs_e) > 1e-3:
-                            states_elem.append('e')
-                        self.states_arr[m, m] = states_elem
+            else: # QASM simulator or hardware
+                Umat = expm(1j * self.hamiltonian_arr * HARTREE_TO_EV)
+                if self.recompiled:
+                    # Construct the unitary |0><0|⊗I + |1><1|⊗e^{iHt} 
+                    cUmat = np.kron(np.eye(2), 
+                        np.kron(np.diag([1, 0]), np.eye(2 ** 4))
+                        + np.kron(np.diag([0, 1]), Umat))
 
-                else: # QASM simulator or hardware
-                    circ = build_diagonal_circuits(self.ansatz.copy(), )
-                    Umat = expm(1j * self.hamiltonian_arr * HARTREE_TO_EV)
-                    if self.recompiled:
-                        # Construct the unitary |0><0|⊗I + |1><1|⊗e^{iHt} 
-                        # on the last N-2 qubits
-                        cUmat = np.kron(np.eye(2), 
-                            np.kron(np.diag([1, 0]), np.eye(2 ** 4))
-                            + np.kron(np.diag([0, 1]), Umat))
+                    # Append single-qubit QPE circuit
+                    circ.barrier()
+                    circ.h(1)
+                    statevector = reverse_qubit_order(get_statevector(circ))
+                    quimb_gates = recompile_with_statevector(
+                        statevector, cUmat, n_gate_rounds=3,
+                        cache_options = {'read': cache_read, 'write': cache_write, 
+                                         'hamiltonian': self.hamiltonian,
+                                         'index': str(m)})
+                    circ = apply_quimb_gates(quimb_gates, circ.copy(), reverse=False)
+                    circ.h(1)
+                    circ.barrier()
+                else:
+                    # Construct the unitary |0><0|⊗I + |1><1|⊗e^{iHt} 
+                    # on the last N-2 qubits
+                    cUgate = UnitaryGate(Umat).control(1)
 
-                        # Append single-qubit QPE circuit
-                        circ.barrier()
-                        circ.h(1)
-                        statevector = reverse_qubit_order(get_statevector(circ))
-                        quimb_gates = recompile_with_statevector(
-                            statevector, cUmat, n_gate_rounds=3,
-                            cache_options = {'read': cache_read, 'write': cache_write, 
-                                             'hamiltonian': self.hamiltonian,
-                                             'index': str(m), 'states': self.states})
-                        circ = apply_quimb_gates(quimb_gates, circ.copy(), reverse=False)
-                        circ.h(1)
-                        circ.barrier()
+                    # Append single-qubit QPE circuit
+                    circ.barrier()
+                    circ.h(1)
+                    circ.append(cUgate, [1, 5, 4, 3, 2])
+                    circ.h(1)
+                    circ.barrier()
 
-                        # circ_recompiled = get_statevector(circ)
-                        # np.save('circ_recompiled.npy', circ_recompiled)
+                circ.measure([0, 1], [0, 1])
+                # print('circ depth =', circ.depth())
+                # circ_transpiled = self.q_instance.transpile(circ)
+                # print('circ transpiled depth =', circ_transpiled[0].depth())
+                
+                result = self.q_instance.execute(circ)
+                counts = result.get_counts()
+                for key in list(counts):
+                    # If calculating (N-1)-electron states, need the first 
+                    # qubit to be in |0>, hence deleting the counts with
+                    # the first qubit in |1>
+                    if int(key[-1]) == (self.states == 'h'):
+                        del counts[key]
+                shots = sum(counts.values())
+
+                probs = {}
+                for t in ['0', '1']:
+                    key = ''.join(t) + ('0' if self.states == 'h' else '1')
+                    if key in counts.keys():
+                        probs[key] = counts[key] / shots
                     else:
-                        # Construct the unitary |0><0|⊗I + |1><1|⊗e^{iHt} 
-                        # on the last N-2 qubits
-                        cUgate = UnitaryGate(Umat).control(1)
-
-                        # Append single-qubit QPE circuit
-                        circ.barrier()
-                        circ.h(1)
-                        circ.append(cUgate, [1, 5, 4, 3, 2])
-                        circ.h(1)
-                        circ.barrier()
-
-                        # circ_unrecompiled = get_statevector(circ)
-                        # np.save('circ_unrecompiled.npy', circ_unrecompiled)
-
-                    circ.measure([0, 1], [0, 1])
-                    # print('circ depth =', circ.depth())
-                    # circ_transpiled = self.q_instance.transpile(circ)
-                    # print('circ transpiled depth =', circ_transpiled[0].depth())
-                    
-                    result = self.q_instance.execute(circ)
-                    counts = result.get_counts()
-                    for key in list(counts):
-                        # If calculating (N-1)-electron states, need the first 
-                        # qubit to be in |0>, hence deleting the counts with
-                        # the first qubit in |1>
-                        if int(key[-1]) == (self.states == 'h'):
-                            del counts[key]
-                    shots = sum(counts.values())
-
-                    probs = {}
-                    for t in ['0', '1']:
-                        key = ''.join(t) + ('0' if self.states == 'h' else '1')
-                        if key in counts.keys():
-                            probs[key] = counts[key] / shots
-                        else:
-                            probs[key] = 0.0
-                    # counts = dict(sorted(counts.items(), 
-                    #               key=lambda item: item[1], 
-                    #               reverse=True))
-                    if self.states == 'h':
-                        self.B_h[m, m] = [probs['00'], 0., probs['10'], 0.]
-                        print("self.B_h =", self.B_h[m, m])
-                    
-                    if self.states == 'e':
-                        self.B_e[m, m] = [probs['01'], 0., probs['11'], 0.]
-                        print("self.B_e =", self.B_e[m, m])
-                    print('')
+                        probs[key] = 0.0
+                self.B_e[m, m] = [probs['01'], probs['11']]
+                self.B_h[m, m] = [probs['00'], probs['10']]                
+            
+            print(f'B_e[{m}, {m}] = {self.B_e[m, m]}')
+            print(f'B_h[{m}, {m}] = {self.B_h[m, m]}')
+        print('-' * 80)
         print("Finish calculating diagonal transition amplitudes")
 
     def compute_off_diagonal_amplitudes(self, 
                                         cache_read: bool = True, 
-                                        cache_write: bool = True) -> None:
+                                        cache_write: bool = True
+                                        ) -> None:
         """Calculates off-diagonal transition amplitudes.
 
         Args:
@@ -300,112 +253,97 @@ class GreensFunctionRestricted(GreensFunction):
         """
         print("Start calculating off-diagonal transition amplitudes")
         for m in range(self.n_orb):
-            a_op_m = pauli_tuple_dict[m]
+            a_op_m = pauli_op_dict[m]
             for n in range(self.n_orb):
-                a_op_n = pauli_tuple_dict[n]
-                if m != n and (self.states is None or 
-                               self.states in self.states_arr[m, n]):
-                    if self.q_instance.backend.name() == 'statevector_simulator':
-                        circ = build_off_diagonal_circuits(
-                            self.ansatz.copy(), a_op_m, a_op_n, with_qpe=False)
-                        result = self.q_instance.execute(circ)
-                        psi = result.get_statevector()
+                a_op_n = pauli_op_dict[n]
+                circ = build_off_diagonal_circuits(
+                    self.ansatz.copy(), a_op_m, a_op_n, with_qpe=False)
+                if self.q_instance.backend.name() == 'statevector_simulator':
+                    result = self.q_instance.execute(circ)
+                    psi = result.get_statevector()
 
-                        if self.states in ('h', None):
-                            inds_hp = self.inds_h.include_ancilla('00')
-                            inds_hm = self.inds_h.include_ancilla('10')
-                            probs_hp = abs(self.eigenstates_h.conj().T @ psi[inds_hp.int_form]) ** 2
-                            probs_hm = abs(self.eigenstates_h.conj().T @ psi[inds_hm.int_form]) ** 2
-                            self.D_hp[m, n] = probs_hp
-                            self.D_hm[m, n] = probs_hm
+                    inds_hp = self.inds_h.include_ancilla('00')
+                    inds_hm = self.inds_h.include_ancilla('10')
+                    probs_hp = abs(self.eigenstates_h.conj().T @ psi[inds_hp.int_form]) ** 2
+                    probs_hm = abs(self.eigenstates_h.conj().T @ psi[inds_hm.int_form]) ** 2
+                    self.D_hp[m, n] = probs_hp
+                    self.D_hm[m, n] = probs_hm
 
-                        if self.states in ('e', None):
-                            inds_ep = self.inds_e.include_ancilla('01')
-                            inds_em = self.inds_e.include_ancilla('11')
-                            probs_ep = abs(self.eigenstates_e.conj().T @ psi[inds_ep.int_form]) ** 2
-                            probs_em = abs(self.eigenstates_e.conj().T @ psi[inds_em.int_form]) ** 2
-                            self.D_ep[m, n] = probs_ep
-                            self.D_em[m, n] = probs_em
+                    inds_ep = self.inds_e.include_ancilla('01')
+                    inds_em = self.inds_e.include_ancilla('11')
+                    probs_ep = abs(self.eigenstates_e.conj().T @ psi[inds_ep.int_form]) ** 2
+                    probs_em = abs(self.eigenstates_e.conj().T @ psi[inds_em.int_form]) ** 2
+                    self.D_ep[m, n] = probs_ep
+                    self.D_em[m, n] = probs_em
+                else: # QASM simulator or hardware
+                    Umat = expm(1j * self.hamiltonian_arr_up * HARTREE_TO_EV)
 
-                        if self.states is None:
-                            states_elem = []
-                            if sum(probs_hp) > 1e-3 or sum(probs_hm) > 1e-3:
-                                states_elem.append('h')
-                            if sum(probs_ep) > 1e-3 or sum(probs_em) > 1e-3:
-                                states_elem.append('e')
-                            self.states_arr[m, n] = states_elem
-
+                    # Append QPE circuit
+                    if self.recompiled:
+                        cUmat = np.kron(np.eye(4),
+                            np.kron(np.diag([1, 0]), np.eye(2 ** 2))
+                            + np.kron(np.diag([0, 1]), Umat))
+                        circ.barrier()
+                        circ.h(2)
+                        statevector = reverse_qubit_order(
+                            get_statevector(circ))
+                        quimb_gates = recompile_with_statevector(
+                            statevector, cUmat, n_gate_rounds=3,
+                            cache_options = {'read': cache_read, 
+                                                'write': cache_write,
+                                                'hamiltonian': self.hamiltonian,
+                                                'index': f'{m}-{n}', 
+                                                'states': self.states})
+                        circ = apply_quimb_gates(
+                            quimb_gates, circ.copy(), reverse=False)
+                        circ.h(2)
+                        circ.barrier()
+                                    
                     else:
-                        circ = build_off_diagonal_circuits(
-                            self.ansatz.copy(), tup_xy_left, tup_xy_right)
-                        Umat = expm(1j * self.hamiltonian_arr_up * HARTREE_TO_EV)
+                        cUgate = UnitaryGate(Umat).control(1)
 
-                        # Append QPE circuit
-                        if self.recompiled:
-                            cUmat = np.kron(np.eye(4),
-                                np.kron(np.diag([1, 0]), np.eye(2 ** 2))
-                                + np.kron(np.diag([0, 1]), Umat))
-                            circ.barrier()
-                            circ.h(2)
-                            statevector = reverse_qubit_order(
-                                get_statevector(circ))
-                            quimb_gates = recompile_with_statevector(
-                                statevector, cUmat, n_gate_rounds=3,
-                                cache_options = {'read': cache_read, 
-                                                 'write': cache_write,
-                                                 'hamiltonian': self.hamiltonian,
-                                                 'index': f'{m}-{n}', 
-                                                 'states': self.states})
-                            circ = apply_quimb_gates(
-                                quimb_gates, circ.copy(), reverse=False)
-                            circ.h(2)
-                            circ.barrier()
-                                        
+                        circ.barrier()
+                        circ.h(2)
+                        circ.append(cUgate, [2, 6, 5, 4, 3])
+                        circ.h(2)
+                        circ.barrier()
+
+                    circ.measure([0, 1, 2], [0, 1, 2])
+                    # circ.measure(2, 2)
+                    # print('circ depth =', circ.depth())
+                    # circ_transpiled = self.q_instance.transpile(circ)
+                    # print('circ transpiled depth =', circ_transpiled[0].depth())
+
+                    result = self.q_instance.execute(circ)
+                    counts = result.get_counts()
+                    print(counts)
+                    for key in list(counts):
+                        if int(key[-1]) == (self.states == 'h'):
+                            del counts[key]
+                    print(counts)
+                    shots = sum(counts.values())
+                    
+                    from itertools import product
+                    probs = {}
+                    for t in product(['0', '1'], repeat=2):
+                        key = ''.join(t) + ('0' if self.states == 'h' else '1')
+                        if key in counts.keys():
+                            probs[key] = counts[key] / shots / len(self.states_arr[m, n]) # XXX
                         else:
-                            cUgate = UnitaryGate(Umat).control(1)
+                            probs[key] = 0.0
 
-                            circ.barrier()
-                            circ.h(2)
-                            circ.append(cUgate, [2, 6, 5, 4, 3])
-                            circ.h(2)
-                            circ.barrier()
-
-                        circ.measure([0, 1, 2], [0, 1, 2])
-                        # circ.measure(2, 2)
-                        # print('circ depth =', circ.depth())
-                        # circ_transpiled = self.q_instance.transpile(circ)
-                        # print('circ transpiled depth =', circ_transpiled[0].depth())
-
-                        result = self.q_instance.execute(circ)
-                        counts = result.get_counts()
-                        print(counts)
-                        for key in list(counts):
-                            if int(key[-1]) == (self.states == 'h'):
-                                del counts[key]
-                        print(counts)
-                        shots = sum(counts.values())
-                        
-                        from itertools import product
-                        probs = {}
-                        for t in product(['0', '1'], repeat=2):
-                            key = ''.join(t) + ('0' if self.states == 'h' else '1')
-                            if key in counts.keys():
-                                probs[key] = counts[key] / shots / len(self.states_arr[m, n]) # XXX
-                            else:
-                                probs[key] = 0.0
-
-                        if self.states == 'h':
-                            self.D_hp[m, n] = [probs['000'], 0.0, probs['100'], 0.0]
-                            self.D_hm[m, n] = [probs['010'], 0.0, probs['110'], 0.0]
-                            # print("self.D_hp =", self.D_hp[m, n])
-                            # print("self.D_hm =", self.D_hm[m, n])
-                        
-                        if self.states == 'e':
-                            self.D_ep[m, n] = [probs['001'], 0., probs['101'], 0.]
-                            self.D_em[m, n] = [probs['011'], 0., probs['111'], 0.]
-                            # print("self.D_ep =", self.D_ep[m, n])
-                            # print("self.D_em =", self.D_em[m, n])
-                        print('')
+                    if self.states == 'h':
+                        self.D_hp[m, n] = [probs['000'], 0.0, probs['100'], 0.0]
+                        self.D_hm[m, n] = [probs['010'], 0.0, probs['110'], 0.0]
+                        # print("self.D_hp =", self.D_hp[m, n])
+                        # print("self.D_hm =", self.D_hm[m, n])
+                    
+                    if self.states == 'e':
+                        self.D_ep[m, n] = [probs['001'], 0., probs['101'], 0.]
+                        self.D_em[m, n] = [probs['011'], 0., probs['111'], 0.]
+                        # print("self.D_ep =", self.D_ep[m, n])
+                        # print("self.D_em =", self.D_em[m, n])
+                    print('')
 
         # Unpack D values to B values
         for m in range(self.n_orb):
@@ -432,7 +370,8 @@ class GreensFunctionRestricted(GreensFunction):
             save_params: bool = True,
             load_params: bool = False,
             cache_write: bool = True,
-            cache_read: bool = False) -> None:
+            cache_read: bool = False
+            ) -> None:
         """Main function to compute energies and transition amplitudes.
         
         Args:

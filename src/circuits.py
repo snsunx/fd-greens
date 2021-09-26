@@ -5,11 +5,7 @@ import numpy as np
 from qiskit import QuantumCircuit, QuantumRegister, ClassicalRegister
 from openfermion.ops import PolynomialTensor
 from openfermion.transforms import get_fermion_operator, jordan_wigner
-from tools import get_pauli_tuple, pauli_label_to_tuple
 from qiskit.quantum_info import SparsePauliOp
-
-# Change Term to PauliTuple
-PauliTuple = Tuple[Tuple[str, int]]
 
 def build_diagonal_circuits(ansatz: QuantumCircuit,
                             a_op: SparsePauliOp,
@@ -120,9 +116,6 @@ def apply_multicontrolled_gate(
     
     Args:
         circ: The quantum circuit to which the controlled U gate is appended.
-        term: A tuple specifying the Pauli string corresponding to 
-            the creation/annihilation operator, e.g. Z0Z1X2 is specified as 
-            (('Z', 0), ('Z', 1), ('X', 2)).
         ctrl: An integer indicating the qubit state on which the controlled-U
             gate is controlled on. Must be 0 or 1.
         offset: An integer indicating the number of qubits skipped when 
@@ -185,3 +178,6 @@ def apply_multicontrolled_gate(
     for i in range(len(ctrl)):
         if ctrl[i] == 0:
             circ.x(i)
+
+def append_qpe_circuit():
+    return

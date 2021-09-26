@@ -1,5 +1,6 @@
 from typing import Union, Tuple, List, Iterable, Optional, Sequence
 import json
+from helpers import deprecate_function
 
 import numpy as np
 
@@ -16,8 +17,6 @@ from openfermion.transforms import get_fermion_operator, jordan_wigner
 
 from z2_symmetries import apply_cnot_z2, transform_4q_hamiltonian
 from constants import HARTREE_TO_EV
-
-PauliTuple = Tuple[Tuple[str, int]]
 
 def get_quantum_instance(backend, 
                          noise_model_name=None, 
@@ -105,28 +104,6 @@ def save_vqe_result(vqe_result: VQEResult, prefix: str = None) -> None:
             params_dict_new.update({str(key): val})
         f.write(json.dumps(params_dict_new))
 
-# TODO: Deprecate this function
-def get_pauli_tuple(n_qubits: int, ind: int
-                    ) -> Tuple[PauliTuple]:
-    """Obtains the tuple form of a Pauli string from number of qubits and 
-    creation/annihilation operator index.
-    
-    Args:
-        n_qubits: The number of qubits.
-        ind: The index of the qubit on which the creation/annihilation
-            operator acts on.
-    
-    Return:
-        The Pauli string in tuple form.
-    """
-    arr = np.zeros((n_qubits,))
-    arr[ind] = 1.
-    poly_tensor = PolynomialTensor({(0,): arr})
-    ferm_op = get_fermion_operator(poly_tensor)
-    qubit_op = jordan_wigner(ferm_op)
-    tup_xy = tuple(qubit_op.terms)
-    return tup_xy
-
 def get_a_operator(n_qubits: int, ind: int) -> SparsePauliOp:
     """Returns the creation/annihilation operator.
     
@@ -144,32 +121,9 @@ def get_a_operator(n_qubits: int, ind: int) -> SparsePauliOp:
     sparse_pauli_op = SparsePauliOp(pauli_table, coeffs=[1.0, 1.0j])
     return sparse_pauli_op
 
-def pauli_label_to_tuple(label: str) -> PauliTuple:
-    """Converts a Pauli string from label form to tuple form.
-    
-    Args:
-        The Pauli string in label form.
-        
-    Returns:
-        The Pauli string in tuple form.
-    """
-    lst = []
-    for i, c in enumerate(label[::-1]):
-        if c != 'I':
-            lst.append((i, c))
-    tup = tuple(lst)
-    return tup
-
-def get_indices_with_ancilla(inds: Iterable[str], anc: str):
-    """Returns indices with ancillas positions."""
-    inds_new = [ind + anc for ind in inds]
-    inds_new = [int(ind, 2) for ind in inds_new]
-    return inds_new
-
-
 # XXX: The following function is hardcoded
 # XXX: Treating the spin this way is not correct. See Markdown document.
-def get_pauli_tuple_dictionary(spin='up'):
+def get_operator_dictionary(spin='up'):
     labels_x = ['IIIX', 'IIXZ', 'IXZZ', 'XZZZ']
     labels_y = ['IIIY', 'IIYZ', 'IYZZ', 'YZZZ']
     pauli_table = PauliTable.from_labels(labels_x + labels_y)
@@ -184,7 +138,7 @@ def get_pauli_tuple_dictionary(spin='up'):
             dic.update({i: [sparse_pauli_op[2 * i], sparse_pauli_op[2 * i + 4]]})
     else:
         for i in range(2):
-            dic.update({i: [sparse_pauli_op[2 * i + 1].primitive, sparse_pauli_op[2 * i + 1 + 4]]})
+            dic.update({i: [sparse_pauli_op[2 * i + 1], sparse_pauli_op[2 * i + 1 + 4]]})
     return dic
 
     

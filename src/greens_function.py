@@ -14,7 +14,7 @@ from constants import HARTREE_TO_EV
 from hamiltonians import MolecularHamiltonian
 from number_state_solvers import (get_number_state_indices,
                                   number_state_eigensolver)
-from tools import (get_a_operator, get_pauli_tuple,
+from tools import (get_a_operator,
                    reverse_qubit_order,
                    get_statevector, 
                    load_vqe_result,

@@ -1,11 +1,24 @@
 """Utility class for handling qubit indices."""
+
 import copy
-from typing import Union, Iterable
+from typing import Union, Sequence, Optional
 from math import ceil, log2
 
+QubitIndicesForm = Sequence[Union[int, str, Sequence[int]]]
+
 class QubitIndices:
-    QubitIndicesForm = Iterable[Union[int, str, Iterable[int]]]
-    def __init__(self, data: QubitIndicesForm, n_qubits=None):
+    """A class to handle qubit indices in string, integer and list forms."""
+    def __init__(self, 
+                 data: QubitIndicesForm,
+                 n_qubits: Optional[int] = None
+                ) -> None:
+        """Initializes a QubitIndices object.
+        
+        Args:   
+            data: A sequence of qubit indices in string, integer or list form.
+            n_qubits: The number of qubits used in padding zeroes 
+                in string and list forms.
+        """
         self._int = None
         self._list = None
         self._str = None
@@ -60,6 +73,9 @@ class QubitIndices:
 
     def copy(self):
         return copy.deepcopy(self)
+
+    def __str__(self):
+        return self._str
 
     @property
     def int_form(self):

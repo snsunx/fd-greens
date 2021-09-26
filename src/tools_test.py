@@ -22,5 +22,10 @@ def get_quantum_instance_test():
     backend = Aer.get_backend('qasm_simulator')
     q_instance = get_quantum_instance(backend, noise_model_name='ibmq_jakarta', shots=8192)
 
-#get_number_state_indices_test()
-get_quantum_instance_test()
+def get_pauli_tuple_test():
+	pauli_tuple = get_pauli_tuple(4, 2)
+	print(pauli_tuple)
+
+if __name__ == '__main__':
+	get_pauli_tuple_test()
+
