@@ -15,13 +15,12 @@ from constants import HARTREE_TO_EV
 from greens_function import GreensFunction
 from hamiltonians import MolecularHamiltonian
 from number_state_solvers import number_state_eigensolver
-from io_utils import (
-                   load_vqe_result,
-                   save_vqe_result)
+from io_utils import load_vqe_result, save_vqe_result
 from operators import get_operator_dictionary
 from qubit_indices import QubitIndices
 from circuits import build_diagonal_circuits, build_off_diagonal_circuits
 from z2_symmetries import transform_4q_hamiltonian
+from utils import state_tomography
 
 np.set_printoptions(precision=6)
 pauli_op_dict = get_operator_dictionary()
@@ -41,8 +40,7 @@ class GreensFunctionRestricted(GreensFunction):
             ansatz: The parametrized circuit as an ansatz to VQE.
             hamiltonian: The MolecularHamiltonian object.
             optimizer: The optimizer in VQE. Default to L_BFGS_B().
-            q_instance: The quantum instance for execution of the quantum 
-                circuit. Default to statevector simulator.
+            q_instance: The QuantumInstance to execute the circuit.
             recompiled: Whether the QPE circuit is recompiled.
         """
         # Define Hamiltonian and related variables
@@ -148,7 +146,7 @@ class GreensFunctionRestricted(GreensFunction):
         print("Finish calculating (N±1)-electron states")
 
         print(f"(N+1)-electron energies are {self.eigenenergies_e}")
-        print(f"(N-1)-electron energies are {self.eigenenergies_e}")
+        print(f"(N-1)-electron energies are {self.eigenenergies_h}")
 
     def compute_diagonal_amplitudes(self,
                                     cache_read: bool = True,
@@ -161,28 +159,38 @@ class GreensFunctionRestricted(GreensFunction):
             cache_write: Whether to save recompiled circuits to cache files.
         """
         print("Start calculating diagonal transition amplitudes")
+
+        inds_e = self.inds_e.include_ancilla('1').int_form
+        inds_h = self.inds_h.include_ancilla('0').int_form
         for m in range(self.n_orb):
-            print('-' * 30, 'm =', m, '-' * 30)
+            print(f"Calculating m = {m}")
             a_op_m = pauli_op_dict[m]
             circ = build_diagonal_circuits(self.ansatz.copy(), a_op_m)
             if self.q_instance.backend.name() == 'statevector_simulator':
                 result = self.q_instance.execute(circ)
                 psi = result.get_statevector()
-                # print('Index of largest element is', format(np.argmax(np.abs(psi)), '03b'))
                 
-                inds_e = self.inds_e.include_ancilla('1')
-                probs_e = np.abs(self.eigenstates_e.conj().T @ psi[inds_e.int_form]) ** 2
-                probs_e[abs(probs_e) < 1e-8] = 0.
-                self.B_e[m, m] = probs_e
+                psi_e = psi[inds_e]
+                B_e_mm = np.abs(self.eigenstates_e.conj().T @ psi_e) ** 2
 
-                inds_h = self.inds_h.include_ancilla('0')
-                probs_h = np.abs(self.eigenstates_h.conj().T @ psi[inds_h.int_form]) ** 2
-                probs_h[abs(probs_h) < 1e-8] = 0.
-                self.B_h[m, m] = probs_h
+                psi_h = psi[inds_h]
+                B_h_mm = np.abs(self.eigenstates_h.conj().T @ psi_h) ** 2
 
             else: # QASM simulator or hardware
-                raise NotImplementedError("QASM or hardware simulation is not implemented")
+                rho = state_tomography(circ, q_instance=self.q_instance)
+
+                rho_e = rho[inds_e][:, inds_e]
+                B_e_mm = np.diag(self.eigenstates_e.conj().T @ rho_e @ self.eigenstates_e).real
+
+                rho_h = rho[inds_h][:, inds_h]
+                B_h_mm = np.diag(self.eigenstates_h.conj().T @ rho_h @ self.eigenstates_h).real
             
+            #B_e_mm[abs(B_e_mm) < 1e-8] = 0.
+            self.B_e[m, m] = B_e_mm
+
+            #B_h_mm[abs(B_h_mm) < 1e-8] = 0.
+            self.B_h[m, m] = B_h_mm
+
             print(f'B_e[{m}, {m}] = {self.B_e[m, m]}')
             print(f'B_h[{m}, {m}] = {self.B_h[m, m]}')
         print("Finish calculating diagonal transition amplitudes")
@@ -198,37 +206,59 @@ class GreensFunctionRestricted(GreensFunction):
             cache_write: Whether to save recompiled circuits to cache files.
         """
         print("Start calculating off-diagonal transition amplitudes")
+
+        inds_hp = self.inds_h.include_ancilla('00').int_form
+        inds_hm = self.inds_h.include_ancilla('10').int_form
+        inds_ep = self.inds_e.include_ancilla('01').int_form
+        inds_em = self.inds_e.include_ancilla('11').int_form
         for m in range(self.n_orb):
             a_op_m = pauli_op_dict[m]
             for n in range(self.n_orb):
-                a_op_n = pauli_op_dict[n]
-                circ = build_off_diagonal_circuits(self.ansatz.copy(), a_op_m, a_op_n)
-                if self.q_instance.backend.name() == 'statevector_simulator':
-                    result = self.q_instance.execute(circ)
-                    psi = result.get_statevector()
+                if m != n:
+                    print(f"Calculating m = {m}, n = {n}")
+                    a_op_n = pauli_op_dict[n]
+                    circ = build_off_diagonal_circuits(self.ansatz.copy(), a_op_m, a_op_n)
+                    if self.q_instance.backend.name() == 'statevector_simulator':
+                        result = self.q_instance.execute(circ)
+                        psi = result.get_statevector()
 
-                    inds_hp = self.inds_h.include_ancilla('00')
-                    inds_hm = self.inds_h.include_ancilla('10')
-                    probs_hp = abs(self.eigenstates_h.conj().T @ psi[inds_hp.int_form]) ** 2
-                    probs_hm = abs(self.eigenstates_h.conj().T @ psi[inds_hm.int_form]) ** 2
-                    self.D_hp[m, n] = probs_hp
-                    self.D_hm[m, n] = probs_hm
+                        psi_ep = psi[inds_ep]
+                        psi_em = psi[inds_em]
+                        D_ep_mn = abs(self.eigenstates_e.conj().T @ psi_ep) ** 2
+                        D_em_mn = abs(self.eigenstates_e.conj().T @ psi_em) ** 2
 
-                    inds_ep = self.inds_e.include_ancilla('01')
-                    inds_em = self.inds_e.include_ancilla('11')
-                    probs_ep = abs(self.eigenstates_e.conj().T @ psi[inds_ep.int_form]) ** 2
-                    probs_em = abs(self.eigenstates_e.conj().T @ psi[inds_em.int_form]) ** 2
-                    self.D_ep[m, n] = probs_ep
-                    self.D_em[m, n] = probs_em
+                        psi_hp = psi[inds_hp]
+                        psi_hm = psi[inds_hm]
+                        D_hp_mn = abs(self.eigenstates_h.conj().T @ psi_hp) ** 2
+                        D_hm_mn = abs(self.eigenstates_h.conj().T @ psi_hm) ** 2
 
-                else: # QASM simulator or hardware
-                    raise NotImplementedError("QASM or hardware simulation is not implemented")
+                    else: # QASM simulator or hardware
+                        rho = state_tomography(circ, q_instance=self.q_instance)
+
+                        rho_ep = rho[inds_ep][:, inds_ep]
+                        rho_em = rho[inds_em][:, inds_em]
+                        D_ep_mn = np.diag(self.eigenstates_e.conj().T @ rho_ep @ self.eigenstates_e).real
+                        D_em_mn = np.diag(self.eigenstates_e.conj().T @ rho_em @ self.eigenstates_e).real
+
+                        rho_hp = rho[inds_hp][:, inds_hp]
+                        rho_hm = rho[inds_hm][:, inds_hm]
+                        D_hp_mn = np.diag(self.eigenstates_h.conj().T @ rho_hp @ self.eigenstates_h).real
+                        D_hm_mn = np.diag(self.eigenstates_h.conj().T @ rho_hm @ self.eigenstates_h).real
+                    
+                    #D_ep_mn[abs(D_ep_mn) < 1e-8] = 0.
+                    #D_em_mn[abs(D_em_mn) < 1e-8] = 0.
+                    self.D_ep[m, n] = D_ep_mn
+                    self.D_em[m, n] = D_em_mn
+
+                    #D_hp_mn[abs(D_hp_mn) < 1e-8] = 0.
+                    #D_hm_mn[abs(D_hm_mn) < 1e-8] = 0.
+                    self.D_hp[m, n] = D_hp_mn
+                    self.D_hm[m, n] = D_hm_mn
 
         # Unpack D values to B values
         for m in range(self.n_orb):
             for n in range(self.n_orb):
                 if m != n:
-                    print('-' * 30, f'm = {m}, n = {n}', '-' * 30)
                     B_e_mn = np.exp(-1j * np.pi / 4) * (self.D_ep[m, n] - self.D_em[m, n])
                     B_e_mn += np.exp(1j * np.pi / 4) * (self.D_ep[n, m] - self.D_em[n, m])
                     B_e_mn[abs(B_e_mn) < 1e-8] = 0
@@ -241,6 +271,7 @@ class GreensFunctionRestricted(GreensFunction):
 
                     print(f'B_e[{m}, {n}] = {self.B_e[m, n]}')
                     print(f'B_h[{m}, {n}] = {self.B_h[m, n]}')
+        
         print("Finish calculating off-diagonal transition amplitudes")
 
     @property

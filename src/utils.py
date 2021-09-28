@@ -1,11 +1,14 @@
 """Utility functions"""
 
+from typing import Optional
 import numpy as np
 
 from qiskit import QuantumCircuit, Aer, IBMQ, execute
 from qiskit.utils import QuantumInstance
 from qiskit.providers.aer.noise import NoiseModel
 from qiskit.providers.aer.backends.aerbackend import AerBackend
+from qiskit.ignis.verification.tomography import (state_tomography_circuits,
+                                                  StateTomographyFitter)
 
 def get_quantum_instance(backend,
                          noise_model_name=None, 
@@ -96,3 +99,26 @@ def reverse_qubit_order(arr: np.ndarray) -> np.ndarray:
         raise NotImplementedError("Reversing qubit order of array with more"
                                   "than two dimensions is not implemented.")
     return arr
+
+def state_tomography(circ: QuantumCircuit, 
+                     q_instance: Optional[QuantumInstance] = None
+                     ) -> np.ndarray:
+    """Performs state tomography on a quantum circuit.
+    
+    Args:
+        circ: The quantum circuit to perform tomography on.
+        q_instance: The QuantumInstance to execute the circuit.
+    
+    Returns:
+        The density matrix obtained from state tomography.
+    """
+    if q_instance is None:
+        backend = Aer.get_backend('qasm_simulator')
+        q_instance = QuantumInstance(backend, shots=8192)
+
+    qreg = circ.qregs[0]
+    qst_circs = state_tomography_circuits(circ, qreg)
+    result = q_instance.execute(qst_circs)
+    qst_fitter = StateTomographyFitter(result, qst_circs)
+    rho_fit = qst_fitter.fit(method='lstsq')
+    return rho_fit

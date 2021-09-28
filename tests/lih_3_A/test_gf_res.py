@@ -13,7 +13,7 @@ from utils import get_quantum_instance
 from constants import HARTREE_TO_EV
 
 # User-defined parameters.
-bond_length = 1.6
+bond_length = 3.0
 save_params = False
 load_params = False
 cache_read = False
@@ -36,9 +36,9 @@ gf_sv = GreensFunctionRestricted(ansatz.copy(), hamiltonian, q_instance=q_instan
 gf_sv.run(save_params=save_params, load_params=load_params, 
 		  cache_read=cache_read, cache_write=cache_write)
 
-omegas = np.arange(-30, 34, 0.1)
+omegas = np.arange(-30, 30, 0.1)
 A_list = []
 for omega in omegas:
     A = gf_sv.compute_spectral_function(omega + 0.02j * HARTREE_TO_EV)
     A_list.append(A)
-np.savetxt('A_red.dat', np.vstack((omegas, A_list)).T)
+np.savetxt('A_red_sv.dat', np.vstack((omegas, A_list)).T)
