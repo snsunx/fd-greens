@@ -118,6 +118,9 @@ def state_tomography(circ: QuantumCircuit,
 
     qreg = circ.qregs[0]
     qst_circs = state_tomography_circuits(circ, qreg)
+    if True:
+        fig = qst_circs[5].draw(output='mpl')
+        fig.savefig('qst_circ.png')
     result = q_instance.execute(qst_circs)
     qst_fitter = StateTomographyFitter(result, qst_circs)
     rho_fit = qst_fitter.fit(method='lstsq')
