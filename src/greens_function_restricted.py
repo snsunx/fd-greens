@@ -18,14 +18,15 @@ from number_state_solvers import number_state_eigensolver
 from io_utils import load_vqe_result, save_vqe_result
 from operators import get_operator_dictionary
 from qubit_indices import QubitIndices
-from circuits import build_diagonal_circuits, build_off_diagonal_circuits
+#from circuits import build_diagonal_circuits, build_off_diagonal_circuits
+from circuits import CircuitConstructor
 from z2_symmetries import transform_4q_hamiltonian
 from utils import state_tomography
 
 np.set_printoptions(precision=6)
 pauli_op_dict = get_operator_dictionary()
 
-class GreensFunctionRestricted(GreensFunction):
+class GreensFunctionRestricted:
     """A class to perform frequency-domain Green's function calculations
     with restricted orbitals."""
     def __init__(self, 
@@ -104,6 +105,8 @@ class GreensFunctionRestricted(GreensFunction):
         self.eigenenergies_h = None
         self.eigenstates_h = None
 
+        self.circuit_constructor = None
+
     def compute_ground_state(self, 
                              save_params: bool = False,
                              load_params: bool = False,
@@ -131,7 +134,8 @@ class GreensFunctionRestricted(GreensFunction):
             self.energy_gs = vqe_result.optimal_value * HARTREE_TO_EV
             self.ansatz.assign_parameters(vqe_result.optimal_parameters, inplace=True)
             print("Finish calculating the ground state using VQE")
-        
+
+        self.circuit_constructor = CircuitConstructor(self.ansatz)
         print(f'Ground state energy = {self.energy_gs:.3f} eV')
     
     def compute_eh_states(self) -> None:
@@ -165,7 +169,7 @@ class GreensFunctionRestricted(GreensFunction):
         for m in range(self.n_orb):
             print(f"Calculating m = {m}")
             a_op_m = pauli_op_dict[m]
-            circ = build_diagonal_circuits(self.ansatz.copy(), a_op_m)
+            circ = self.circuit_constructor.build_diagonal_circuits(a_op_m)
             if self.q_instance.backend.name() == 'statevector_simulator':
                 result = self.q_instance.execute(circ)
                 psi = result.get_statevector()
@@ -217,7 +221,7 @@ class GreensFunctionRestricted(GreensFunction):
                 if m != n:
                     print(f"Calculating m = {m}, n = {n}")
                     a_op_n = pauli_op_dict[n]
-                    circ = build_off_diagonal_circuits(self.ansatz.copy(), a_op_m, a_op_n)
+                    circ = self.circuit_constructor.build_off_diagonal_circuits(a_op_m, a_op_n)
                     if self.q_instance.backend.name() == 'statevector_simulator':
                         result = self.q_instance.execute(circ)
                         psi = result.get_statevector()

@@ -1,5 +1,5 @@
 import sys
-sys.path.append('../src/')
+sys.path.append('../src')
 import unittest
 
 from qiskit.quantum_info import SparsePauliOp, PauliTable

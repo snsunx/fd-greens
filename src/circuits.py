@@ -1,6 +1,6 @@
 """Functions for circuit construction"""
 
-from typing import Tuple, Optional, Iterable, Union, Sequence
+from typing import Tuple, Optional, Iterable, Union, Sequence, List
 from cmath import polar
 
 import numpy as np
@@ -8,6 +8,7 @@ from scipy.linalg import expm
 from constants import HARTREE_TO_EV
 
 from qiskit import QuantumCircuit, QuantumRegister, ClassicalRegister
+from qiskit.circuit import Instruction
 from qiskit.extensions import UnitaryGate
 
 from openfermion.ops import PolynomialTensor
@@ -18,81 +19,89 @@ from utils import reverse_qubit_order, get_statevector
 
 from recompilation import apply_quimb_gates, recompile_with_statevector
 
-def build_diagonal_circuits(ansatz: QuantumCircuit,
-                            a_op: SparsePauliOp,
-                            add_barriers: bool = True) -> QuantumCircuit:
-    """Constructs the circuit to calculate a diagonal transition amplitude.
-    
-    Args:
-        ansatz: The ansatz quantum circuit containing the ground state.
-        a_op: The creation/annihilation operator of the circuit.
-        with_qpe: Whether an additional qubit is added for QPE.
-        add_barriers: Whether barriers are added to the circuit.
-        measure: Whether the ancilla qubits are measured.
+CircuitData = Iterable[Tuple[Instruction, List[int], Optional[List[int]]]]
 
-    Returns:
-        The new circuit with the creation/annihilation operator appended.
-    """
-    # Copy the circuit with empty ancilla positions
-    circ = copy_circuit_with_ancilla(ansatz, [0])
+class CircuitConstructor:
+    """A class to construct circuits for calculating Green's Function."""
 
-    # Apply the gates corresponding to the creation/annihilation terms
-    if add_barriers: circ.barrier()
-    circ.h(0)
-    if add_barriers: circ.barrier()
-    apply_multicontrolled_gate(circ, a_op[0], ctrl=[0], offset=1)
-    if add_barriers: circ.barrier()
-    apply_multicontrolled_gate(circ, a_op[1], ctrl=[1], offset=1)
-    if add_barriers: circ.barrier()
-    circ.h(0)
-    if add_barriers: circ.barrier()
+    def __init__(self,
+                 ansatz: QuantumCircuit, 
+                 add_barriers: bool = True,
+                 cxc_data: Optional[CircuitData] = None) -> None:
+        """Creates a CircuitConstructor object."""
+        self.ansatz = ansatz.copy()
+        self.add_barriers = add_barriers
+        self.cxc_data = cxc_data
 
-    return circ
+    def build_diagonal_circuits(self,
+                                a_op: SparsePauliOp
+                                ) -> QuantumCircuit:
+        """Constructs the circuit to calculate a diagonal transition amplitude.
+        
+        Args:
+            ansatz: The ansatz quantum circuit containing the ground state.
+            a_op: The creation/annihilation operator of the circuit.
 
-def build_off_diagonal_circuits(ansatz: QuantumCircuit,
-                                a_op_m: SparsePauliOp,
-                                a_op_n: SparsePauliOp,
-                                add_barriers: bool = True) -> QuantumCircuit:
-    """Constructs the circuit to calculate off-diagonal transition amplitudes.
-    
-    Args:
-        ansatz: The ansatz quantum circuit containing the ground state.
-        a_op_m: The first creation/annihilation operator of the circuit. 
-        a_op_n: The second creation/annihilation operator of the circuit.
-        add_barriers: Whether barriers are added to the circuit.
+        Returns:
+            The new circuit with the creation/annihilation operator appended.
+        """
+        # Copy the circuit with empty ancilla positions
+        circ = copy_circuit_with_ancilla(self.ansatz, [0])
 
-    Returns:
-        The new circuit with the two creation/annihilation operators appended.
-    """
-    # Copy the circuit with empty ancilla positions
-    circ = copy_circuit_with_ancilla(ansatz, [0, 1])
+        # Apply the gates corresponding to the creation/annihilation terms
+        if self.add_barriers: circ.barrier()
+        circ.h(0)
+        if self.add_barriers: circ.barrier()
+        apply_multicontrolled_gate(circ, a_op[0], ctrl=[0], offset=1)
+        if self.add_barriers: circ.barrier()
+        apply_multicontrolled_gate(circ, a_op[1], ctrl=[1], offset=1)
+        if self.add_barriers: circ.barrier()
+        circ.h(0)
+        if self.add_barriers: circ.barrier()
+        return circ
 
-    # Apply the gates corresponding to the creation/annihilation terms
-    if add_barriers: circ.barrier()
-    circ.h([0, 1])
-    if add_barriers: circ.barrier()
-    apply_multicontrolled_gate(circ, a_op_m[0], ctrl=(0, 0), offset=2)
-    if add_barriers: circ.barrier()
-    apply_multicontrolled_gate(circ, a_op_m[1], ctrl=(1, 0), offset=2)
-    if add_barriers: circ.barrier()
-    circ.rz(np.pi / 4, 1)
-    if add_barriers: circ.barrier()
-    apply_multicontrolled_gate(circ, a_op_n[0], ctrl=(0, 1), offset=2)
-    if add_barriers: circ.barrier()
-    apply_multicontrolled_gate(circ, a_op_n[1], ctrl=(1, 1), offset=2)
-    if add_barriers: circ.barrier()
-    circ.h([0, 1])
+    def build_off_diagonal_circuits(self, 
+                                    a_op_m: SparsePauliOp,
+                                    a_op_n: SparsePauliOp
+                                    ) -> QuantumCircuit:
+        """Constructs the circuit to calculate off-diagonal transition amplitudes.
+        
+        Args:
+            a_op_m: The first creation/annihilation operator of the circuit. 
+            a_op_n: The second creation/annihilation operator of the circuit.
 
-    return circ
+        Returns:
+            The new circuit with the two creation/annihilation operators appended.
+        """
+        # Copy the circuit with empty ancilla positions
+        circ = copy_circuit_with_ancilla(self.ansatz, [0, 1])
+
+        # Apply the gates corresponding to the creation/annihilation terms
+        if self.add_barriers: circ.barrier()
+        circ.h([0, 1])
+        if self.add_barriers: circ.barrier()
+        apply_multicontrolled_gate(circ, a_op_m[0], ctrl=(0, 0), offset=2, cxc_data=self.cxc_data)
+        if self.add_barriers: circ.barrier()
+        apply_multicontrolled_gate(circ, a_op_m[1], ctrl=(1, 0), offset=2, cxc_data=self.cxc_data)
+        if self.add_barriers: circ.barrier()
+        circ.rz(np.pi / 4, 1)
+        if self.add_barriers: circ.barrier()
+        apply_multicontrolled_gate(circ, a_op_n[0], ctrl=(0, 1), offset=2, cxc_data=self.cxc_data)
+        if self.add_barriers: circ.barrier()
+        apply_multicontrolled_gate(circ, a_op_n[1], ctrl=(1, 1), offset=2, cxc_data=self.cxc_data)
+        if self.add_barriers: circ.barrier()
+        circ.h([0, 1])
+
+        return circ
 
 # TODO: Pass in n_gate_rounds and cache_options in a simpler way
 def append_qpe_circuit(circ: QuantumCircuit,
-                       hamiltonian_arr: np.ndarray,
-                       ind_qpe: int,
-                       recompiled: bool = False,
-                       n_gate_rounds=None,
-                       cache_options=None
-                       ) -> QuantumCircuit:
+                    hamiltonian_arr: np.ndarray,
+                    ind_qpe: int,
+                    recompiled: bool = False,
+                    n_gate_rounds=None,
+                    cache_options=None
+                    ) -> QuantumCircuit:
     """Appends single-qubit QPE circuit to a given circuit.
     
     Args:
@@ -138,7 +147,7 @@ def append_qpe_circuit(circ: QuantumCircuit,
     return circ
 
 def copy_circuit_with_ancilla(circ: QuantumCircuit,
-                              inds_anc: Sequence[int]) -> QuantumCircuit:
+                            inds_anc: Sequence[int]) -> QuantumCircuit:
     """Copies a circuit with specific indices for ancillas.
     
     Args:
@@ -165,7 +174,8 @@ def copy_circuit_with_ancilla(circ: QuantumCircuit,
 def apply_multicontrolled_gate(circ: QuantumCircuit, 
                                op: SparsePauliOp,
                                ctrl: int = [1], 
-                               offset: int = 1) -> None:
+                               offset: int = 1,
+                               cxc_data: Optional[CircuitData] = None) -> None:
     """Applies a controlled-U gate to a quantum circuit.
     
     Args:
@@ -173,7 +183,7 @@ def apply_multicontrolled_gate(circ: QuantumCircuit,
         op: The operator from which the multicontrolled gate is constructed.
         ctrl: The qubit state on which the controlled-U gate is controlled on.
             Must be 0 or 1.
-        offset: The number of qubits skipped when applying the controlled-U gate.
+        offset: Index of the first system qubit.
     """
     assert set(ctrl).issubset({0, 1})
     assert len(op.coeffs) == 1
@@ -213,9 +223,13 @@ def apply_multicontrolled_gate(circ: QuantumCircuit,
     elif len(ctrl) == 2:
         if coeff != 1:
             circ.cp(angle, 0, 1)
-        circ.h(offset)
-        circ.ccx(0, 1, offset)
-        circ.h(offset)
+        circ.h(1)
+        if cxc_data is not None:
+            for data in cxc_data:
+                circ.append(*data)
+            else:
+                circ.ccx(0, offset, 1)
+        circ.h(1)
     else:
         raise NotImplementedError("Control on more than two qubits is not implemented")
     for i in range(offset, ind_max + offset):

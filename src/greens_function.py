@@ -16,7 +16,9 @@ from number_state_solvers import (get_number_state_indices,
                                   number_state_eigensolver)
 from operators import get_a_operator
 from io_utils import load_vqe_result, save_vqe_result
-from circuits import append_qpe_circuit, build_diagonal_circuits, build_off_diagonal_circuits
+from circuits import append_qpe_circuit
+# build_diagonal_circuits, build_off_diagonal_circuits
+from circuits import CircuitConstructor
 
 np.set_printoptions(precision=6)
 

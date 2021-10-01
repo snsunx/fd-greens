@@ -59,17 +59,27 @@ class QubitIndices:
         self._list = [[int(c) for c in s[::-1]] for s in self._str]
 
     def include_ancilla(self, anc: str, inplace=False):
+        """Includes ancilla qubits as the first few qubits into a set
+        of qubit indices.
+        
+        Args:
+            anc: The ancilla qubit states in string form.
+            inplace: Whether the indices are modified inplace.
+
+        Returns:
+            (Optional) The new qubit indices with ancilla qubits.
+        """
         str_with_anc  = [s + anc for s in self._str]
-        if not inplace:
+        if inplace:
+            self._str = str_with_anc
+            self._build_int_form()
+            self._build_list_form()
+        else:
             qubit_inds_with_anc = self.copy()
             qubit_inds_with_anc._str = str_with_anc
             qubit_inds_with_anc._build_int_form()
             qubit_inds_with_anc._build_list_form()
             return qubit_inds_with_anc
-        else:
-            self._str = str_with_anc
-            self._build_int_form()
-            self._build_list_form()
 
     def copy(self):
         return copy.deepcopy(self)

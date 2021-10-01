@@ -122,11 +122,5 @@ def transform_4q_hamiltonian(
         A two-qubit Hamiltonian after symmetry reduction.
     """    
     op_new = apply_cnot_z2(apply_cnot_z2(op, 2, 0), 3, 1)
-    # print("PauliSumOp after CNOT is applied\n", pauli_sum_op_new)
     op_new = taper(op_new, [0, 1], init_state=init_state)
-    #if isinstance(op, SparsePauliOp):
-    #    print('')
-    #    for i in range(8):
-    #        print(op_new[i].coeffs, op_new[i].table)
-    # print("PauliSumOp after qubits are tapered\n", pauli_sum_op_new)
     return op_new
