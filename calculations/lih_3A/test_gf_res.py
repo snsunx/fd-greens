@@ -8,6 +8,8 @@ from qiskit import *
 from ansatze import *
 from hamiltonians import MolecularHamiltonian
 from qiskit.utils import QuantumInstance
+from qiskit.extensions import CCXGate, UnitaryGate
+
 from greens_function_restricted import GreensFunctionRestricted
 from utils import get_quantum_instance
 from constants import HARTREE_TO_EV
@@ -18,6 +20,10 @@ save_params = False
 load_params = False
 cache_read = False
 cache_write = False
+
+#cxc_data = [(CCXGate(), [0, 2, 1])]
+iX = np.array([[0, 1j], [1j, 0]])
+cxc_data = [(UnitaryGate(iX).control(2), [0, 2, 1])]
 
 ansatz = build_two_local_ansatz(2)
 hamiltonian = MolecularHamiltonian(
@@ -32,7 +38,7 @@ q_instance_noisy = get_quantum_instance(
 
 # Statevector simulator calculation
 print("========== Starts statevector simulation ==========")
-gf_sv = GreensFunctionRestricted(ansatz.copy(), hamiltonian, q_instance=q_instance_sv)
+gf_sv = GreensFunctionRestricted(ansatz.copy(), hamiltonian, q_instance=q_instance_sv, cxc_data=cxc_data)
 gf_sv.run(save_params=save_params, load_params=load_params, 
 		  cache_read=cache_read, cache_write=cache_write)
 
@@ -41,4 +47,4 @@ A_list = []
 for omega in omegas:
     A = gf_sv.compute_spectral_function(omega + 0.02j * HARTREE_TO_EV)
     A_list.append(A)
-np.savetxt('A_red_sv1.dat', np.vstack((omegas, A_list)).T)
+np.savetxt('A_red_sv2.dat', np.vstack((omegas, A_list)).T)

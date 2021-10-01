@@ -19,7 +19,7 @@ from io_utils import load_vqe_result, save_vqe_result
 from operators import get_operator_dictionary
 from qubit_indices import QubitIndices
 #from circuits import build_diagonal_circuits, build_off_diagonal_circuits
-from circuits import CircuitConstructor
+from circuits import CircuitConstructor, CircuitData
 from z2_symmetries import transform_4q_hamiltonian
 from utils import state_tomography
 
@@ -34,7 +34,9 @@ class GreensFunctionRestricted:
                  hamiltonian: MolecularHamiltonian, 
                  optimizer: Optional[Optimizer] = None,
                  q_instance: Optional[QuantumInstance] = None,
-                 recompiled: bool = True) -> None:
+                 recompiled: bool = True,
+                 add_barriers: bool = True,
+                 cxc_data: Optional[CircuitData] = None) -> None:
         """Initializes a GreensFunctionRestricted object.
         
         Args:
@@ -60,6 +62,9 @@ class GreensFunctionRestricted:
         else:
             self.q_instance = q_instance
         self.recompiled = recompiled
+
+        self.add_barriers = add_barriers
+        self.cxc_data = cxc_data
 
         # Number of orbitals and indices
         self.n_orb = len(self.hamiltonian.act_inds)
@@ -135,7 +140,8 @@ class GreensFunctionRestricted:
             self.ansatz.assign_parameters(vqe_result.optimal_parameters, inplace=True)
             print("Finish calculating the ground state using VQE")
 
-        self.circuit_constructor = CircuitConstructor(self.ansatz)
+        self.circuit_constructor = CircuitConstructor(
+            self.ansatz, add_barriers=self.add_barriers, cxc_data=self.cxc_data)
         print(f'Ground state energy = {self.energy_gs:.3f} eV')
     
     def compute_eh_states(self) -> None:

@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 omegas, A_red_sv = np.loadtxt('A_red_sv.dat').T
-omegas, A_red_sv1 = np.loadtxt('A_red_sv1.dat').T
+omegas, A_red_sv1 = np.loadtxt('A_red_sv2.dat').T
 omegas, A_red_qasm = np.loadtxt('A_red_qasm.dat').T
 omegas, A_red_noisy = np.loadtxt('A_red_noisy.dat').T
 
