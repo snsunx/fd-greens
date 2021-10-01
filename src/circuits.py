@@ -9,15 +9,15 @@ from constants import HARTREE_TO_EV
 
 from qiskit import QuantumCircuit, QuantumRegister, ClassicalRegister
 from qiskit.circuit import Instruction
-from qiskit.extensions import UnitaryGate
+from qiskit.extensions import UnitaryGate, CCXGate
 
 from openfermion.ops import PolynomialTensor
 from openfermion.transforms import get_fermion_operator, jordan_wigner
 from qiskit.quantum_info import SparsePauliOp
 
-from qiskit.extensions import CPhaseGate, HGate
+from qiskit.extensions import CPhaseGate, HGate, SwapGate
 
-from utils import reverse_qubit_order, get_statevector
+from utils import reverse_qubit_order, get_statevector, get_unitary
 
 from recompilation import apply_quimb_gates, recompile_with_statevector
 
@@ -29,11 +29,24 @@ class CircuitConstructor:
     def __init__(self,
                  ansatz: QuantumCircuit, 
                  add_barriers: bool = True,
-                 cxc_data: Optional[CircuitData] = None) -> None:
-        """Creates a CircuitConstructor object."""
+                 ccx_data: Optional[CircuitData] = None) -> None:
+        """Creates a CircuitConstructor object.
+        
+        Args:
+            ansatz: The ansatz quantum circuit containing the ground state.
+            add_barriers: Whether to add barriers to the circuit.
+            ccx_data: The circuit data for customized CCX gate.
+        """
         self.ansatz = ansatz.copy()
         self.add_barriers = add_barriers
-        self.cxc_data = cxc_data
+        self.ccx_data = ccx_data
+
+        ccx_data_matrix = get_unitary(ccx_data)
+        self.ccx_angle = polar(ccx_data_matrix[3, 7])[1]
+        ccx_data_matrix[3, 7] /= np.exp(1j * self.ccx_angle)
+        ccx_data_matrix[7, 3] /= np.exp(1j * self.ccx_angle)
+        ccx_matrix = CCXGate().to_matrix()
+        assert np.allclose(ccx_data_matrix, ccx_matrix)
 
     def build_diagonal_circuits(self,
                                 a_op: SparsePauliOp
@@ -41,8 +54,7 @@ class CircuitConstructor:
         """Constructs the circuit to calculate a diagonal transition amplitude.
         
         Args:
-            ansatz: The ansatz quantum circuit containing the ground state.
-            a_op: The creation/annihilation operator of the circuit.
+            The creation/annihilation operator of the circuit.
 
         Returns:
             The new circuit with the creation/annihilation operator appended.
@@ -54,9 +66,9 @@ class CircuitConstructor:
         if self.add_barriers: circ.barrier()
         circ.h(0)
         if self.add_barriers: circ.barrier()
-        apply_multicontrolled_gate(circ, a_op[0], ctrl=[0], offset=1)
+        self._apply_controlled_gate(circ, a_op[0], ctrl=[0], n_anc=1)
         if self.add_barriers: circ.barrier()
-        apply_multicontrolled_gate(circ, a_op[1], ctrl=[1], offset=1)
+        self._apply_controlled_gate(circ, a_op[1], ctrl=[1], n_anc=1)
         if self.add_barriers: circ.barrier()
         circ.h(0)
         if self.add_barriers: circ.barrier()
@@ -82,19 +94,105 @@ class CircuitConstructor:
         if self.add_barriers: circ.barrier()
         circ.h([0, 1])
         if self.add_barriers: circ.barrier()
-        apply_multicontrolled_gate(circ, a_op_m[0], ctrl=(0, 0), offset=2, cxc_data=self.cxc_data)
+        self._apply_controlled_gate(circ, a_op_m[0], ctrl=(0, 0), n_anc=2)
         if self.add_barriers: circ.barrier()
-        apply_multicontrolled_gate(circ, a_op_m[1], ctrl=(1, 0), offset=2, cxc_data=self.cxc_data)
+        self._apply_controlled_gate(circ, a_op_m[1], ctrl=(1, 0), n_anc=2)
         if self.add_barriers: circ.barrier()
         circ.rz(np.pi / 4, 1)
         if self.add_barriers: circ.barrier()
-        apply_multicontrolled_gate(circ, a_op_n[0], ctrl=(0, 1), offset=2, cxc_data=self.cxc_data)
+        self._apply_controlled_gate(circ, a_op_n[0], ctrl=(0, 1), n_anc=2)
         if self.add_barriers: circ.barrier()
-        apply_multicontrolled_gate(circ, a_op_n[1], ctrl=(1, 1), offset=2, cxc_data=self.cxc_data)
+        self._apply_controlled_gate(circ, a_op_n[1], ctrl=(1, 1), n_anc=2)
         if self.add_barriers: circ.barrier()
         circ.h([0, 1])
 
+        fig = circ.draw(output='mpl')
+        fig.savefig('off_diag_circ.png', dpi=300)
+
         return circ
+
+    def _apply_controlled_gate(self, 
+                              circ: QuantumCircuit, 
+                              op: SparsePauliOp,
+                              ctrl: int = [1], 
+                              n_anc: int = 1) -> None:
+        """Applies a controlled-U gate to a quantum circuit.
+        
+        Args:
+            circ: The quantum circuit on which the controlled-U gate is applied.
+            op: The operator from which the controlled gate is constructed.
+            ctrl: The qubit state on which the cU gate is controlled on.
+            n_anc: Number of ancilla qubits.
+        """
+        assert set(ctrl).issubset({0, 1})
+        assert len(op.coeffs) == 1
+        coeff = op.coeffs[0]
+        label = op.table.to_labels()[0]
+        amp, angle = polar(coeff)
+        assert amp == 1
+
+        ind_max = len(label) - 1
+        label_tmp = label
+        for i in range(len(label)):
+            if label_tmp[0] == 'I':
+                label_tmp = label_tmp[1:]
+                ind_max -= 1
+
+        # Prepend X gates for control on 0
+        for i in range(len(ctrl)):
+            if ctrl[i] == 0:
+                circ.x(i)
+
+        # Prepend rotation gates for Pauli X and Y
+        for i, c in enumerate(label[::-1]):
+            if c == 'X':
+                circ.h(i + n_anc)
+            elif c == 'Y':
+                circ.rx(np.pi / 2, i + n_anc)
+        
+        # Prepend CNOT gates for Pauli strings
+        for i in range(ind_max + n_anc, n_anc, -1):
+            circ.cx(i, i - 1)
+        
+        # Apply single controlled gate
+        if len(ctrl) == 1:
+            if coeff != 1:
+                circ.p(angle, 0)
+            circ.cz(0, n_anc)
+        # Apply double controlled gate
+        elif len(ctrl) == 2:
+            if coeff != 1:
+                circ.cp(angle, 0, 1)
+            if set(list(label)) == {'I'}:
+                if self.ccx_angle != 0:
+                    circ.cp(self.ccx_angle, 0, 1)
+            else:
+                circ.h(n_anc)
+                # Apply the central CCX gate
+                if self.ccx_data is not None:
+                    for inst_tup in self.ccx_data:
+                        circ.append(*inst_tup)
+                else:
+                    circ.ccx(0, n_anc, 1)
+                circ.h(n_anc)
+        else:
+            raise NotImplementedError("Control on more than two qubits is not implemented")
+
+        # Append CNOT gates for Pauli strings
+        for i in range(n_anc, ind_max + n_anc):
+            circ.cx(i + 1, i)
+
+        # Append rotation gates for Pauli X and Y
+        for i, c in enumerate(label[::-1]):
+            if c == 'X':
+                circ.h(i + n_anc)
+            elif c == 'Y':
+                circ.rx(-np.pi / 2, i + n_anc)
+        
+        # Append X gates for control on 0
+        for i in range(len(ctrl)):
+            if ctrl[i] == 0:
+                circ.x(i)
 
 # TODO: Pass in n_gate_rounds and cache_options in a simpler way
 def append_qpe_circuit(circ: QuantumCircuit,
@@ -172,79 +270,3 @@ def copy_circuit_with_ancilla(circ: QuantumCircuit,
         qargs = [inds_new[q._index] for q in qargs]
         circ_new.append(inst, qargs, cargs)
     return circ_new
-
-def apply_multicontrolled_gate(circ: QuantumCircuit, 
-                               op: SparsePauliOp,
-                               ctrl: int = [1], 
-                               offset: int = 1,
-                               cxc_data: Optional[CircuitData] = None) -> None:
-    """Applies a controlled-U gate to a quantum circuit.
-    
-    Args:
-        circ: The quantum circuit on which the controlled-U gate is applied.
-        op: The operator from which the multicontrolled gate is constructed.
-        ctrl: The qubit state on which the controlled-U gate is controlled on.
-            Must be 0 or 1.
-        offset: Index of the first system qubit.
-    """
-    assert set(ctrl).issubset({0, 1})
-    assert len(op.coeffs) == 1
-    coeff = op.coeffs[0]
-    label = op.table.to_labels()[0]
-    if set(list(label)) == {'I'}:
-        cxc_data = [(HGate(), [1]), (CPhaseGate(np.pi / 2), [0, 1]), (HGate(), [1])]
-    amp, angle = polar(coeff)
-    assert amp == 1
-
-    ind_max = len(label) - 1
-    label_tmp = label
-    for i in range(len(label)):
-        if label_tmp[0] == 'I':
-            label_tmp = label_tmp[1:]
-            ind_max -= 1
-
-    # Prepend X gates for control on 0
-    for i in range(len(ctrl)):
-        if ctrl[i] == 0:
-            circ.x(i)
-
-    # Prepend rotation gates for Pauli X and Y
-    for i, c in enumerate(label[::-1]):
-        if c == 'X':
-            circ.h(i + offset)
-        elif c == 'Y':
-            circ.rx(np.pi / 2, i + offset)
-    
-    # Implement multicontrolled all-Z gate
-    for i in range(ind_max + offset, offset, -1):
-        circ.cx(i, i - 1)
-    if len(ctrl) == 1:
-        if coeff != 1:
-            circ.p(angle, 0)
-        circ.cz(0, offset)
-    elif len(ctrl) == 2:
-        if coeff != 1:
-            circ.cp(angle, 0, 1)
-        circ.h(1)
-        if cxc_data is not None:
-            for data in cxc_data:
-                circ.append(*data)
-        else:
-            circ.ccx(0, offset, 1)
-        circ.h(1)
-    else:
-        raise NotImplementedError("Control on more than two qubits is not implemented")
-    for i in range(offset, ind_max + offset):
-        circ.cx(i + 1, i)
-
-    # Append rotation gates for Pauli X and Y
-    for i, c in enumerate(label[::-1]):
-        if c == 'X':
-            circ.h(i + offset)
-        elif c == 'Y':
-            circ.rx(-np.pi / 2, i + offset)
-    
-    # Append X gates for control on 0
-    for i in range(len(ctrl)):
-        if ctrl[i] == 0:
-            circ.x(i)

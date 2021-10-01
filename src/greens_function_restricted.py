@@ -27,8 +27,9 @@ np.set_printoptions(precision=6)
 pauli_op_dict = get_operator_dictionary()
 
 class GreensFunctionRestricted:
-    """A class to perform frequency-domain Green's function calculations
+    """A class to calculate frequency-domain Green's function with
     with restricted orbitals."""
+    
     def __init__(self, 
                  ansatz: QuantumCircuit, 
                  hamiltonian: MolecularHamiltonian, 
@@ -36,7 +37,7 @@ class GreensFunctionRestricted:
                  q_instance: Optional[QuantumInstance] = None,
                  recompiled: bool = True,
                  add_barriers: bool = True,
-                 cxc_data: Optional[CircuitData] = None) -> None:
+                 ccx_data: Optional[CircuitData] = None) -> None:
         """Initializes a GreensFunctionRestricted object.
         
         Args:
@@ -64,7 +65,7 @@ class GreensFunctionRestricted:
         self.recompiled = recompiled
 
         self.add_barriers = add_barriers
-        self.cxc_data = cxc_data
+        self.ccx_data = ccx_data
 
         # Number of orbitals and indices
         self.n_orb = len(self.hamiltonian.act_inds)
@@ -141,7 +142,7 @@ class GreensFunctionRestricted:
             print("Finish calculating the ground state using VQE")
 
         self.circuit_constructor = CircuitConstructor(
-            self.ansatz, add_barriers=self.add_barriers, cxc_data=self.cxc_data)
+            self.ansatz, add_barriers=self.add_barriers, ccx_data=self.ccx_data)
         print(f'Ground state energy = {self.energy_gs:.3f} eV')
     
     def compute_eh_states(self) -> None:

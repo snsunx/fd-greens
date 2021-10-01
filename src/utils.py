@@ -1,6 +1,6 @@
 """Utility functions"""
 
-from typing import Optional
+from typing import Optional, Union, Iterable, List, Tuple
 import numpy as np
 
 from qiskit import QuantumCircuit, Aer, IBMQ, execute
@@ -9,6 +9,10 @@ from qiskit.providers.aer.noise import NoiseModel
 from qiskit.providers.aer.backends.aerbackend import AerBackend
 from qiskit.ignis.verification.tomography import (state_tomography_circuits,
                                                   StateTomographyFitter)
+from qiskit.circuit import Instruction
+
+CircuitData = Iterable[Tuple[Instruction, List[int], Optional[List[int]]]]
+
 
 def get_quantum_instance(backend,
                          noise_model_name=None, 
@@ -50,7 +54,7 @@ def get_statevector(circ: QuantumCircuit,
         statevector = reverse_qubit_order(statevector)
     return statevector
 
-def get_unitary(circ: QuantumCircuit, 
+def get_unitary(circ: Union[QuantumCircuit, CircuitData], 
                 reverse: bool = False) -> np.ndarray:
     """Returns the unitary of a quantum circuit.
     
@@ -61,6 +65,13 @@ def get_unitary(circ: QuantumCircuit,
     Returns:
         The unitary array of the circuit.
     """
+    if isinstance(circ, list):
+        n_qubits = max([max(x[1]) for x in circ]) + 1
+        print(n_qubits)
+        circ_new = QuantumCircuit(n_qubits)
+        for inst_tup in circ:
+            circ_new.append(*inst_tup)
+        circ = circ_new.copy()
     backend = Aer.get_backend('unitary_simulator')
     job = execute(circ, backend)
     result = job.result()
