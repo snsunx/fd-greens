@@ -3,8 +3,12 @@ using the classmethods."""
 
 import sys
 sys.path.append('../../src/')
+import quimb
+print(quimb.__file__)
+exit()
 import numpy as np
 from qiskit import *
+from qiskit.circuit import Barrier
 from ansatze import *
 from hamiltonians import MolecularHamiltonian
 from qiskit.utils import QuantumInstance
@@ -23,9 +27,10 @@ cache_write = False
 
 #ccx_data = [(CCXGate(), [0, 1, 2])]
 iX = np.array([[0, 1j], [1j, 0]])
-ccx_data = [(SwapGate(), [1, 2]), (UnitaryGate(iX).control(2), [0, 2, 1]), (SwapGate(), [1, 2])]
+ccx_data = [(SwapGate(), [1, 2]), (Barrier(4), [0, 1, 2, 3]), (UnitaryGate(iX).control(2), [0, 2, 1]), (Barrier(4), [0, 1, 2, 3]), (SwapGate(), [1, 2])]
 
-ansatz = build_two_local_ansatz(2)
+#ansatz = build_two_local_ansatz(2)
+ansatz = build_2q_ansatz()
 hamiltonian = MolecularHamiltonian(
     [['Li', (0, 0, 0)], ['H', (0, 0, bond_length)]], 'sto3g', 
     occ_inds=[0], act_inds=[1, 2])

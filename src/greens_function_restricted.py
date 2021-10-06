@@ -4,6 +4,7 @@ from typing import Union, Tuple, Optional
 from greens_function import GreensFunction
 
 import numpy as np
+from recompilation import CircuitRecompiler
 from scipy.special import binom
 
 from qiskit import QuantumCircuit, Aer
@@ -140,7 +141,11 @@ class GreensFunctionRestricted:
             self.energy_gs = vqe_result.optimal_value * HARTREE_TO_EV
             self.ansatz.assign_parameters(vqe_result.optimal_parameters, inplace=True)
             print("Finish calculating the ground state using VQE")
-
+        
+        #gate = self.ansatz.data[0][0]
+        #print(gate.name)
+        #print(gate.params)
+        
         self.circuit_constructor = CircuitConstructor(
             self.ansatz, add_barriers=self.add_barriers, ccx_data=self.ccx_data)
         print(f'Ground state energy = {self.energy_gs:.3f} eV')
@@ -177,6 +182,10 @@ class GreensFunctionRestricted:
             print(f"Calculating m = {m}")
             a_op_m = pauli_op_dict[m]
             circ = self.circuit_constructor.build_diagonal_circuits(a_op_m)
+
+            # Save the circuit diagram
+            fig = circ.draw(output='mpl')
+            fig.savefig(f'circuit_{m}.png')
             if self.q_instance.backend.name() == 'statevector_simulator':
                 result = self.q_instance.execute(circ)
                 psi = result.get_statevector()
@@ -229,6 +238,14 @@ class GreensFunctionRestricted:
                     print(f"Calculating m = {m}, n = {n}")
                     a_op_n = pauli_op_dict[n]
                     circ = self.circuit_constructor.build_off_diagonal_circuits(a_op_m, a_op_n)
+
+                    if self.recompiled:
+                        recompiler = CircuitRecompiler()
+                        circ = recompiler.recompile(circ, n_rounds=2)
+                    
+                    # Save circuit diagram
+                    fig = circ.draw(output='mpl')
+                    fig.savefig(f'circuit_{m}{n}.png')
                     if self.q_instance.backend.name() == 'statevector_simulator':
                         result = self.q_instance.execute(circ)
                         psi = result.get_statevector()

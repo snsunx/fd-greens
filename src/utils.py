@@ -65,9 +65,16 @@ def get_unitary(circ: Union[QuantumCircuit, CircuitData],
     Returns:
         The unitary array of the circuit.
     """
-    if isinstance(circ, list):
+    def remove_barriers(circ_data):
+        circ_data_new = []
+        for inst_tup in circ_data:
+            if inst_tup[0].name != 'barrier':
+                circ_data_new.append(inst_tup)
+        return circ_data_new
+
+    if isinstance(circ, list): # CircuitData
+        circ = remove_barriers(circ)
         n_qubits = max([max(x[1]) for x in circ]) + 1
-        print(n_qubits)
         circ_new = QuantumCircuit(n_qubits)
         for inst_tup in circ:
             circ_new.append(*inst_tup)

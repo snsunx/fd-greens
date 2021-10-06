@@ -8,6 +8,21 @@ def build_two_local_ansatz(n_qubits):
     ansatz = TwoLocal(n_qubits, ['ry', 'rz'], 'cz', reps=1)
     return ansatz
 
+def build_2q_ansatz():
+    """Constructs an ansatz for a two-qubit Hamiltonian."""
+    ansatz = QuantumCircuit(2)
+    ansatz.ry(Parameter('a'), 0)
+    ansatz.ry(Parameter('b'), 1)
+    ansatz.rz(Parameter('c'), 0)
+    ansatz.rz(Parameter('d'), 1)
+    ansatz.cz(0, 1)
+    ansatz.ry(Parameter('e'), 0)
+    ansatz.ry(Parameter('f'), 1)
+    ansatz.rz(Parameter('g'), 0)
+    ansatz.rz(Parameter('h'), 1)
+    return ansatz
+
+
 def build_ne1_ansatz(n_qubits):
     """Constructs a one-electron ansatz for VQE."""
     ansatz = QuantumCircuit(n_qubits)

@@ -19,7 +19,7 @@ from qiskit.extensions import CPhaseGate, HGate, SwapGate
 
 from utils import reverse_qubit_order, get_statevector, get_unitary
 
-from recompilation import apply_quimb_gates, recompile_with_statevector
+from recompilation import apply_quimb_gates
 
 CircuitData = Iterable[Tuple[Instruction, List[int], Optional[List[int]]]]
 
@@ -63,15 +63,15 @@ class CircuitConstructor:
         circ = copy_circuit_with_ancilla(self.ansatz, [0])
 
         # Apply the gates corresponding to the creation/annihilation terms
-        if self.add_barriers: circ.barrier()
+        # if self.add_barriers: circ.barrier()
         circ.h(0)
-        if self.add_barriers: circ.barrier()
+        # if self.add_barriers: circ.barrier()
         self._apply_controlled_gate(circ, a_op[0], ctrl=[0], n_anc=1)
-        if self.add_barriers: circ.barrier()
+        # if self.add_barriers: circ.barrier()
         self._apply_controlled_gate(circ, a_op[1], ctrl=[1], n_anc=1)
-        if self.add_barriers: circ.barrier()
+        # if self.add_barriers: circ.barrier()
         circ.h(0)
-        if self.add_barriers: circ.barrier()
+        # if self.add_barriers: circ.barrier()
         return circ
 
     def build_off_diagonal_circuits(self, 
@@ -91,23 +91,20 @@ class CircuitConstructor:
         circ = copy_circuit_with_ancilla(self.ansatz, [0, 1])
 
         # Apply the gates corresponding to the creation/annihilation terms
-        if self.add_barriers: circ.barrier()
+        # if self.add_barriers: circ.barrier()
         circ.h([0, 1])
-        if self.add_barriers: circ.barrier()
+        # if self.add_barriers: circ.barrier()
         self._apply_controlled_gate(circ, a_op_m[0], ctrl=(0, 0), n_anc=2)
-        if self.add_barriers: circ.barrier()
+        # if self.add_barriers: circ.barrier()
         self._apply_controlled_gate(circ, a_op_m[1], ctrl=(1, 0), n_anc=2)
-        if self.add_barriers: circ.barrier()
+        # if self.add_barriers: circ.barrier()
         circ.rz(np.pi / 4, 1)
-        if self.add_barriers: circ.barrier()
+        # if self.add_barriers: circ.barrier()
         self._apply_controlled_gate(circ, a_op_n[0], ctrl=(0, 1), n_anc=2)
-        if self.add_barriers: circ.barrier()
+        # if self.add_barriers: circ.barrier()
         self._apply_controlled_gate(circ, a_op_n[1], ctrl=(1, 1), n_anc=2)
-        if self.add_barriers: circ.barrier()
+        # if self.add_barriers: circ.barrier()
         circ.h([0, 1])
-
-        fig = circ.draw(output='mpl')
-        fig.savefig('off_diag_circ.png', dpi=300)
 
         return circ
 
@@ -123,6 +120,9 @@ class CircuitConstructor:
             op: The operator from which the controlled gate is constructed.
             ctrl: The qubit state on which the cU gate is controlled on.
             n_anc: Number of ancilla qubits.
+
+        Raises:
+            NotImplementedError: Control on more than two qubits is not implemented.
         """
         assert set(ctrl).issubset({0, 1})
         assert len(op.coeffs) == 1
@@ -153,6 +153,7 @@ class CircuitConstructor:
         # Prepend CNOT gates for Pauli strings
         for i in range(ind_max + n_anc, n_anc, -1):
             circ.cx(i, i - 1)
+        
         
         # Apply single controlled gate
         if len(ctrl) == 1:
@@ -270,3 +271,19 @@ def copy_circuit_with_ancilla(circ: QuantumCircuit,
         qargs = [inds_new[q._index] for q in qargs]
         circ_new.append(inst, qargs, cargs)
     return circ_new
+
+def combine_single_qubit_gates(circ: QuantumCircuit):
+    """Combines single-qubit gates in a quantum circuit."""
+    qreg = circ.qregs[0]
+    n_qubits = qreg[0]
+
+    for q in qreg:
+        single_qubit_gates = []
+        for inst, qargs, cargs in circ.data:
+            while q in qargs and inst.to_matrix().shape[0] == 2:
+                single_qubit_gates.append(inst)
+            
+            
+            
+
+    

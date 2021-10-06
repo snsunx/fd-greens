@@ -20,6 +20,7 @@ class CircuitRecompiler:
                  gate_1q: str = 'U3', 
                  gate_2q: str = 'CZ',
                  n_rounds: int = 4,
+                 tol: float = 1e-5,
                  periodic: bool = False,
                  cache_options: Optional[dict] = None) -> None:
         """Creates a CircuitRecompiler object.
@@ -37,10 +38,11 @@ class CircuitRecompiler:
         self.gate_1q = gate_1q
         self.gate_2q = gate_2q
         self.n_rounds = n_rounds
+        self.tol = tol
         self.periodic = periodic
         self.cache_options = cache_options
 
-    def _build_ansatz_circuit(self, n_qubits: int, psi0: qtn.Dense1D = None) -> qtn.Circuit:
+    def _build_ansatz_circuit(self, n_qubits: int, psi0: qtn.Dense1D = None, n_rounds: int = 2) -> qtn.Circuit:
         """Constructs an ansatz circuit for recompilation."""
         # Initialize the Quimb circuit
         if psi0 is None:
@@ -57,7 +59,7 @@ class CircuitRecompiler:
         
         # Subsequent rounds interleave single-qubit gate layer 
         # and two-qubit gate layer
-        for r in range(self.n_rounds):
+        for r in range(n_rounds):
             for i in range(r % 2, q_end, 2):
                 ansatz_circ.apply_gate(self.gate_2q, (i+1) % n_qubits, 
                                        i % n_qubits, gate_round=r)
@@ -71,27 +73,31 @@ class CircuitRecompiler:
     def recompile(self,
                   targ_uni: np.ndarray,
                   data: Optional[np.ndarray] = None, 
-                  init_guess: Optional[qtn.Circuit] = None) -> QuimbGates:
+                  init_guess: Optional[qtn.Circuit] = None,
+                  n_rounds: Optional[int] = None,
+                  tol: Optional[float] = None) -> QuimbGates:
         """Recompiles a target unitary."""
         if data is not None:
             if len(data.shape) == 1:
                 # Recompile with statevector
                 quimb_gates = self._recompile_with_statevector(
-                    targ_uni, data, init_guess=init_guess)
+                    targ_uni, data, init_guess=init_guess, n_rounds=n_rounds, tol=tol)
             else:
                 # Recompile with density matrix
                 quimb_gates = self._recompile_with_densitymatrix(
                     targ_uni, data, init_guess=init_guess)
         else:
             # Recompile the unitary itself
-            quimb_gates = self._recompile_unitary(targ_uni, init_guess=init_guess)
+            quimb_gates = self._recompile_unitary(targ_uni, init_guess=init_guess, n_rounds=n_rounds, tol=tol)
 
         return quimb_gates
 
     def _recompile_with_statevector(self,
                                     targ_uni: np.ndarray,
                                     statevector: np.ndarray,
-                                    init_guess: Optional[qtn.Circuit] = None
+                                    init_guess: Optional[qtn.Circuit] = None,
+                                    tol: Optional[float] = None,
+                                    n_rounds: Optional[int] = None
                                     ) -> QuimbGates:
         """Recompiles a target unitary with respect to a statevector."""
         # If cache read enabled, check if circuit is already cached
@@ -103,29 +109,43 @@ class CircuitRecompiler:
             if quimb_gates is not None:
                 return quimb_gates
 
-        # Construct ansatz circuit and update parameters with initial guess
+        if n_rounds is None:
+            n_rounds = self.n_rounds
+        if tol is None:
+            tol = self.tol
+
+        infid = 1.
+        def infidelity(psi1, psi2):
+            return 1 - abs(psi1.H @ psi2) ** 2
+
+
         n_qubits = int(np.log2(len(statevector)))
         psi0 = qtn.Dense1D(statevector)
-        ansatz_circ = self._build_ansatz_circuit(n_qubits, psi0=psi0)
-        if init_guess is not None:
-            ansatz_circ.update_params_from(init_guess)
-        
-        # Define the ansatz and target tensor network and the loss function
-        psi_ansatz = ansatz_circ.psi
         psi_target = qtn.Dense1D(targ_uni @ statevector)
-        def infidelity(psi_ansatz, psi_target):
-            return 1 - abs(psi_ansatz.H @ psi_target) ** 2
+        
+        while infid >= tol:
+            print(f"Recompiling circuit in statevector mode with {n_rounds} gate rounds")
+            # Construct ansatz circuit and update parameters with initial guess
+            ansatz_circ = self._build_ansatz_circuit(n_qubits, psi0=psi0, n_rounds=n_rounds)
+            if init_guess is not None:
+                ansatz_circ.update_params_from(init_guess)
+            
+            # Define the ansatz and optimizer
+            psi_ansatz = ansatz_circ.psi
+            optimizer = TNOptimizer(
+                psi_ansatz, loss_fn=infidelity,
+                loss_constants={'psi2': psi_target},
+                constant_tags=[self.gate_2q, 'PSI0'],
+                autograd_backend='jax',
+                optimizer='L-BFGS-B')
 
-        # Carry out the optimization
-        optimizer = TNOptimizer(
-            psi_ansatz, loss_fn=infidelity,
-            loss_constants={'psi_target': psi_target},
-            constant_tags=[self.gate_2q, 'PSI0'],
-            autograd_backend='jax', optimizer='L-BFGS-B')
-        if init_guess is None:
-            tn_opt = optimizer.optimize_basinhopping(n=500, nhop=10)
-        else:
-            tn_opt = optimizer.optimize(n=1000)
+            # Carry out the optimization
+            if init_guess is None:
+                tn_opt, infid = optimizer.optimize_basinhopping(n=500, nhop=10)
+            else:
+                tn_opt, infid = optimizer.optimize(n=1000)
+
+            n_rounds += 1
 
         # Extract the quimb gates from optimized parameters
         ansatz_circ.update_params_from(tn_opt)
@@ -144,35 +164,50 @@ class CircuitRecompiler:
 
     def _recompile_unitary(self,
                            targ_uni: np.ndarray,
-                           init_guess: Optional[qtn.Circuit] = None
+                           init_guess: Optional[qtn.Circuit] = None,
+                           n_rounds: Optional[int] = None,
+                           tol: Optional[float] = None,
                            ) -> QuimbGates:
-        """Recompile the target unitary itself."""
-        # Construct ansatz circuit and update parameters with initial guess
-        n_qubits = int(np.log2(targ_uni.shape[0]))
-        ansatz_circ = self._build_ansatz_circuit(n_qubits)
-        if init_guess is not None:
-            ansatz_circ.update_params_from(init_guess)
+        """Recompiles the target unitary itself."""
+        if n_rounds is None:
+            n_rounds = self.n_rounds
+        if tol is None:
+            tol = self.tol
 
-        # Define the ansatz and target tensor network and the loss function
-        U_ansatz = ansatz_circ.uni
+        n_qubits = int(np.log2(targ_uni.shape[0]))
+
+        infid = 1.
+        def infidelity(U1, U2):
+            return 1 - (U1 | U2).contract(all, optimize='auto-hq').real / 2**n_qubits
         U_targ = qtn.Tensor(
             data=targ_uni.reshape([2] * (2 * n_qubits)),
             inds=[f'k{i}' for i in range(n_qubits)] + [f'b{i}' for i in range(n_qubits)],
             tags={'U_TARGET'})
-        def infidelity(U1, U2):
-            return 1 - (U1 | U2).contract(all, optimize='auto-hq').real / 2**n_qubits
 
-        # Carry out the optimization
-        optimizer = TNOptimizer(
-            U_ansatz, loss_fn=infidelity,
-            loss_constants={'U2': U_targ},
-            constant_tags=[self.gate_2q, 'U0', 'U2'],
-            autograd_backend='jax', 
-            optimizer='L-BFGS-B')
-        if init_guess is None:
-            tn_opt = optimizer.optimize_basinhopping(n=500, nhop=10)
-        else:
-            tn_opt = optimizer.optimize(n=1000)
+        while infid >= tol:
+            print(f"Recompiling circuit in unitary mode with {n_rounds} gate rounds")
+            # Construct the ansatz circuit
+            ansatz_circ = self._build_ansatz_circuit(n_qubits, n_rounds=n_rounds)
+            if init_guess is not None:
+                ansatz_circ.update_params_from(init_guess)
+
+
+            # Define the ansatz and optimizer
+            U_ansatz = ansatz_circ.uni
+            optimizer = TNOptimizer(
+                U_ansatz, loss_fn=infidelity,
+                loss_constants={'U2': U_targ},
+                constant_tags=[self.gate_2q, 'U0', 'U2'],
+                autograd_backend='jax', 
+                optimizer='L-BFGS-B')
+
+            # Carry out optimization
+            if init_guess is None:
+                tn_opt, infid = optimizer.optimize_basinhopping(n=500, nhop=100)
+            else:
+                tn_opt, infid = optimizer.optimize(n=1000)
+            
+            n_rounds += 1
 
         # Extract the quimb gates from optimized parameters
         ansatz_circ.update_params_from(tn_opt)
