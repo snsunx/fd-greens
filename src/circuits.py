@@ -1,6 +1,7 @@
 """Functions for circuit construction"""
 
 from typing import Tuple, Optional, Iterable, Union, Sequence, List
+from functools import reduce
 from cmath import polar
 
 import numpy as np
@@ -16,8 +17,9 @@ from openfermion.transforms import get_fermion_operator, jordan_wigner
 from qiskit.quantum_info import SparsePauliOp
 
 from qiskit.extensions import CPhaseGate, HGate, SwapGate
+from qiskit.quantum_info import OneQubitEulerDecomposer
 
-from utils import reverse_qubit_order, get_statevector, get_unitary
+from utils import data_to_circuit, reverse_qubit_order, get_statevector, get_unitary
 
 from recompilation import apply_quimb_gates
 
@@ -27,11 +29,11 @@ class CircuitConstructor:
     """A class to construct circuits for calculating Green's Function."""
 
     def __init__(self,
-                 ansatz: QuantumCircuit, 
+                 ansatz: QuantumCircuit,
                  add_barriers: bool = True,
                  ccx_data: Optional[CircuitData] = None) -> None:
         """Creates a CircuitConstructor object.
-        
+
         Args:
             ansatz: The ansatz quantum circuit containing the ground state.
             add_barriers: Whether to add barriers to the circuit.
@@ -52,7 +54,7 @@ class CircuitConstructor:
                                 a_op: SparsePauliOp
                                 ) -> QuantumCircuit:
         """Constructs the circuit to calculate a diagonal transition amplitude.
-        
+
         Args:
             The creation/annihilation operator of the circuit.
 
@@ -74,14 +76,14 @@ class CircuitConstructor:
         # if self.add_barriers: circ.barrier()
         return circ
 
-    def build_off_diagonal_circuits(self, 
+    def build_off_diagonal_circuits(self,
                                     a_op_m: SparsePauliOp,
                                     a_op_n: SparsePauliOp
                                     ) -> QuantumCircuit:
         """Constructs the circuit to calculate off-diagonal transition amplitudes.
-        
+
         Args:
-            a_op_m: The first creation/annihilation operator of the circuit. 
+            a_op_m: The first creation/annihilation operator of the circuit.
             a_op_n: The second creation/annihilation operator of the circuit.
 
         Returns:
@@ -108,13 +110,13 @@ class CircuitConstructor:
 
         return circ
 
-    def _apply_controlled_gate(self, 
-                              circ: QuantumCircuit, 
+    def _apply_controlled_gate(self,
+                              circ: QuantumCircuit,
                               op: SparsePauliOp,
-                              ctrl: int = [1], 
+                              ctrl: int = [1],
                               n_anc: int = 1) -> None:
         """Applies a controlled-U gate to a quantum circuit.
-        
+
         Args:
             circ: The quantum circuit on which the controlled-U gate is applied.
             op: The operator from which the controlled gate is constructed.
@@ -149,12 +151,12 @@ class CircuitConstructor:
                 circ.h(i + n_anc)
             elif c == 'Y':
                 circ.rx(np.pi / 2, i + n_anc)
-        
+
         # Prepend CNOT gates for Pauli strings
         for i in range(ind_max + n_anc, n_anc, -1):
             circ.cx(i, i - 1)
-        
-        
+
+
         # Apply single controlled gate
         if len(ctrl) == 1:
             if coeff != 1:
@@ -189,7 +191,7 @@ class CircuitConstructor:
                 circ.h(i + n_anc)
             elif c == 'Y':
                 circ.rx(-np.pi / 2, i + n_anc)
-        
+
         # Append X gates for control on 0
         for i in range(len(ctrl)):
             if ctrl[i] == 0:
@@ -197,14 +199,14 @@ class CircuitConstructor:
 
 # TODO: Pass in n_gate_rounds and cache_options in a simpler way
 def append_qpe_circuit(circ: QuantumCircuit,
-                    hamiltonian_arr: np.ndarray,
-                    ind_qpe: int,
-                    recompiled: bool = False,
-                    n_gate_rounds=None,
-                    cache_options=None
-                    ) -> QuantumCircuit:
+                       hamiltonian_arr: np.ndarray,
+                       ind_qpe: int,
+                       recompiled: bool = False,
+                       n_gate_rounds=None,
+                       cache_options=None
+                       ) -> QuantumCircuit:
     """Appends single-qubit QPE circuit to a given circuit.
-    
+
     Args:
         circ: The quantum circuit on which the QPE circuit is to be appended.
         hamiltonian_arr: The Hamiltonian in array form.
@@ -221,7 +223,7 @@ def append_qpe_circuit(circ: QuantumCircuit,
     circ = copy_circuit_with_ancilla(circ, [ind_qpe])
 
     if recompiled:
-        # Construct the controlled e^{iHt} 
+        # Construct the controlled e^{iHt}
         cU_mat = np.kron(np.diag([1, 0]), np.eye(2 ** n_sys)) \
                 + np.kron(np.diag([0, 1]), U_mat)
         cU_mat = np.kron(np.eye(2 ** n_anc), cU_mat)
@@ -236,7 +238,7 @@ def append_qpe_circuit(circ: QuantumCircuit,
         circ.h(ind_qpe)
         circ.barrier()
     else:
-        # Construct the controlled e^{iHt} 
+        # Construct the controlled e^{iHt}
         cU_gate = UnitaryGate(U_mat).control(1)
 
         # Append single-qubit QPE circuit
@@ -250,7 +252,7 @@ def append_qpe_circuit(circ: QuantumCircuit,
 def copy_circuit_with_ancilla(circ: QuantumCircuit,
                             inds_anc: Sequence[int]) -> QuantumCircuit:
     """Copies a circuit with specific indices for ancillas.
-    
+
     Args:
         circ: The quantum circuit to be copied.
         inds_anc: Indices of the ancilla qubits.
@@ -272,18 +274,86 @@ def copy_circuit_with_ancilla(circ: QuantumCircuit,
         circ_new.append(inst, qargs, cargs)
     return circ_new
 
-def combine_single_qubit_gates(circ: QuantumCircuit):
-    """Combines single-qubit gates in a quantum circuit."""
-    qreg = circ.qregs[0]
-    n_qubits = qreg[0]
+def create_circuit_from_data(circ_data, n_qubits=None):
+    """Creates a circuit from circuit data."""
+    if n_qubits == None:
+        n_qubits = max([max([y.index for y in x[1]]) for x in circ_data]) + 1
+    circ = QuantumCircuit(n_qubits)
+    for data in circ_data:
+        circ.append(*data)
+    return circ
 
-    for q in qreg:
-        single_qubit_gates = []
-        for inst, qargs, cargs in circ.data:
-            while q in qargs and inst.to_matrix().shape[0] == 2:
-                single_qubit_gates.append(inst)
-            
-            
-            
+'''
+class SingleQubitGateChain:
+    def __init__(self, *, qubit, gates) -> None:
+        self.qubit = qubit
+        self.gates = gates
+        self.n_gates = len(gates)
 
-    
+    @property
+    def combined_gate(self):
+        """Returns the U3 gate from combining a chain of single-qubit gates."""
+        matrix = reduce(np.dot, [gate.to_matrix() for gate in self.gates[::-1]])
+        decomposer = OneQubitEulerDecomposer()
+        gate = decomposer(matrix).data[0][0]
+        return gate
+
+    @classmethod
+    def combine_single_qubit_gates(cls, circ: QuantumCircuit) -> QuantumCircuit:
+        """Combines each single-qubit gate chain to a single U3 gate on a circuit.
+        
+        Args:
+            The circuit on which all chains of single-qubit gates are to be combined.
+        
+        Returns:
+            A new circuit after all single-qubit gates have been combined.
+        """
+        gate_1q_chains = []
+        gates_2q = []
+
+        insert_inds = []
+        
+        i = 0
+        while len(circ.data) != 0:
+            print('i =', i)
+            inst, qargs, cargs = circ.data[i]
+            subtract_1 = False
+            print(circ)
+            if len(qargs) == 1:
+                insert_inds.append(i)
+                delete_inds = [i]
+                gates = [inst]
+                qubit = qargs[0]
+                for j, (inst, qargs, cargs) in enumerate(circ.data[i+1:]):
+                    if len(qargs) == 1 and qargs[0] == qubit:
+                        # Append to single-qubit gate chain
+                        gates.append(inst)
+                        delete_inds.append(j + i + 1)
+                    elif len(qargs) > 1 and qubit in qargs:
+                        # Stop appending
+                        i += 1
+                        break
+                    elif len(qargs) == 1 and qargs[0] != qubit:
+                        subtract_1 = True
+                    else:
+                        # Ignore
+                        continue
+                
+                # Delete the gates
+                count = 0
+                for k in delete_inds:
+                    del circ.data[k - count]
+                    count += 1
+
+
+                # Append single-qubit gate chain
+                gate_chain = cls(qubit=qubit, gates=gates)
+                gate_chains.append(gate_chain)
+
+
+        # Adjust insertion indices
+        insert_inds = [ind + k for k, ind in enumerate(insert_inds)]
+        for i, gate_chain in enumerate(gate_chains):
+            circ.data.insert(insert_inds[i], (gate_chain.combined_gate, [gate_chain.qubit], []))
+        return circ
+'''

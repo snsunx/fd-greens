@@ -1,0 +1,37 @@
+[1.+0.j] PauliTable: ['IIIX']
+[1.+0.j] PauliTable: ['IIXZ']
+[1.+0.j] PauliTable: ['IXZZ']
+[1.+0.j] PauliTable: ['XZZZ']
+[0.+1.j] PauliTable: ['IIIY']
+[0.+1.j] PauliTable: ['IIYZ']
+[0.+1.j] PauliTable: ['IYZZ']
+[0.+1.j] PauliTable: ['YZZZ']
+========== Starts statevector simulation ==========
+Number of orbitals is 2
+Number of occupied orbitals is 1
+Number of virtual orbitals is 1
+Number of (N+1)-electron states is 2
+Number of (N-1)-electron states is 2
+Start calculating the ground state using VQE
+Finish calculating the ground state using VQE
+Ground state energy = -210.247 eV
+Start calculating (N±1)-electron states
+Finish calculating (N±1)-electron states
+(N+1)-electron energies are [-208.307859 -204.548283]
+(N-1)-electron energies are [-205.855902 -197.708004]
+Start calculating diagonal transition amplitudes
+Calculating m = 0
+B_e[0, 0] = [1.516335e-33+0.j 3.633582e-33+0.j]
+B_h[0, 0] = [0.698736+0.j 0.213155+0.j]
+Calculating m = 1
+B_e[1, 1] = [0.836837+0.j 0.075054+0.j]
+B_h[1, 1] = [0.058294+0.j 0.029815+0.j]
+Finish calculating diagonal transition amplitudes
+Start calculating off-diagonal transition amplitudes
+Calculating m = 0, n = 1
+Calculating m = 1, n = 0
+B_e[0, 1] = [-0.182356+7.182986e-05j  0.060254+1.085291e-05j]
+B_h[0, 1] = [ 0.201822+5.667589e-05j -0.07972 +2.600688e-05j]
+B_e[1, 0] = [-0.182356-7.182986e-05j  0.060254-1.085291e-05j]
+B_h[1, 0] = [ 0.201822-5.667589e-05j -0.07972 -2.600688e-05j]
+Finish calculating off-diagonal transition amplitudes

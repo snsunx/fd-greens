@@ -3,9 +3,6 @@ using the classmethods."""
 
 import sys
 sys.path.append('../../src/')
-import quimb
-print(quimb.__file__)
-exit()
 import numpy as np
 from qiskit import *
 from qiskit.circuit import Barrier
@@ -43,7 +40,9 @@ q_instance_noisy = get_quantum_instance(
 
 # Statevector simulator calculation
 print("========== Starts statevector simulation ==========")
-gf_sv = GreensFunctionRestricted(ansatz.copy(), hamiltonian, q_instance=q_instance_sv, ccx_data=ccx_data)
+gf_sv = GreensFunctionRestricted(ansatz.copy(), hamiltonian, 
+								 q_instance=q_instance_sv, 
+								 ccx_data=ccx_data, recompiled=False)
 gf_sv.run(save_params=save_params, load_params=load_params, 
 		  cache_read=cache_read, cache_write=cache_write)
 

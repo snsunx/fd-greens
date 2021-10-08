@@ -9,6 +9,9 @@ import quimb as qu
 import quimb.tensor as qtn
 from quimb.tensor.optimize_autograd import TNOptimizer
 
+from utils import get_statevector, get_unitary
+
+
 from io_utils import CacheRecompilation
 
 QuimbGates = List[Tuple[str, Tuple[int]]]
@@ -17,10 +20,10 @@ class CircuitRecompiler:
     """A class for recompilation of quantum circuits."""
 
     def __init__(self, 
-                 gate_1q: str = 'U3', 
+                 gate_1q: str = 'RY', 
                  gate_2q: str = 'CZ',
-                 n_rounds: int = 4,
-                 tol: float = 1e-5,
+                 n_rounds: int = 3,
+                 tol: float = 1e-8,
                  periodic: bool = False,
                  cache_options: Optional[dict] = None) -> None:
         """Creates a CircuitRecompiler object.
@@ -70,6 +73,42 @@ class CircuitRecompiler:
         return ansatz_circ
 
 
+    def recompile_all(self, circ) -> QuantumCircuit:
+        """Recompiles all parts of a circuit between barriers."""
+        data_all = [] # for statevector
+        data_tmp = [] # for uni
+        n_qubits = len(circ.qregs[0])
+        circ_new = QuantumCircuit(len(circ.qregs[0]))
+
+        circ_data = circ.data
+
+        while len(circ_data) != 0:
+            inst_tup = circ_data.pop(0)
+            if inst_tup[0].name != 'barrier' and len(circ_data) != 0:
+                # data_all.append(inst_tup)
+                data_tmp.append(inst_tup)
+            else:
+                circ_new.barrier()
+                if len(data_tmp) != 1:
+                    uni = get_unitary(data_tmp, n_qubits=n_qubits)
+                    sv = get_statevector(circ_new)
+
+                    quimb_gates = self._recompile_with_statevector(uni, sv)
+                    #quimb_gates = self._recompile_unitary(uni)
+                    apply_quimb_gates(quimb_gates, circ_new)
+                else:
+                    try:
+                        circ_new.append(*data_tmp[0])
+                    except:
+                        inst = data_tmp[0][0]
+                        qargs = data_tmp[0][1]
+                        qargs = [q.index for q in qargs]
+                        circ_new.append(inst, qargs)
+                data_tmp = []
+        return circ_new
+        
+
+
     def recompile(self,
                   targ_uni: np.ndarray,
                   data: Optional[np.ndarray] = None, 
@@ -77,6 +116,7 @@ class CircuitRecompiler:
                   n_rounds: Optional[int] = None,
                   tol: Optional[float] = None) -> QuimbGates:
         """Recompiles a target unitary."""
+
         if data is not None:
             if len(data.shape) == 1:
                 # Recompile with statevector
@@ -109,6 +149,10 @@ class CircuitRecompiler:
             if quimb_gates is not None:
                 return quimb_gates
 
+        print('!' * 80)
+        print(targ_uni.shape)
+        print(statevector.shape)
+
         if n_rounds is None:
             n_rounds = self.n_rounds
         if tol is None:
@@ -116,7 +160,7 @@ class CircuitRecompiler:
 
         infid = 1.
         def infidelity(psi1, psi2):
-            return 1 - abs(psi1.H @ psi2) ** 2
+            return abs(1 - abs(psi1.H @ psi2) ** 2)
 
 
         n_qubits = int(np.log2(len(statevector)))
@@ -178,7 +222,7 @@ class CircuitRecompiler:
 
         infid = 1.
         def infidelity(U1, U2):
-            return 1 - (U1 | U2).contract(all, optimize='auto-hq').real / 2**n_qubits
+            return abs(1 - (U1 | U2).contract(all, optimize='auto-hq').real / 2**n_qubits)
         U_targ = qtn.Tensor(
             data=targ_uni.reshape([2] * (2 * n_qubits)),
             inds=[f'k{i}' for i in range(n_qubits)] + [f'b{i}' for i in range(n_qubits)],

@@ -1,6 +1,6 @@
 """Utility functions"""
 
-from typing import Optional, Union, Iterable, List, Tuple
+from typing import ClassVar, Optional, Union, Iterable, List, Tuple
 import numpy as np
 
 from qiskit import QuantumCircuit, Aer, IBMQ, execute
@@ -46,6 +46,8 @@ def get_statevector(circ: QuantumCircuit,
     Returns:
         The statevector array of the circuit.
     """
+    if isinstance(circ, list): # CircuitData
+        circ = data_to_circuit(circ)
     backend = Aer.get_backend('statevector_simulator')
     job = execute(circ, backend)
     result = job.result()
@@ -55,7 +57,7 @@ def get_statevector(circ: QuantumCircuit,
     return statevector
 
 def get_unitary(circ: Union[QuantumCircuit, CircuitData], 
-                reverse: bool = False) -> np.ndarray:
+                reverse: bool = False, n_qubits = None) -> np.ndarray:
     """Returns the unitary of a quantum circuit.
     
     Args:
@@ -65,20 +67,9 @@ def get_unitary(circ: Union[QuantumCircuit, CircuitData],
     Returns:
         The unitary array of the circuit.
     """
-    def remove_barriers(circ_data):
-        circ_data_new = []
-        for inst_tup in circ_data:
-            if inst_tup[0].name != 'barrier':
-                circ_data_new.append(inst_tup)
-        return circ_data_new
 
     if isinstance(circ, list): # CircuitData
-        circ = remove_barriers(circ)
-        n_qubits = max([max(x[1]) for x in circ]) + 1
-        circ_new = QuantumCircuit(n_qubits)
-        for inst_tup in circ:
-            circ_new.append(*inst_tup)
-        circ = circ_new.copy()
+        circ = data_to_circuit(circ, n_qubits=n_qubits)
     backend = Aer.get_backend('unitary_simulator')
     job = execute(circ, backend)
     result = job.result()
@@ -86,6 +77,30 @@ def get_unitary(circ: Union[QuantumCircuit, CircuitData],
     if reverse:
         unitary = reverse_qubit_order(unitary)
     return unitary
+
+def remove_barriers(circ_data):
+    circ_data_new = []
+    for inst_tup in circ_data:
+        if inst_tup[0].name != 'barrier':
+            circ_data_new.append(inst_tup)
+    return circ_data_new
+
+def data_to_circuit(data, n_qubits=None):
+    data = remove_barriers(data)
+    if n_qubits is None:
+        try:
+            n_qubits = max([max(x[1]) for x in data]) + 1
+        except: 
+            n_qubits = max([max([y.index for y in x[1]]) for x in data]) + 1
+    circ_new = QuantumCircuit(n_qubits)
+    for inst_tup in data:
+        inst, qargs = inst_tup[:2]
+        try:
+            circ_new.append(inst, qargs)
+        except:
+            qargs = [q.index for q in qargs]
+            circ_new.append(inst, qargs)
+    return circ_new
 
 def reverse_qubit_order(arr: np.ndarray) -> np.ndarray:
     """Reverses qubit order in a 1D or 2D array.
