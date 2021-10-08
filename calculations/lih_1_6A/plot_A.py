@@ -11,6 +11,8 @@ omegas, A_noisy_cached = np.loadtxt('A_noisy_cached.dat').T
 omegas, A_noisy_cached1 = np.loadtxt('A_noisy_cached1.dat').T
 omegas, A_noisy_cached2 = np.loadtxt('A_noisy_cached2.dat').T
 omegas, A_red = np.loadtxt('A_red.dat').T
+omegas, A_red_up = np.loadtxt('A_red_up.dat').T
+omegas, A_red_down = np.loadtxt('A_red_down.dat').T
 omegas, A_red_noisy = np.loadtxt('A_red_noisy.dat').T
 
 fig, ax = plt.subplots()
@@ -24,7 +26,9 @@ ax.plot(omegas, A_sv, label='4q, statevector')
 #ax.plot(omegas, A_noisy_cached1, label='Noisy Cached1')
 #ax.plot(omegas, A_noisy_cached2, ls='--', label='Noisy Cached2')
 ax.plot(omegas, A_red, ls='--', label="2q, statevector")
-ax.plot(omegas, A_red_noisy, ls='--', label="2q, noisy")
+ax.plot(omegas, A_red_up, ls='--', label="up")
+ax.plot(omegas, A_red_down, ls='--', label="down")
+#ax.plot(omegas, A_red_noisy, ls='--', label="2q, noisy")
 ax.set_xlabel('$\omega$ (eV)')
 ax.set_ylabel("Absorption spectra (eV$^{-1}$)")
 ax.set_xlim([-25, 15])

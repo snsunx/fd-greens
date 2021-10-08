@@ -26,8 +26,8 @@ cache_write = False
 iX = np.array([[0, 1j], [1j, 0]])
 ccx_data = [(SwapGate(), [1, 2]), (Barrier(4), [0, 1, 2, 3]), (UnitaryGate(iX).control(2), [0, 2, 1]), (Barrier(4), [0, 1, 2, 3]), (SwapGate(), [1, 2])]
 
-#ansatz = build_two_local_ansatz(2)
-ansatz = build_2q_ansatz()
+ansatz = build_two_local_ansatz(2)
+#ansatz = build_2q_ansatz()
 hamiltonian = MolecularHamiltonian(
     [['Li', (0, 0, 0)], ['H', (0, 0, bond_length)]], 'sto3g', 
     occ_inds=[0], act_inds=[1, 2])
@@ -42,7 +42,7 @@ q_instance_noisy = get_quantum_instance(
 print("========== Starts statevector simulation ==========")
 gf_sv = GreensFunctionRestricted(ansatz.copy(), hamiltonian, 
 								 q_instance=q_instance_sv, 
-								 ccx_data=ccx_data, recompiled=False)
+								 ccx_data=ccx_data, recompiled=False, spin='down')
 gf_sv.run(save_params=save_params, load_params=load_params, 
 		  cache_read=cache_read, cache_write=cache_write)
 

@@ -24,7 +24,7 @@ def ansatz_circuit(n, D, n_layers, gate1: str ='RY', gate2: str = 'CNOT', psi=No
         gate1: Single-qubit gate (default: 'RY')
         gate2: Two-qubit gate (default: 'CNOT')
         periodic: if periodic, insert a long-range two-qubit gate
-    
+
     Returns:
         circ: Quimb circuit
     """
@@ -88,7 +88,7 @@ def compress_Upsi(D, psi, targ_psi, gate1='RY', n_layers=3):
         return -(psi.H @ targ_psi).real
 
     optmzr = TNOptimizer(
-        psi, loss_fn=loss, loss_constants={'targ_psi': targ_psi}, 
+        psi, loss_fn=loss, loss_constants={'targ_psi': targ_psi},
         constant_tags=[gate2, 'PSI0'], autograd_backend='jax',
         optimizer='L-BFGS-B')
 

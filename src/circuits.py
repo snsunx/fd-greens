@@ -65,15 +65,15 @@ class CircuitConstructor:
         circ = copy_circuit_with_ancilla(self.ansatz, [0])
 
         # Apply the gates corresponding to the creation/annihilation terms
-        # if self.add_barriers: circ.barrier()
+        if self.add_barriers: circ.barrier()
         circ.h(0)
-        # if self.add_barriers: circ.barrier()
+        if self.add_barriers: circ.barrier()
         self._apply_controlled_gate(circ, a_op[0], ctrl=[0], n_anc=1)
-        # if self.add_barriers: circ.barrier()
+        if self.add_barriers: circ.barrier()
         self._apply_controlled_gate(circ, a_op[1], ctrl=[1], n_anc=1)
-        # if self.add_barriers: circ.barrier()
+        if self.add_barriers: circ.barrier()
         circ.h(0)
-        # if self.add_barriers: circ.barrier()
+        if self.add_barriers: circ.barrier()
         return circ
 
     def build_off_diagonal_circuits(self,
@@ -93,19 +93,19 @@ class CircuitConstructor:
         circ = copy_circuit_with_ancilla(self.ansatz, [0, 1])
 
         # Apply the gates corresponding to the creation/annihilation terms
-        # if self.add_barriers: circ.barrier()
+        if self.add_barriers: circ.barrier()
         circ.h([0, 1])
-        # if self.add_barriers: circ.barrier()
+        if self.add_barriers: circ.barrier()
         self._apply_controlled_gate(circ, a_op_m[0], ctrl=(0, 0), n_anc=2)
-        # if self.add_barriers: circ.barrier()
+        if self.add_barriers: circ.barrier()
         self._apply_controlled_gate(circ, a_op_m[1], ctrl=(1, 0), n_anc=2)
-        # if self.add_barriers: circ.barrier()
+        if self.add_barriers: circ.barrier()
         circ.rz(np.pi / 4, 1)
-        # if self.add_barriers: circ.barrier()
+        if self.add_barriers: circ.barrier()
         self._apply_controlled_gate(circ, a_op_n[0], ctrl=(0, 1), n_anc=2)
-        # if self.add_barriers: circ.barrier()
+        if self.add_barriers: circ.barrier()
         self._apply_controlled_gate(circ, a_op_n[1], ctrl=(1, 1), n_anc=2)
-        # if self.add_barriers: circ.barrier()
+        if self.add_barriers: circ.barrier()
         circ.h([0, 1])
 
         return circ
@@ -140,6 +140,13 @@ class CircuitConstructor:
                 label_tmp = label_tmp[1:]
                 ind_max -= 1
 
+        ind_min = 0
+        label_tmp = label
+        for i in range(len(label)):
+            if label_tmp[-1] == 'I':
+                label_tmp = label_tmp[:-1]
+                ind_min += 1
+
         # Prepend X gates for control on 0
         for i in range(len(ctrl)):
             if ctrl[i] == 0:
@@ -153,15 +160,21 @@ class CircuitConstructor:
                 circ.rx(np.pi / 2, i + n_anc)
 
         # Prepend CNOT gates for Pauli strings
-        for i in range(ind_max + n_anc, n_anc, -1):
+        for i in range(ind_max + n_anc, ind_min + n_anc, -1):
             circ.cx(i, i - 1)
 
-
+        # Prepend SWAP gates when ind_min != 0
+        if ind_min != 0:
+            circ.swap(n_anc, ind_min + n_anc)
+        
         # Apply single controlled gate
         if len(ctrl) == 1:
             if coeff != 1:
                 circ.p(angle, 0)
-            circ.cz(0, n_anc)
+            if set(list(label)) == {'I'}:
+                pass
+            else:
+                circ.cz(0, n_anc)
         # Apply double controlled gate
         elif len(ctrl) == 2:
             if coeff != 1:
@@ -181,8 +194,12 @@ class CircuitConstructor:
         else:
             raise NotImplementedError("Control on more than two qubits is not implemented")
 
+        # Append SWAP gate when ind_min != 0
+        if ind_min != 0:
+            circ.swap(n_anc, ind_min + n_anc)
+
         # Append CNOT gates for Pauli strings
-        for i in range(n_anc, ind_max + n_anc):
+        for i in range(ind_min + n_anc, ind_max + n_anc):
             circ.cx(i + 1, i)
 
         # Append rotation gates for Pauli X and Y
@@ -301,10 +318,10 @@ class SingleQubitGateChain:
     @classmethod
     def combine_single_qubit_gates(cls, circ: QuantumCircuit) -> QuantumCircuit:
         """Combines each single-qubit gate chain to a single U3 gate on a circuit.
-        
+
         Args:
             The circuit on which all chains of single-qubit gates are to be combined.
-        
+
         Returns:
             A new circuit after all single-qubit gates have been combined.
         """
@@ -312,7 +329,7 @@ class SingleQubitGateChain:
         gates_2q = []
 
         insert_inds = []
-        
+
         i = 0
         while len(circ.data) != 0:
             print('i =', i)
@@ -338,7 +355,7 @@ class SingleQubitGateChain:
                     else:
                         # Ignore
                         continue
-                
+
                 # Delete the gates
                 count = 0
                 for k in delete_inds:

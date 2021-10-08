@@ -11,6 +11,7 @@ from qiskit import QuantumCircuit, Aer
 from qiskit.algorithms import VQE
 from qiskit.algorithms.optimizers import Optimizer, L_BFGS_B
 from qiskit.utils import QuantumInstance
+from qiskit.extensions import CCXGate
 
 from constants import HARTREE_TO_EV
 from greens_function import GreensFunction
@@ -27,25 +28,21 @@ from functools import partial
 
 np.set_printoptions(precision=6)
 
-transform_func = partial(transform_4q_hamiltonian, init_state=[1, 1])
-second_q_ops = SecondQuantizedOperators(4)
-second_q_ops.transform(transform_func)
-pauli_op_dict = second_q_ops.dict_form
-
 class GreensFunctionRestricted:
     """A class to calculate frequency-domain Green's function with
     with restricted orbitals."""
-    
-    def __init__(self, 
-                 ansatz: QuantumCircuit, 
-                 hamiltonian: MolecularHamiltonian, 
+
+    def __init__(self,
+                 ansatz: QuantumCircuit,
+                 hamiltonian: MolecularHamiltonian,
                  optimizer: Optional[Optimizer] = None,
                  q_instance: Optional[QuantumInstance] = None,
                  recompiled: bool = True,
                  add_barriers: bool = True,
-                 ccx_data: Optional[CircuitData] = None) -> None:
+                 ccx_data: Optional[CircuitData] = None,
+                 spin: str = 'up') -> None:
         """Initializes a GreensFunctionRestricted object.
-        
+
         Args:
             ansatz: The parametrized circuit as an ansatz to VQE.
             hamiltonian: The MolecularHamiltonian object.
@@ -60,7 +57,15 @@ class GreensFunctionRestricted:
         self.e_orb = np.diag(self.molecule.orbital_energies) * HARTREE_TO_EV
         self.qiskit_op = self.hamiltonian.qiskit_op.copy()
         self.qiskit_op_gs = transform_4q_hamiltonian(self.qiskit_op, init_state=[1, 1])
-        self.qiskit_op_up = transform_4q_hamiltonian(self.qiskit_op, init_state=[0, 1])
+        if spin == 'up':
+            self.qiskit_op_spin = transform_4q_hamiltonian(self.qiskit_op, init_state=[0, 1])
+        elif spin == 'down':
+            self.qiskit_op_spin = transform_4q_hamiltonian(self.qiskit_op, init_state=[1, 0])
+
+        transform_func = partial(transform_4q_hamiltonian, init_state=[1, 1])
+        second_q_ops = SecondQuantizedOperators(4)
+        second_q_ops.transform(transform_func)
+        self.pauli_op_dict = second_q_ops.get_op_dict(spin=spin)
 
         self.optimizer = L_BFGS_B() if optimizer is None else optimizer
         if q_instance is None:
@@ -71,7 +76,10 @@ class GreensFunctionRestricted:
         self.recompiled = recompiled
 
         self.add_barriers = add_barriers
-        self.ccx_data = ccx_data
+        if ccx_data is None:
+            self.ccx_data = [(CCXGate(), [0, 1, 2], [])]
+        else:
+            self.ccx_data = ccx_data
 
         # Number of orbitals and indices
         self.n_orb = len(self.hamiltonian.act_inds)
@@ -89,8 +97,12 @@ class GreensFunctionRestricted:
         print(f"Number of (N+1)-electron states is {self.n_e}")
         print(f"Number of (N-1)-electron states is {self.n_h}")
 
-        self.inds_h = QubitIndices(['10', '00'], n_qubits=2)
-        self.inds_e = QubitIndices(['11', '01'], n_qubits=2)
+        if spin == 'up':
+            self.inds_h = QubitIndices(['10', '00'], n_qubits=2)
+            self.inds_e = QubitIndices(['11', '01'], n_qubits=2)
+        elif spin == 'down':
+            self.inds_h = QubitIndices(['01', '00'], n_qubits=2)
+            self.inds_e = QubitIndices(['11', '10'], n_qubits=2)
 
         # Define the transition amplitude matrices
         self.B_e = np.zeros((self.n_orb, self.n_orb, self.n_e), dtype=complex)
@@ -119,13 +131,13 @@ class GreensFunctionRestricted:
 
         self.circuit_constructor = None
 
-    def compute_ground_state(self, 
+    def compute_ground_state(self,
                              save_params: bool = False,
                              load_params: bool = False,
                              prefix: str = None
                              ) -> None:
         """Calculates the ground state of the Hamiltonian using VQE.
-        
+
         Args:
             save_params: Whether to save the VQE energy and ansatz parameters.
             load_params: Whether to load the VQE energy and ansatz parameters.
@@ -138,7 +150,7 @@ class GreensFunctionRestricted:
             self.energy_gs, self.ansatz = load_vqe_result(self.ansatz, prefix=prefix)
         else:
             print("Start calculating the ground state using VQE")
-            vqe = VQE(self.ansatz, optimizer=self.optimizer, 
+            vqe = VQE(self.ansatz, optimizer=self.optimizer,
                       quantum_instance=Aer.get_backend('statevector_simulator'))
             vqe_result = vqe.compute_minimum_eigenvalue(self.qiskit_op_gs)
             if save_params:
@@ -147,18 +159,18 @@ class GreensFunctionRestricted:
             self.ansatz.assign_parameters(vqe_result.optimal_parameters, inplace=True)
             print("Finish calculating the ground state using VQE")
 
-        
+
         self.circuit_constructor = CircuitConstructor(
             self.ansatz, add_barriers=self.add_barriers, ccx_data=self.ccx_data)
         print(f'Ground state energy = {self.energy_gs:.3f} eV')
-    
+
     def compute_eh_states(self) -> None:
         """Calculates (N±1)-electron states of the Hamiltonian."""
         print("Start calculating (N±1)-electron states")
         self.eigenenergies_e, self.eigenstates_e = number_state_eigensolver(
-            self.qiskit_op_up.to_matrix(), inds=self.inds_e.int_form)
+            self.qiskit_op_spin.to_matrix(), inds=self.inds_e.int_form)
         self.eigenenergies_h, self.eigenstates_h = number_state_eigensolver(
-            self.qiskit_op_up.to_matrix(), inds=self.inds_h.int_form)
+            self.qiskit_op_spin.to_matrix(), inds=self.inds_h.int_form)
         self.eigenenergies_e *= HARTREE_TO_EV
         self.eigenenergies_h *= HARTREE_TO_EV
         print("Finish calculating (N±1)-electron states")
@@ -171,7 +183,7 @@ class GreensFunctionRestricted:
                                     cache_write: bool = True
                                     ) -> None:
         """Calculates diagonal transition amplitudes.
-        
+
         Args:
             cache_read: Whether to read recompiled circuits from io_utils files.
             cache_write: Whether to save recompiled circuits to cache files.
@@ -182,7 +194,7 @@ class GreensFunctionRestricted:
         inds_h = self.inds_h.include_ancilla('0').int_form
         for m in range(self.n_orb):
             print(f"Calculating m = {m}")
-            a_op_m = pauli_op_dict[m]
+            a_op_m = self.pauli_op_dict[m]
             circ = self.circuit_constructor.build_diagonal_circuits(a_op_m)
 
             figname = f'circuit_{m}'
@@ -190,7 +202,7 @@ class GreensFunctionRestricted:
                 recompiler = CircuitRecompiler()
                 circ = recompiler.recompile_all(circ)
                 figname += '_rec'
-            
+
             # Save the circuit diagram
             fig = circ.draw(output='mpl')
             fig.savefig(figname + '.png')
@@ -198,7 +210,7 @@ class GreensFunctionRestricted:
             if self.q_instance.backend.name() == 'statevector_simulator':
                 result = self.q_instance.execute(circ)
                 psi = result.get_statevector()
-                
+
                 psi_e = psi[inds_e]
                 B_e_mm = np.abs(self.eigenstates_e.conj().T @ psi_e) ** 2
 
@@ -213,7 +225,7 @@ class GreensFunctionRestricted:
 
                 rho_h = rho[inds_h][:, inds_h]
                 B_h_mm = np.diag(self.eigenstates_h.conj().T @ rho_h @ self.eigenstates_h).real
-            
+
             #B_e_mm[abs(B_e_mm) < 1e-8] = 0.
             self.B_e[m, m] = B_e_mm
 
@@ -224,8 +236,8 @@ class GreensFunctionRestricted:
             print(f'B_h[{m}, {m}] = {self.B_h[m, m]}')
         print("Finish calculating diagonal transition amplitudes")
 
-    def compute_off_diagonal_amplitudes(self, 
-                                        cache_read: bool = True, 
+    def compute_off_diagonal_amplitudes(self,
+                                        cache_read: bool = True,
                                         cache_write: bool = True
                                         ) -> None:
         """Calculates off-diagonal transition amplitudes.
@@ -241,22 +253,22 @@ class GreensFunctionRestricted:
         inds_ep = self.inds_e.include_ancilla('01').int_form
         inds_em = self.inds_e.include_ancilla('11').int_form
         for m in range(self.n_orb):
-            a_op_m = pauli_op_dict[m]
+            a_op_m = self.pauli_op_dict[m]
             for n in range(self.n_orb):
                 if m != n:
                     print(f"Calculating m = {m}, n = {n}")
-                    a_op_n = pauli_op_dict[n]
+                    a_op_n = self.pauli_op_dict[n]
                     circ = self.circuit_constructor.build_off_diagonal_circuits(a_op_m, a_op_n)
                     figname = f'circuit_{m}{n}'
                     if self.recompiled:
                         recompiler = CircuitRecompiler()
                         circ = recompiler.recompile_all(circ)
                         figname += '_rec'
-                    
+
                     # Save circuit diagram
                     fig = circ.draw(output='mpl')
                     fig.savefig(figname + '.png')
-                    
+
                     if self.q_instance.backend.name() == 'statevector_simulator':
                         result = self.q_instance.execute(circ)
                         psi = result.get_statevector()
@@ -283,7 +295,7 @@ class GreensFunctionRestricted:
                         rho_hm = rho[inds_hm][:, inds_hm]
                         D_hp_mn = np.diag(self.eigenstates_h.conj().T @ rho_hp @ self.eigenstates_h).real
                         D_hm_mn = np.diag(self.eigenstates_h.conj().T @ rho_hm @ self.eigenstates_h).real
-                    
+
                     #D_ep_mn[abs(D_ep_mn) < 1e-8] = 0.
                     #D_em_mn[abs(D_em_mn) < 1e-8] = 0.
                     self.D_ep[m, n] = D_ep_mn
@@ -310,7 +322,7 @@ class GreensFunctionRestricted:
 
                     print(f'B_e[{m}, {n}] = {self.B_e[m, n]}')
                     print(f'B_h[{m}, {n}] = {self.B_h[m, n]}')
-        
+
         print("Finish calculating off-diagonal transition amplitudes")
 
     @property
@@ -320,7 +332,7 @@ class GreensFunctionRestricted:
         self.rho_gf = np.sum(self.B_h, axis=2)
         return self.rho_gf
 
-    def run(self, 
+    def run(self,
             compute_energies: bool = True,
             save_params: bool = True,
             load_params: bool = False,
@@ -328,9 +340,9 @@ class GreensFunctionRestricted:
             cache_read: bool = False
             ) -> None:
         """Main function to compute energies and transition amplitudes.
-        
+
         Args:
-            compute_energies: Whether to compute ground- and (N±1)-electron 
+            compute_energies: Whether to compute ground- and (N±1)-electron
                 state energies.
             save_params: Whether to save the VQE energy and ansatz parameters.
             load_params: Whether to load the VQE energy and ansatz parameters.
@@ -340,9 +352,9 @@ class GreensFunctionRestricted:
         # TODO: Some if conditions need to be checked.
         if compute_energies:
             if self.energy_gs is None:
-                self.compute_ground_state(save_params=save_params, 
+                self.compute_ground_state(save_params=save_params,
                                           load_params=load_params)
-            if (self.eigenenergies_e is None or self.eigenenergies_h is None or 
+            if (self.eigenenergies_e is None or self.eigenenergies_h is None or
                 self.eigenstates_e is None or self.eigenstates_h is None):
                 self.compute_eh_states()
         self.compute_diagonal_amplitudes(
@@ -350,15 +362,15 @@ class GreensFunctionRestricted:
         self.compute_off_diagonal_amplitudes(
             cache_read=cache_read, cache_write=cache_write)
 
-    def compute_greens_function(self, 
+    def compute_greens_function(self,
                                 omega: Union[float, complex]
                                 ) -> np.ndarray:
         """Calculates the values of the Green's function at frequency omega.
-        
+
         Args:
             omega: The real or complex frequency at which the Green's function
                 is calculated.
-                
+
         Returns:
             The Green's function in numpy array form.
         """
@@ -371,13 +383,13 @@ class GreensFunctionRestricted:
         self.G = self.G_e + self.G_h
         return self.G
 
-    def compute_spectral_function(self, 
+    def compute_spectral_function(self,
                                   omega: Union[float, complex]
                                   ) -> np.ndarray:
         """Calculates the spectral function at frequency omega.
-        
+
         Args:
-            omega: The real or complex frequency at which the spectral 
+            omega: The real or complex frequency at which the spectral
                 function is calculated.
         """
         #print("Start calculating the spectral function")
@@ -388,11 +400,11 @@ class GreensFunctionRestricted:
 
     def compute_self_energy(self, omega: Union[float, complex]) -> np.ndarray:
         """Calculates the self-energy at frequency omega.
-        
+
         Args:
-            omega: The real or complex frequency at which the self-energy 
+            omega: The real or complex frequency at which the self-energy
                 is calculated.
-            
+
         Returns:
             Sigma: The self-energy numpy array.
         """
@@ -407,7 +419,7 @@ class GreensFunctionRestricted:
 
     def compute_correlation_energy(self) -> Tuple[complex, complex]:
         """Calculates the correlation energy.
-        
+
         Returns:
             E1: The one-electron part (?) of the correlation energy.
             E2: The two-electron part (?) of the correlation energy.
@@ -420,7 +432,7 @@ class GreensFunctionRestricted:
         for i in range(self.n_orb):
             # print('i =', i)
             # print(self.molecule.one_body_integrals[i // 2])
-            tmp = np.vstack((self.molecule.one_body_integrals[i // 2], 
+            tmp = np.vstack((self.molecule.one_body_integrals[i // 2],
                             np.zeros((self.n_orb // 2, ))))
             self.h[i] = tmp[::(-1) ** (i % 2)].reshape(self.n_orb, order='f')
         self.h *= HARTREE_TO_EV

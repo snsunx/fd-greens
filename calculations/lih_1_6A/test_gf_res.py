@@ -1,5 +1,5 @@
 """Calculates the spectral function on the active-space LiH Hamilonian 
-using the classmethods."""
+using restricted orbitals."""
 
 import sys
 sys.path.append('../../src/')
@@ -32,7 +32,7 @@ q_instance_noisy = get_quantum_instance(
 
 # Statevector simulator calculation
 print("========== Starts statevector simulation ==========")
-gf_sv = GreensFunctionRestricted(ansatz.copy(), hamiltonian, q_instance=q_instance_noisy)
+gf_sv = GreensFunctionRestricted(ansatz.copy(), hamiltonian, q_instance=q_instance_sv, recompiled=False)
 gf_sv.run(save_params=save_params, load_params=load_params, 
 		  cache_read=cache_read, cache_write=cache_write)
 
@@ -41,4 +41,4 @@ A_list = []
 for omega in omegas:
     A = gf_sv.compute_spectral_function(omega + 0.02j * HARTREE_TO_EV)
     A_list.append(A)
-np.savetxt('A_red_sv.dat', np.vstack((omegas, A_list)).T)
+np.savetxt('A_red_down.dat', np.vstack((omegas, A_list)).T)

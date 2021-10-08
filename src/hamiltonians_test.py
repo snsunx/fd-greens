@@ -4,9 +4,9 @@ from constants import HARTREE_TO_EV
 from hamiltonians import *
 
 hamiltonian = MolecularHamiltonian(
-    [['Li', (0, 0, 0)], ['H', (0, 0, 1.6)]], 
-    'sto3g', 
-    occ_inds=[0], 
+    [['Li', (0, 0, 0)], ['H', (0, 0, 1.6)]],
+    'sto3g',
+    occ_inds=[0],
     act_inds=[1, 2])
 # hamiltonian = MolecularHamiltonian([['Li', (0, 0, 0)], ['H', (0, 0, 1.6)]], 'sto3g')
 hamiltonian.build()

@@ -8,15 +8,15 @@ QubitIndicesForm = Sequence[Union[int, str, Sequence[int]]]
 
 class QubitIndices:
     """A class to handle qubit indices in string, integer and list forms."""
-    def __init__(self, 
+    def __init__(self,
                  data: QubitIndicesForm,
                  n_qubits: Optional[int] = None
                 ) -> None:
         """Initializes a QubitIndices object.
-        
-        Args:   
+
+        Args:
             data: A sequence of qubit indices in string, integer or list form.
-            n_qubits: The number of qubits used in padding zeroes 
+            n_qubits: The number of qubits used in padding zeroes
                 in string and list forms.
         """
         self._int = None
@@ -44,10 +44,10 @@ class QubitIndices:
         if self._int is not None:
             if self.n_qubits is None:
                 self.n_qubits = max([ceil(log2(i)) for i in self._int])
-            self._str = [format(i, f'0{self.n_qubits}b') 
+            self._str = [format(i, f'0{self.n_qubits}b')
                          for i in self._int]
         elif self._list is not None:
-            self._str =  [''.join([str(i) for i in l[::-1]]) 
+            self._str =  [''.join([str(i) for i in l[::-1]])
                           for l in self._list]
 
     def _build_int_form(self):
@@ -61,7 +61,7 @@ class QubitIndices:
     def include_ancilla(self, anc: str, inplace=False):
         """Includes ancilla qubits as the first few qubits into a set
         of qubit indices.
-        
+
         Args:
             anc: The ancilla qubit states in string form.
             inplace: Whether the indices are modified inplace.

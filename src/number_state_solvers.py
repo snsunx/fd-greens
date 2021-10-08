@@ -17,7 +17,7 @@ def get_number_state_indices(n_orb: int,
                              return_type: str = 'decimal',
                              reverse: bool = True) -> List[int]:
     """Obtains the indices corresponding to a certain number of electrons.
-    
+
     Args:
         n_orb: An integer indicating the number of orbitals.
         n_elec: An integer indicating the number of electrons.
@@ -25,13 +25,13 @@ def get_number_state_indices(n_orb: int,
             ancilla qubit(s).
         return_type: Type of the indices returned. Must be 'decimal'
             or 'binary'. Default to 'decimal'.
-        reverse: Whether the qubit indices are reversed because of 
+        reverse: Whether the qubit indices are reversed because of
             Qiskit qubit order. Default to True.
     """
     assert return_type in ['binary', 'decimal']
     inds = []
     for tup in combinations(range(n_orb), n_elec):
-        bin_list = ['1' if (n_orb - 1 - i) in tup else '0' 
+        bin_list = ['1' if (n_orb - 1 - i) in tup else '0'
                     for i in range(n_orb)]
         # TODO: Technically the anc[::-1] can be taken care of outside this function.
         # Should implement binary indices in both list form and string form
@@ -53,9 +53,9 @@ def number_state_eigensolver(
         reverse: bool = False
     ) -> Tuple[np.ndarray, np.ndarray]:
     # TODO: Update docstring for n_elec, inds and reverse
-    """Exact eigensolver for the Hamiltonian in the subspace of 
+    """Exact eigensolver for the Hamiltonian in the subspace of
     a certain number of electrons.
-    
+
     Args:
         hamiltonian: The Hamiltonian of the molecule.
         n_elec: An integer indicating the number of electrons.
@@ -68,7 +68,7 @@ def number_state_eigensolver(
         hamiltonian_arr = hamiltonian.to_array(array_type='sparse')
     elif isinstance(hamiltonian, QubitOperator):
         hamiltonian_arr = get_sparse_operator(hamiltonian)
-    elif (isinstance(hamiltonian, _data_matrix) or 
+    elif (isinstance(hamiltonian, _data_matrix) or
           isinstance(hamiltonian, np.ndarray)):
         hamiltonian_arr = hamiltonian
     else:
@@ -81,12 +81,12 @@ def number_state_eigensolver(
     hamiltonian_subspace = hamiltonian_arr[inds][:, inds]
     if isinstance(hamiltonian_subspace, _data_matrix):
         hamiltonian_subspace = hamiltonian_subspace.toarray()
-    
+
     eigvals, eigvecs = np.linalg.eigh(hamiltonian_subspace)
 
-    # TODO: Note that the minus sign below depends on the `reverse` variable. 
+    # TODO: Note that the minus sign below depends on the `reverse` variable.
     # Might need to take care of this
-    sort_arr = [(eigvals[i], -np.argmax(np.abs(eigvecs[:, i]))) 
+    sort_arr = [(eigvals[i], -np.argmax(np.abs(eigvecs[:, i])))
                 for i in range(len(eigvals))]
     sort_arr = [x[0] + 1e-4 * x[1] for x in sort_arr] # XXX: Ad-hoc
     # print('sort_arr =', sort_arr)

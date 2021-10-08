@@ -27,18 +27,18 @@ class CacheRecompilation:
 
 
     @classmethod
-    def __filepath(cls, 
+    def __filepath(cls,
                    hamiltonian: MolecularHamiltonian,
                    index: str,
                    states: str) -> str:
         """Constructs filename for caching circuits."""
         return cls.__root() + f'{hamiltonian.name}_{index}_{states}.txt'
-        
+
 
     @classmethod
     def save_recompiled_circuit(cls,
                                 hamiltonian: MolecularHamiltonian,
-                                index: str, 
+                                index: str,
                                 states: str,
                                 circuit: str,
                                 verbose: bool = True) -> None:
@@ -51,12 +51,12 @@ class CacheRecompilation:
 
 
     @classmethod
-    def load_recompiled_circuit(cls, 
+    def load_recompiled_circuit(cls,
                                 hamiltonian: MolecularHamiltonian,
                                 index: str,
                                 states: str,
                                 verbose: bool = True) -> Union[str, None]:
-        """Loads circuit for given Hamiltonian, index, and states. If circuit 
+        """Loads circuit for given Hamiltonian, index, and states. If circuit
         is not found, returns None."""
         if not os.path.isfile(cls.__filepath(hamiltonian, index, states)):
             return None   # File does not exist.

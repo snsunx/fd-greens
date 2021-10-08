@@ -1,17 +1,19 @@
 """Operator utility functions"""
 
+from typing import Callable, Tuple, Dict
 from qiskit.quantum_info import PauliTable, SparsePauliOp
 from z2_symmetries import transform_4q_hamiltonian
 
+@DeprecationWarning
 def get_a_operator(n_qubits: int, ind: int) -> SparsePauliOp:
     """Returns the creation/annihilation operator.
-    
+
     Args:
         n_qubits: Number of qubits.
         ind: The index of the creation/annihilation operator.
-        
+
     Returns:
-        The X and Y part of the creation/annihilation operator as a 
+        The X and Y part of the creation/annihilation operator as a
             SparsePauliOp.
     """
     label_x = 'I' * (n_qubits - ind - 1) + 'X' + 'Z' * ind
@@ -21,6 +23,7 @@ def get_a_operator(n_qubits: int, ind: int) -> SparsePauliOp:
     return sparse_pauli_op
 
 # XXX: Treating the spin this way is not correct. See Markdown document.
+@DeprecationWarning
 def get_operator_dictionary(spin='up'):
     """Returns the operator dictionary for restricted orbital calculations."""
     labels_x = ['IIIX', 'IIXZ', 'IXZZ', 'XZZZ']
@@ -39,7 +42,8 @@ def get_operator_dictionary(spin='up'):
     return dic
 
 class SecondQuantizedOperators:
-    
+    """A class to store the X and Y parts of the second quantized operators."""
+
     def __init__(self, n_qubits):
         """Creates an object containing second quantized operators."""
         self.n_qubits = n_qubits
@@ -52,21 +56,21 @@ class SecondQuantizedOperators:
         coeffs = [1.] * n_qubits + [1j] * n_qubits
         self.sparse_pauli_op = SparsePauliOp(pauli_table, coeffs=coeffs)
 
-    def transform(self, transform_func):
+    def transform(self, transform_func: Callable) -> None:
         """Transforms the set of second quantized operators by Z2 symmetries."""
         self.sparse_pauli_op = transform_func(self.sparse_pauli_op)
+        print(self.sparse_pauli_op.table.to_labels(), self.sparse_pauli_op.coeffs)
 
-    @property
-    def dict_form(self, spin='up'):
+    def get_op_dict(self, spin: str = 'up') -> Dict[int, Tuple[SparsePauliOp, SparsePauliOp]]:
+        """Returns the second quantized operators in a certain spin state."""
+        assert spin in ['up', 'down']
         dic = {}
         for i in range(self.n_qubits // 2):
             if spin == 'up':
                 x_op = self.sparse_pauli_op[2 * i]
                 y_op = self.sparse_pauli_op[2 * i + self.n_qubits]
-                dic.update({i: [x_op, y_op]})
-            else:
+            elif spin == 'down':
                 x_op = self.sparse_pauli_op[2 * i + 1]
                 y_op = self.sparse_pauli_op[2 * i + 1 + self.n_qubits]
-                dic.update({i: [x_op, y_op]})
+            dic.update({i: [x_op, y_op]})
         return dic
-

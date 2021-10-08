@@ -14,25 +14,25 @@ from openfermion.linalg import get_sparse_operator
 
 class MolecularHamiltonian:
     """A class to hold a molecular Hamiltonian."""
-    def __init__(self, 
-                 geometry: Union[Sequence], 
-                 basis: str, 
-                 multiplicity: int = 1, 
-                 charge: int = 0, 
+    def __init__(self,
+                 geometry: Union[Sequence],
+                 basis: str,
+                 multiplicity: int = 1,
+                 charge: int = 0,
                  name: Optional[str] = None,
-                 run_pyscf_options: dict = {}, 
-                 occ_inds: Optional[Sequence[int]] = None, 
+                 run_pyscf_options: dict = {},
+                 occ_inds: Optional[Sequence[int]] = None,
                  act_inds: Optional[Sequence[int]] = None,
                  build_ops: bool = True):
         """Initializes a MolecularHamiltonian object.
 
         Args:
-            geometry: A list of tuples giving the coordinates of each atom. 
+            geometry: A list of tuples giving the coordinates of each atom.
                 An example is [['Li', (0, 0, 0)], ['H', (0, 0, 1.6)]].
             basis: A string giving the basis set.
             multiplicity: An integer giving the spin multiplicity.
             charge: An integer giving the total molecular charge. Defaults to 0.
-            name: The string identifer used for saving and loading 
+            name: The string identifer used for saving and loading
                 cached circuits.
             run_pyscf_options: A dictionary of keyword arguments passed to the
                 run_pyscf function.
@@ -53,16 +53,16 @@ class MolecularHamiltonian:
         self.charge = charge
         self.run_pyscf_options = run_pyscf_options
         molecule = MolecularData(
-            self.geometry, self.basis, 
+            self.geometry, self.basis,
             multiplicity=self.multiplicity, charge=self.charge)
         run_pyscf(molecule)
         self.molecule = molecule
 
         if occ_inds is None:
-            self.occ_inds = [] 
+            self.occ_inds = []
         else:
             self.occ_inds = occ_inds
-        
+
         if act_inds is None:
             self.act_inds = range(self.molecule.n_orbitals)
         else:
@@ -79,7 +79,7 @@ class MolecularHamiltonian:
         # if self.occ_inds is None and self.act_inds is None:
         #     self.act_inds = range(self.molecule.n_orbitals)
         hamiltonian = self.molecule.get_molecular_hamiltonian(
-            occupied_indices=self.occ_inds, 
+            occupied_indices=self.occ_inds,
             active_indices=self.act_inds)
         fermion_op = get_fermion_operator(hamiltonian)
         qubit_op = jordan_wigner(fermion_op)
@@ -87,7 +87,7 @@ class MolecularHamiltonian:
         self._openfermion_op = qubit_op
 
     def _build_qiskit_operator(self):
-        """A private method for constructing the Qiskit qubit operator 
+        """A private method for constructing the Qiskit qubit operator
         in PauliSumOp form. Called by the `build` function."""
         if self._openfermion_op is None:
             self._build_openfermion_operator()
@@ -115,11 +115,11 @@ class MolecularHamiltonian:
         qubit_op = PauliSumOp(primitive)
         self._qiskit_op = qubit_op
 
-    def build(self, 
-              build_openfermion_op: bool = True, 
+    def build(self,
+              build_openfermion_op: bool = True,
               build_qiskit_op: bool = True):
         """Constructs both the Openfermion and the Qiskit qubit operators.
-        
+
         Args:
             build_openfermion_op: Whether to build the Openfermion qubit operator.
             build_qiskit_op: Whether to build the Qiskit qubit operator.
@@ -145,7 +145,7 @@ class MolecularHamiltonian:
 
     def to_array(self, array_type: str = 'ndarray') -> np.ndarray:
         """Converts the molecular Hamiltonian to an array form.
-        
+
         Args:
             array_type: A string indicating the type of the array.
         """

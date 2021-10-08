@@ -19,15 +19,15 @@ QuimbGates = List[Tuple[str, Tuple[int]]]
 class CircuitRecompiler:
     """A class for recompilation of quantum circuits."""
 
-    def __init__(self, 
-                 gate_1q: str = 'RY', 
+    def __init__(self,
+                 gate_1q: str = 'RY',
                  gate_2q: str = 'CZ',
                  n_rounds: int = 3,
                  tol: float = 1e-8,
                  periodic: bool = False,
                  cache_options: Optional[dict] = None) -> None:
         """Creates a CircuitRecompiler object.
-        
+
         Args:
             gate_1q: The single-qubit gate used in recompilation.
             gate_2q: The two-qubit gate used in recompilation.
@@ -57,14 +57,14 @@ class CircuitRecompiler:
 
         # Base layer of single-qubit gates
         for i in range(n_qubits):
-            ansatz_circ.apply_gate(self.gate_1q, *params, i, 
+            ansatz_circ.apply_gate(self.gate_1q, *params, i,
                                    gate_round=0, parametrize=True)
-        
-        # Subsequent rounds interleave single-qubit gate layer 
+
+        # Subsequent rounds interleave single-qubit gate layer
         # and two-qubit gate layer
         for r in range(n_rounds):
             for i in range(r % 2, q_end, 2):
-                ansatz_circ.apply_gate(self.gate_2q, (i+1) % n_qubits, 
+                ansatz_circ.apply_gate(self.gate_2q, (i+1) % n_qubits,
                                        i % n_qubits, gate_round=r)
                 ansatz_circ.apply_gate(self.gate_1q, *params, i % n_qubits,
                                        gate_round=r, parametrize=True)
@@ -106,12 +106,12 @@ class CircuitRecompiler:
                         circ_new.append(inst, qargs)
                 data_tmp = []
         return circ_new
-        
+
 
 
     def recompile(self,
                   targ_uni: np.ndarray,
-                  data: Optional[np.ndarray] = None, 
+                  data: Optional[np.ndarray] = None,
                   init_guess: Optional[qtn.Circuit] = None,
                   n_rounds: Optional[int] = None,
                   tol: Optional[float] = None) -> QuimbGates:
@@ -143,8 +143,8 @@ class CircuitRecompiler:
         # If cache read enabled, check if circuit is already cached
         if self.cache_options is not None and self.cache_options['read']:
             quimb_gates = CacheRecompilation.load_recompiled_circuit(
-                self.cache_options['hamiltonian'], 
-                self.cache_options['index'], 
+                self.cache_options['hamiltonian'],
+                self.cache_options['index'],
                 self.cache_options['states'])
             if quimb_gates is not None:
                 return quimb_gates
@@ -166,14 +166,14 @@ class CircuitRecompiler:
         n_qubits = int(np.log2(len(statevector)))
         psi0 = qtn.Dense1D(statevector)
         psi_target = qtn.Dense1D(targ_uni @ statevector)
-        
+
         while infid >= tol:
             print(f"Recompiling circuit in statevector mode with {n_rounds} gate rounds")
             # Construct ansatz circuit and update parameters with initial guess
             ansatz_circ = self._build_ansatz_circuit(n_qubits, psi0=psi0, n_rounds=n_rounds)
             if init_guess is not None:
                 ansatz_circ.update_params_from(init_guess)
-            
+
             # Define the ansatz and optimizer
             psi_ansatz = ansatz_circ.psi
             optimizer = TNOptimizer(
@@ -198,7 +198,7 @@ class CircuitRecompiler:
         # If cache write enabled, save the circuit
         if self.cache_options is not None and self.cache_options['write']:
             CacheRecompilation.save_recompiled_circuit(
-                self.cache_options['hamiltonian'], self.cache_options['index'], 
+                self.cache_options['hamiltonian'], self.cache_options['index'],
                 self.cache_options['states'], quimb_gates)
 
         return quimb_gates
@@ -242,7 +242,7 @@ class CircuitRecompiler:
                 U_ansatz, loss_fn=infidelity,
                 loss_constants={'U2': U_targ},
                 constant_tags=[self.gate_2q, 'U0', 'U2'],
-                autograd_backend='jax', 
+                autograd_backend='jax',
                 optimizer='L-BFGS-B')
 
             # Carry out optimization
@@ -250,7 +250,7 @@ class CircuitRecompiler:
                 tn_opt, infid = optimizer.optimize_basinhopping(n=500, nhop=100)
             else:
                 tn_opt, infid = optimizer.optimize(n=1000)
-            
+
             n_rounds += 1
 
         # Extract the quimb gates from optimized parameters
@@ -259,7 +259,7 @@ class CircuitRecompiler:
 
         return quimb_gates
 
-def apply_quimb_gates(quimb_gates: QuimbGates, 
+def apply_quimb_gates(quimb_gates: QuimbGates,
                       circ: QuantumCircuit,
                       reverse: bool = False):
     """Applies quimb gates to a Qiskit circuit."""

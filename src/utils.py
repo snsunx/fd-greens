@@ -15,9 +15,9 @@ CircuitData = Iterable[Tuple[Instruction, List[int], Optional[List[int]]]]
 
 
 def get_quantum_instance(backend,
-                         noise_model_name=None, 
-                         optimization_level=0, 
-                         initial_layout=None, 
+                         noise_model_name=None,
+                         optimization_level=0,
+                         initial_layout=None,
                          shots=1):
     # TODO: Write the part for IBMQ backends
     if isinstance(backend, AerBackend):
@@ -35,14 +35,14 @@ def get_quantum_instance(backend,
                 initial_layout=initial_layout)
     return q_instance
 
-def get_statevector(circ: QuantumCircuit, 
+def get_statevector(circ: QuantumCircuit,
                     reverse: bool = False) -> np.ndarray:
     """Returns the statevector of a quantum circuit.
-    
+
     Args:
         circ: The circuit on which the state is to be obtained.
         reverse: Whether qubit order is reversed.
-        
+
     Returns:
         The statevector array of the circuit.
     """
@@ -56,10 +56,10 @@ def get_statevector(circ: QuantumCircuit,
         statevector = reverse_qubit_order(statevector)
     return statevector
 
-def get_unitary(circ: Union[QuantumCircuit, CircuitData], 
+def get_unitary(circ: Union[QuantumCircuit, CircuitData],
                 reverse: bool = False, n_qubits = None) -> np.ndarray:
     """Returns the unitary of a quantum circuit.
-    
+
     Args:
         circ: The circuit on which the unitary is to be obtained.
         reverse: Whether qubit order is reversed.
@@ -90,7 +90,7 @@ def data_to_circuit(data, n_qubits=None):
     if n_qubits is None:
         try:
             n_qubits = max([max(x[1]) for x in data]) + 1
-        except: 
+        except:
             n_qubits = max([max([y.index for y in x[1]]) for x in data]) + 1
     circ_new = QuantumCircuit(n_qubits)
     for inst_tup in data:
@@ -104,10 +104,10 @@ def data_to_circuit(data, n_qubits=None):
 
 def reverse_qubit_order(arr: np.ndarray) -> np.ndarray:
     """Reverses qubit order in a 1D or 2D array.
-    
+
     Args:
         The array on which the qubit order is to be reversed.
-        
+
     Returns:
         The array after qubit order is reversed.
     """
@@ -133,15 +133,15 @@ def reverse_qubit_order(arr: np.ndarray) -> np.ndarray:
                                   "than two dimensions is not implemented.")
     return arr
 
-def state_tomography(circ: QuantumCircuit, 
+def state_tomography(circ: QuantumCircuit,
                      q_instance: Optional[QuantumInstance] = None
                      ) -> np.ndarray:
     """Performs state tomography on a quantum circuit.
-    
+
     Args:
         circ: The quantum circuit to perform tomography on.
         q_instance: The QuantumInstance to execute the circuit.
-    
+
     Returns:
         The density matrix obtained from state tomography.
     """

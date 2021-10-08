@@ -24,9 +24,9 @@ np.set_printoptions(precision=6)
 
 class GreensFunction:
     """A class to perform frequency-domain Green's function calculations."""
-    def __init__(self, 
-                 ansatz: QuantumCircuit, 
-                 hamiltonian: MolecularHamiltonian, 
+    def __init__(self,
+                 ansatz: QuantumCircuit,
+                 hamiltonian: MolecularHamiltonian,
                  optimizer: Optional[Optimizer] = None,
                  q_instance: Optional[QuantumInstance] = None,
                  scaling: float = 1.,
@@ -34,12 +34,12 @@ class GreensFunction:
                  recompiled: bool = True,
                  states: Optional[str] = None) -> None:
         """Initializes a GreensFunction object.
-        
+
         Args:
             ansatz: The parametrized circuit as an ansatz to VQE.
             hamiltonian: The MolecularHamiltonian object.
             optimizer: The optimizer in VQE. Default to L_BFGS_B().
-            q_instance: The quantum instance for execution of the quantum 
+            q_instance: The quantum instance for execution of the quantum
                 circuit. Default to statevector simulator.
             scaling: Scaling factor of the Hamiltonian.
             shift: Constant shift factor of the Hamiltonian.
@@ -61,7 +61,7 @@ class GreensFunction:
         self.qiskit_op *= scaling
         self.qiskit_op.primitive.coeffs[0] += shift / HARTREE_TO_EV
         self.hamiltonian_arr = self.qiskit_op.to_matrix()
-        
+
         self.optimizer = L_BFGS_B() if optimizer is None else optimizer
         if q_instance is None:
             self.q_instance = QuantumInstance(
@@ -73,7 +73,7 @@ class GreensFunction:
         # Number of orbitals and indices
         self.n_orb = 2 * len(self.hamiltonian.act_inds)
         self.n_qubits = self.n_orb # XXX
-        self.n_occ = (self.hamiltonian.molecule.n_electrons 
+        self.n_occ = (self.hamiltonian.molecule.n_electrons
                       - 2 * len(self.hamiltonian.occ_inds))
         self.n_vir = self.n_orb - self.n_occ
         self.inds_occ = list(range(self.n_occ))
@@ -112,13 +112,13 @@ class GreensFunction:
         self.eigenenergies_h = None
         self.eigenstates_h = None
 
-    def compute_ground_state(self, 
+    def compute_ground_state(self,
                              save_params: bool = False,
                              load_params: bool = False,
                              prefix: str = None
                              ) -> Optional[QuantumCircuit]:
         """Calculates the ground state of the Hamiltonian using VQE.
-        
+
         Args:
             save_params: Whether to save the VQE energy and ansatz parameters.
             load_params: Whether to load the VQE energy and ansatz parameters.
@@ -130,7 +130,7 @@ class GreensFunction:
             self.energy_gs, self.ansatz = load_vqe_result(self.ansatz, prefix=prefix)
         else:
             print("Start calculating the ground state using VQE")
-            vqe = VQE(self.ansatz, optimizer=self.optimizer, 
+            vqe = VQE(self.ansatz, optimizer=self.optimizer,
                       quantum_instance=Aer.get_backend('statevector_simulator'))
             vqe_result = vqe.compute_minimum_eigenvalue(self.qiskit_op)
             if save_params:
@@ -138,7 +138,7 @@ class GreensFunction:
             self.energy_gs = vqe_result.optimal_value * HARTREE_TO_EV
             self.ansatz.assign_parameters(vqe_result.optimal_parameters, inplace=True)
             print("Finish calculating the ground state using VQE")
-        
+
         print(f'Ground state energy = {self.energy_gs:.3f} eV')
 
 
@@ -174,7 +174,7 @@ class GreensFunction:
             res[abs(res) < 1e-8] = 0
             print('IZIZ values')
             print(res)
-        
+
 
         # print(self.eigenstates_e.shape)
         if True:
@@ -196,7 +196,7 @@ class GreensFunction:
                                     cache_read: bool = True,
                                     cache_write: bool = True) -> None:
         """Calculates diagonal transition amplitudes.
-        
+
         Args:
             cache_read: Whether to read recompiled circuits from io_utils files.
             cache_write: Whether to save recompiled circuits to cache files.
@@ -211,7 +211,7 @@ class GreensFunction:
                     result = self.q_instance.execute(circ)
                     psi = result.get_statevector()
                     print('Index of largest element is', format(np.argmax(np.abs(psi)), '05b'))
-                    
+
                     if self.states in ('e', None):
                         inds_e = get_number_state_indices(
                             self.n_orb, self.n_occ + 1, anc='1', reverse=True)
@@ -219,7 +219,7 @@ class GreensFunction:
                         probs_e[abs(probs_e) < 1e-8] = 0.
                         self.B_e[m, m] = probs_e
 
-                    if self.states in ('h', None):                     
+                    if self.states in ('h', None):
                         inds_h = get_number_state_indices(
                             self.n_orb, self.n_occ - 1, anc='0', reverse=True)
                         probs_h = np.abs(self.eigenstates_h.conj().T @ psi[inds_h]) ** 2
@@ -235,16 +235,16 @@ class GreensFunction:
                         self.states_arr[m, m] = states_elem
 
                 else: # QASM simulator or hardware
-                    circ = append_qpe_circuit(circ, self.qiskit_op.to_matrix(), 1, 
-                                              recompiled=self.recompiled, 
+                    circ = append_qpe_circuit(circ, self.qiskit_op.to_matrix(), 1,
+                                              recompiled=self.recompiled,
                                               n_gate_rounds=6,
-                                              cache_options = 
-                                              {'read': cache_read, 'write': cache_write, 
+                                              cache_options =
+                                              {'read': cache_read, 'write': cache_write,
                                                'hamiltonian': self.hamiltonian,
                                                'index': str(m), 'states': self.states})
                     circ.add_register(ClassicalRegister(2))
                     circ.measure([0, 1], [0, 1])
-                    
+
                     result = self.q_instance.execute(circ)
                     counts = result.get_counts()
                     for key in list(counts):
@@ -263,15 +263,15 @@ class GreensFunction:
                             probs[key] = 0.0
                     if self.states == 'h':
                         self.B_h[m, m] = [probs['00'], 0., probs['10'], 0.]
-                    
+
                     if self.states == 'e':
                         self.B_e[m, m] = [probs['01'], 0., probs['11'], 0.]
             print(f'B_e[{m}, {m}] = {self.B_e[m, m]}')
             print(f'B_h[{m}, {m}] = {self.B_h[m, m]}')
         print("Finish calculating diagonal transition amplitudes")
 
-    def compute_off_diagonal_amplitudes(self, 
-                                        cache_read: bool = True, 
+    def compute_off_diagonal_amplitudes(self,
+                                        cache_read: bool = True,
                                         cache_write: bool = True) -> None:
         """Calculates off-diagonal transition amplitudes.
 
@@ -284,9 +284,9 @@ class GreensFunction:
             a_op_m = get_a_operator(self.n_qubits, m)
             for n in range(self.n_orb):
                 a_op_n = get_a_operator(self.n_qubits, n)
-                circ = build_off_diagonal_circuits(self.ansatz.copy(), 
+                circ = build_off_diagonal_circuits(self.ansatz.copy(),
                                                    a_op_m, a_op_n)
-                if m != n and (self.states is None or 
+                if m != n and (self.states is None or
                                self.states in self.states_arr[m, n]):
                     if self.q_instance.backend.name() == 'statevector_simulator':
                         result = self.q_instance.execute(circ)
@@ -321,11 +321,11 @@ class GreensFunction:
                             self.states_arr[m, n] = states_elem
 
                     else:
-                        circ = append_qpe_circuit(circ, self.qiskit_op.to_matrix(), 2, 
-                                                recompiled=self.recompiled, 
+                        circ = append_qpe_circuit(circ, self.qiskit_op.to_matrix(), 2,
+                                                recompiled=self.recompiled,
                                                 n_gate_rounds=7,
-                                                cache_options = 
-                                                {'read': cache_read, 'write': cache_write, 
+                                                cache_options =
+                                                {'read': cache_read, 'write': cache_write,
                                                 'hamiltonian': self.hamiltonian,
                                                 'index': str(m), 'states': self.states})
                         circ.add_register(ClassicalRegister(3))
@@ -337,7 +337,7 @@ class GreensFunction:
                             if int(key[-1]) == (self.states == 'h'):
                                 del counts[key]
                         shots = sum(counts.values())
-                        
+
                         from itertools import product
                         probs = {}
                         for t in product(['0', '1'], repeat=2):
@@ -350,7 +350,7 @@ class GreensFunction:
                         if self.states == 'h':
                             self.D_hp[m, n] = [probs['000'], 0.0, probs['100'], 0.0]
                             self.D_hm[m, n] = [probs['010'], 0.0, probs['110'], 0.0]
-                        
+
                         if self.states == 'e':
                             self.D_ep[m, n] = [probs['001'], 0., probs['101'], 0.]
                             self.D_em[m, n] = [probs['011'], 0., probs['111'], 0.]
@@ -393,28 +393,28 @@ class GreensFunction:
         self.rho_gf = np.sum(self.B_h, axis=2)
         return self.rho_gf
 
-    def run(self, 
+    def run(self,
             compute_energies: bool = True,
             save_params: bool = True,
             load_params: bool = False,
             cache_write: bool = True,
             cache_read: bool = False) -> None:
         """Main function call to compute energies and transition amplitudes.
-        
+
         Args:
-            compute_energies: Whether to compute ground- and (N±1)-electron 
+            compute_energies: Whether to compute ground- and (N±1)-electron
                 state energies.
             save_params:
-            load_params: 
+            load_params:
             cache_read: Whether to read recompiled circuits from io_utils files.
             cache_write: Whether to save recompiled circuits to cache files.
         """
         # TODO: Some if conditions need to be checked.
         if compute_energies:
             if self.energy_gs is None:
-                self.compute_ground_state(save_params=save_params, 
+                self.compute_ground_state(save_params=save_params,
                                           load_params=load_params)
-            if (self.eigenenergies_e is None or self.eigenenergies_h is None or 
+            if (self.eigenenergies_e is None or self.eigenenergies_h is None or
                 self.eigenstates_e is None or self.eigenstates_h is None):
                 self.compute_eh_states()
         self.compute_diagonal_amplitudes(
@@ -423,8 +423,8 @@ class GreensFunction:
             cache_read=cache_read, cache_write=cache_write)
 
     @classmethod
-    def initialize_eh(cls, 
-                      gf: 'GreensFunction', 
+    def initialize_eh(cls,
+                      gf: 'GreensFunction',
                       states: str,
                       q_instance: Optional[QuantumInstance] = None
                       ) -> 'GreensFunction':
@@ -433,18 +433,18 @@ class GreensFunction:
 
         Args:
             gf: The GreensFunction from statevector simulator calculation.
-            states: A string indicating whether the e or h states are 
+            states: A string indicating whether the e or h states are
                 to be calculated. Must be 'e' or 'h'.
             q_instance: The QuantumInstance for executing the calculation.
-        
+
         Returns:
-            gf_new: The new GreensFunction object for calculating the 
+            gf_new: The new GreensFunction object for calculating the
                 (N±1)-electron states.
         """
         assert states in ['e', 'h']
         if q_instance is None:
             q_instance = QuantumInstance(Aer.get_backend('qasm_simulator'))
-        
+
         # XXX: The 0 and 2 are hardcoded
         # Obtain the scaling factor
         gf_scaling = cls(None, gf.hamiltonian)
@@ -466,8 +466,8 @@ class GreensFunction:
             shift = -gf_shift.eigenenergies_e[0]
 
         # Create a new GreensFunction object with scaling and shift
-        gf_new = cls(gf.ansatz.copy(), gf.hamiltonian, 
-                     q_instance=q_instance, 
+        gf_new = cls(gf.ansatz.copy(), gf.hamiltonian,
+                     q_instance=q_instance,
                      scaling=scaling, shift=shift)
         gf_new.states = states
         gf_new.states_arr = gf.states_arr
@@ -480,15 +480,15 @@ class GreensFunction:
         return gf_new
 
     @classmethod
-    def initialize_final(cls, 
+    def initialize_final(cls,
                          gf_sv: 'GreensFunction',
                          gf_e: 'GreensFunction',
                          gf_h: 'GreensFunction',
                          q_instance: Optional[QuantumInstance] = None
                          ) -> 'GreensFunction':
-        """Creates a GreensFunction object for calculating final 
+        """Creates a GreensFunction object for calculating final
         observables.
-        
+
         Args:
             gf_sv: The GreensFunction from statevector simulator calculation.
             gf_e: The GreensFunction for e states calculation.
@@ -496,7 +496,7 @@ class GreensFunction:
             q_instance: The QuantumInstance for executing the calculation.
 
         Returns:
-            gf_new: The new GreensFunction object for calculating final 
+            gf_new: The new GreensFunction object for calculating final
                 observables.
         """
         # Creates the new GreensFunction object
@@ -520,15 +520,15 @@ class GreensFunction:
         gf_new.D_hm += gf_h.D_hm
         return gf_new
 
-    def compute_greens_function(self, 
+    def compute_greens_function(self,
                                 omega: Union[float, complex]
                                 ) -> np.ndarray:
         """Calculates the values of the Green's function at frequency omega.
-        
+
         Args:
             omega: The real or complex frequency at which the Green's function
                 is calculated.
-                
+
         Returns:
             self.G: The Green's function Numpy array.
         """
@@ -543,13 +543,13 @@ class GreensFunction:
         # print("Finish calculating the Green's function")
         return self.G
 
-    def compute_spectral_function(self, 
+    def compute_spectral_function(self,
                                   omega: Union[float, complex]
                                   ) -> np.ndarray:
         """Calculates the spectral function at frequency omega.
-        
+
         Args:
-            omega: The real or complex frequency at which the spectral 
+            omega: The real or complex frequency at which the spectral
                 function is calculated.
         """
         #print("Start calculating the spectral function")
@@ -560,11 +560,11 @@ class GreensFunction:
 
     def compute_self_energy(self, omega: Union[float, complex]) -> np.ndarray:
         """Calculates the self-energy at frequency omega.
-        
+
         Args:
-            omega: The real or complex frequency at which the self-energy 
+            omega: The real or complex frequency at which the self-energy
                 is calculated.
-            
+
         Returns:
             Sigma: The self-energy numpy array.
         """
@@ -581,7 +581,7 @@ class GreensFunction:
 
     def compute_correlation_energy(self) -> Tuple[complex, complex]:
         """Calculates the corelation energy.
-        
+
         Returns:
             E1: The one-electron part (?) of the correlation energy.
             E2: The two-electron part (?) of the correlation energy.
@@ -594,7 +594,7 @@ class GreensFunction:
         for i in range(self.n_orb):
             # print('i =', i)
             # print(self.molecule.one_body_integrals[i // 2])
-            tmp = np.vstack((self.molecule.one_body_integrals[i // 2], 
+            tmp = np.vstack((self.molecule.one_body_integrals[i // 2],
                             np.zeros((self.n_orb // 2, ))))
             self.h[i] = tmp[::(-1) ** (i % 2)].reshape(self.n_orb, order='f')
         self.h *= HARTREE_TO_EV

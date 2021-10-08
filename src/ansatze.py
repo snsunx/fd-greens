@@ -78,7 +78,7 @@ def add_xxxy_term(ansatz, i, j, k, l, angle):
     ansatz.cx(i, j)
     ansatz.h([i, j, k])
     ansatz.rx(-np.pi / 2, l)
-        
+
 def build_kosugi_lih_ansatz(ind=1):
     """Constructs the UCC1 or UCC2 ansatz for LiH in Kosugi 2020."""
     assert ind in [1, 2]
