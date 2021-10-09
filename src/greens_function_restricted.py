@@ -7,7 +7,7 @@ import numpy as np
 from recompilation import CircuitRecompiler
 from scipy.special import binom
 
-from qiskit import QuantumCircuit, Aer
+from qiskit import QuantumCircuit, Aer, transpile
 from qiskit.algorithms import VQE
 from qiskit.algorithms.optimizers import Optimizer, L_BFGS_B
 from qiskit.utils import QuantumInstance
@@ -21,10 +21,11 @@ from io_utils import load_vqe_result, save_vqe_result
 from operators import SecondQuantizedOperators, get_operator_dictionary
 from qubit_indices import QubitIndices
 #from circuits import build_diagonal_circuits, build_off_diagonal_circuits
-from circuits import CircuitConstructor, CircuitData
+from circuits import CircuitConstructor, CircuitData, transpile_across_barrier
 from z2_symmetries import transform_4q_hamiltonian
 from utils import state_tomography
 from functools import partial
+
 
 np.set_printoptions(precision=6)
 
@@ -40,7 +41,9 @@ class GreensFunctionRestricted:
                  recompiled: bool = True,
                  add_barriers: bool = True,
                  ccx_data: Optional[CircuitData] = None,
-                 spin: str = 'up') -> None:
+                 transpiled: bool = True,
+                 spin: str = 'up',
+                 push: bool = True) -> None:
         """Initializes a GreensFunctionRestricted object.
 
         Args:
@@ -74,6 +77,8 @@ class GreensFunctionRestricted:
         else:
             self.q_instance = q_instance
         self.recompiled = recompiled
+        self.transpiled = transpiled
+        self.push = push
 
         self.add_barriers = add_barriers
         if ccx_data is None:
@@ -97,12 +102,22 @@ class GreensFunctionRestricted:
         print(f"Number of (N+1)-electron states is {self.n_e}")
         print(f"Number of (N-1)-electron states is {self.n_h}")
 
-        if spin == 'up':
-            self.inds_h = QubitIndices(['10', '00'], n_qubits=2)
-            self.inds_e = QubitIndices(['11', '01'], n_qubits=2)
-        elif spin == 'down':
-            self.inds_h = QubitIndices(['01', '00'], n_qubits=2)
-            self.inds_e = QubitIndices(['11', '10'], n_qubits=2)
+        # XXX: Hardcoded
+        swap = True
+        if not swap:
+            if spin == 'up':
+                self.inds_h = QubitIndices(['10', '00'], n_qubits=2)
+                self.inds_e = QubitIndices(['11', '01'], n_qubits=2)
+            elif spin == 'down':
+                self.inds_h = QubitIndices(['01', '00'], n_qubits=2)
+                self.inds_e = QubitIndices(['11', '10'], n_qubits=2)
+        else:
+            if spin == 'up':
+                self.inds_h = QubitIndices(['01', '00'], n_qubits=2)
+                self.inds_e = QubitIndices(['11', '10'], n_qubits=2)
+            elif spin == 'down':
+                self.inds_h = QubitIndices(['10', '00'], n_qubits=2)
+                self.inds_e = QubitIndices(['11', '01'], n_qubits=2)
 
         # Define the transition amplitude matrices
         self.B_e = np.zeros((self.n_orb, self.n_orb, self.n_e), dtype=complex)
@@ -202,6 +217,11 @@ class GreensFunctionRestricted:
                 recompiler = CircuitRecompiler()
                 circ = recompiler.recompile_all(circ)
                 figname += '_rec'
+            if self.transpiled:
+                circ = transpile_across_barrier(circ, basis_gates=['u3', 'swap', 'cz', 'cp'], push=self.push)
+                figname += '_trans'
+                if self.push:
+                    figname += '_push'
 
             # Save the circuit diagram
             fig = circ.draw(output='mpl')
@@ -264,6 +284,11 @@ class GreensFunctionRestricted:
                         recompiler = CircuitRecompiler()
                         circ = recompiler.recompile_all(circ)
                         figname += '_rec'
+                    if self.transpiled:
+                        circ = transpile_across_barrier(circ, basis_gates=['u3', 'swap', 'cz', 'cp'], push=self.push)
+                        figname += '_trans'
+                        if self.push:
+                            figname += '_push'
 
                     # Save circuit diagram
                     fig = circ.draw(output='mpl')

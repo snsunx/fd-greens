@@ -1,0 +1,2 @@
+basis_gates = ['u3', 'cz', 'swap', 'cp']
+swap_direcs = [['left', 'left'], ['right', 'right', 'left'], ['right', 'left'], ['right', 'right'], ['right']]

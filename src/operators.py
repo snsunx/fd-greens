@@ -1,6 +1,7 @@
 """Operator utility functions"""
 
 from typing import Callable, Tuple, Dict
+import numpy as np
 from qiskit.quantum_info import PauliTable, SparsePauliOp
 from z2_symmetries import transform_4q_hamiltonian
 
@@ -54,6 +55,7 @@ class SecondQuantizedOperators:
         pauli_table = PauliTable.from_labels(labels)
         print(pauli_table.to_labels())
         coeffs = [1.] * n_qubits + [1j] * n_qubits
+        coeffs = -1 * np.array(coeffs) # XXX: hardcoded
         self.sparse_pauli_op = SparsePauliOp(pauli_table, coeffs=coeffs)
 
     def transform(self, transform_func: Callable) -> None:
