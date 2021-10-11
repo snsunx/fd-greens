@@ -272,7 +272,8 @@ class GreensFunctionRestricted:
         inds_hm = self.inds_h.include_ancilla('10').int_form
         inds_ep = self.inds_e.include_ancilla('01').int_form
         inds_em = self.inds_e.include_ancilla('11').int_form
-        for m in range(self.n_orb):
+        # for m in range(self.n_orb):
+        for m in [0]:
             a_op_m = self.pauli_op_dict[m]
             for n in range(self.n_orb):
                 if m != n:

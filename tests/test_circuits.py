@@ -63,7 +63,7 @@ class TestPushSwapGates(unittest.TestCase):
 
         U_ref = get_unitary(circ)
         np.testing.assert_almost_equal(U, U_ref)
-    '''
+    
     def test_push_swap_gates_left(self):
         circ = QuantumCircuit(2)
         circ.swap(0, 1)
@@ -96,6 +96,70 @@ class TestPushSwapGates(unittest.TestCase):
         U1 = get_unitary(circ1)
 
         np.testing.assert_almost_equal(U, U1)
+    '''
+
+    def test_push_swap_gates_left(self):
+        circ = QuantumCircuit(3)
+        circ.h(0)
+        circ.x(1)
+        circ.s(2)
+        circ.cz(1, 2)
+        circ.swap(0, 2)
+        print(circ)
+
+        U = get_unitary(circ)
+        circ = push_swap_gates(circ, direcs=['left'], push_through_2q=True)
+        print(circ)
+
+        U_ref = get_unitary(circ)
+        np.testing.assert_almost_equal(U, U_ref)
+
+    def test_push_swap_gates_right(self):
+        circ = QuantumCircuit(3)
+        circ.h(0)
+        circ.x(1)
+        circ.s(2)
+        circ.swap(0, 2)
+        circ.cz(1, 2)
+        circ.swap(0, 1)
+        print(circ)
+
+        U = get_unitary(circ)
+        circ = push_swap_gates(circ, direcs=['right'], push_through_2q=True)
+        print(circ)
+
+        U_ref = get_unitary(circ)
+        np.testing.assert_almost_equal(U, U_ref)
+
+class TestCombineSwapGates(unittest.TestCase):
+    '''
+    def test_combine_overlap_2(self):
+        print('=' * 80)
+
+        circ = QuantumCircuit(2)
+        circ.h(0)
+        circ.s(1)
+        circ.swap(0, 1)
+        circ.swap(0, 1)
+        print(circ)
+
+        circ1 = combine_swap_gates(circ)
+        print(circ1)
+
+    def test_combine_overlap_2(self):
+        print('=' * 80)
+
+        circ = QuantumCircuit(3)
+        circ.h(0)
+        circ.s(1)
+        circ.x(2)
+        circ.swap(0, 1)
+        circ.swap(1, 2)
+        print(circ)
+
+        circ1 = combine_swap_gates(circ)
+        print(circ1)
+    '''
 
 if __name__ == '__main__':
     unittest.main()
