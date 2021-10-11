@@ -48,38 +48,56 @@ def off_diagonal_circuits_test():
 '''
 
 class TestPushSwapGates(unittest.TestCase):
-	'''
-	def test_push_swap_gates_right(self):
-		circ = QuantumCircuit(2)
-		circ.swap(0, 1)
-		circ.h(0)
-		circ.x(1)
-		circ.s(0)
-		print(circ)
+    '''
+    def test_push_swap_gates_right(self):
+        circ = QuantumCircuit(2)
+        circ.swap(0, 1)
+        circ.h(0)
+        circ.x(1)
+        circ.s(0)
+        print(circ)
 
-		U = get_unitary(circ)
-		circ = push_swap_gates(circ)
-		print(circ)
+        U = get_unitary(circ)
+        circ = push_swap_gates(circ)
+        print(circ)
 
-		U_ref = get_unitary(circ)
-		np.testing.assert_almost_equal(U, U_ref)
-	'''
-	def test_push_swap_gates_left(self):
-		circ = QuantumCircuit(2)
-		circ.h(0)
-		circ.x(1)
-		circ.s(0)
-		circ.swap(0, 1)
-		print(circ)
+        U_ref = get_unitary(circ)
+        np.testing.assert_almost_equal(U, U_ref)
+    '''
+    def test_push_swap_gates_left(self):
+        circ = QuantumCircuit(2)
+        circ.swap(0, 1)
+        circ.h(0)
+        circ.x(1)
+        circ.s(0)
+        circ.swap(0, 1)
+        print(circ)
 
-		U = get_unitary(circ)
-		circ = push_swap_gates(circ, direcs=['left'])
-		print(circ)
+        U = get_unitary(circ)
+        circ = push_swap_gates(circ, direcs=['left', 'left'])
+        print(circ)
 
-		U_ref = get_unitary(circ)
-		np.testing.assert_almost_equal(U, U_ref)
-		
+        U_ref = get_unitary(circ)
+        np.testing.assert_almost_equal(U, U_ref)
+
+    def test_push_swap_gate_mock_1(self):
+        circ = QuantumCircuit(4)
+        circ.cz(2, 3)
+        for i in range(2, 4):
+            circ.u1(*np.random.rand(1), i)
+        circ.swap(2, 3)
+        circ.u1(*np.random.rand(1), 2)
+        circ.swap(1, 2)
+        U = get_unitary(circ)
+        print('circ\n', circ)
+        
+        circ1 = push_swap_gates(circ, direcs=['left', 'left'])
+        print('circ1\n', circ1)
+        U1 = get_unitary(circ1)
+
+        np.testing.assert_almost_equal(U, U1)
+
 if __name__ == '__main__':
     unittest.main()
-	#diagonal_circuits_test()
+    #diagonal_circuits_test()
     #off_diagonal_circuits_test()

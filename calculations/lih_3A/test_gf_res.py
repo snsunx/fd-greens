@@ -42,7 +42,7 @@ q_instance_noisy = get_quantum_instance(
 print("========== Starts statevector simulation ==========")
 gf_sv = GreensFunctionRestricted(ansatz.copy(), hamiltonian, 
 								 q_instance=q_instance_sv, 
-								 ccx_data=ccx_data, add_barriers=False, transpiled=False, recompiled=False, spin='down', push=False)
+								 ccx_data=ccx_data, add_barriers=False, transpiled=True, recompiled=False, spin='down', push=True)
 gf_sv.run(save_params=save_params, load_params=load_params, 
 		  cache_read=cache_read, cache_write=cache_write)
 

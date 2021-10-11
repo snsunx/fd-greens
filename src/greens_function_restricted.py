@@ -382,10 +382,11 @@ class GreensFunctionRestricted:
             if (self.eigenenergies_e is None or self.eigenenergies_h is None or
                 self.eigenstates_e is None or self.eigenstates_h is None):
                 self.compute_eh_states()
-        self.compute_diagonal_amplitudes(
-            cache_read=cache_read, cache_write=cache_write)
+        # self.compute_diagonal_amplitudes(
+        #     cache_read=cache_read, cache_write=cache_write)
         self.compute_off_diagonal_amplitudes(
             cache_read=cache_read, cache_write=cache_write)
+        exit()
 
     def compute_greens_function(self,
                                 omega: Union[float, complex]
