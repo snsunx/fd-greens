@@ -96,7 +96,7 @@ class TestPushSwapGates(unittest.TestCase):
         U1 = get_unitary(circ1)
 
         np.testing.assert_almost_equal(U, U1)
-    '''
+    
 
     def test_push_swap_gates_left(self):
         circ = QuantumCircuit(3)
@@ -130,6 +130,21 @@ class TestPushSwapGates(unittest.TestCase):
 
         U_ref = get_unitary(circ)
         np.testing.assert_almost_equal(U, U_ref)
+    '''
+
+    def test_staggered_2q(self):
+        circ = QuantumCircuit(4)
+        circ.swap(1, 2)
+        circ.cp(np.pi / 2, 0, 1)
+        circ.cz(2, 3)
+        circ.swap(1, 2)
+        U = get_unitary(circ)
+
+        circ1 = QuantumCircuit(4)
+        circ1.cp(np.pi / 2, 0, 1)
+        circ1.cz(1, 2)
+        U1 = get_unitary(circ1)
+        np.testing.assert_almost_equal(U, U1)
 
 class TestCombineSwapGates(unittest.TestCase):
     '''
