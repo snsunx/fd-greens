@@ -23,7 +23,7 @@ from qubit_indices import QubitIndices
 #from circuits import build_diagonal_circuits, build_off_diagonal_circuits
 from circuits import CircuitConstructor, CircuitData, transpile_across_barrier
 from z2_symmetries import transform_4q_hamiltonian
-from utils import state_tomography
+from utils import save_circuit, state_tomography
 from functools import partial
 
 
@@ -43,7 +43,7 @@ class GreensFunctionRestricted:
                  ccx_data: Optional[CircuitData] = None,
                  transpiled: bool = True,
                  spin: str = 'up',
-                 push: bool = True) -> None:
+                 push: bool = False) -> None:
         """Initializes a GreensFunctionRestricted object.
 
         Args:
@@ -161,19 +161,22 @@ class GreensFunctionRestricted:
         if prefix is None:
             prefix = 'vqe'
         if load_params:
-            print("Load ground state energy and ansatz from file")
-            self.energy_gs, self.ansatz = load_vqe_result(self.ansatz, prefix=prefix)
+            print("Load VQE circuit from file")
+            # self.energy_gs, self.ansatz = load_vqe_result(self.ansatz, prefix=prefix)
+            with open('vqe_circuit.txt') as f:
+                self.ansatz = QuantumCircuit.from_qasm_str(f.read())
+            self.energy_gs = -210.247 # XXX: Hardcoded for LiH 3A
         else:
             print("Start calculating the ground state using VQE")
             vqe = VQE(self.ansatz, optimizer=self.optimizer,
                       quantum_instance=Aer.get_backend('statevector_simulator'))
             vqe_result = vqe.compute_minimum_eigenvalue(self.qiskit_op_gs)
-            if save_params:
-                save_vqe_result(vqe_result, prefix=prefix)
             self.energy_gs = vqe_result.optimal_value * HARTREE_TO_EV
             self.ansatz.assign_parameters(vqe_result.optimal_parameters, inplace=True)
+            if save_params:
+                print("Save VQE circuit to file")
+                save_circuit(self.ansatz.copy(), fname='vqe_circuit', savefig=False)
             print("Finish calculating the ground state using VQE")
-
 
         self.circuit_constructor = CircuitConstructor(
             self.ansatz, add_barriers=self.add_barriers, ccx_data=self.ccx_data)
@@ -212,20 +215,18 @@ class GreensFunctionRestricted:
             a_op_m = self.pauli_op_dict[m]
             circ = self.circuit_constructor.build_diagonal_circuits(a_op_m)
 
-            figname = f'circuit_{m}'
+            fname = f'circuit_{m}'
             if self.recompiled:
                 recompiler = CircuitRecompiler()
                 circ = recompiler.recompile_all(circ)
-                figname += '_rec'
+                fname += '_rec'
             if self.transpiled:
                 circ = transpile_across_barrier(circ, basis_gates=['u3', 'swap', 'cz', 'cp'], push=self.push)
-                figname += '_trans'
+                fname += '_trans'
                 if self.push:
-                    figname += '_push'
+                    fname += '_push'
 
-            # Save the circuit diagram
-            fig = circ.draw(output='mpl')
-            fig.savefig(figname + '.png')
+            save_circuit(circ, fname, savefig=True)
 
             if self.q_instance.backend.name() == 'statevector_simulator':
                 result = self.q_instance.execute(circ)
@@ -272,28 +273,26 @@ class GreensFunctionRestricted:
         inds_hm = self.inds_h.include_ancilla('10').int_form
         inds_ep = self.inds_e.include_ancilla('01').int_form
         inds_em = self.inds_e.include_ancilla('11').int_form
-        # for m in range(self.n_orb):
-        for m in [0]:
+        for m in range(self.n_orb):
+        # for m in [0]:
             a_op_m = self.pauli_op_dict[m]
             for n in range(self.n_orb):
                 if m != n:
                     print(f"Calculating m = {m}, n = {n}")
                     a_op_n = self.pauli_op_dict[n]
                     circ = self.circuit_constructor.build_off_diagonal_circuits(a_op_m, a_op_n)
-                    figname = f'circuit_{m}{n}'
+                    fname = f'circuit_{m}{n}'
                     if self.recompiled:
                         recompiler = CircuitRecompiler()
                         circ = recompiler.recompile_all(circ)
-                        figname += '_rec'
+                        fname += '_rec'
                     if self.transpiled:
-                        circ = transpile_across_barrier(circ, basis_gates=['u3', 'swap', 'cz', 'cp'], push=self.push)
-                        figname += '_trans'
+                        circ = transpile_across_barrier(circ, basis_gates=['u3', 'swap', 'cz', 'cp'], push=self.push, ind=(m, n))
+                        fname += '_trans'
                         if self.push:
-                            figname += '_push'
+                            fname += '_push'
 
-                    # Save circuit diagram
-                    fig = circ.draw(output='mpl')
-                    fig.savefig(figname + '.png')
+                    save_circuit(circ, fname, savefig=True)
 
                     if self.q_instance.backend.name() == 'statevector_simulator':
                         result = self.q_instance.execute(circ)

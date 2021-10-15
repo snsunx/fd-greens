@@ -1,5 +1,5 @@
 import numpy as np
-from qiskit import QuantumCircuit
+from qiskit import QuantumCircuit, QuantumRegister
 from qiskit.circuit import Parameter
 from qiskit.circuit.library import TwoLocal
 
@@ -10,7 +10,8 @@ def build_two_local_ansatz(n_qubits):
 
 def build_2q_ansatz():
     """Constructs an ansatz for a two-qubit Hamiltonian."""
-    ansatz = QuantumCircuit(2)
+    qreg = QuantumRegister(2, name='q')
+    ansatz = QuantumCircuit(qreg)
     ansatz.ry(Parameter('a'), 0)
     ansatz.ry(Parameter('b'), 1)
     ansatz.rz(Parameter('c'), 0)

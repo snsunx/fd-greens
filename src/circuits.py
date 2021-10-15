@@ -280,7 +280,7 @@ def copy_circuit_with_ancilla(circ: QuantumCircuit,
     n_anc = len(inds_anc)
     n_qubits = n_sys + n_anc
     inds_new = [i for i in range(n_qubits) if i not in inds_anc]
-    qreg_new = QuantumRegister(n_qubits)
+    qreg_new = QuantumRegister(n_qubits, name='q')
     circ_new = QuantumCircuit(qreg_new)
 
     # Copy instructions from the ansatz circuit to the new circuit
@@ -315,7 +315,7 @@ def create_circuit_from_data(
 
 def transpile_across_barrier(circ: QuantumCircuit,
                              basis_gates: List[str] = None,
-                             push: bool = False
+                             push: bool = False, ind = None
                              ) -> QuantumCircuit:
     """Transpiles a circuit across barriers."""
     if basis_gates is None:
@@ -343,8 +343,9 @@ def transpile_across_barrier(circ: QuantumCircuit,
     for i, circ_data_single in enumerate(circ_data_split):
         if len(circ_data_single) > 1:
             circ_single = create_circuit_from_data(circ_data_single, qreg=qreg)
-            circ_single = transpile(circ_single, basis_gates=basis_gates)
-            if i == 4: # Swap positions of CPhase and U3
+            circ_single = transpile(circ_single, basis_gates=basis_gates, initial_layout=[qreg[0], qreg[1],qreg[2] , qreg[3]])
+            if i == 4: 
+                # Swap positions of CPhase and U3
                 print(circ_single)
                 for j, inst_tup in enumerate(circ_single.data):
                     print(j, inst_tup[0].name)
@@ -352,13 +353,19 @@ def transpile_across_barrier(circ: QuantumCircuit,
                 circ_single.data[3] = circ_single.data[4]
                 circ_single.data[4] = tmp
             if push:
-                circ_single = push_swap_gates(circ_single, direcs=params.swap_direcs[count].copy(), qreg=qreg)
+                # First round pushes do not push through two-qubit gates
+                circ_single = push_swap_gates(circ_single, direcs=params.swap_direcs_round1[ind][count].copy(), qreg=qreg)
                 circ_single = combine_swap_gates(circ_single)
-                circ_single = push_swap_gates(circ_single, direcs=params.swap_direcs1[count].copy(), qreg=qreg, push_through_2q=True)
-                circ_single = combine_swap_gates(circ_single)
+
+                # Second-round pushes push through two-qubit gates
+                circ_single = push_swap_gates(circ_single, direcs=params.swap_direcs_round2[ind][count].copy(), qreg=qreg, push_through_2q=True)
+                # circ_single = combine_swap_gates(circ_single)
+
+                # Final transpilation
                 circ_single = transpile(circ_single, basis_gates=basis_gates)
-            if i == 0 or i == 8:
-                circ_single = remove_swap_gates(circ_single)
+                # if i == 0 or i == 8: 
+                #     # The SWAP gates at the beginning and the end can be kept track of classically
+                #     circ_single = remove_swap_gates(circ_single)
             circ_new += circ_single
             count += 1
         else:
@@ -482,6 +489,7 @@ def push_swap_gates(circ: QuantumCircuit,
                     print("Two-qubit gate")
                     common_qargs = set(qargs).intersection(set(qargs_))
                     if push_through_2q:
+                        '''
                         if inst_.name != 'swap':
                             if len(common_qargs) == 1:
                                 # Overlap on one qubit. Insert here and exit the loop
@@ -499,7 +507,12 @@ def push_swap_gates(circ: QuantumCircuit,
                                 # Overlap on both qubits. Swap the two-qubit gate and move on
                                 print("Overlap on both qubits")
                                 circ_data[j]  = (inst_, [qargs_[1], qargs_[0]], cargs_)
+                        '''
+                        if len(common_qargs) == 2:
+                            # Overlap on both qubits. Swap the two-qubit gate and move on
+                            circ_data[j]  = (inst_, [qargs_[1], qargs_[0]], cargs_)
                         else:
+                            # Overlap on one qubit. Insert here and exit the loop
                             print('inserting at position', j + int(direc == 'left'))
                             circ_data.insert(j + int(direc == 'left'), inst_tup)
                             break
@@ -538,19 +551,19 @@ def combine_swap_gates(circ: QuantumCircuit) -> QuantumCircuit:
             inst, qargs, cargs = inst_tup
             inst_, qargs_, cargs_ = circ_data[i + 1]
             common_qargs = set(qargs).intersection(set(qargs_))
-            if len(common_qargs) == 1:
-                old_gate_pos.append(i + pos_shift)
-                old_gate_pos.append(i + pos_shift)
-                new_gate_pos.append(i + pos_shift)
+            # if len(common_qargs) == 1:
+            #     old_gate_pos.append(i + pos_shift)
+            #     old_gate_pos.append(i + pos_shift)
+            #     new_gate_pos.append(i + pos_shift)
 
-                common_qarg = list(common_qargs)[0]
-                qargs.remove(common_qarg)
-                qargs_.remove(common_qarg)
-                inst_tup_new = (SwapGate(), [qargs[0], qargs_[0]], [])
-                new_gates.append(inst_tup_new)
+            #     common_qarg = list(common_qargs)[0]
+            #     qargs.remove(common_qarg)
+            #     qargs_.remove(common_qarg)
+            #     inst_tup_new = (SwapGate(), [qargs[0], qargs_[0]], [])
+            #     new_gates.append(inst_tup_new)
 
-                pos_shift -= 1
-            elif len(common_qargs) == 2:
+            #     pos_shift -= 1
+            if len(common_qargs) == 2:
                 old_gate_pos.append(i + pos_shift)
                 old_gate_pos.append(i + pos_shift)
                 pos_shift -= 2

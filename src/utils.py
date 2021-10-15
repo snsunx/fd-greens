@@ -85,8 +85,9 @@ def remove_barriers(circ_data):
             circ_data_new.append(inst_tup)
     return circ_data_new
 
-def data_to_circuit(data, n_qubits=None):
-    data = remove_barriers(data)
+def data_to_circuit(data, n_qubits=None, remove_barr=True):
+    if remove_barr:
+        data = remove_barriers(data)
     if n_qubits is None:
         try:
             n_qubits = max([max(x[1]) for x in data]) + 1
@@ -158,3 +159,24 @@ def state_tomography(circ: QuantumCircuit,
     qst_fitter = StateTomographyFitter(result, qst_circs)
     rho_fit = qst_fitter.fit(method='lstsq')
     return rho_fit
+
+def save_circuit(circ, fname=None, savefig=True, savetxt=True):
+    """Saves a circuit to disk in QASM string form and/or figure form."""
+
+    if savefig:
+        fig = circ.draw(output='mpl')
+        fig.savefig(fname + '.png')
+
+    if savetxt:
+        circ_data = []
+        for inst_tup in circ.data:
+            if inst_tup[0].name != 'c-unitary':
+                circ_data.append(inst_tup)
+        circ = data_to_circuit(circ_data, remove_barr=False)
+        # for inst_tup in circ_data:
+        #    print(inst_tup[0].name)
+        # exit()
+        f = open(fname + '.txt', 'w')
+        qasm_str = circ.qasm()
+        f.write(qasm_str)
+        f.close()

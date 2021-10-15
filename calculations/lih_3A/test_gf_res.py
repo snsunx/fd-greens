@@ -17,8 +17,8 @@ from constants import HARTREE_TO_EV
 
 # User-defined parameters.
 bond_length = 3.0
-save_params = False
-load_params = False
+save_params = False 
+load_params = True
 cache_read = False
 cache_write = False
 
@@ -42,9 +42,11 @@ q_instance_noisy = get_quantum_instance(
 print("========== Starts statevector simulation ==========")
 gf_sv = GreensFunctionRestricted(ansatz.copy(), hamiltonian, 
 								 q_instance=q_instance_sv, 
-								 ccx_data=ccx_data, add_barriers=False, transpiled=True, recompiled=False, spin='down', push=True)
+								 ccx_data=ccx_data, add_barriers=False,
+                                 transpiled=True, recompiled=False,
+                                 spin='down', push=True)
 gf_sv.run(save_params=save_params, load_params=load_params, 
-		  cache_read=cache_read, cache_write=cache_write)
+    	  cache_read=cache_read, cache_write=cache_write)
 
 omegas = np.arange(-30, 30, 0.1)
 A_list = []
