@@ -79,6 +79,7 @@ def get_unitary(circ: Union[QuantumCircuit, CircuitData],
     return unitary
 
 def remove_barriers(circ_data):
+    """Removes barriers in circuit data."""
     circ_data_new = []
     for inst_tup in circ_data:
         if inst_tup[0].name != 'barrier':
@@ -86,6 +87,7 @@ def remove_barriers(circ_data):
     return circ_data_new
 
 def data_to_circuit(data, n_qubits=None, remove_barr=True):
+    """Converts circuit data to circuit."""
     if remove_barr:
         data = remove_barriers(data)
     if n_qubits is None:
@@ -160,12 +162,17 @@ def state_tomography(circ: QuantumCircuit,
     rho_fit = qst_fitter.fit(method='lstsq')
     return rho_fit
 
-def save_circuit(circ, fname=None, savefig=True, savetxt=True):
-    """Saves a circuit to disk in QASM string form and/or figure form."""
-
-    if savefig:
-        fig = circ.draw(output='mpl')
-        fig.savefig(fname + '.png')
+def save_circuit(circ, 
+                 fname,
+                 savetxt: bool = True,
+                 savefig: bool = True) -> None:
+    """Saves a circuit to disk in QASM string form and/or figure form.
+    
+    Args:
+        fname: The file name.
+        savetxt: Whether to save the QASM string of the circuit as a text file.
+        savefig: Whether to save the figure of the circuit.
+    """
 
     if savetxt:
         circ_data = []
@@ -180,3 +187,7 @@ def save_circuit(circ, fname=None, savefig=True, savetxt=True):
         qasm_str = circ.qasm()
         f.write(qasm_str)
         f.close()
+
+    if savefig:
+        fig = circ.draw(output='mpl')
+        fig.savefig(fname + '.png')

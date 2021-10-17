@@ -17,8 +17,8 @@ from constants import HARTREE_TO_EV
 
 # User-defined parameters.
 bond_length = 3.0
-save_params = False 
-load_params = True
+save_params = True 
+load_params = False
 cache_read = False
 cache_write = False
 
@@ -47,6 +47,7 @@ gf_sv = GreensFunctionRestricted(ansatz.copy(), hamiltonian,
                                  spin='down', push=True)
 gf_sv.run(save_params=save_params, load_params=load_params, 
     	  cache_read=cache_read, cache_write=cache_write)
+exit()
 
 omegas = np.arange(-30, 30, 0.1)
 A_list = []
