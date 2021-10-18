@@ -173,7 +173,10 @@ def save_circuit(circ,
         savetxt: Whether to save the QASM string of the circuit as a text file.
         savefig: Whether to save the figure of the circuit.
     """
-
+    if savefig:
+        fig = circ.draw(output='mpl')
+        fig.savefig(fname + '.png')
+    
     if savetxt:
         circ_data = []
         for inst_tup in circ.data:
@@ -187,7 +190,3 @@ def save_circuit(circ,
         qasm_str = circ.qasm()
         f.write(qasm_str)
         f.close()
-
-    if savefig:
-        fig = circ.draw(output='mpl')
-        fig.savefig(fname + '.png')

@@ -1,0 +1,84 @@
+========== Starts statevector simulation ==========
+<class 'qiskit.opflow.primitive_ops.pauli_sum_op.PauliSumOp'> -7.5007208392186335 * IIII
++ 0.08956088450739583 * IIIZ
++ 0.02604676090049788 * IYZY
++ 0.02604676090049788 * IXZX
++ 0.08956088450739585 * IIZI
++ 0.026046760900497887 * YZYI
++ 0.026046760900497887 * XZXI
+- 0.004190047514825032 * IZII
+- 0.004190047514825053 * ZIII
++ 0.10024488587316807 * IIZZ
++ 0.022383338672982655 * IYIY
++ 0.022383338672982655 * IXIX
++ 0.022383338672982655 * YZYZ
++ 0.022383338672982655 * XZXZ
++ 0.015257567394180657 * YXXY
+- 0.015257567394180657 * XXYY
+- 0.015257567394180657 * YYXX
++ 0.015257567394180657 * XYYX
++ 0.041584938456433254 * IZIZ
++ 0.056842505850613914 * ZIIZ
+- 0.0036634285428828036 * ZYZY
+- 0.0036634285428828036 * ZXZX
++ 0.056842505850613914 * IZZI
+- 0.0036634285428828036 * YIYI
+- 0.0036634285428828036 * XIXI
++ 0.041584938456433254 * ZIZI
++ 0.07400280578677791 * ZZII
+<class 'qiskit.opflow.primitive_ops.pauli_sum_op.PauliSumOp'> -7.5007208392186335 * IIII
++ 0.08956088450739583 * IIIZ
++ 0.02604676090049788 * IYZY
++ 0.02604676090049788 * IXZX
++ 0.08956088450739585 * IIZI
++ 0.026046760900497887 * YZYI
++ 0.026046760900497887 * XZXI
+- 0.004190047514825032 * IZII
+- 0.004190047514825053 * ZIII
++ 0.10024488587316807 * IIZZ
++ 0.022383338672982655 * IYIY
++ 0.022383338672982655 * IXIX
++ 0.022383338672982655 * YZYZ
++ 0.022383338672982655 * XZXZ
++ 0.015257567394180657 * YXXY
+- 0.015257567394180657 * XXYY
+- 0.015257567394180657 * YYXX
++ 0.015257567394180657 * XYYX
++ 0.041584938456433254 * IZIZ
++ 0.056842505850613914 * ZIIZ
+- 0.0036634285428828036 * ZYZY
+- 0.0036634285428828036 * ZXZX
++ 0.056842505850613914 * IZZI
+- 0.0036634285428828036 * YIYI
+- 0.0036634285428828036 * XIXI
++ 0.041584938456433254 * ZIZI
++ 0.07400280578677791 * ZZII
+<class 'qiskit.quantum_info.operators.symplectic.sparse_pauli_op.SparsePauliOp'> SparsePauliOp([[ True, False, False, False, False, False, False, False],
+               [False,  True, False, False,  True, False, False, False],
+               [False, False,  True, False,  True,  True, False, False],
+               [False, False, False,  True,  True,  True,  True, False],
+               [ True, False, False, False,  True, False, False, False],
+               [False,  True, False, False,  True,  True, False, False],
+               [False, False,  True, False,  True,  True,  True, False],
+               [False, False, False,  True,  True,  True,  True,  True]],
+              coeffs=[-1.+0.j, -1.+0.j, -1.+0.j, -1.+0.j, -0.-1.j, -0.-1.j, -0.-1.j, -0.-1.j])
+Number of orbitals is 2
+Number of occupied orbitals is 1
+Number of virtual orbitals is 1
+Number of (N+1)-electron states is 2
+Number of (N-1)-electron states is 2
+Load VQE circuit from file
+Ground state energy = -210.247 eV
+===== Start calculating (N±1)-electron states =====
+===== Finish calculating (N±1)-electron states =====
+(N+1)-electron energies are [-208.307859 -204.548283] eV
+(N-1)-electron energies are [-205.855902 -197.708004] eV
+===== Start calculating off-diagonal transition amplitudes =====
+Calculating m = 0, n = 1
+D_ep[0, 1] = [0.154641+0.j 0.052145+0.j]
+D_em[0, 1] = [0.283668+0.j 0.009546+0.j]
+D_hp[0, 1] = [0.260649+0.j 0.032551+0.j]
+D_hm[0, 1] = [0.1179+0.j 0.0889+0.j]
+B_e[0, 1] = [-0.182471+0.j  0.060244+0.j]
+B_h[0, 1] = [ 0.201878+0.j -0.079689+0.j]
+===== Finish calculating off-diagonal transition amplitudes =====

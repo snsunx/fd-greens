@@ -343,8 +343,7 @@ def transpile_across_barrier(circ: QuantumCircuit,
     for i, circ_data_single in enumerate(circ_data_split):
         if len(circ_data_single) > 1:
             circ_single = create_circuit_from_data(circ_data_single, qreg=qreg)
-            circ_single = transpile(circ_single, basis_gates=basis_gates,
-                                    initial_layout=[qreg[0], qreg[1],qreg[2] , qreg[3]])
+            circ_single = transpile(circ_single, basis_gates=basis_gates)
             if i == 4: 
                 # Swap positions of CPhase and U3
                 # print(circ_single)

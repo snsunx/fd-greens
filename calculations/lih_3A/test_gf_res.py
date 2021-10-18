@@ -17,14 +17,18 @@ from constants import HARTREE_TO_EV
 
 # User-defined parameters.
 bond_length = 3.0
-save_params = True 
-load_params = False
+save_params = False 
+load_params = True
 cache_read = False
 cache_write = False
 
 #ccx_data = [(CCXGate(), [0, 1, 2])]
 iX = np.array([[0, 1j], [1j, 0]])
-ccx_data = [(SwapGate(), [1, 2]), (Barrier(4), [0, 1, 2, 3]), (UnitaryGate(iX).control(2), [0, 2, 1]), (Barrier(4), [0, 1, 2, 3]), (SwapGate(), [1, 2])]
+ccx_data = [(SwapGate(), [1, 2]), 
+            (Barrier(4), [0, 1, 2, 3]), 
+            (UnitaryGate(iX).control(2), [0, 2, 1]), 
+            (Barrier(4), [0, 1, 2, 3]),
+            (SwapGate(), [1, 2])]
 
 #ansatz = build_two_local_ansatz(2)
 ansatz = build_2q_ansatz()
@@ -35,8 +39,7 @@ hamiltonian = MolecularHamiltonian(
 q_instance_sv = QuantumInstance(Aer.get_backend('statevector_simulator'))
 q_instance_qasm = QuantumInstance(Aer.get_backend('qasm_simulator'), shots=8192)
 q_instance_noisy = get_quantum_instance(
-    Aer.get_backend('qasm_simulator'), shots=8192, 
-    noise_model_name='ibmq_jakarta')
+    Aer.get_backend('qasm_simulator'), shots=8192, noise_model_name='ibmq_jakarta')
 
 # Statevector simulator calculation
 print("========== Starts statevector simulation ==========")
@@ -47,7 +50,6 @@ gf_sv = GreensFunctionRestricted(ansatz.copy(), hamiltonian,
                                  spin='down', push=True)
 gf_sv.run(save_params=save_params, load_params=load_params, 
     	  cache_read=cache_read, cache_write=cache_write)
-exit()
 
 omegas = np.arange(-30, 30, 0.1)
 A_list = []

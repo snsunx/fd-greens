@@ -5,10 +5,18 @@ import numpy as np
 from scipy.sparse.data import _data_matrix
 
 from qiskit import *
+from qiskit import Aer, QuantumCircuit, QuantumRegister, ClassicalRegister
+from qiskit.utils import QuantumInstance
+from qiskit.opflow import PauliSumOp
+
 from openfermion.linalg import get_sparse_operator
 from openfermion.ops.operators.qubit_operator import QubitOperator
 
 from hamiltonians import MolecularHamiltonian
+from z2_symmetries import transform_4q_hamiltonian
+
+from constants import HARTREE_TO_EV
+from utils import get_statevector
 
 
 def get_number_state_indices(n_orb: int,
@@ -96,3 +104,143 @@ def number_state_eigensolver(
     eigvals = eigvals[inds_new]
     eigvecs = eigvecs[:, inds_new]
     return eigvals, eigvecs
+
+def quantum_subspace_expansion1(ansatz,
+                               hamiltonian_op: PauliSumOp,
+                               qse_ops: List[PauliSumOp],
+                               q_instance: Optional[QuantumInstance] = None
+                               ) -> Tuple[np.ndarray, np.ndarray]:
+    """Quantum subspace expansion."""
+    if True:
+        q_instance = QuantumInstance(Aer.get_backend('qasm_simulator'), shots=8000)
+    dim = len(qse_ops)
+
+    qse_mat = np.zeros((dim, dim))
+    overlap_mat = np.zeros((dim, dim))
+    for i in range(dim):
+        for j in range(dim):
+            op = qse_ops[i].adjoint().compose(hamiltonian_op.compose(qse_ops[j]))
+            op = transform_4q_hamiltonian(op.reduce(), init_state=[1, 1])
+            op = op.reduce()
+            # print('i, j', i, j, '\n', op.reduce())
+            qse_mat[i, j] = measure_operator(ansatz, op, q_instance)
+
+            op = qse_ops[i].adjoint().compose(qse_ops[j])
+            op = transform_4q_hamiltonian(op.reduce(), init_state=[1, 1])
+            op = op.reduce()
+            # print('i, j', i, j, '\n', op.reduce())
+            overlap_mat[i, j] = measure_operator(ansatz, op, q_instance)
+
+    print(qse_mat * HARTREE_TO_EV)
+    print(overlap_mat * HARTREE_TO_EV)
+    
+    eigvals, eigvecs = roothaan_eig(qse_mat, overlap_mat)
+    print(eigvals * HARTREE_TO_EV)
+    exit()
+    return eigvals, eigvecs
+
+def quantum_subspace_expansion(ansatz,
+                               hamiltonian_op: PauliSumOp,
+                               qse_ops: List[PauliSumOp],
+                               q_instance: Optional[QuantumInstance] = None
+                               ) -> Tuple[np.ndarray, np.ndarray]:
+    """Quantum subspace expansion."""
+
+    dim = len(qse_ops)
+
+    psi = get_statevector(ansatz)
+    H = transform_4q_hamiltonian(hamiltonian_op, init_state=[1, 1]).to_matrix()
+    B = [transform_4q_hamiltonian(op, init_state=[1, 1]).to_matrix() for op in qse_ops]
+
+    qse_mat = np.zeros((dim, dim))
+    overlap_mat = np.zeros((dim, dim))
+    # for i in range(dim):
+    #     for j in range(dim):
+    #         qse_mat[i, j] = (B[i] @ psi).conj() @ H @ B[j] @ psi
+    #         overlap_mat[i, j] = (B[i] @ psi).conj() @ B[j] @ psi
+
+    for i in range(dim):
+        for j in range(dim):
+            op = qse_ops[i].adjoint().compose(hamiltonian_op.compose(qse_ops[j]))
+            op = transform_4q_hamiltonian(op.reduce(), init_state=[1, 1])
+            mat = op.to_matrix()
+            qse_mat[i, j] = psi.conj() @ mat @ psi
+
+            op = qse_ops[i].adjoint().compose(qse_ops[j])
+            op = transform_4q_hamiltonian(op.reduce(), init_state=[1, 1])
+            mat = op.to_matrix()
+            overlap_mat[i, j] = psi.conj() @ mat @ psi
+        
+    print(qse_mat * HARTREE_TO_EV)
+    print(overlap_mat * HARTREE_TO_EV)
+    
+    eigvals, eigvecs = roothaan_eig(qse_mat, overlap_mat)
+    print(eigvals * HARTREE_TO_EV)
+    exit()
+    return eigvals, eigvecs
+
+def measure_operator(circ: QuantumCircuit,
+                     op: PauliSumOp,
+                     q_instance: QuantumInstance,
+                     qreg: Optional[QuantumRegister] = None) -> float:
+    """Measures qreg in a basis.
+
+    Args:
+        circ: A QuantumCircuit instance.
+        qreg: A QuantumRegister instance.
+        q_instance: The QuantumInstance on which to execute the circuit.
+    """
+    if qreg is None:
+        qreg = circ.qregs[0]
+    n_qubits = len(qreg)
+
+    circ_list = []
+    for term in op:
+        label = term.primitive.table.to_labels()[0]
+        
+        # Create circuit for measuring this Pauli string
+        circ_meas = circ.copy()
+        creg = ClassicalRegister(n_qubits)
+        circ_meas.add_register(creg)
+
+        for i in range(len(qreg)):
+            if label[n_qubits - 1 - i] == 'X':
+                circ_meas.h(qreg[i])
+                circ_meas.measure(qreg[i], creg[i])
+            elif label[n_qubits - 1 - i] == 'Y':
+                circ_meas.rx(np.pi / 2, qreg[i])
+                circ_meas.measure(qreg[i], creg[i])
+            elif label[n_qubits - 1 - i] == 'Z':
+                circ_meas.measure(qreg[i], creg[i])
+        print(label)
+        print(circ_meas)
+
+        circ_list.append(circ_meas)
+    
+    result = q_instance.execute(circ_list)
+    counts_list = result.get_counts()
+
+    value = 0
+    for i, counts in enumerate(counts_list):
+        print('counts =', counts)
+        coeff = op.primitive.coeffs[i]
+        shots = sum(counts.values())
+        for key, val in counts.items():
+            key_sum = sum([int(c) for c in list(key)])
+            print(key, key_sum)
+            if key_sum % 2 == 0:
+                value += coeff * val / shots
+            else:
+                value -= coeff * val / shots
+    return value
+
+def roothaan_eig(Hmat, Smat):
+    s, U = np.linalg.eigh(Smat)
+    idx = np.where(abs(s) > 1e-8)[0]
+    s = s[idx]
+    U = U[:,idx]
+    Xmat = np.dot(U, np.diag(1 / np.sqrt(s)))
+    Hmat_ = np.dot(Xmat.T.conj(), np.dot(Hmat, Xmat))
+    w, v = np.linalg.eigh(Hmat_)
+    v = np.dot(Xmat, v)
+    return w, v

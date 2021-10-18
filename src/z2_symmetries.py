@@ -137,7 +137,9 @@ def taper(op: Union[PauliSumOp, SparsePauliOp],
     return op_new
 
 def transform_4q_hamiltonian(
-        op: Union[PauliSumOp, SparsePauliOp], init_state: List[int]
+        op: Union[PauliSumOp, SparsePauliOp],
+        init_state: List[int],
+        tapered: bool = True
     ) -> Union[PauliSumOp, SparsePauliOp]:
     """Converts a four-qubit Hamiltonian to a two-qubit Hamiltonian,
     assuming the symmetry operators are ZIZI and IZIZ.
@@ -151,6 +153,8 @@ def transform_4q_hamiltonian(
     """
     op_new = apply_cnot_z2(apply_cnot_z2(op, 2, 0), 3, 1)
     # print(op_new.table.to_labels(), op_new.coeffs)
-    op_new = taper(op_new, [0, 1], init_state=init_state)
-    op_new = swap_z2(op_new, 0, 1)
+    op_new = swap_z2(op_new, 2, 3)
+    if tapered:
+        op_new = taper(op_new, [0, 1], init_state=init_state)
+    # op_new = swap_z2(op_new, 0, 1)
     return op_new
