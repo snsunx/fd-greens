@@ -190,3 +190,8 @@ def save_circuit(circ,
         qasm_str = circ.qasm()
         f.write(qasm_str)
         f.close()
+
+def solve_energy_probabilities(a, b):
+    A = np.array([[1, 1], [a[0], a[1]]])
+    x = np.linalg.inv(A) @ np.array([1.0, b])
+    return x

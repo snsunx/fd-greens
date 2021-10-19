@@ -8,8 +8,8 @@ omegas, A_red_noisy = np.loadtxt('A_red_noisy.dat').T
 
 fig, ax = plt.subplots()
 ax.plot(omegas, A_red_sv, label="Statevector")
-ax.plot(omegas, A_red_sv1, label="Statevector1")
-#ax.plot(omegas, A_red_qasm, ls='--', label="QASM")
+#ax.plot(omegas, A_red_sv1, label="Statevector1")
+ax.plot(omegas, A_red_qasm, ls='--', label="QASM")
 #ax.plot(omegas, A_red_noisy, ls='--', label="Noisy")
 ax.set_xlabel('$\omega$ (eV)')
 ax.set_ylabel("Absorption spectra (eV$^{-1}$)")

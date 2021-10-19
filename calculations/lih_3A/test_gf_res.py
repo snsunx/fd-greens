@@ -37,15 +37,15 @@ hamiltonian = MolecularHamiltonian(
     occ_inds=[0], act_inds=[1, 2])
 
 q_instance_sv = QuantumInstance(Aer.get_backend('statevector_simulator'))
-q_instance_qasm = QuantumInstance(Aer.get_backend('qasm_simulator'), shots=8192)
+q_instance_qasm = QuantumInstance(Aer.get_backend('qasm_simulator'), shots=20000)
 q_instance_noisy = get_quantum_instance(
-    Aer.get_backend('qasm_simulator'), shots=8192, noise_model_name='ibmq_jakarta')
+    Aer.get_backend('qasm_simulator'), shots=20000, noise_model_name='ibmq_jakarta')
 
 # Statevector simulator calculation
 print("========== Starts statevector simulation ==========")
 gf_sv = GreensFunctionRestricted(ansatz.copy(), hamiltonian, 
-								 q_instance=q_instance_sv, 
-								 ccx_data=ccx_data, add_barriers=False,
+								 q_instance=q_instance_noisy, 
+    							 ccx_data=ccx_data, add_barriers=False,
                                  transpiled=True, recompiled=False,
                                  spin='down', push=True)
 gf_sv.run(save_params=save_params, load_params=load_params, 
@@ -56,4 +56,4 @@ A_list = []
 for omega in omegas:
     A = gf_sv.compute_spectral_function(omega + 0.02j * HARTREE_TO_EV)
     A_list.append(A)
-np.savetxt('A_red_sv2.dat', np.vstack((omegas, A_list)).T)
+np.savetxt('A_red_qasm.dat', np.vstack((omegas, A_list)).T)
