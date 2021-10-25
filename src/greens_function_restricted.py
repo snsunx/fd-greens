@@ -21,6 +21,7 @@ from recompilation import CircuitRecompiler
 from operators import SecondQuantizedOperators
 from qubit_indices import QubitIndices
 from circuits import CircuitConstructor, CircuitData, transpile_across_barrier
+from vqe import vqe_minimize
 from z2_symmetries import transform_4q_hamiltonian
 from utils import save_circuit, state_tomography, solve_energy_probabilities
 
@@ -175,20 +176,23 @@ class GreensFunctionRestricted:
                 self.ansatz = QuantumCircuit.from_qasm_str(f.read())
         else:
             print("===== Start calculating the ground state using VQE =====")
-            vqe = VQE(self.ansatz, optimizer=self.optimizer,
-                      quantum_instance=Aer.get_backend('statevector_simulator'))
-            vqe_result = vqe.compute_minimum_eigenvalue(self.qiskit_op_gs)
+            # vqe = VQE(self.ansatz, optimizer=self.optimizer,
+            #           quantum_instance=Aer.get_backend('statevector_simulator'))
+            # vqe_result = vqe.compute_minimum_eigenvalue(self.qiskit_op_gs)
+
+            # self.energy_gs = vqe_result.optimal_value * HARTREE_TO_EV
+            # self.ansatz.assign_parameters(vqe_result.optimal_parameters, inplace=True)
+            self.energy_gs, self.ansatz = vqe_minimize(self.qiskit_op_gs, q_instance=self.q_instance)
+            self.energy_gs *= HARTREE_TO_EV
+            print(f'Ground state energy = {self.energy_gs:.3f} eV')
             print("===== Finish calculating the ground state using VQE =====")
 
-            self.energy_gs = vqe_result.optimal_value * HARTREE_TO_EV
-            self.ansatz.assign_parameters(vqe_result.optimal_parameters, inplace=True)
             if save_params:
                 print("Save VQE circuit to file")
                 with open('vqe_energy.txt', 'w') as f: 
                     f.write(str(self.energy_gs))
                 save_circuit(self.ansatz.copy(), 'vqe_circuit')
 
-        print(f'Ground state energy = {self.energy_gs:.3f} eV')
         self.circuit_constructor = CircuitConstructor(
             self.ansatz, add_barriers=self.add_barriers, ccx_data=self.ccx_data)
 

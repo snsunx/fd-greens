@@ -14,13 +14,13 @@ def build_2q_ansatz():
     ansatz = QuantumCircuit(qreg)
     ansatz.ry(Parameter('a'), 0)
     ansatz.ry(Parameter('b'), 1)
-    ansatz.rz(Parameter('c'), 0)
-    ansatz.rz(Parameter('d'), 1)
+    #ansatz.rz(Parameter('c'), 0)
+    #ansatz.rz(Parameter('d'), 1)
     ansatz.cz(0, 1)
     ansatz.ry(Parameter('e'), 0)
     ansatz.ry(Parameter('f'), 1)
-    ansatz.rz(Parameter('g'), 0)
-    ansatz.rz(Parameter('h'), 1)
+    #ansatz.rz(Parameter('g'), 0)
+    #ansatz.rz(Parameter('h'), 1)
     return ansatz
 
 
