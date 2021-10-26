@@ -110,7 +110,7 @@ def quantum_subspace_expansion(ansatz,
                                ) -> Tuple[np.ndarray, np.ndarray]:
     """Quantum subspace expansion."""
     # if q_instance is None or q_instance.backend.name() == 'statevector_simulator':
-    q_instance = QuantumInstance(Aer.get_backend('qasm_simulator'), shots=100000)
+    # q_instance = QuantumInstance(Aer.get_backend('qasm_simulator'), shots=100000)
 
     # print('q_instance =', q_instance)
     dim = len(qse_ops)
@@ -222,7 +222,7 @@ def measure_operator(circ: QuantumCircuit,
     value = 0
     print('measure_operator')
     for i, counts in enumerate(counts_list):
-        print('counts =', counts)
+        # print('counts =', counts)
         coeff = op.primitive.coeffs[i]
         counts_new = counts.copy()
 
@@ -242,7 +242,7 @@ def measure_operator(circ: QuantumCircuit,
                 value += coeff * val / shots
             else:
                 value -= coeff * val / shots
-        print(shots)
+        # print(shots)
     return value
 
 def roothaan_eig(Hmat, Smat):

@@ -19,13 +19,14 @@ cache_write = False
 
 ansatz = build_2q_ansatz()
 hamiltonian = get_lih_hamiltonian(3.0)
-q_instance_type = 'qasm'
 ccx_data = get_berkeley_ccx_data()
+q_instance_types = ['qasm', 'sv', 'qasm']
+q_instances = [get_quantum_instance(s) for s in q_instance_types]
 
 # Statevector simulator calculation
 print("========== Starts statevector simulation ==========")
 gf = GreensFunctionRestricted(ansatz.copy(), hamiltonian, 
-                              q_instance=get_quantum_instance(q_instance_type), 
+                              q_instances=q_instances, 
     						  ccx_data=ccx_data, add_barriers=False,
                               transpiled=True, recompiled=False,
                               spin='down', push=True)
@@ -35,6 +36,6 @@ gf.run(save_params=save_params, load_params=load_params,
 omegas = np.arange(-30, 30, 0.1)
 A_list = []
 for omega in omegas:
-    A = gf.compute_spectral_function(omega + 0.02j * HARTREE_TO_EV)
+    A = gf.get_spectral_function(omega + 0.02j * HARTREE_TO_EV)
     A_list.append(A)
-np.savetxt(f'data/A_red_{q_instance_type}.dat', np.vstack((omegas, A_list)).T)
+np.savetxt(f'data/A_red_{"-".join(q_instance_types)}.dat', np.vstack((omegas, A_list)).T)
