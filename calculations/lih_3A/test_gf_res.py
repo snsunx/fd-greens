@@ -5,55 +5,37 @@ import sys
 sys.path.append('../../src/')
 import numpy as np
 from qiskit import *
-from qiskit.circuit import Barrier
 from ansatze import *
-from hamiltonians import MolecularHamiltonian
-from qiskit.utils import QuantumInstance
-from qiskit.extensions import CCXGate, UnitaryGate, SwapGate
 
 from greens_function_restricted import GreensFunctionRestricted
-from utils import get_quantum_instance
 from constants import HARTREE_TO_EV
 
-# User-defined parameters.
-bond_length = 3.0
+from helpers import get_berkeley_ccx_data, get_lih_hamiltonian, get_quantum_instance
+
+# User-defined parameters
 save_params = True
 load_params = False
 cache_read = False
 cache_write = False
 
-#ccx_data = [(CCXGate(), [0, 1, 2])]
-iX = np.array([[0, 1j], [1j, 0]])
-ccx_data = [(SwapGate(), [1, 2]), 
-            (Barrier(4), [0, 1, 2, 3]), 
-            (UnitaryGate(iX).control(2), [0, 2, 1]), 
-            (Barrier(4), [0, 1, 2, 3]),
-            (SwapGate(), [1, 2])]
-
-#ansatz = build_two_local_ansatz(2)
 ansatz = build_2q_ansatz()
-hamiltonian = MolecularHamiltonian(
-    [['Li', (0, 0, 0)], ['H', (0, 0, bond_length)]], 'sto3g', 
-    occ_inds=[0], act_inds=[1, 2])
-
-q_instance_sv = QuantumInstance(Aer.get_backend('statevector_simulator'))
-q_instance_qasm = QuantumInstance(Aer.get_backend('qasm_simulator'), shots=20000)
-q_instance_noisy = get_quantum_instance(
-    Aer.get_backend('qasm_simulator'), shots=20000, noise_model_name='ibmq_jakarta')
+hamiltonian = get_lih_hamiltonian(3.0)
+q_instance_type = 'qasm'
+ccx_data = get_berkeley_ccx_data()
 
 # Statevector simulator calculation
 print("========== Starts statevector simulation ==========")
-gf_sv = GreensFunctionRestricted(ansatz.copy(), hamiltonian, 
-								 q_instance=q_instance_noisy, 
-    							 ccx_data=ccx_data, add_barriers=False,
-                                 transpiled=True, recompiled=False,
-                                 spin='down', push=True)
-gf_sv.run(save_params=save_params, load_params=load_params, 
+gf = GreensFunctionRestricted(ansatz.copy(), hamiltonian, 
+                              q_instance=get_quantum_instance(q_instance_type), 
+    						  ccx_data=ccx_data, add_barriers=False,
+                              transpiled=True, recompiled=False,
+                              spin='down', push=True)
+gf.run(save_params=save_params, load_params=load_params, 
     	  cache_read=cache_read, cache_write=cache_write)
 
 omegas = np.arange(-30, 30, 0.1)
 A_list = []
 for omega in omegas:
-    A = gf_sv.compute_spectral_function(omega + 0.02j * HARTREE_TO_EV)
+    A = gf.compute_spectral_function(omega + 0.02j * HARTREE_TO_EV)
     A_list.append(A)
-np.savetxt('A_red_noisy.dat', np.vstack((omegas, A_list)).T)
+np.savetxt(f'A_red_{q_instance_type}.dat', np.vstack((omegas, A_list)).T)

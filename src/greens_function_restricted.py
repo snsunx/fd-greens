@@ -25,7 +25,6 @@ from vqe import vqe_minimize
 from z2_symmetries import transform_4q_hamiltonian
 from utils import save_circuit, state_tomography, solve_energy_probabilities
 
-
 np.set_printoptions(precision=6)
 
 class GreensFunctionRestricted:
@@ -85,7 +84,10 @@ class GreensFunctionRestricted:
         # self.pauli_op_dict_tapered = second_q_ops.get_op_dict(spin=spin)
         self.pauli_op_dict_tapered = second_q_ops.get_op_dict_all()
 
-        self.optimizer = L_BFGS_B() if optimizer is None else optimizer
+        if optimizer is None:
+            self.optimizer = L_BFGS_B()
+        else:
+            self.optimizer = optimizer
         if q_instance is None:
             self.q_instance = QuantumInstance(Aer.get_backend('statevector_simulator'))
         else:
@@ -96,7 +98,10 @@ class GreensFunctionRestricted:
         self.method = 'energy'
 
         self.add_barriers = add_barriers
-        self.ccx_data = [(CCXGate(), [0, 1, 2], [])] if ccx_data is None else ccx_data
+        if ccx_data is None:
+            self.ccx_data = [(CCXGate(), [0, 1, 2], [])]
+        else:
+            self.ccx_data = ccx_data
 
         # Number of orbitals and indices
         self.n_orb = len(self.hamiltonian.act_inds)
@@ -113,8 +118,8 @@ class GreensFunctionRestricted:
         print(f"Number of (N+1)-electron states is {self.n_e}")
         print(f"Number of (N-1)-electron states is {self.n_h}")
 
-        # `swap` is whether an additional swap gate is applied on top of the two CNOTs
-        # XXX: This part is hardcoded.
+        # `swap` is whether an additional swap gate is applied on top of the two CNOTs.
+        # This part is hardcoded.
         swap = True
         if not swap:
             if spin == 'up':
@@ -139,10 +144,6 @@ class GreensFunctionRestricted:
         self.B_h = np.zeros((self.n_orb, self.n_orb, self.n_h), dtype=complex)
         self.D_hp = np.zeros((self.n_orb, self.n_orb, self.n_h), dtype=complex)
         self.D_hm = np.zeros((self.n_orb, self.n_orb, self.n_h), dtype=complex)
-
-        # Define the density matrices for obtaining the self-energy
-        self.rho_hf = np.diag([1] * self.n_occ + [0] * self.n_vir)
-        self.rho_gf = None
 
         # Define the Green's function arrays
         self.G_e = np.zeros((self.n_orb, self.n_orb), dtype=complex)
@@ -198,37 +199,37 @@ class GreensFunctionRestricted:
 
     def compute_eh_states(self) -> None:
         """Calculates (N±1)-electron states of the Hamiltonian."""
-        print("===== Start calculating (N±1)-electron states =====")
-        self.eigenenergies_e, self.eigenstates_e = number_state_eigensolver(
-            self.qiskit_op_spin.to_matrix(), inds=self.inds_e.int_form)
-        self.eigenenergies_h, self.eigenstates_h = number_state_eigensolver(
-            self.qiskit_op_spin.to_matrix(), inds=self.inds_h.int_form)
-        print("===== Finish calculating (N±1)-electron states =====")
+
+        method = 'exact'
+
+        if method == 'exact':
+            print("===== Start calculating (N±1)-electron states =====")
+            self.eigenenergies_e, self.eigenstates_e = number_state_eigensolver(
+                self.qiskit_op_spin.to_matrix(), inds=self.inds_e.int_form)
+            self.eigenenergies_h, self.eigenstates_h = number_state_eigensolver(
+                self.qiskit_op_spin.to_matrix(), inds=self.inds_h.int_form)
+            print("===== Finish calculating (N±1)-electron states =====")
+
+        elif method == 'qse':
+            def a_op(ind, spin, dag):
+                a_op_ = (self.pauli_op_dict[(ind, spin)][0] +  (-1) ** dag * self.pauli_op_dict[(ind, spin)][1]) / 2
+                a_op_ = PauliSumOp(a_op_).reduce()
+                return a_op_
+            qse_ops_e = [a_op(0, 'down', True), a_op(1, 'down', True)]
+            qse_ops_h = [a_op(0, 'down', False), a_op(1, 'down', False)]
+
+            # The eigenstates below are wrong. But if using energy 
+            # averaging method the eigenstates do not matter.
+            print("===== Start calculating (N+1)-electron states =====")
+            self.eigenenergies_e, self.eigenstates_e = quantum_subspace_expansion(
+                self.ansatz.copy(), self.qiskit_op, qse_ops_e, q_instance=self.q_instance)
+            self.eigenenergies_h, self.eigenstates_h = quantum_subspace_expansion(
+                self.ansatz.copy(), self.qiskit_op, qse_ops_h, q_instance=self.q_instance)
+            print("===== Finish calculating (N±1)-electron states =====")
 
         self.eigenenergies_e *= HARTREE_TO_EV
         self.eigenenergies_h *= HARTREE_TO_EV
-        print(f"(N+1)-electron energies are {self.eigenenergies_e} eV")
-        print(f"(N-1)-electron energies are {self.eigenenergies_h} eV")
-
-    def compute_eh_states1(self) -> None:
-        """Calculates (N±1)-electron states of the Hamiltonian."""
-        def a_op(ind, spin, dag):
-            a_op_ = (self.pauli_op_dict[(ind, spin)][0] +  (-1) ** dag * self.pauli_op_dict[(ind, spin)][1]) / 2
-            a_op_ = PauliSumOp(a_op_).reduce()
-            return a_op_
-        qse_ops_e = [a_op(0, 'down', True), a_op(1, 'down', True)]
-        qse_ops_h = [a_op(0, 'down', False), a_op(1, 'down', False)]
-
-        # FIXME: The eigenstates below are wrong.
-        print("===== Start calculating (N+1)-electron states =====")
-        self.eigenenergies_e, self.eigenstates_e = quantum_subspace_expansion(
-            self.ansatz.copy(), self.qiskit_op, qse_ops_e, q_instance=self.q_instance)
-        self.eigenenergies_h, self.eigenstates_h = quantum_subspace_expansion(
-            self.ansatz.copy(), self.qiskit_op, qse_ops_h, q_instance=self.q_instance)
-        print("===== Finish calculating (N±1)-electron states =====")
-
-        self.eigenenergies_e *= HARTREE_TO_EV
-        self.eigenenergies_h *= HARTREE_TO_EV
+        
         print(f"(N+1)-electron energies are {self.eigenenergies_e} eV")
         print(f"(N-1)-electron energies are {self.eigenenergies_h} eV")
 
@@ -414,12 +415,6 @@ class GreensFunctionRestricted:
 
         print("===== Finish calculating off-diagonal transition amplitudes =====")
 
-    @property
-    def density_matrix(self):
-        """Returns the density matrix from the hole-added part of the Green's function"""
-        self.rho_gf = np.sum(self.B_h, axis=2)
-        return self.rho_gf
-
     def run(self,
             compute_energies: bool = True,
             save_params: bool = True,
@@ -430,8 +425,7 @@ class GreensFunctionRestricted:
         """Main function to compute energies and transition amplitudes.
 
         Args:
-            compute_energies: Whether to compute ground- and (N±1)-electron
-                state energies.
+            compute_energies: Whether to compute ground- and (N±1)-electron state energies.
             save_params: Whether to save the VQE energy and ansatz parameters.
             load_params: Whether to load the VQE energy and ansatz parameters.
             cache_read: Whether to read recompiled circuits from io_utils files.
@@ -447,14 +441,19 @@ class GreensFunctionRestricted:
         self.compute_diagonal_amplitudes(cache_read=cache_read, cache_write=cache_write)
         self.compute_off_diagonal_amplitudes(cache_read=cache_read, cache_write=cache_write)
 
+
+    def get_density_matrix(self):
+        """Returns the density matrix from the hole-added part of the Green's function"""
+        self.rho_gf = np.sum(self.B_h, axis=2)
+        return self.rho_gf
+
     def compute_greens_function(self,
                                 omega: Union[float, complex]
                                 ) -> np.ndarray:
         """Calculates the values of the Green's function at frequency omega.
 
         Args:
-            omega: The real or complex frequency at which the Green's function
-                is calculated.
+            omega: The real or complex frequency at which the Green's function is calculated.
 
         Returns:
             The Green's function in numpy array form.
@@ -507,7 +506,9 @@ class GreensFunctionRestricted:
             E1: The one-electron part (?) of the correlation energy.
             E2: The two-electron part (?) of the correlation energy.
         """
-        self.get_density_matrix()
+
+        self.rho_hf = np.diag([1] * self.n_occ + [0] * self.n_vir)
+        self.rho_gf = np.sum(self.B_h, axis=2)
 
         # XXX: Now filling in the one-electron integrals with a
         # checkerboard pattern. Could be done more efficiently.

@@ -1,10 +1,13 @@
+from typing import Sequence, Tuple
+
 import numpy as np
 from scipy.optimize import minimize
 
-from qiskit import QuantumCircuit, QuantumRegister, Aer
+from qiskit import QuantumCircuit, QuantumRegister
+from qiskit.opflow import PauliSumOp
 from qiskit.utils import QuantumInstance
 
-def get_ansatz(params):
+def get_ansatz(params: Sequence[float]) -> QuantumCircuit:
     """Constructs an ansatz for a two-qubit Hamiltonian."""
     qreg = QuantumRegister(2, name='q')
     ansatz = QuantumCircuit(qreg)
@@ -15,7 +18,9 @@ def get_ansatz(params):
     ansatz.ry(params[3], 1)
     return ansatz
 
-def objective_function_gs(params, hamiltonian_op, q_instance=None):
+def objective_function_gs(params: Sequence[float], 
+                          hamiltonian_op: PauliSumOp,
+                          q_instance: QuantumInstance = None) -> float:
     """VQE objective function for ground state."""
     shots = q_instance.run_config.shots
 
@@ -75,8 +80,9 @@ def objective_function_gs(params, hamiltonian_op, q_instance=None):
     energy = energy.real
     return energy
 
-def vqe_minimize(hamiltonian_op, q_instance):
-    """Minimize the energy of a Hamiltonian using VQE."""
+def vqe_minimize(hamiltonian_op: PauliSumOp,
+                 q_instance: QuantumInstance) -> Tuple[float, QuantumCircuit]:
+    """Minimizes the energy of a Hamiltonian using VQE."""
     res = minimize(objective_function_gs, x0=[-5., 0., 0., 5.], 
                    method='Powell', args=(hamiltonian_op, q_instance))
     
