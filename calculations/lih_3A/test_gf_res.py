@@ -1,5 +1,4 @@
-"""Calculates the spectral function on the active-space LiH Hamilonian 
-using the classmethods."""
+"""Calculates the spectral function on the active-space LiH Hamilonian."""
 
 import sys
 sys.path.append('../../src/')
@@ -38,4 +37,4 @@ A_list = []
 for omega in omegas:
     A = gf.compute_spectral_function(omega + 0.02j * HARTREE_TO_EV)
     A_list.append(A)
-np.savetxt(f'A_red_{q_instance_type}.dat', np.vstack((omegas, A_list)).T)
+np.savetxt(f'data/A_red_{q_instance_type}.dat', np.vstack((omegas, A_list)).T)

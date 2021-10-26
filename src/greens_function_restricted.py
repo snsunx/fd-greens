@@ -52,6 +52,8 @@ class GreensFunctionRestricted:
             add_barriers: Whether to add barriers to the circuit.
             ccx_data: A CircuitData object indicating how CCX gate is applied.
             transpiled: Whether the circuit is transpiled.
+            push: Whether the SWAP gates are pushed.
+            spin: Whether to use the up-spin or down-spin tapered operator.
         """
         # XXX: transform_4q_hamiltonian and init_state are hardcoded
         # Define Hamiltonian and related variables
@@ -171,18 +173,12 @@ class GreensFunctionRestricted:
         """
         if load_params:
             print("Load VQE circuit from file")
-            with open('vqe_energy.txt', 'r') as f: 
+            with open('data/vqe_energy.txt', 'r') as f: 
                 self.energy_gs = float(f.read())
-            with open('vqe_circuit.txt') as f:
+            with open('circuits/vqe_circuit.txt') as f:
                 self.ansatz = QuantumCircuit.from_qasm_str(f.read())
         else:
             print("===== Start calculating the ground state using VQE =====")
-            # vqe = VQE(self.ansatz, optimizer=self.optimizer,
-            #           quantum_instance=Aer.get_backend('statevector_simulator'))
-            # vqe_result = vqe.compute_minimum_eigenvalue(self.qiskit_op_gs)
-
-            # self.energy_gs = vqe_result.optimal_value * HARTREE_TO_EV
-            # self.ansatz.assign_parameters(vqe_result.optimal_parameters, inplace=True)
             self.energy_gs, self.ansatz = vqe_minimize(self.qiskit_op_gs, q_instance=self.q_instance)
             self.energy_gs *= HARTREE_TO_EV
             print(f'Ground state energy = {self.energy_gs:.3f} eV')
@@ -190,9 +186,9 @@ class GreensFunctionRestricted:
 
             if save_params:
                 print("Save VQE circuit to file")
-                with open('vqe_energy.txt', 'w') as f: 
+                with open('data/vqe_energy.txt', 'w') as f: 
                     f.write(str(self.energy_gs))
-                save_circuit(self.ansatz.copy(), 'vqe_circuit')
+                save_circuit(self.ansatz.copy(), 'circuits/vqe_circuit')
 
         self.circuit_constructor = CircuitConstructor(
             self.ansatz, add_barriers=self.add_barriers, ccx_data=self.ccx_data)
@@ -251,7 +247,7 @@ class GreensFunctionRestricted:
             a_op_m = self.pauli_op_dict_tapered[(m, self.spin)]
             circ = self.circuit_constructor.build_diagonal_circuits(a_op_m)
             print(f"Calculating m = {m}")
-            fname = f'circuit_{m}'
+            fname = f'circuits/circuit_{m}'
             if self.recompiled:
                 recompiler = CircuitRecompiler()
                 circ = recompiler.recompile_all(circ)
@@ -329,7 +325,6 @@ class GreensFunctionRestricted:
             cache_write: Whether to save recompiled circuits to cache files.
         """
         print("===== Start calculating off-diagonal transition amplitudes =====")
-
         inds_hp = self.inds_h.include_ancilla('00').int_form
         inds_hm = self.inds_h.include_ancilla('10').int_form
         inds_ep = self.inds_e.include_ancilla('01').int_form
@@ -342,7 +337,7 @@ class GreensFunctionRestricted:
                     print(f"Calculating m = {m}, n = {n}")
 
                     circ = self.circuit_constructor.build_off_diagonal_circuits(a_op_m, a_op_n)
-                    fname = f'circuit_{m}{n}'
+                    fname = f'circuits/circuit_{m}{n}'
                     if self.recompiled:
                         recompiler = CircuitRecompiler()
                         circ = recompiler.recompile_all(circ)
@@ -475,10 +470,8 @@ class GreensFunctionRestricted:
         Args:
             omega: The real or complex frequency at which the spectral function is calculated.
         """
-        #print("Start calculating the spectral function")
         self.compute_greens_function(omega)
         A = -1 / np.pi * np.imag(np.trace(self.G))
-        #print("Finish calculating the spectral function")
         return A
 
     def compute_self_energy(self, omega: Union[float, complex]) -> np.ndarray:
