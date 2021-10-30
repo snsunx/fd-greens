@@ -18,10 +18,24 @@ def get_ansatz(params: Sequence[float]) -> QuantumCircuit:
     ansatz.ry(params[3], 1)
     return ansatz
 
-def objective_function_gs(params: Sequence[float], 
+def objective_function_sv(params: Sequence[float],
                           hamiltonian_op: PauliSumOp,
                           q_instance: QuantumInstance = None) -> float:
-    """VQE objective function for ground state."""
+    """VQE objective function for ground state without sampling."""
+    ansatz = get_ansatz(params).copy()
+    result = q_instance.execute(ansatz)
+    statevector = result.get_statevector()
+
+    matrix = hamiltonian_op.to_matrix()
+
+    energy = statevector.conj().T @ matrix @ statevector
+    return energy.real
+
+
+def objective_function_qasm(params: Sequence[float], 
+                          hamiltonian_op: PauliSumOp,
+                          q_instance: QuantumInstance = None) -> float:
+    """VQE objective function for ground state with sampling."""
     shots = q_instance.run_config.shots
 
     label_coeff_list = hamiltonian_op.primitive.to_list()
@@ -83,9 +97,13 @@ def objective_function_gs(params: Sequence[float],
 def vqe_minimize(hamiltonian_op: PauliSumOp,
                  q_instance: QuantumInstance) -> Tuple[float, QuantumCircuit]:
     """Minimizes the energy of a Hamiltonian using VQE."""
-    res = minimize(objective_function_gs, x0=[-5., 0., 0., 5.], 
+    if q_instance.backend.name() == 'statevector_simulator':
+        objective_function = objective_function_sv
+    else:
+        objective_function = objective_function_qasm
+
+    res = minimize(objective_function, x0=[-5., 0., 0., 5.],
                    method='Powell', args=(hamiltonian_op, q_instance))
-    
     energy = res.fun
     ansatz = get_ansatz(res.x)
     return energy, ansatz

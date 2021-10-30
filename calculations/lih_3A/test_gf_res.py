@@ -20,14 +20,14 @@ cache_write = False
 ansatz = build_2q_ansatz()
 hamiltonian = get_lih_hamiltonian(3.0)
 ccx_data = get_berkeley_ccx_data()
-q_instance_types = ['qasm', 'sv', 'qasm']
+q_instance_types = ['sv', 'sv', 'qasm']
 q_instances = [get_quantum_instance(s) for s in q_instance_types]
 
 # Statevector simulator calculation
 print("========== Starts statevector simulation ==========")
 gf = GreensFunctionRestricted(ansatz.copy(), hamiltonian, 
                               q_instances=q_instances, 
-    						  ccx_data=ccx_data, add_barriers=False,
+    						         ccx_data=ccx_data, add_barriers=False,
                               transpiled=True, recompiled=False,
                               spin='down', push=True)
 gf.run(save_params=save_params, load_params=load_params, 
