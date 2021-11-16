@@ -16,7 +16,7 @@ from hamiltonians import MolecularHamiltonian
 from z2_symmetries import transform_4q_hamiltonian
 
 from constants import HARTREE_TO_EV
-from utils import get_statevector
+from utils import get_statevector, measure_operator
 
 
 def get_number_state_indices(n_orb: int,
@@ -29,12 +29,9 @@ def get_number_state_indices(n_orb: int,
     Args:
         n_orb: An integer indicating the number of orbitals.
         n_elec: An integer indicating the number of electrons.
-        anc: An iterable of '0' and '1' indicating the state of the
-            ancilla qubit(s).
-        return_type: Type of the indices returned. Must be 'decimal'
-            or 'binary'. Default to 'decimal'.
-        reverse: Whether the qubit indices are reversed because of
-            Qiskit qubit order. Default to True.
+        anc: An iterable of '0' and '1' indicating the state of the ancilla qubit(s).
+        return_type: Type of the indices returned. Must be 'decimal' or 'binary'. Default to 'decimal'.
+        reverse: Whether the qubit indices are reversed because of Qiskit qubit order. Default to True.
     """
     assert return_type in ['binary', 'decimal']
     inds = []
@@ -61,12 +58,12 @@ def number_state_eigensolver(
         reverse: bool = False
     ) -> Tuple[np.ndarray, np.ndarray]:
     # TODO: Update docstring for n_elec, inds and reverse
-    """Exact eigensolver for the Hamiltonian in the subspace of a certain number of electrons.
+    """Exact Hamiltonian eigensolver in the subspace of a certain number of electrons.
 
     Args:
         hamiltonian: The Hamiltonian of the molecule.
         n_elec: An integer indicating the number of electrons.
-    `
+    
     Returns:
         eigvals: The eigenenergies in the number state subspace.
         eigvecs: The eigenstates in the number state subspace.
@@ -108,11 +105,20 @@ def quantum_subspace_expansion(ansatz,
                                qse_ops: List[PauliSumOp],
                                q_instance: Optional[QuantumInstance] = None
                                ) -> Tuple[np.ndarray, np.ndarray]:
-    """Quantum subspace expansion."""
+    """Quantum subspace expansion.
+    
+    Args:
+        hamiltonian_op: The Hamiltonian operator.
+        qse_ops: The quantum subspace expansion operators.
+        q_instance: The QuantumInstance used to execute the circuits.
+        
+    Returns:
+        eigvals: The energy eigenvalues in the subspace.
+        eigvecs: The eigenstates in the subspace.
+    """
     # if q_instance is None or q_instance.backend.name() == 'statevector_simulator':
-    # q_instance = QuantumInstance(Aer.get_backend('qasm_simulator'), shots=100000)
+    q_instance = QuantumInstance(Aer.get_backend('qasm_simulator'), shots=100000)
 
-    # print('q_instance =', q_instance)
     dim = len(qse_ops)
 
     qse_mat = np.zeros((dim, dim))
@@ -122,13 +128,11 @@ def quantum_subspace_expansion(ansatz,
             op = qse_ops[i].adjoint().compose(hamiltonian_op.compose(qse_ops[j]))
             op = transform_4q_hamiltonian(op.reduce(), init_state=[1, 1])
             op = op.reduce()
-            # print('i, j', i, j, '\n', op.reduce())
             qse_mat[i, j] = measure_operator(ansatz, op, q_instance)
 
             op = qse_ops[i].adjoint().compose(qse_ops[j])
             op = transform_4q_hamiltonian(op.reduce(), init_state=[1, 1])
             op = op.reduce()
-            # print('i, j', i, j, '\n', op.reduce())
             overlap_mat[i, j] = measure_operator(ansatz, op, q_instance)
 
     print('qse_mat\n', qse_mat * HARTREE_TO_EV)
@@ -170,83 +174,19 @@ def quantum_subspace_expansion_exact(
     print(eigvals * HARTREE_TO_EV)
     return eigvals, eigvecs
 
-def measure_operator(circ: QuantumCircuit,
-                     op: PauliSumOp,
-                     q_instance: QuantumInstance,
-                     anc_state: Sequence[int] = [],
-                     qreg: Optional[QuantumRegister] = None) -> float:
-    """Measures an operator on a circuit.
-
+def roothaan_eig(Hmat: np.ndarray, 
+                 Smat: np.ndarray
+                 ) -> Tuple[np.ndarray, np.ndarray]:
+    """Solves the Roothaan-type eigenvalue equation HC = SCE.
+    
     Args:
-        circ: The quantum circuit to be measured.
-        op: The operator to be measured.
-        q_instance: The QuantumInstance on which to execute the circuit.
-        qreg: The quantum register on which the operator is measured.
-    
+        Hmat: The Hamiltonian matrix.
+        Smat: The overlap matrix.
+        
     Returns:
-        The value of the operator on the circuit.
+        w: The eigenvalues.
+        v: The eigenvectors.
     """
-    if qreg is None:
-        qreg = circ.qregs[0]
-    n_qubits = len(qreg)
-    n_anc = len(anc_state)
-    n_sys = n_qubits - n_anc
-
-    circ_list = []
-    for term in op:
-        label = term.primitive.table.to_labels()[0]
-        
-        # Create circuit for measuring this Pauli string
-        circ_meas = circ.copy()
-        creg = ClassicalRegister(n_qubits)
-        circ_meas.add_register(creg)
-
-        for i in range(n_anc):
-            circ_meas.measure(i, i)
-        
-        for i in range(n_sys):
-            if label[n_sys - 1 - i] == 'X':
-                circ_meas.h(qreg[i + n_anc])
-                circ_meas.measure(qreg[i + n_anc], creg[i + n_anc])
-            elif label[n_sys - 1 - i] == 'Y':
-                circ_meas.rx(np.pi / 2, qreg[i + n_anc])
-                circ_meas.measure(qreg[i + n_anc], creg[i + n_anc])
-            elif label[n_sys - 1 - i] == 'Z':
-                circ_meas.measure(qreg[i + n_anc], creg[i + n_anc])
-
-        circ_list.append(circ_meas)
-    
-    result = q_instance.execute(circ_list)
-    counts_list = result.get_counts()
-
-    value = 0
-    print('measure_operator')
-    for i, counts in enumerate(counts_list):
-        # print('counts =', counts)
-        coeff = op.primitive.coeffs[i]
-        counts_new = counts.copy()
-
-        for key, val in counts.items():
-            key_list = [int(c) for c in list(reversed(key))]
-            key_anc = key_list[:n_anc]
-            key_sys = key_list[n_anc:]
-            if key_anc != anc_state:
-                del counts_new[key]
-        
-        shots = sum(counts_new.values())
-        for key, val in counts_new.items():
-            key_list = [int(c) for c in list(reversed(key))]
-            key_anc = key_list[:n_anc]
-            key_sys = key_list[n_anc:]
-            if sum(key_sys) % 2 == 0:
-                value += coeff * val / shots
-            else:
-                value -= coeff * val / shots
-        # print(shots)
-    return value
-
-def roothaan_eig(Hmat, Smat):
-    """Solves the Roothaan-type eigenvalue equation."""
     s, U = np.linalg.eigh(Smat)
     idx = np.where(abs(s) > 1e-8)[0]
     s = s[idx]

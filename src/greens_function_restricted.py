@@ -46,9 +46,10 @@ class GreensFunctionRestricted:
         Args:
             ansatz: The parametrized circuit as an ansatz to VQE.
             hamiltonian: The hamiltonian of the molecule.
-            spin: A string indicating the spin in the tapered (N+/-1)-electron operators, 
-                should be 'up' or 'down'.
-            method: The method for extracting the transition amplitudes. 
+            spin: A string indicating the spin in the tapered (N+/-1)-electron operators. 
+                Either 'up' or 'down'.
+            method: The method for extracting the transition amplitudes. Either 'energy'
+                or 'tomography'.
             q_instances: A sequence of QuantumInstance objects to execute the ground state, 
                 (N+/-1)-electron state and transition amplitude circuits.
             recompiled: Whether the QPE circuit is recompiled.
@@ -185,6 +186,7 @@ class GreensFunctionRestricted:
             save_params: Whether to save the VQE energy and ansatz circuit.
             load_params: Whether to load the VQE energy and ansatz circuit.
         """
+        q_instance = self.q_instances[0]
         if load_params:
             print("Load VQE circuit from file")
             with open('data/vqe_energy.txt', 'r') as f: 
@@ -193,9 +195,7 @@ class GreensFunctionRestricted:
                 self.ansatz = QuantumCircuit.from_qasm_str(f.read())
         else:
             print("===== Start calculating the ground state using VQE =====")
-            # TODO: The manual VQE solver currently does not work with statevector simulator.
-            self.energy_gs, self.ansatz = vqe_minimize(
-                self.qiskit_op_gs, q_instance=self.q_instances[0])
+            self.energy_gs, self.ansatz = vqe_minimize(self.qiskit_op_gs, q_instance=q_instance)
             self.energy_gs *= HARTREE_TO_EV
             print(f'Ground state energy = {self.energy_gs:.3f} eV')
             print("===== Finish calculating the ground state using VQE =====")
@@ -211,38 +211,33 @@ class GreensFunctionRestricted:
 
     def compute_eh_states(self) -> None:
         """Calculates (N±1)-electron states of the Hamiltonian."""
-        # TODO: Since the eigenstates in QSE are wrong, when using statevector simulator 
-        # in transition amplitudes need to set method to 'exact'. Should think about how to
-        # get around this.
 
-        method = 'exact'
-
-        if method == 'exact':
-            print("===== Start calculating (N±1)-electron states =====")
+        q_instance = self.q_instances[1]
+        
+        print("===== Start calculating (N+1)-electron states =====")
+        if q_instance.backend.name() == 'statevector_simulator':
             self.eigenenergies_e, self.eigenstates_e = number_state_eigensolver(
                 self.qiskit_op_spin.to_matrix(), inds=self.inds_e.int_form)
             self.eigenenergies_h, self.eigenstates_h = number_state_eigensolver(
                 self.qiskit_op_spin.to_matrix(), inds=self.inds_h.int_form)
-            print("===== Finish calculating (N±1)-electron states =====")
-
-        elif method == 'qse':
+        else:
             def a_op(ind, spin, dag):
-                a_op_ = (self.pauli_op_dict[(ind, spin)][0] +  (-1) ** dag * self.pauli_op_dict[(ind, spin)][1]) / 2
+                a_op_ = (self.pauli_op_dict[(ind, spin)][0] + 
+                         (-1) ** dag * self.pauli_op_dict[(ind, spin)][1]) / 2
                 a_op_ = PauliSumOp(a_op_).reduce()
                 return a_op_
             qse_ops_e = [a_op(0, 'down', True), a_op(1, 'down', True)]
             qse_ops_h = [a_op(0, 'down', False), a_op(1, 'down', False)]
 
-            print("===== Start calculating (N+1)-electron states =====")
+            # TODO: The eigenstates are not right.
             self.eigenenergies_e, self.eigenstates_e = quantum_subspace_expansion(
-                self.ansatz.copy(), self.qiskit_op, qse_ops_e, q_instance=self.q_instances[1])
+                self.ansatz.copy(), self.qiskit_op, qse_ops_e, q_instance=q_instance)
             self.eigenenergies_h, self.eigenstates_h = quantum_subspace_expansion(
-                self.ansatz.copy(), self.qiskit_op, qse_ops_h, q_instance=self.q_instances[1])
-            print("===== Finish calculating (N±1)-electron states =====")
+                self.ansatz.copy(), self.qiskit_op, qse_ops_h, q_instance=q_instance)
+        print("===== Finish calculating (N±1)-electron states =====")
 
         self.eigenenergies_e *= HARTREE_TO_EV
         self.eigenenergies_h *= HARTREE_TO_EV
-        
         print(f"(N+1)-electron energies are {self.eigenenergies_e} eV")
         print(f"(N-1)-electron energies are {self.eigenenergies_h} eV")
 
@@ -482,8 +477,8 @@ class GreensFunctionRestricted:
         return self.G
 
     def get_spectral_function(self,
-                                  omega: Union[float, complex]
-                                  ) -> np.ndarray:
+                              omega: Union[float, complex]
+                              ) -> np.ndarray:
         """Calculates the spectral function at frequency omega.
 
         Args:

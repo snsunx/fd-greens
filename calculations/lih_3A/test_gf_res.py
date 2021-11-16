@@ -12,8 +12,8 @@ from constants import HARTREE_TO_EV
 from helpers import get_berkeley_ccx_data, get_lih_hamiltonian, get_quantum_instance
 
 # User-defined parameters
-save_params = True
-load_params = False
+save_params = False
+load_params = False 
 cache_read = False
 cache_write = False
 
@@ -27,9 +27,9 @@ q_instances = [get_quantum_instance(s) for s in q_instance_types]
 print("========== Starts statevector simulation ==========")
 gf = GreensFunctionRestricted(ansatz.copy(), hamiltonian, 
                               q_instances=q_instances, 
-    						         ccx_data=ccx_data, add_barriers=False,
-                              transpiled=True, recompiled=False,
-                              spin='down', push=True)
+    						  ccx_data=ccx_data, add_barriers=False,
+                              transpiled=False, recompiled=False,
+                              spin='down', push=False)
 gf.run(save_params=save_params, load_params=load_params, 
     	  cache_read=cache_read, cache_write=cache_write)
 

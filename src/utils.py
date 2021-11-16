@@ -1,15 +1,16 @@
 """Utility functions"""
 
-from typing import ClassVar, Optional, Union, Iterable, List, Tuple
+from typing import ClassVar, Optional, Union, Iterable, List, Tuple, Sequence
 import numpy as np
 
-from qiskit import QuantumCircuit, Aer, IBMQ, execute
+from qiskit import QuantumCircuit, QuantumRegister, ClassicalRegister, Aer, IBMQ, execute
 from qiskit.utils import QuantumInstance
 from qiskit.providers.aer.noise import NoiseModel
 from qiskit.providers.aer.backends.aerbackend import AerBackend
 from qiskit.ignis.verification.tomography import (state_tomography_circuits,
                                                   StateTomographyFitter)
 from qiskit.circuit import Instruction
+from qiskit.opflow import PauliSumOp
 
 CircuitData = Iterable[Tuple[Instruction, List[int], Optional[List[int]]]]
 
@@ -196,3 +197,78 @@ def solve_energy_probabilities(a, b):
     A = np.array([[1, 1], [a[0], a[1]]])
     x = np.linalg.inv(A) @ np.array([1.0, b])
     return x
+
+def measure_operator(circ: QuantumCircuit,
+                     op: PauliSumOp,
+                     q_instance: QuantumInstance,
+                     anc_state: Sequence[int] = [],
+                     qreg: Optional[QuantumRegister] = None) -> float:
+    """Measures an operator on a circuit.
+
+    Args:
+        circ: The quantum circuit to be measured.
+        op: The operator to be measured.
+        q_instance: The QuantumInstance on which to execute the circuit.
+        anc_state: A sequence of integers indicating the ancilla states.
+        qreg: The quantum register on which the operator is measured.
+    
+    Returns:
+        The value of the operator on the circuit.
+    """
+    if qreg is None:
+        qreg = circ.qregs[0]
+    n_qubits = len(qreg)
+    n_anc = len(anc_state)
+    n_sys = n_qubits - n_anc
+
+    circ_list = []
+    for term in op:
+        label = term.primitive.table.to_labels()[0]
+        
+        # Create circuit for measuring this Pauli string
+        circ_meas = circ.copy()
+        creg = ClassicalRegister(n_qubits)
+        circ_meas.add_register(creg)
+
+        for i in range(n_anc):
+            circ_meas.measure(i, i)
+        
+        for i in range(n_sys):
+            if label[n_sys - 1 - i] == 'X':
+                circ_meas.h(qreg[i + n_anc])
+                circ_meas.measure(qreg[i + n_anc], creg[i + n_anc])
+            elif label[n_sys - 1 - i] == 'Y':
+                circ_meas.rx(np.pi / 2, qreg[i + n_anc])
+                circ_meas.measure(qreg[i + n_anc], creg[i + n_anc])
+            elif label[n_sys - 1 - i] == 'Z':
+                circ_meas.measure(qreg[i + n_anc], creg[i + n_anc])
+
+        circ_list.append(circ_meas)
+    
+    result = q_instance.execute(circ_list)
+    counts_list = result.get_counts()
+
+    value = 0
+    for i, counts in enumerate(counts_list):
+        # print('counts =', counts)
+        coeff = op.primitive.coeffs[i]
+        counts_new = counts.copy()
+
+        for key, val in counts.items():
+            key_list = [int(c) for c in list(reversed(key))]
+            key_anc = key_list[:n_anc]
+            key_sys = key_list[n_anc:]
+            if key_anc != anc_state:
+                del counts_new[key]
+        
+        shots = sum(counts_new.values())
+        for key, val in counts_new.items():
+            key_list = [int(c) for c in list(reversed(key))]
+            key_anc = key_list[:n_anc]
+            key_sys = key_list[n_anc:]
+            if sum(key_sys) % 2 == 0:
+                value += coeff * val / shots
+            else:
+                value -= coeff * val / shots
+    return value
+

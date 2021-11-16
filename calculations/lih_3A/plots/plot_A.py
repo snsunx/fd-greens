@@ -5,14 +5,16 @@ omegas, A_red_sv = np.loadtxt('../data/A_red_sv.dat').T
 omegas, A_red_sv_sv_qasm = np.loadtxt('../data/A_red_sv-sv-qasm.dat').T
 omegas, A_red_sv_sv_noisy = np.loadtxt('../data/A_red_sv-sv-noisy.dat').T
 omegas, A_red_qasm_sv_qasm = np.loadtxt('../data/A_red_qasm-sv-qasm.dat').T
+omegas, A_red_qasm_qasm_qasm = np.loadtxt('../data/A_red_qasm-qasm-qasm.dat').T
 omegas, A_red_noisy_sv_noisy = np.loadtxt('../data/A_red_noisy-sv-noisy.dat').T
 
 fig, ax = plt.subplots()
 ax.plot(omegas, A_red_sv, label="Exact")
-#ax.plot(omegas, A_red_sv_sv_qasm, ls='--',label="SV, SV, QASM")
+ax.plot(omegas, A_red_sv_sv_qasm, ls='--',label="SV, SV, QASM")
 #ax.plot(omegas, A_red_sv_sv_noisy, ls='-.', label="SV, SV, Noisy")
-ax.plot(omegas, A_red_qasm_sv_qasm, ls='--', label="QASM, SV, QASM")
-ax.plot(omegas, A_red_noisy_sv_noisy, ls='--', label="Noisy, SV, Noisy")
+#ax.plot(omegas, A_red_qasm_sv_qasm, ls='--', label="QASM, SV, QASM")
+#ax.plot(omegas, A_red_qasm_qasm_qasm, ls='-.', label='QASM, QASM, QASM')
+#ax.plot(omegas, A_red_noisy_sv_noisy, ls='--', label="Noisy, SV, Noisy")
 ax.set_xlabel('$\omega$ (eV)')
 ax.set_ylabel("Absorption spectra (eV$^{-1}$)")
 ax.set_xlim([-20, 10])
