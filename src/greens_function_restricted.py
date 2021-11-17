@@ -21,7 +21,7 @@ from recompilation import CircuitRecompiler
 from operators import SecondQuantizedOperators
 from qubit_indices import QubitIndices
 from circuits import CircuitConstructor, CircuitData, transpile_across_barrier
-from vqe import vqe_minimize
+from vqe import vqe_minimize, get_ansatz, get_ansatz_e, get_ansatz_h
 from z2_symmetries import transform_4q_hamiltonian
 from utils import save_circuit, state_tomography, solve_energy_probabilities, get_overlap
 
@@ -35,7 +35,7 @@ class GreensFunctionRestricted:
                  ansatz: QuantumCircuit,
                  hamiltonian: MolecularHamiltonian,
                  spin: str = 'up',
-                 method: str = 'energy',
+                 methods: Optional[dict] = None,
                  q_instances: Optional[Sequence[QuantumInstance]] = None,
                  add_barriers: bool = True,
                  ccx_data: Optional[CircuitData] = None,
@@ -60,14 +60,23 @@ class GreensFunctionRestricted:
             push: Whether the SWAP gates are pushed.
         """
         assert spin in ['up', 'down']
-        assert method in ['energy', 'tomography']
 
         # Basic variables of the system
         self.ansatz = ansatz
         self.hamiltonian = hamiltonian
         self.molecule = hamiltonian.molecule
         self.spin = spin
-        self.method = method
+
+        # The methods for each of gs, eh, and amp stages of the algorithm
+        if methods is None:
+            self.methods = {'gs': 'exact', 'eh': 'exact', 'amp': 'exact'}
+        else:
+            self.methods = methods
+        assert self.methods['gs'] in ['exact', 'vqe']
+        assert self.methods['eh'] in ['exact', 'qse', 'ssvqe']
+        assert self.methods['amp'] in ['exact', 'energy', 'tomography']
+
+        # The quantum instance
         if q_instances is None:
             self.q_instances = [QuantumInstance(Aer.get_backend('statevector_simulator'))] * 3
         else:
@@ -196,7 +205,9 @@ class GreensFunctionRestricted:
                 self.ansatz = QuantumCircuit.from_qasm_str(f.read())
         else:
             print("===== Start calculating the ground state using VQE =====")
-            self.energy_gs, self.ansatz = vqe_minimize(self.qiskit_op_gs, q_instance=q_instance)
+            self.energy_gs, self.ansatz = vqe_minimize(
+                self.qiskit_op_gs, ansatz_func=get_ansatz, 
+                init_params=(-5., 0., 0., 5.), q_instance=q_instance)
             self.energy_gs *= HARTREE_TO_EV
             print(f'Ground state energy = {self.energy_gs:.3f} eV')
             print("===== Finish calculating the ground state using VQE =====")
@@ -210,7 +221,7 @@ class GreensFunctionRestricted:
         self.circuit_constructor = CircuitConstructor(
             self.ansatz, add_barriers=self.add_barriers, ccx_data=self.ccx_data)
 
-        if self.method == 'tomography':
+        if self.methods['amp'] == 'tomography':
             self.rho_gs = state_tomography(self.ansatz, q_instance=q_instance)
 
     def compute_eh_states(self) -> None:
@@ -219,7 +230,9 @@ class GreensFunctionRestricted:
         q_instance = self.q_instances[1]
         
         print("===== Start calculating (N+1)-electron states =====")
-        if q_instance.backend.name() == 'statevector_simulator':
+
+        if self.methods['eh'] == 'exact':
+        # if q_instance.backend.name() == 'statevector_simulator':
             self.eigenenergies_e, self.eigenstates_e = number_state_eigensolver(
                 self.qiskit_op_spin.to_matrix(), inds=self.inds_e.int_form)
             self.eigenenergies_h, self.eigenstates_h = number_state_eigensolver(
@@ -228,7 +241,7 @@ class GreensFunctionRestricted:
             # Transpose in order to index by the first index
             self.eigenstates_e = self.eigenstates_e.T
             self.eigenstates_h = self.eigenstates_h.T
-        else:
+        elif self.methods['eh'] == 'qse':
             def a_op(ind, spin, dag):
                 a_op_ = (self.pauli_op_dict[(ind, spin)][0] + 
                          (-1) ** dag * self.pauli_op_dict[(ind, spin)][1]) / 2
@@ -237,12 +250,22 @@ class GreensFunctionRestricted:
             qse_ops_e = [a_op(0, 'down', True), a_op(1, 'down', True)]
             qse_ops_h = [a_op(0, 'down', False), a_op(1, 'down', False)]
 
-            # TODO: The eigenstates are not right.
+            # XXX: The eigenstates are not right.
             self.eigenenergies_e, self.eigenstates_e = quantum_subspace_expansion(
                 self.ansatz.copy(), self.qiskit_op, qse_ops_e, q_instance=q_instance)
             self.eigenenergies_h, self.eigenstates_h = quantum_subspace_expansion(
                 self.ansatz.copy(), self.qiskit_op, qse_ops_h, q_instance=q_instance)
 
+        elif self.methods['eh'] == 'ssvqe':
+            energy_min, circ_min = vqe_minimize(self.qiskit_op_spin, ansatz_func=get_ansatz_e, init_params=(0.,), q_instance=q_instance)
+            m_energy_max, circ_max = vqe_minimize(-self.qiskit_op_spin, ansatz_func=get_ansatz_e, init_params=(0.,), q_instance=q_instance)
+            self.eigenenergies_e = [energy_min, -m_energy_max]
+            self.eigenstates_e = [state_tomography(circ_min), state_tomography(circ_max)]
+
+            energy_min, circ_min = vqe_minimize(self.qiskit_op_spin, ansatz_func=get_ansatz_h, init_params=(0.,), q_instance=q_instance)
+            m_energy_max, circ_max = vqe_minimize(-self.qiskit_op_spin, ansatz_func=get_ansatz_h, init_params=(0.,), q_instance=q_instance)
+            self.eigenenergies_h = [energy_min, -m_energy_max]
+            self.eigenstates_h = [state_tomography(circ_min), state_tomography(circ_max)]
             
         print("===== Finish calculating (N±1)-electron states =====")
 
@@ -293,7 +316,7 @@ class GreensFunctionRestricted:
                 B_h_mm = np.abs(self.eigenstates_h.conj().T @ psi_h) ** 2
 
             else: # QASM simulator or hardware
-                if self.method == 'energy':
+                if self.methods['amp'] == 'energy':
                     circ_anc = circ.copy()
                     circ_anc.add_register(ClassicalRegister(1))
                     circ_anc.measure(0, 0)
@@ -317,7 +340,7 @@ class GreensFunctionRestricted:
                     B_e_mm = p_e * solve_energy_probabilities(self.eigenenergies_e, energy_e * HARTREE_TO_EV)
                     B_h_mm = p_h * solve_energy_probabilities(self.eigenenergies_h, energy_h * HARTREE_TO_EV)
                 
-                elif self.method == 'tomography':
+                elif self.methods['amp'] == 'tomography':
                     rho = state_tomography(circ, q_instance=q_instance)
 
                     rho_e = rho[inds_e][:, inds_e]
@@ -478,6 +501,7 @@ class GreensFunctionRestricted:
         if compute_energies:
             if self.energy_gs is None:
                 self.compute_ground_state(save_params=save_params, load_params=load_params)
+            exit()
             if (self.eigenenergies_e is None or self.eigenenergies_h is None or
                 self.eigenstates_e is None or self.eigenstates_h is None):
                 self.compute_eh_states()

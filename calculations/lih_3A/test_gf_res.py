@@ -29,7 +29,7 @@ gf = GreensFunctionRestricted(ansatz.copy(), hamiltonian,
                               q_instances=q_instances, 
     						  ccx_data=ccx_data, add_barriers=False,
                               transpiled=False, recompiled=False,
-                              spin='down', push=False, method='tomography')
+                              spin='down', push=False)
 gf.run(save_params=save_params, load_params=load_params, 
     	  cache_read=cache_read, cache_write=cache_write)
 
