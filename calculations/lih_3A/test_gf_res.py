@@ -22,10 +22,12 @@ hamiltonian = get_lih_hamiltonian(3.0)
 ccx_data = get_berkeley_ccx_data()
 q_instance_types = ['sv', 'sv', 'qasm']
 q_instances = [get_quantum_instance(s) for s in q_instance_types]
+methods = {'gs': 'exact', 'eh': 'ssvqe', 'amp': 'tomography'}
 
 # Statevector simulator calculation
 print("========== Starts statevector simulation ==========")
-gf = GreensFunctionRestricted(ansatz.copy(), hamiltonian, 
+gf = GreensFunctionRestricted(ansatz.copy(), hamiltonian,
+                              methods=methods,
                               q_instances=q_instances, 
     						  ccx_data=ccx_data, add_barriers=False,
                               transpiled=False, recompiled=False,

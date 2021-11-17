@@ -24,15 +24,15 @@ def get_ansatz_e(params: float) -> QuantumCircuit:
     """Returns the ansatz for (N+1)-electron states."""
     qreg = QuantumRegister(2, name='q')
     ansatz = QuantumCircuit(qreg)
-    ansatz.ry(params[0], 0)
-    ansatz.x(1)
+    ansatz.x(0)    
+    ansatz.ry(params[0], 1)
     return ansatz
 
 def get_ansatz_h(params: Sequence[float]) -> QuantumCircuit:
     """Returns the ansatz for (N-1)-electron states."""
     qreg = QuantumRegister(2, name='q')
-    ansatz = QuantumCircuit(qreg)
-    ansatz.ry(params[0], 0)
+    ansatz = QuantumCircuit(qreg)  
+    ansatz.ry(params[0], 1)
     return ansatz
 
 def objective_function_sv(params: Sequence[float],

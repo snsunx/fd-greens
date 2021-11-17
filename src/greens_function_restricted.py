@@ -110,7 +110,8 @@ class GreensFunctionRestricted:
         self.qiskit_op_up = transform_4q_hamiltonian(self.qiskit_op, init_state=[0, 1]).reduce()
         self.qiskit_op_down = transform_4q_hamiltonian(self.qiskit_op, init_state=[1, 0]).reduce()
 
-        # Create the Pauli operator dictionary
+        # Create the Pauli operator dictionaries for original, transformed and tapered 
+        # second quantized operators
         second_q_ops = SecondQuantizedOperators(4)
         self.pauli_op_dict = second_q_ops.get_op_dict_all()
 
@@ -259,13 +260,16 @@ class GreensFunctionRestricted:
         elif self.methods['eh'] == 'ssvqe':
             energy_min, circ_min = vqe_minimize(self.qiskit_op_spin, ansatz_func=get_ansatz_e, init_params=(0.,), q_instance=q_instance)
             m_energy_max, circ_max = vqe_minimize(-self.qiskit_op_spin, ansatz_func=get_ansatz_e, init_params=(0.,), q_instance=q_instance)
-            self.eigenenergies_e = [energy_min, -m_energy_max]
-            self.eigenstates_e = [state_tomography(circ_min), state_tomography(circ_max)]
+            self.eigenenergies_e = np.array([energy_min, -m_energy_max])
+            eigenstates_e = [state_tomography(circ_min), state_tomography(circ_max)]
+            self.eigenstates_e = [rho[self.inds_e.int_form][:, self.inds_e.int_form] for rho in eigenstates_e]
 
             energy_min, circ_min = vqe_minimize(self.qiskit_op_spin, ansatz_func=get_ansatz_h, init_params=(0.,), q_instance=q_instance)
             m_energy_max, circ_max = vqe_minimize(-self.qiskit_op_spin, ansatz_func=get_ansatz_h, init_params=(0.,), q_instance=q_instance)
-            self.eigenenergies_h = [energy_min, -m_energy_max]
-            self.eigenstates_h = [state_tomography(circ_min), state_tomography(circ_max)]
+            self.eigenenergies_h = np.array([energy_min, -m_energy_max])
+            eigenstates_h = [state_tomography(circ_min), state_tomography(circ_max)]
+            self.eigenstates_h = [rho[self.inds_h.int_form][:, self.inds_h.int_form] for rho in eigenstates_h]
+
             
         print("===== Finish calculating (N±1)-electron states =====")
 
@@ -421,10 +425,10 @@ class GreensFunctionRestricted:
                         D_hm_mn = abs(self.eigenstates_h.conj().T @ psi_hm) ** 2
 
                     else: # QASM simulator or hardware
-                        if self.method == 'energy':
+                        if self.methods['amp'] == 'energy':
                             # TODO: Implement the off-diagonal elements here.
                             D_ep_mn = D_em_mn = D_hp_mn = D_hm_mn = 0.
-                        elif self.method == 'tomography':
+                        elif self.methods['amp'] == 'tomography':
                             rho = state_tomography(circ, q_instance=q_instance)
 
                             rho_ep = rho[inds_ep][:, inds_ep]
@@ -501,7 +505,6 @@ class GreensFunctionRestricted:
         if compute_energies:
             if self.energy_gs is None:
                 self.compute_ground_state(save_params=save_params, load_params=load_params)
-            exit()
             if (self.eigenenergies_e is None or self.eigenenergies_h is None or
                 self.eigenstates_e is None or self.eigenstates_h is None):
                 self.compute_eh_states()
