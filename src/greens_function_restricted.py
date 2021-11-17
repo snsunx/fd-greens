@@ -23,7 +23,8 @@ from qubit_indices import QubitIndices
 from circuits import CircuitConstructor, CircuitData, transpile_across_barrier
 from vqe import vqe_minimize
 from z2_symmetries import transform_4q_hamiltonian
-from utils import save_circuit, state_tomography, solve_energy_probabilities
+from utils import save_circuit, state_tomography, solve_energy_probabilities, get_overlap
+
 
 np.set_printoptions(precision=6)
 
@@ -209,6 +210,9 @@ class GreensFunctionRestricted:
         self.circuit_constructor = CircuitConstructor(
             self.ansatz, add_barriers=self.add_barriers, ccx_data=self.ccx_data)
 
+        if self.method == 'tomography':
+            self.rho_gs = state_tomography(self.ansatz, q_instance=q_instance)
+
     def compute_eh_states(self) -> None:
         """Calculates (N±1)-electron states of the Hamiltonian."""
 
@@ -220,6 +224,10 @@ class GreensFunctionRestricted:
                 self.qiskit_op_spin.to_matrix(), inds=self.inds_e.int_form)
             self.eigenenergies_h, self.eigenstates_h = number_state_eigensolver(
                 self.qiskit_op_spin.to_matrix(), inds=self.inds_h.int_form)
+
+            # Transpose in order to index by the first index
+            self.eigenstates_e = self.eigenstates_e.T
+            self.eigenstates_h = self.eigenstates_h.T
         else:
             def a_op(ind, spin, dag):
                 a_op_ = (self.pauli_op_dict[(ind, spin)][0] + 
@@ -234,6 +242,8 @@ class GreensFunctionRestricted:
                 self.ansatz.copy(), self.qiskit_op, qse_ops_e, q_instance=q_instance)
             self.eigenenergies_h, self.eigenstates_h = quantum_subspace_expansion(
                 self.ansatz.copy(), self.qiskit_op, qse_ops_h, q_instance=q_instance)
+
+            
         print("===== Finish calculating (N±1)-electron states =====")
 
         self.eigenenergies_e *= HARTREE_TO_EV
@@ -287,7 +297,9 @@ class GreensFunctionRestricted:
                     circ_anc = circ.copy()
                     circ_anc.add_register(ClassicalRegister(1))
                     circ_anc.measure(0, 0)
+                    # XXX: Why is quantum_instance hardcoded here?
                     q_instance = QuantumInstance(Aer.get_backend('qasm_simulator'), shots=8000)
+                    
                     result = q_instance.execute(circ_anc)
                     counts = result.get_counts()
                     shots = sum(counts.values())
@@ -304,19 +316,25 @@ class GreensFunctionRestricted:
 
                     B_e_mm = p_e * solve_energy_probabilities(self.eigenenergies_e, energy_e * HARTREE_TO_EV)
                     B_h_mm = p_h * solve_energy_probabilities(self.eigenenergies_h, energy_h * HARTREE_TO_EV)
-                    
-                    #print(B_e_mm)
-                    #print(B_h_mm)
-                    #print(sum(B_e_mm) + sum(B_h_mm))
-                    #exit()
+                
                 elif self.method == 'tomography':
                     rho = state_tomography(circ, q_instance=q_instance)
 
                     rho_e = rho[inds_e][:, inds_e]
-                    B_e_mm = np.diag(self.eigenstates_e.conj().T @ rho_e @ self.eigenstates_e).real
-
                     rho_h = rho[inds_h][:, inds_h]
-                    B_h_mm = np.diag(self.eigenstates_h.conj().T @ rho_h @ self.eigenstates_h).real
+                    B_e_mm = np.zeros((self.n_e,), dtype=float)
+                    B_h_mm = np.zeros((self.n_h,), dtype=float)
+
+                    for i in range(self.n_e):
+                        B_e_mm[i] = get_overlap(self.eigenstates_e[i], rho_e)
+                    
+                    for i in range(self.n_h):
+                        B_h_mm[i] = get_overlap(self.eigenstates_h[i], rho_h)
+
+                    #B_e_mm1 = np.diag(self.eigenstates_e.conj().T @ rho_e @ self.eigenstates_e).real
+                    #B_h_mm1 = np.diag(self.eigenstates_h.conj().T @ rho_h @ self.eigenstates_h).real
+                    #assert np.allclose(B_e_mm, B_e_mm1)
+                    #assert np.allclose(B_h_mm, B_h_mm1)
 
             # B_e_mm[abs(B_e_mm) < 1e-8] = 0.
             self.B_e[m, m] = B_e_mm
@@ -381,19 +399,35 @@ class GreensFunctionRestricted:
 
                     else: # QASM simulator or hardware
                         if self.method == 'energy':
+                            # TODO: Implement the off-diagonal elements here.
                             D_ep_mn = D_em_mn = D_hp_mn = D_hm_mn = 0.
                         elif self.method == 'tomography':
                             rho = state_tomography(circ, q_instance=q_instance)
 
                             rho_ep = rho[inds_ep][:, inds_ep]
                             rho_em = rho[inds_em][:, inds_em]
-                            D_ep_mn = np.diag(self.eigenstates_e.conj().T @ rho_ep @ self.eigenstates_e).real
-                            D_em_mn = np.diag(self.eigenstates_e.conj().T @ rho_em @ self.eigenstates_e).real
-
                             rho_hp = rho[inds_hp][:, inds_hp]
                             rho_hm = rho[inds_hm][:, inds_hm]
-                            D_hp_mn = np.diag(self.eigenstates_h.conj().T @ rho_hp @ self.eigenstates_h).real
-                            D_hm_mn = np.diag(self.eigenstates_h.conj().T @ rho_hm @ self.eigenstates_h).real
+
+                            D_ep_mn = np.zeros((self.n_e,), dtype=float)
+                            D_em_mn = np.zeros((self.n_e,), dtype=float)
+                            D_hp_mn = np.zeros((self.n_h,), dtype=float)
+                            D_hm_mn = np.zeros((self.n_h,), dtype=float)
+
+                            for i in range(self.n_e):
+                                D_ep_mn[i] = get_overlap(self.eigenstates_e[i], rho_ep)
+                                D_em_mn[i] = get_overlap(self.eigenstates_e[i], rho_em)
+
+                            for i in range(self.n_h):
+                                D_hp_mn[i] = get_overlap(self.eigenstates_h[i], rho_hp)
+                                D_hm_mn[i] = get_overlap(self.eigenstates_h[i], rho_hm)
+
+                            
+                            #D_ep_mn1 = np.diag(self.eigenstates_e.conj().T @ rho_ep @ self.eigenstates_e).real
+                            #assert np.allclose(D_ep_mn, D_ep_mn1)
+                            #D_em_mn = np.diag(self.eigenstates_e.conj().T @ rho_em @ self.eigenstates_e).real
+                            #D_hp_mn = np.diag(self.eigenstates_h.conj().T @ rho_hp @ self.eigenstates_h).real
+                            #D_hm_mn = np.diag(self.eigenstates_h.conj().T @ rho_hm @ self.eigenstates_h).real
 
                     self.D_ep[m, n] = self.D_ep[n, m] = D_ep_mn
                     self.D_em[m, n] = self.D_em[n, m] = D_em_mn

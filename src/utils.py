@@ -272,3 +272,24 @@ def measure_operator(circ: QuantumCircuit,
                 value -= coeff * val / shots
     return value
 
+def get_overlap(state1: np.ndarray, state2: np.ndarray) -> float:
+    """Returns the overlap of two states in either statevector or density matrix form.
+    
+    Args:
+        state1: The numpy array corresponding to the first state.
+        state2: The numpy array corresponding to the second state.
+
+    Returns:
+        The overlap between the two states.
+    """
+    if len(state1.shape) == 1 and len(state2.shape) == 1:
+        return abs(state1.conj() @ state2) ** 2
+    
+    elif len(state1.shape) == 1 and len(state2.shape) == 2:
+        return (state1.conj() @ state2 @ state1).real
+    
+    elif len(state1.shape) == 2 and len(state2.shape) == 1:
+        return (state2.conj() @ state1 @ state2).real
+
+    elif len(state1.shape) == 2 and len(state2.shape) == 2:
+        return (state1.conj().T @ state2).trace
