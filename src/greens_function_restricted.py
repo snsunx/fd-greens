@@ -140,6 +140,7 @@ class GreensFunctionRestricted:
         """Initializes physical quantity attributes."""
         # Orbital energies
         self.e_orb = np.diag(self.molecule.orbital_energies) * HARTREE_TO_EV
+        self.e_orb = self.e_orb[[1, 2]][:, [1, 2]] # XXX: Hardcoded
 
         # Number of orbitals and indices
         self.n_orb = len(self.hamiltonian.act_inds)
@@ -155,6 +156,9 @@ class GreensFunctionRestricted:
         print(f"Number of virtual orbitals is {self.n_vir}")
         print(f"Number of (N+1)-electron states is {self.n_e}")
         print(f"Number of (N-1)-electron states is {self.n_h}")
+
+        self.h = np.zeros((self.n_orb, self.n_orb), dtype=complex)
+        self.h = self.molecule.one_body_integrals[[1, 2]][:, [1, 2]] # XXX: Hardcoded
 
         # `swap` is whether an additional swap gate is applied on top of the two CNOTs.
         # This part is hardcoded.
@@ -242,7 +246,7 @@ class GreensFunctionRestricted:
         
         print("===== Start calculating (N+1)-electron states =====")
 
-        if self.methods['eh'] == 'exact':
+        if self.methods['eh'] == 'exact' or self.q_instances['eh'].backend.name() == 'statevector_simulator':
         # if q_instance.backend.name() == 'statevector_simulator':
             self.eigenenergies_e, self.eigenstates_e = number_state_eigensolver(
                 self.qiskit_op_spin.to_matrix(), inds=self.inds_e.int_form)
@@ -348,7 +352,9 @@ class GreensFunctionRestricted:
                     # q_instance = QuantumInstance(Aer.get_backend('qasm_simulator'), shots=8000)
                     
                     result = q_instance.execute(circ_anc)
-                    counts = result.get_counts()
+                    counts = {'0': 0, '1': 0}
+                    counts.update(result.get_counts())
+                    print('counts =', counts)
                     shots = sum(counts.values())
                     p_e = counts['1'] / shots
                     p_h = counts['0'] / shots
@@ -369,12 +375,11 @@ class GreensFunctionRestricted:
 
                     rho_e = rho[inds_e][:, inds_e]
                     rho_h = rho[inds_h][:, inds_h]
+
                     B_e_mm = np.zeros((self.n_e,), dtype=float)
                     B_h_mm = np.zeros((self.n_h,), dtype=float)
-
                     for i in range(self.n_e):
                         B_e_mm[i] = get_overlap(self.eigenstates_e[i], rho_e)
-                    
                     for i in range(self.n_h):
                         B_h_mm[i] = get_overlap(self.eigenstates_h[i], rho_h)
 
@@ -399,10 +404,10 @@ class GreensFunctionRestricted:
         """
         print("===== Start calculating off-diagonal transition amplitudes =====")
         q_instance = self.q_instances['amp']
-        inds_hp = self.inds_h.include_ancilla('00').int_form
-        inds_hm = self.inds_h.include_ancilla('10').int_form
         inds_ep = self.inds_e.include_ancilla('01').int_form
         inds_em = self.inds_e.include_ancilla('11').int_form
+        inds_hp = self.inds_h.include_ancilla('00').int_form
+        inds_hm = self.inds_h.include_ancilla('10').int_form
         for m in range(self.n_orb):
             a_op_m = self.pauli_op_dict_tapered[(m, self.spin)]
             for n in range(self.n_orb):
@@ -441,8 +446,34 @@ class GreensFunctionRestricted:
 
                     else: # QASM simulator or hardware
                         if self.methods['amp'] == 'energy':
-                            # TODO: Implement the off-diagonal elements here.
-                            D_ep_mn = D_em_mn = D_hp_mn = D_hm_mn = 0.
+                            circ_anc = circ.copy()
+                            circ_anc.add_register(ClassicalRegister(2))
+                            circ_anc.measure([0, 1], [0, 1])
+                            
+                            result = q_instance.execute(circ_anc)
+                            counts = {'00': 0, '01': 0, '10': 0, '11': 0}
+                            counts.update(result.get_counts())
+                            shots = sum(counts.values())
+                            p_ep = counts['01'] / shots
+                            p_em = counts['11'] / shots
+                            p_hp = counts['00'] / shots
+                            p_hm = counts['10'] / shots
+
+                            energy_ep = measure_operator(
+                                circ.copy(), self.qiskit_op_down, q_instance=q_instance, anc_state=[1, 0])
+                            energy_em = measure_operator(
+                                circ.copy(), self.qiskit_op_down, q_instance=q_instance, anc_state=[1, 1])
+                            energy_hp = measure_operator(
+                                circ.copy(), self.qiskit_op_down, q_instance=q_instance, anc_state=[0, 0])
+                            energy_hm = measure_operator(
+                                circ.copy(), self.qiskit_op_down, q_instance=q_instance, anc_state=[0, 1])
+
+                            D_ep_mn = p_ep * solve_energy_probabilities(self.eigenenergies_e, energy_ep * HARTREE_TO_EV)
+                            D_em_mn = p_em * solve_energy_probabilities(self.eigenenergies_e, energy_em * HARTREE_TO_EV)
+                            D_hp_mn = p_hp * solve_energy_probabilities(self.eigenenergies_h, energy_hp * HARTREE_TO_EV)
+                            D_hm_mn = p_hm * solve_energy_probabilities(self.eigenenergies_h, energy_hm * HARTREE_TO_EV)
+                                
+                            
                         elif self.methods['amp'] == 'tomography':
                             rho = state_tomography(circ, q_instance=q_instance)
 
@@ -570,7 +601,8 @@ class GreensFunctionRestricted:
 
         G_HF = np.zeros((self.n_orb, self.n_orb), dtype=complex)
         for i in range(self.n_orb):
-            G_HF[i, i] = 1 / (omega - self.molecule.orbital_energies[i // 2] * HARTREE_TO_EV)
+            # print('!!! i + 1 =', i + 1)
+            G_HF[i, i] = 1 / (omega - self.molecule.orbital_energies[i + 1] * HARTREE_TO_EV)
 
         Sigma = np.linalg.pinv(G_HF) - np.linalg.pinv(self.G)
         return Sigma
@@ -586,24 +618,26 @@ class GreensFunctionRestricted:
         self.rho_hf = np.diag([1] * self.n_occ + [0] * self.n_vir)
         self.rho_gf = np.sum(self.B_h, axis=2)
 
+        # print('rho_hf\n', self.rho_hf)
+        # print('rho_gf\n', self.rho_gf)
+
         # XXX: Now filling in the one-electron integrals with a
         # checkerboard pattern. Could be done more efficiently.
-        self.h = np.zeros((self.n_orb, self.n_orb), dtype=complex)
-        for i in range(self.n_orb):
-            # print('i =', i)
-            # print(self.molecule.one_body_integrals[i // 2])
-            tmp = np.vstack((self.molecule.one_body_integrals[i // 2],
-                            np.zeros((self.n_orb // 2, ))))
-            self.h[i] = tmp[::(-1) ** (i % 2)].reshape(self.n_orb, order='f')
-        self.h *= HARTREE_TO_EV
+        #self.h = np.zeros((self.n_orb, self.n_orb), dtype=complex)
+        #for i in range(self.n_orb):
+        #    # print('i =', i)
+        #    # print(self.molecule.one_body_integrals[i // 2])
+        #    tmp = np.vstack((self.molecule.one_body_integrals[i // 2],
+        #                    np.zeros((self.n_orb // 2, ))))
+        #    self.h[i] = tmp[::(-1) ** (i % 2)].reshape(self.n_orb, order='f')
+        #self.h *= HARTREE_TO_EV
 
         E1 = np.trace((self.h + self.e_orb) @
                       (self.rho_gf - self.rho_hf)) / 2
 
         E2 = 0
         for i in range(self.n_h):
-            # print('i =', i)
             e_qp = self.energy_gs - self.eigenenergies_h[i]
-            Sigma = self.compute_self_energy(e_qp + 0.000002 * HARTREE_TO_EV * 1j)
+            Sigma = self.get_self_energy(e_qp + 0.000002 * HARTREE_TO_EV * 1j)
             E2 += np.trace(Sigma @ self.B_h[:,:,i]) / 2
         return E1, E2
