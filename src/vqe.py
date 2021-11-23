@@ -54,11 +54,16 @@ def objective_function_qasm(params: Sequence[float],
                             hamiltonian_op: PauliSumOp,
                             ansatz_func: Optional[AnsatzFunction] = None,
                             q_instance: Optional[QuantumInstance] = None) -> float:
-    """VQE objective function for ground state with sampling."""
+    """VQE objective function with sampling."""
+    # This function assumes the Hamiltonian only has the terms 
+    # II, IZ, ZI, ZZ, IX, ZX, XI, XZ, YY.
     shots = q_instance.run_config.shots
 
     label_coeff_list = hamiltonian_op.primitive.to_list()
     label_coeff_dict = dict(label_coeff_list)
+    for key in ['II', 'IZ', 'ZI', 'ZZ', 'IX', 'ZX', 'XI', 'XZ', 'YY']:
+        if key not in label_coeff_dict.keys():
+            label_coeff_dict[key] = 0.
 
     energy = label_coeff_dict['II']
 

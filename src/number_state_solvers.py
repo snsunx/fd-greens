@@ -117,7 +117,7 @@ def quantum_subspace_expansion(ansatz,
         eigvecs: The eigenstates in the subspace.
     """
     # if q_instance is None or q_instance.backend.name() == 'statevector_simulator':
-    q_instance = QuantumInstance(Aer.get_backend('qasm_simulator'), shots=100000)
+    # q_instance = QuantumInstance(Aer.get_backend('qasm_simulator'), shots=100000)
 
     dim = len(qse_ops)
 

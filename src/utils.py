@@ -292,4 +292,4 @@ def get_overlap(state1: np.ndarray, state2: np.ndarray) -> float:
         return (state2.conj() @ state1 @ state2).real
 
     elif len(state1.shape) == 2 and len(state2.shape) == 2:
-        return (state1.conj().T @ state2).trace()
+        return np.trace(state1.conj().T @ state2).real
