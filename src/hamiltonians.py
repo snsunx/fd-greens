@@ -1,6 +1,6 @@
 """The """
 
-from typing import Union, Sequence, Optional
+from typing import Union, Sequence, List, Tuple, Optional
 
 import numpy as np
 
@@ -12,10 +12,12 @@ from openfermionpyscf import run_pyscf
 from openfermion.transforms import jordan_wigner, get_fermion_operator
 from openfermion.linalg import get_sparse_operator
 
+GeometryType = List[Tuple[str, Sequence[Union[int, float]]]]
+
 class MolecularHamiltonian:
     """A class to hold a molecular Hamiltonian."""
     def __init__(self,
-                 geometry: Union[Sequence],
+                 geometry: GeometryType,
                  basis: str,
                  multiplicity: int = 1,
                  charge: int = 0,
@@ -44,8 +46,7 @@ class MolecularHamiltonian:
         self.geometry = geometry
         self.basis = basis
         if name is None:
-            self.name = ''.join(
-                [geometry[i][0] for i in range(len(geometry))])
+            self.name = ''.join([geometry[i][0] for i in range(len(geometry))])
         else:
             self.name = name
 

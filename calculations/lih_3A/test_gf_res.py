@@ -19,13 +19,13 @@ cache_write = False
 
 ansatz = build_2q_ansatz()
 hamiltonians = []
-radii = np.arange(1, 10, 0.2)
+radii = np.arange(1, 5, 0.2)
 for r in radii:
     hamiltonian = get_lih_hamiltonian(r)
     hamiltonians.append(hamiltonian)
 ccx_data = get_berkeley_ccx_data()
 
-methods = {'gs': 'vqe', 'eh': 'ssvqe', 'amp': 'tomography'}
+methods = {'gs': 'vqe', 'eh': 'ssvqe', 'amp': 'tomo'}
 q_instance_type = 'sv'
 q_instances = get_quantum_instance(q_instance_type)
 
