@@ -10,6 +10,8 @@ from openfermionpyscf import run_pyscf
 from openfermion.transforms import jordan_wigner, get_fermion_operator
 from openfermion.linalg import get_sparse_operator
 
+from constants import HARTREE_TO_EV
+
 GeometryType = List[Tuple[str, Sequence[Union[int, float]]]]
 
 class MolecularHamiltonian:
@@ -112,7 +114,7 @@ class MolecularHamiltonian:
             table.append(mask)
         primitive = SparsePauliOp(table, coeffs)
         qubit_op = PauliSumOp(primitive)
-        self._qiskit_op = qubit_op
+        self._qiskit_op = qubit_op * HARTREE_TO_EV
 
     def build(self,
               build_openfermion_op: bool = True,

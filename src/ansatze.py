@@ -1,7 +1,11 @@
+from typing import Callable, Union, Sequence
+
 import numpy as np
 from qiskit import QuantumCircuit, QuantumRegister
 from qiskit.circuit import Parameter
 from qiskit.circuit.library import TwoLocal
+
+
 
 def build_two_local_ansatz(n_qubits):
     """Constructs the ansatz for VQE."""
@@ -116,5 +120,34 @@ def build_kosugi_h2o_ansatz(ind=1):
         add_xxxy_term(ansatz, 4, 5, 10, 11, angles[4])
         add_xxxy_term(ansatz, 4, 5, 12, 13, angles[5])
 
+    return ansatz
+
+
+AnsatzFunction = Callable[[Sequence[float]], QuantumCircuit]
+
+def build_ansatz_gs(params: Sequence[float]) -> QuantumCircuit:
+    """Constructs an ansatz for a two-qubit Hamiltonian."""
+    qreg = QuantumRegister(2, name='q')
+    ansatz = QuantumCircuit(qreg)
+    ansatz.ry(params[0], 0)
+    ansatz.ry(params[1], 1)
+    ansatz.cz(0, 1)
+    ansatz.ry(params[2], 0)
+    ansatz.ry(params[3], 1)
+    return ansatz
+
+def build_ansatz_e(params: Sequence[float]) -> QuantumCircuit:
+    """Constructs the ansatz for (N+1)-electron states."""
+    qreg = QuantumRegister(2, name='q')
+    ansatz = QuantumCircuit(qreg)
+    ansatz.x(0)    
+    ansatz.ry(params[0], 1)
+    return ansatz
+
+def build_ansatz_h(params: Sequence[float]) -> QuantumCircuit:
+    """Constructs the ansatz for (N-1)-electron states."""
+    qreg = QuantumRegister(2, name='q')
+    ansatz = QuantumCircuit(qreg)  
+    ansatz.ry(params[0], 1)
     return ansatz
 

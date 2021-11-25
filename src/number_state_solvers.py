@@ -1,4 +1,4 @@
-from typing import Union, Tuple, List, Iterable, Optional, Sequence
+from typing import Union, Tuple, List, Iterable, Optional, Sequence, Callable
 from itertools import combinations
 
 import numpy as np
@@ -206,6 +206,7 @@ def roothaan_eig(Hmat: np.ndarray,
 class EHStatesSolver:
     def __init__(self,
                  h_op: PauliSumOp, 
+                 trans_func: Optional[Callable[[PauliSumOp], PauliSumOp]] = None,
                  ansatz_func_e: Optional[AnsatzFunction] = None, 
                  ansatz_func_h: Optional[AnsatzFunction] = None,
                  inds_e: Optional[QubitIndices] = None,
@@ -216,6 +217,7 @@ class EHStatesSolver:
         
         Args:
             h_op: The Hamiltonian object.
+            trans_func: The Z2 symmetry transformation function on the Hamiltonian operator.
             ansatz_func_e: The ansatz function for N+1 electron states.
             ansatz_func_h: The ansatz function for N-1 electron states.
             inds_e: The indices for N+1 electron states.
@@ -223,7 +225,14 @@ class EHStatesSolver:
             q_instance: The QuantumInstance object for N+/-1 electron state calculation.
             apply_tomography: Whether tomography of the states is applied.
         """
-        self.h_op = h_op
+        if isinstance(h_op, MolecularHamiltonian):
+            self.h_op = h_op.qiskit_op
+        else:
+            self.h_op = h_op
+        if trans_func is not None:
+            self.h_op = trans_func(self.h_op)
+        self.h_op.reduce()
+
         self.ansatz_func_e = ansatz_func_e
         self.ansatz_func_h = ansatz_func_h
         self.inds_e = inds_e
@@ -232,16 +241,16 @@ class EHStatesSolver:
         self.apply_tomography = apply_tomography
 
     def run_exact(self):
-        self.energies_e, self.states_e = number_state_eigensolver(
-            self.qiskit_op_spin.to_matrix(), inds=self.inds_e.int_form)
-        self.energies_h, self.states_h = number_state_eigensolver(
-            self.qiskit_op_spin.to_matrix(), inds=self.inds_h.int_form)
-
-        # Transpose in order to index each eigenstate by the first index
+        """Calculates the exact N+/-1 electron states of the Hamiltonian."""
+        self.energies_e, self.states_e = number_state_eigensolver(self.h_op.to_matrix(), inds=self.inds_e.int_form)
+        self.energies_h, self.states_h = number_state_eigensolver(self.h_op.to_matrix(), inds=self.inds_h.int_form)
         self.states_e = self.states_e.T
         self.states_h = self.states_h.T
+        print(f"N+1 electron energies are {self.energies_e} eV")
+        print(f"N-1 electron energies are {self.energies_h} eV")
 
     def run_vqe(self):
+        """Calculates the N+/-1 electron states of the Hamiltonian using VQE."""
         energy_min, circ_min = vqe_minimize(
             self.h_op, ansatz_func=self.ansatz_func_e,
             init_params=(0.,), q_instance=self.q_instance)
@@ -263,3 +272,6 @@ class EHStatesSolver:
             states_h = [state_tomography(circ_min, q_instance=self.q_instance), 
                         state_tomography(circ_max, q_instance=self.q_instance)]
             self.states_h = [rho[self.inds_h.int_form][:, self.inds_h.int_form] for rho in states_h]
+
+        print(f"N+1 electron energies are {self.energies_e} eV")
+        print(f"N-1 electron energies are {self.energies_h} eV")
