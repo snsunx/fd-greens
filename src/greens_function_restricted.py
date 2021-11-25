@@ -116,9 +116,6 @@ class GreensFunctionRestricted:
         self.qiskit_op_up = transform_4q_hamiltonian(self.qiskit_op, init_state=[0, 1]).reduce()
         self.qiskit_op_down = transform_4q_hamiltonian(self.qiskit_op, init_state=[1, 0]).reduce()
 
-        # print('qiskit_op_gs\n', self.qiskit_op_gs)
-        # print('qiskit_op_spin\n', self.qiskit_op_spin)
-
         # Create Pauli dictionaries for the original operators
         second_q_ops = SecondQuantizedOperators(4)
         self.pauli_op_dict = second_q_ops.get_op_dict_all()

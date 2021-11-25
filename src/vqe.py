@@ -1,4 +1,4 @@
-from typing import Optional, Sequence, Tuple, Callable
+from typing import Optional, Sequence, Tuple, Callable, Union
 
 import numpy as np
 from scipy.optimize import minimize
@@ -7,9 +7,14 @@ from qiskit import QuantumCircuit, QuantumRegister
 from qiskit.opflow import PauliSumOp
 from qiskit.utils import QuantumInstance
 
+from hamiltonians import MolecularHamiltonian
+from helpers import get_quantum_instance
+from utils import save_circuit
+from constants import HARTREE_TO_EV
+
 AnsatzFunction = Callable[[Sequence[float]], QuantumCircuit]
 
-def get_ansatz(params: Sequence[float]) -> QuantumCircuit:
+def get_ansatz_gs(params: Sequence[float]) -> QuantumCircuit:
     """Constructs an ansatz for a two-qubit Hamiltonian."""
     qreg = QuantumRegister(2, name='q')
     ansatz = QuantumCircuit(qreg)
@@ -36,7 +41,7 @@ def get_ansatz_h(params: Sequence[float]) -> QuantumCircuit:
     return ansatz
 
 def objective_function_sv(params: Sequence[float],
-                          hamiltonian_op: PauliSumOp,
+                          h_op: PauliSumOp,
                           ansatz_func: Optional[AnsatzFunction] = None,
                           q_instance: Optional[QuantumInstance] = None) -> float:
     """VQE objective function for ground state without sampling."""
@@ -44,14 +49,14 @@ def objective_function_sv(params: Sequence[float],
     result = q_instance.execute(ansatz)
     statevector = result.get_statevector()
 
-    matrix = hamiltonian_op.to_matrix()
+    matrix = h_op.to_matrix()
 
     energy = statevector.conj().T @ matrix @ statevector
     return energy.real
 
 
 def objective_function_qasm(params: Sequence[float], 
-                            hamiltonian_op: PauliSumOp,
+                            h_op: PauliSumOp,
                             ansatz_func: Optional[AnsatzFunction] = None,
                             q_instance: Optional[QuantumInstance] = None) -> float:
     """VQE objective function with sampling."""
@@ -59,7 +64,7 @@ def objective_function_qasm(params: Sequence[float],
     # II, IZ, ZI, ZZ, IX, ZX, XI, XZ, YY.
     shots = q_instance.run_config.shots
 
-    label_coeff_list = hamiltonian_op.primitive.to_list()
+    label_coeff_list = h_op.primitive.to_list()
     label_coeff_dict = dict(label_coeff_list)
     for key in ['II', 'IZ', 'ZI', 'ZZ', 'IX', 'ZX', 'XI', 'XZ', 'YY']:
         if key not in label_coeff_dict.keys():
@@ -118,26 +123,99 @@ def objective_function_qasm(params: Sequence[float],
     energy = energy.real
     return energy
 
-def vqe_minimize(hamiltonian_op: PauliSumOp,
+def vqe_minimize(h_op: PauliSumOp,
                  ansatz_func: Optional[AnsatzFunction] = None,
                  init_params: Optional[Sequence[float]] = None,
                  q_instance: Optional[QuantumInstance] = None
                  ) -> Tuple[float, QuantumCircuit]:
-    """Minimizes the energy of a Hamiltonian using VQE."""
+    """Minimizes the energy of a Hamiltonian using VQE.
+    
+    Args:
+        h_op: The Hamiltonian operator.
+        ansatz_func: An ansatz function that takes in parameters and returns a quantum circuit.
+        init_params: Initial guess parameters.
+        q_instance: The QuantumInstance for executing the circuits.
+    
+    Returns:
+        energy: The VQE ground state energy.
+        ansatz: The VQE ground state ansatz.
+    """
     if q_instance.backend.name() == 'statevector_simulator':
         objective_function = objective_function_sv
     else:
         objective_function = objective_function_qasm
 
     if ansatz_func is None:
-        ansatz_func = get_ansatz
+        ansatz_func = get_ansatz_gs
     if init_params is None:
         init_params = [-5., 0., 0., 5.]
 
-    #res = minimize(objective_function, x0=[-5., 0., 0., 5.],
-    #               method='Powell', args=(hamiltonian_op, q_instance))
     res = minimize(objective_function, x0=init_params, method='Powell',
-                   args=(hamiltonian_op, ansatz_func, q_instance))
+                   args=(h_op, ansatz_func, q_instance))
     energy = res.fun
     ansatz = ansatz_func(res.x)
     return energy, ansatz
+
+class GroundStateSolver:
+    def __init__(self,
+                 h_op: Union[MolecularHamiltonian, PauliSumOp], 
+                 trans_func: Optional[Callable[[PauliSumOp], PauliSumOp]] = None,
+                 ansatz_func: Optional[QuantumCircuit] = None,
+                 q_instance: Optional[QuantumInstance] = None,
+                 save_params: bool = False,
+                 load_params: bool = False):
+        """Initializes a VQE object.
+        
+        Args:
+            h_op: The Hamiltonian operator.
+            ansatz_func: The ansatz circuit for VQE.
+            q_instance: The QuantumInstance for the VQE calculation.
+            save_params: Whether to save parameters.
+            load_params: Whether to load parameters.
+        """
+        if isinstance(h_op, MolecularHamiltonian):
+            self.h_op = h_op.qiskit_op
+        else:
+            self.h_op = h_op
+        if trans_func is not None:
+            self.h_op = trans_func(self.h_op)
+        self.h_op.reduce()
+
+        self.ansatz_func = ansatz_func
+        self.q_instance = q_instance
+        self.save_params = save_params
+        self.load_params = load_params
+    
+    def run_exact(self):
+        """Calculates the exact ground state of the Hamiltonian."""
+        h_arr = self.h_op.to_matrix()
+        e, v = np.linalg.eigh(h_arr)
+        self.energy = e[0]
+        self.state = v[:, 0]
+    
+    def run_vqe(self):
+        """Calculates the ground state of the Hamiltonian using VQE."""
+        assert self.ansatz_func is not None
+        assert self.q_instance is not None
+
+        if self.load_params:
+            print("Load VQE circuit from file")
+            with open('data/vqe_energy.txt', 'r') as f: 
+                self.energy = float(f.read())
+            with open('circuits/vqe_circuit.txt') as f:
+                self.ansatz = QuantumCircuit.from_qasm_str(f.read())
+        else:
+            print("===== Start calculating the ground state using VQE =====")
+            self.energy, self.state = vqe_minimize(
+                self.qiskit_op_gs, ansatz_func=self.ansatz_func, 
+                init_params=(-5., 0., 0., 5.), q_instance=self.q_instance)
+            self.energy *= HARTREE_TO_EV
+            print("===== Finish calculating the ground state using VQE =====")
+
+            if self.save_params:
+                print("Save VQE circuit to file")
+                with open('data/vqe_energy.txt', 'w') as f: 
+                    f.write(str(self.energy))
+                save_circuit(self.state.copy(), 'circuits/vqe_circuit')
+
+        print(f'Ground state energy = {self.energy:.3f} eV')

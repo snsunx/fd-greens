@@ -25,8 +25,8 @@ for r in radii:
     hamiltonians.append(hamiltonian)
 ccx_data = get_berkeley_ccx_data()
 
-methods = {'gs': 'vqe', 'eh': 'ssvqe', 'amp': 'tomo'}
-q_instance_type = 'sv'
+methods = {'gs': 'vqe', 'eh': 'ssvqe', 'amp': 'energy'}
+q_instance_type = 'qasm'
 q_instances = get_quantum_instance(q_instance_type)
 
 E1_list = []
@@ -48,10 +48,10 @@ for r, h in zip(radii, hamiltonians):
 E1_list = np.array(E1_list).real
 E2_list = np.array(E2_list).real
 
-fname = f'data/E1_red_{q_instance_type}1.dat'
+fname = f'data/E1_red_{q_instance_type}e.dat'
 np.savetxt(fname, np.vstack((radii, E1_list)).T)
 
-fname = f'data/E2_red_{q_instance_type}1.dat'
+fname = f'data/E2_red_{q_instance_type}e.dat'
 np.savetxt(fname, np.vstack((radii, E2_list)).T)
 
 """

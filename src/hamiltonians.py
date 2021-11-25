@@ -1,5 +1,3 @@
-"""The """
-
 from typing import Union, Sequence, List, Tuple, Optional
 
 import numpy as np

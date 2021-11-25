@@ -158,3 +158,5 @@ def transform_4q_hamiltonian(
         op_new = taper(op_new, [0, 1], init_state=init_state)
     # op_new = swap_z2(op_new, 0, 1)
     return op_new
+
+transform_4q = transform_4q_hamiltonian
