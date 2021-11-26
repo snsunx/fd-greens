@@ -11,12 +11,13 @@ from qiskit.utils import QuantumInstance
 from qiskit.extensions import CCXGate
 from qiskit.opflow import PauliSumOp
 
+import params
 from constants import HARTREE_TO_EV
 from hamiltonians import MolecularHamiltonian
 from number_state_solvers import measure_operator
 from recompilation import CircuitRecompiler
 from operators import SecondQuantizedOperators
-from qubit_indices import QubitIndices
+from qubit_indices import QubitIndices, transform_4q_indices
 from circuits import CircuitConstructor, CircuitData, transpile_across_barrier
 from vqe import vqe_minimize, get_ansatz, get_ansatz_e, get_ansatz_h
 from z2_symmetries import transform_4q_hamiltonian
@@ -36,7 +37,7 @@ class GreensFunction:
                  hamiltonian: MolecularHamiltonian,
                  gs_solver: GroundStateSolver,
                  eh_solver: EHStatesSolver,
-                 spin: str = 'down',
+                 spin: str = 'edhu',
                  method: str = 'energy',
                  inds_e: QubitIndices = None,
                  inds_h: QubitIndices = None,
@@ -51,8 +52,8 @@ class GreensFunction:
         Args:
             ansatz: The parametrized circuit as an ansatz to VQE.
             hamiltonian: The hamiltonian of the molecule.
-            spin: A string indicating the spin in the tapered (N+/-1)-electron operators. 
-                Either 'up' or 'down'.
+            spin: A string indicating the spin in the tapered N+/-1 electron operators. 
+                Either 'euhd' (N+1 up, N-1 down) or 'edhu' (N+1 down, N-1 up).
             method: The method for extracting the transition amplitudes. Either 'energy'
                 or 'tomography'.
             q_instances: A sequence of QuantumInstance objects to execute the ground state, 
@@ -63,7 +64,7 @@ class GreensFunction:
             transpiled: Whether the circuit is transpiled.
             push: Whether the SWAP gates are pushed.
         """
-        assert spin in ['up', 'down']
+        assert spin in ['euhd', 'edhu']
 
         # Basic variables of the system
         self.ansatz = ansatz
@@ -106,9 +107,9 @@ class GreensFunction:
     def _initialize_operators(self) -> None:
         """Initializes operator attributes."""
         self.qiskit_op = self.hamiltonian.qiskit_op.copy()
-        if self.spin == 'up': # e up h down
+        if self.spin == 'euhd': # e up h down
             self.qiskit_op_spin = transform_4q_hamiltonian(self.qiskit_op, init_state=[0, 1]).reduce()
-        elif self.spin == 'down': # e down h up
+        elif self.spin == 'edhu': # e down h up
             self.qiskit_op_spin = transform_4q_hamiltonian(self.qiskit_op, init_state=[1, 0]).reduce()
 
         # Create Pauli dictionaries for the transformed and tapered operators
@@ -142,23 +143,12 @@ class GreensFunction:
         print(f"Number of (N+1)-electron states is {self.n_e}")
         print(f"Number of (N-1)-electron states is {self.n_h}")
 
-        # `swap` is whether an additional swap gate is applied on top of the two CNOTs.
-        # This part is hardcoded.
-        swap = True
-        if not swap:
-            if self.spin == 'up':
-                self.inds_h = QubitIndices(['10', '00'], n_qubits=2)
-                self.inds_e = QubitIndices(['11', '01'], n_qubits=2)
-            elif self.spin == 'down':
-                self.inds_h = QubitIndices(['01', '00'], n_qubits=2)
-                self.inds_e = QubitIndices(['11', '10'], n_qubits=2)
-        else:
-            if self.spin == 'up':
-                self.inds_h = QubitIndices(['01', '00'], n_qubits=2)
-                self.inds_e = QubitIndices(['11', '10'], n_qubits=2)
-            elif self.spin == 'down':
-                self.inds_h = QubitIndices(['10', '00'], n_qubits=2)
-                self.inds_e = QubitIndices(['11', '01'], n_qubits=2)
+        if self.spin == 'euhd':
+            self.inds_e = transform_4q_indices(params.eu_inds)
+            self.inds_h = transform_4q_indices(params.hd_inds)
+        elif self.spin == 'edhu':
+            self.inds_e = transform_4q_indices(params.ed_inds)
+            self.inds_h = transform_4q_indices(params.hu_inds)
 
         # Transition amplitude arrays
         self.B_e = np.zeros((self.n_orb, self.n_orb, self.n_e), dtype=complex)

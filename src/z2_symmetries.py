@@ -52,6 +52,8 @@ def apply_cnot_z2(op: Union[PauliSumOp, SparsePauliOp],
         op_new = PauliSumOp(op_new)
     return op_new
 
+cnot_pauli = apply_cnot_z2
+
 def swap_z2(op: Union[PauliSumOp, SparsePauliOp], q1: int, q2: int
             ) -> Union[PauliSumOp, SparsePauliOp]:
     if isinstance(op, PauliSumOp):
@@ -78,6 +80,8 @@ def swap_z2(op: Union[PauliSumOp, SparsePauliOp], q1: int, q2: int
     if isinstance(op, PauliSumOp):
         op_new = PauliSumOp(op_new)
     return op_new
+
+swap_pauli = swap_z2
 
 def taper(op: Union[PauliSumOp, SparsePauliOp],
           inds_tapered: Sequence[int],
@@ -136,6 +140,8 @@ def taper(op: Union[PauliSumOp, SparsePauliOp],
         op_new = PauliSumOp(op_new)
     return op_new
 
+taper_pauli = taper
+
 def transform_4q_hamiltonian(
         op: Union[PauliSumOp, SparsePauliOp],
         init_state: List[int],
@@ -151,12 +157,11 @@ def transform_4q_hamiltonian(
     Returns:
         A two-qubit Hamiltonian after symmetry reduction.
     """
-    op_new = apply_cnot_z2(apply_cnot_z2(op, 2, 0), 3, 1)
-    # print(op_new.table.to_labels(), op_new.coeffs)
-    op_new = swap_z2(op_new, 2, 3)
+    op_new = cnot_pauli(op, 2, 0)
+    op_new = cnot_pauli(op_new, 3, 1)
+    op_new = swap_pauli(op_new, 2, 3)
     if tapered:
-        op_new = taper(op_new, [0, 1], init_state=init_state)
-    # op_new = swap_z2(op_new, 0, 1)
+        op_new = taper_pauli(op_new, [0, 1], init_state=init_state)
     return op_new
 
 transform_4q = transform_4q_hamiltonian

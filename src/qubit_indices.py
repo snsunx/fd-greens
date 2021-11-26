@@ -21,8 +21,9 @@ def cnot_indices(qubit_inds: 'QubitIndices', ctrl: int, targ: int) -> 'QubitIndi
     data_list = qubit_inds.list_form
     data_list_new = []
     for q_ind in data_list:
-        q_ind[targ] = (q_ind[ctrl] + q_ind[targ]) % 2
-        data_list_new.append(q_ind)
+        q_ind_new = q_ind.copy()
+        q_ind_new[targ] = (q_ind[ctrl] + q_ind[targ]) % 2
+        data_list_new.append(q_ind_new)
     qubit_inds_new = QubitIndices(data_list_new)
     return qubit_inds_new
 
@@ -41,6 +42,7 @@ def swap_indices(qubit_inds: 'QubitIndices', q1: int, q2: int) -> 'QubitIndices'
     data_list = qubit_inds.list_form
     data_list_new = []
     for q_ind in data_list:
+        q_ind_new = q_ind.copy()
         tmp = q_ind[q1]
         q_ind[q1] = q_ind[q2]
         q_ind[q2] = tmp
@@ -68,19 +70,30 @@ def taper_indices(qubit_inds: 'QubitIndices', inds_tapered: Sequence[int]) -> 'Q
     qubit_inds_new = QubitIndices(qubit_inds_list_new)
     return qubit_inds_new
 
+def transform_4q_indices(q_inds: 'QubitIndices', swap: bool = True, tapered: bool = True) -> 'QubitIndices':
+    q_inds_new = cnot_indices(q_inds, 2, 0)
+    q_inds_new = cnot_indices(q_inds_new, 3, 1)
+    if swap:
+        q_inds_new = swap_indices(q_inds_new, 2, 3)
+    if tapered:
+        q_inds_new = taper_indices(q_inds_new, [0, 1])
+    return q_inds_new
 
 class QubitIndices:
-    """A class to handle qubit indices in string, integer and list forms."""
+    """A class to handle qubit indices in str, int and list forms."""
     def __init__(self,
                  data: QubitIndicesData,
                  n_qubits: Optional[int] = None
                 ) -> None:
-        """Initializes a QubitIndices object. For example, '110', [0, 1, 1] and 6 are the same.
+        """Initializes a QubitIndices object. 
+        
+        Each qubit index can be represented in three forms: str, int or list forms. For example, 
+        '110', [0, 1, 1] and 6 refer to the same qubit index.
 
         Args:
             data: A sequence of qubit indices in string, integer or list form.
-            n_qubits: The number of qubits used in padding zeroes
-                in string and list forms.
+            n_qubits: The number of qubits used in padding zeroes in string and list forms. If 
+                str form or list form is passed in this is not needed.
         """
         self._int = None
         self._list = None
