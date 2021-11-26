@@ -4,15 +4,78 @@ import copy
 from typing import Union, Sequence, Optional
 from math import ceil, log2
 
-QubitIndicesForm = Sequence[Union[int, str, Sequence[int]]]
+QubitIndicesData = Sequence[Union[int, str, Sequence[int]]]
+
+
+def cnot_indices(qubit_inds: 'QubitIndices', ctrl: int, targ: int) -> 'QubitIndices':
+    """Applies a CNOT operation to qubit indices.
+    
+    Args:
+        qubit_inds: The input QubitIndices object.
+        ctrl: Index of the control qubit.
+        targ: Index of the target qubit.
+
+    Returns:
+        The QubitIndices object after CNOT is applied.
+    """
+    data_list = qubit_inds.list_form
+    data_list_new = []
+    for q_ind in data_list:
+        q_ind[targ] = (q_ind[ctrl] + q_ind[targ]) % 2
+        data_list_new.append(q_ind)
+    qubit_inds_new = QubitIndices(data_list_new)
+    return qubit_inds_new
+
+
+def swap_indices(qubit_inds: 'QubitIndices', q1: int, q2: int) -> 'QubitIndices':
+    """Applies a SWAP operation to qubit indices.
+    
+    Args:
+        qubit_inds: The input QubitIndices object.
+        q1: Index of the first qubit.
+        q2: Index of the second qubit.
+
+    Returns:
+        The QubitIndices object after SWAP is applied.
+    """
+    data_list = qubit_inds.list_form
+    data_list_new = []
+    for q_ind in data_list:
+        tmp = q_ind[q1]
+        q_ind[q1] = q_ind[q2]
+        q_ind[q2] = tmp
+        data_list_new.append(q_ind)
+    qubit_inds_new = QubitIndices(data_list_new)
+    return qubit_inds_new
+
+
+def taper_indices(qubit_inds: 'QubitIndices', inds_tapered: Sequence[int]) -> 'QubitIndices':
+    """Tapers certain qubits off qubit indices.
+    
+    Args:
+        qubit_inds: The input QubitIndices object.
+        inds_tapered: The tapered qubit indices.
+    
+    Returns:
+        The QubitIndices after tapering.
+    """
+    qubit_inds_list = qubit_inds.list_form
+    qubit_inds_list_new = []
+    for q_ind in qubit_inds_list:
+        q_ind_new = [q for i, q in enumerate(q_ind) if i not in inds_tapered]
+        qubit_inds_list_new.append(q_ind_new)
+    
+    qubit_inds_new = QubitIndices(qubit_inds_list_new)
+    return qubit_inds_new
+
 
 class QubitIndices:
     """A class to handle qubit indices in string, integer and list forms."""
     def __init__(self,
-                 data: QubitIndicesForm,
+                 data: QubitIndicesData,
                  n_qubits: Optional[int] = None
                 ) -> None:
-        """Initializes a QubitIndices object.
+        """Initializes a QubitIndices object. For example, '110', [0, 1, 1] and 6 are the same.
 
         Args:
             data: A sequence of qubit indices in string, integer or list form.
@@ -86,6 +149,9 @@ class QubitIndices:
 
     def __str__(self):
         return self._str
+    
+    def __eq__(self, other: 'QubitIndices'):
+        return self.str_form == other.str_form
 
     @property
     def int_form(self):
