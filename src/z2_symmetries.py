@@ -165,3 +165,4 @@ def transform_4q_hamiltonian(
     return op_new
 
 transform_4q = transform_4q_hamiltonian
+transform_4q_pauli = transform_4q_hamiltonian

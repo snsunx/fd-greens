@@ -1,7 +1,8 @@
 """Utility functions"""
 
-from typing import ClassVar, Optional, Union, Iterable, List, Tuple, Sequence
+from typing import ClassVar, Optional, Union, Iterable, List, Tuple, Sequence, Mapping
 import numpy as np
+from collections import defaultdict
 
 from qiskit import QuantumCircuit, QuantumRegister, ClassicalRegister, Aer, IBMQ, execute
 from qiskit.utils import QuantumInstance
@@ -11,6 +12,7 @@ from qiskit.ignis.verification.tomography import (state_tomography_circuits,
                                                   StateTomographyFitter)
 from qiskit.circuit import Instruction
 from qiskit.opflow import PauliSumOp
+from qiskit.result import Result
 
 CircuitData = Iterable[Tuple[Instruction, List[int], Optional[List[int]]]]
 
@@ -293,3 +295,9 @@ def get_overlap(state1: np.ndarray, state2: np.ndarray) -> float:
 
     elif len(state1.shape) == 2 and len(state2.shape) == 2:
         return np.trace(state1.conj().T @ state2).real
+
+def get_counts(result: Result) -> Mapping[str, int]:
+    """Returns the counts from a Result object."""
+    counts = defaultdict(lambda: 0)
+    counts.update(result.get_counts())
+    return counts

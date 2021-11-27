@@ -104,6 +104,7 @@ class QubitIndices:
             self._list = [list(d) for d in data]
         elif isinstance(data[0], str):
             self._str = data
+        self.n = len(self.str_form)
         self.n_qubits = n_qubits
 
         self._build()
@@ -156,6 +157,17 @@ class QubitIndices:
             qubit_inds_with_anc._build_int_form()
             qubit_inds_with_anc._build_list_form()
             return qubit_inds_with_anc
+
+    def __add__(self, other: 'QubitIndices') -> 'QubitIndices':
+        assert other.n == 1
+        anc = other.str_form[0]
+        data_with_anc  = [s + anc for s in self.str_form]
+        q_inds_new = QubitIndices(data_with_anc)
+        return q_inds_new
+
+
+
+        
 
     def copy(self):
         return copy.deepcopy(self)
