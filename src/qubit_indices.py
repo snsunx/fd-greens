@@ -43,23 +43,22 @@ def swap_indices(qubit_inds: 'QubitIndices', q1: int, q2: int) -> 'QubitIndices'
     data_list_new = []
     for q_ind in data_list:
         q_ind_new = q_ind.copy()
-        tmp = q_ind[q1]
-        q_ind[q1] = q_ind[q2]
-        q_ind[q2] = tmp
-        data_list_new.append(q_ind)
+        q_ind_new[q2] = q_ind[q1]
+        q_ind_new[q1] = q_ind[q2]
+        data_list_new.append(q_ind_new)
     qubit_inds_new = QubitIndices(data_list_new)
     return qubit_inds_new
 
 
 def taper_indices(qubit_inds: 'QubitIndices', inds_tapered: Sequence[int]) -> 'QubitIndices':
-    """Tapers certain qubits off qubit indices.
+    """Tapers certain qubits off in a QubitIndices object.
     
     Args:
         qubit_inds: The input QubitIndices object.
         inds_tapered: The tapered qubit indices.
     
     Returns:
-        The QubitIndices after tapering.
+        The QubitIndices object after tapering.
     """
     qubit_inds_list = qubit_inds.list_form
     qubit_inds_list_new = []
@@ -104,10 +103,11 @@ class QubitIndices:
             self._list = [list(d) for d in data]
         elif isinstance(data[0], str):
             self._str = data
-        self.n = len(self.str_form)
         self.n_qubits = n_qubits
 
         self._build()
+        
+        self.n = len(self.str_form)
 
     def _build(self):
         if self._str is None:
@@ -165,15 +165,11 @@ class QubitIndices:
         q_inds_new = QubitIndices(data_with_anc)
         return q_inds_new
 
-
-
-        
-
     def copy(self):
         return copy.deepcopy(self)
 
     def __str__(self):
-        return self._str
+        return str(self._str)
     
     def __eq__(self, other: 'QubitIndices'):
         return self.str_form == other.str_form

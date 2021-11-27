@@ -13,16 +13,15 @@ from openfermion.linalg import get_sparse_operator
 from openfermion.ops.operators.qubit_operator import QubitOperator
 
 from hamiltonians import MolecularHamiltonian
-from z2_symmetries import transform_4q_hamiltonian
-
+from z2_symmetries import transform_4q_hamiltonian, transform_4q_pauli
+import params
 from constants import HARTREE_TO_EV
 from utils import get_statevector, measure_operator
-
 from vqe import vqe_minimize
 from helpers import get_quantum_instance
 from ansatze import AnsatzFunction
 from utils import state_tomography
-from qubit_indices import QubitIndices
+from qubit_indices import QubitIndices, transform_4q_indices
 
 def get_number_state_indices(n_orb: int,
                              n_elec: int,
@@ -205,38 +204,38 @@ def roothaan_eig(Hmat: np.ndarray,
 
 class EHStatesSolver:
     def __init__(self,
-                 h_op: PauliSumOp, 
-                 trans_func: Optional[Callable[[PauliSumOp], PauliSumOp]] = None,
+                 h: MolecularHamiltonian,
                  ansatz_func_e: Optional[AnsatzFunction] = None, 
                  ansatz_func_h: Optional[AnsatzFunction] = None,
-                 inds_e: Optional[QubitIndices] = None,
-                 inds_h: Optional[QubitIndices] = None,
                  q_instance: Optional[QuantumInstance] = None,
+                 spin: str = 'edhu',
                  apply_tomography: bool = False):
-        """Initializes a EHSolver object.
+        """Initializes a EHStatesSolver object.
         
         Args:
-            h_op: The Hamiltonian object.
-            trans_func: The Z2 symmetry transformation function on the Hamiltonian operator.
+            h_op: The Hamiltonian operator.
             ansatz_func_e: The ansatz function for N+1 electron states.
             ansatz_func_h: The ansatz function for N-1 electron states.
-            inds_e: The indices for N+1 electron states.
-            inds_h: The indices for N-1 electron states.
             q_instance: The QuantumInstance object for N+/-1 electron state calculation.
             apply_tomography: Whether tomography of the states is applied.
         """
-        if isinstance(h_op, MolecularHamiltonian):
-            self.h_op = h_op.qiskit_op
-        else:
-            self.h_op = h_op
-        if trans_func is not None:
-            self.h_op = trans_func(self.h_op)
-        self.h_op.reduce()
+        assert spin in ['euhd', 'edhu']
+
+        self.h = h
+        if spin == 'euhd': # e up h down
+            self.h_op = transform_4q_pauli(self.h.qiskit_op, init_state=[0, 1])
+        elif spin == 'edhu': # e down h up
+            self.h_op = transform_4q_pauli(self.h.qiskit_op, init_state=[1, 0])
+
+        if spin == 'euhd':
+            self.inds_e = transform_4q_indices(params.eu_inds)
+            self.inds_h = transform_4q_indices(params.hd_inds)
+        elif spin == 'edhu':
+            self.inds_e = transform_4q_indices(params.ed_inds)
+            self.inds_h = transform_4q_indices(params.hu_inds)
 
         self.ansatz_func_e = ansatz_func_e
         self.ansatz_func_h = ansatz_func_h
-        self.inds_e = inds_e
-        self.inds_h = inds_h
         self.q_instance = q_instance
         self.apply_tomography = apply_tomography
 
@@ -251,12 +250,10 @@ class EHStatesSolver:
 
     def run_vqe(self):
         """Calculates the N+/-1 electron states of the Hamiltonian using VQE."""
-        energy_min, circ_min = vqe_minimize(
-            self.h_op, ansatz_func=self.ansatz_func_e,
-            init_params=(0.,), q_instance=self.q_instance)
-        m_energy_max, circ_max = vqe_minimize(
-            -self.h_op, ansatz_func=self.ansatz_func_e,
-            init_params=(0.,), q_instance=self.q_instance)
+        energy_min, circ_min = vqe_minimize(self.h_op, ansatz_func=self.ansatz_func_e,
+                                            init_params=(0.,), q_instance=self.q_instance)
+        m_energy_max, circ_max = vqe_minimize(-self.h_op, ansatz_func=self.ansatz_func_e,
+                                              init_params=(0.,), q_instance=self.q_instance)
         self.energies_e = np.array([energy_min, -m_energy_max])
         if self.apply_tomography:
             states_e = [state_tomography(circ_min, q_instance=self.q_instance), 

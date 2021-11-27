@@ -297,7 +297,7 @@ def get_overlap(state1: np.ndarray, state2: np.ndarray) -> float:
         return np.trace(state1.conj().T @ state2).real
 
 def get_counts(result: Result) -> Mapping[str, int]:
-    """Returns the counts from a Result object."""
+    """Returns the counts from a Result object with default set to 0."""
     counts = defaultdict(lambda: 0)
     counts.update(result.get_counts())
     return counts

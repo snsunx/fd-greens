@@ -142,7 +142,7 @@ def taper(op: Union[PauliSumOp, SparsePauliOp],
 
 taper_pauli = taper
 
-def transform_4q_hamiltonian(
+def transform_4q_pauli(
         op: Union[PauliSumOp, SparsePauliOp],
         init_state: List[int],
         tapered: bool = True
@@ -151,18 +151,19 @@ def transform_4q_hamiltonian(
     assuming the symmetry operators are ZIZI and IZIZ.
 
     Args:
-        pauli_sum_op: A Hamiltonian in PauliSumOp form.
+        op: An four-qubit operator in PauliSumOp or SparsePauliOp form.
         spin: A string indicating the spin subspace of the transformed Hamiltonian.
 
     Returns:
-        A two-qubit Hamiltonian after symmetry reduction.
+        A two-qubit operator in the original form after symmetry reduction.
     """
     op_new = cnot_pauli(op, 2, 0)
     op_new = cnot_pauli(op_new, 3, 1)
     op_new = swap_pauli(op_new, 2, 3)
     if tapered:
         op_new = taper_pauli(op_new, [0, 1], init_state=init_state)
+    if isinstance(op_new, PauliSumOp):
+        op_new = op_new.reduce()
     return op_new
 
-transform_4q = transform_4q_hamiltonian
-transform_4q_pauli = transform_4q_hamiltonian
+transform_4q = transform_4q_hamiltonian = transform_4q_pauli

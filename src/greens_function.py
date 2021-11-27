@@ -12,10 +12,8 @@ from qiskit.extensions import CCXGate
 from qiskit.opflow import PauliSumOp
 
 import params
-from constants import HARTREE_TO_EV
 from hamiltonians import MolecularHamiltonian
 from number_state_solvers import measure_operator
-from recompilation import CircuitRecompiler
 from operators import SecondQuantizedOperators
 from qubit_indices import QubitIndices, transform_4q_indices
 from circuits import CircuitConstructor, CircuitData, transpile_across_barrier
@@ -25,15 +23,13 @@ from helpers import get_quantum_instance
 from vqe import GroundStateSolver
 from number_state_solvers import EHStatesSolver
 
-
 np.set_printoptions(precision=6)
 
 class GreensFunction:
     """A class to calculate frequency-domain Green's function."""
 
     def __init__(self,
-                 ansatz: QuantumCircuit,
-                 hamiltonian: MolecularHamiltonian,
+                 h: MolecularHamiltonian,
                  gs_solver: GroundStateSolver,
                  eh_solver: EHStatesSolver,
                  spin: str = 'edhu',
@@ -52,7 +48,7 @@ class GreensFunction:
                 Either 'euhd' (N+1 up, N-1 down) or 'edhu' (N+1 down, N-1 up).
             method: The method for extracting the transition amplitudes. Either 'energy'
                 or 'tomography'.
-            q_instances: The QuantumInstance for executing the transition amplitude circuits.
+            q_instance: The QuantumInstance for executing the transition amplitude circuits.
             ccx_data: A CircuitData object indicating how CCX gate is applied.
             recompiled: Whether the QPE circuit is recompiled.
             add_barriers: Whether to add barriers to the circuit.
@@ -62,14 +58,16 @@ class GreensFunction:
         assert spin in ['euhd', 'edhu']
 
         # Basic variables of the system
-        self.ansatz = ansatz
-        self.hamiltonian = hamiltonian
+        self.h = h
         self.spin = spin
 
         # Ground state solver
         self.gs_solver = gs_solver
         self.energy_gs = gs_solver.energy
         self.state_gs = gs_solver.state
+        self.ansatz = gs_solver.ansatz
+        self.circuit_constructor = CircuitConstructor(
+            self.ansatz, add_barriers=self.add_barriers, ccx_data=self.ccx_data)
 
         # N+/-1 electron states solver
         self.eh_solver = eh_solver
@@ -99,19 +97,19 @@ class GreensFunction:
         if self.push: self.suffix = self.suffix + '_push'
 
         # Initialize operators and physical quantities
-        self._initialize_operators()
         self._initialize_quantities()
+        self._initialize_operators()
 
     def _initialize_operators(self) -> None:
         """Initializes operator attributes."""
-        self.qiskit_op = self.hamiltonian.qiskit_op.copy()
+        self.qiskit_op = self.h.qiskit_op.copy()
         if self.spin == 'euhd': # e up h down
-            self.qiskit_op_spin = transform_4q_pauli(self.qiskit_op, init_state=[0, 1]).reduce()
+            self.qiskit_op_spin = transform_4q_pauli(self.qiskit_op, init_state=[0, 1])
         elif self.spin == 'edhu': # e down h up
-            self.qiskit_op_spin = transform_4q_pauli(self.qiskit_op, init_state=[1, 0]).reduce()
+            self.qiskit_op_spin = transform_4q_pauli(self.qiskit_op, init_state=[1, 0])
 
         # Create Pauli dictionaries for the transformed and tapered operators
-        second_q_ops = SecondQuantizedOperators(4)
+        second_q_ops = SecondQuantizedOperators(self.n_elec)
         second_q_ops.transform(partial(transform_4q_pauli, init_state=[1, 1]))
         self.pauli_dict = second_q_ops.get_op_dict_all()
 
@@ -122,9 +120,9 @@ class GreensFunction:
         self.act_inds = self.hamiltonian.act_inds
 
         # One-electron integrals and orbital energies
-        self.int1e = self.hamiltonian.molecule.one_body_integrals * HARTREE_TO_EV
+        self.int1e = self.hamiltonian.molecule.one_body_integrals
         self.int1e = self.int1e[self.act_inds][:, self.act_inds]
-        self.e_orb = np.diag(self.hamiltonian.molecule.orbital_energies) * HARTREE_TO_EV
+        self.e_orb = np.diag(self.hamiltonian.molecule.orbital_energies)
         self.e_orb = self.e_orb[self.act_inds][:, self.act_inds]
 
         # Number of spatial orbitals and N+/-1 electron states
@@ -202,8 +200,8 @@ class GreensFunction:
                                             q_instance=self.q_instance,
                                             anc_state=inds_anc_h.list_form[0])
 
-                B_e_mm = p_e * solve_energy_probabilities(self.energies_e, energy_e * HARTREE_TO_EV)
-                B_h_mm = p_h * solve_energy_probabilities(self.energies_h, energy_h * HARTREE_TO_EV)
+                B_e_mm = p_e * solve_energy_probabilities(self.energies_e, energy_e)
+                B_h_mm = p_h * solve_energy_probabilities(self.energies_h, energy_h)
                 
             elif self.method == 'tomo':
                 rho = state_tomography(circ, q_instance=self.q_instance)
@@ -295,10 +293,10 @@ class GreensFunction:
                                                      q_instance=self.q_instance, 
                                                      anc_state=inds_anc_hm.list_form[0])
 
-                        D_ep_mn = p_ep * solve_energy_probabilities(self.energies_e, energy_ep * HARTREE_TO_EV)
-                        D_em_mn = p_em * solve_energy_probabilities(self.energies_e, energy_em * HARTREE_TO_EV)
-                        D_hp_mn = p_hp * solve_energy_probabilities(self.energies_h, energy_hp * HARTREE_TO_EV)
-                        D_hm_mn = p_hm * solve_energy_probabilities(self.energies_h, energy_hm * HARTREE_TO_EV)
+                        D_ep_mn = p_ep * solve_energy_probabilities(self.energies_e, energy_ep)
+                        D_em_mn = p_em * solve_energy_probabilities(self.energies_e, energy_em)
+                        D_hp_mn = p_hp * solve_energy_probabilities(self.energies_h, energy_hp)
+                        D_hm_mn = p_hm * solve_energy_probabilities(self.energies_h, energy_hm)
                                 
                     elif self.method == 'tomo':
                         rho = state_tomography(circ, q_instance=self.q_instance)
@@ -337,12 +335,12 @@ class GreensFunction:
                 if m < n:
                     B_e_mn = np.exp(-1j * np.pi / 4) * (self.D_ep[m, n] - self.D_em[m, n])
                     B_e_mn += np.exp(1j * np.pi / 4) * (self.D_ep[n, m] - self.D_em[n, m])
-                    B_e_mn[abs(B_e_mn) < 1e-8] = 0
+                    # B_e_mn[abs(B_e_mn) < 1e-8] = 0
                     self.B_e[m, n] = self.B_e[n, m] = B_e_mn
 
                     B_h_mn = np.exp(-1j * np.pi / 4) * (self.D_hp[m, n] - self.D_hm[m, n])
                     B_h_mn += np.exp(1j * np.pi / 4) * (self.D_hp[n, m] - self.D_hm[n, m])
-                    B_h_mn[abs(B_h_mn) < 1e-8] = 0
+                    # B_h_mn[abs(B_h_mn) < 1e-8] = 0
                     self.B_h[m, n] = self.B_h[n, m] = B_h_mn
                     
                     print(f'B_e[{m}, {n}] = {self.B_e[m, n]}')
