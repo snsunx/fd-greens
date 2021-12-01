@@ -147,7 +147,7 @@ class GroundStateSolver:
             load_params: Whether to load parameters.
         """
         self.h = h
-        self.h_op = transform_4q_pauli(self.h.qiskit_op, init_state=[1, 1]).reduce()
+        self.h_op = transform_4q_pauli(self.h.qiskit_op, init_state=[1, 1])
         
         self.ansatz_func = ansatz_func
         self.init_params = init_params
@@ -158,14 +158,18 @@ class GroundStateSolver:
         self.state = None
         self.ansatz = None
     
-    def run_exact(self):
+    def _run_exact(self):
         """Calculates the exact ground state of the Hamiltonian."""
-        e, v = np.linalg.eigh(self.h_op.to_matrix())
-        self.energy = e[0]
-        self.state = v[:, 0]
-        print(f'Ground state energy = {self.energy:.3f} eV')
+        # e, v = np.linalg.eigh(self.h_op.to_matrix())
+        # self.energy = e[0]
+        # self.state = v[:, 0]
+        # print(f'Ground state energy = {self.energy:.3f} eV')
+        from helpers import get_quantum_instance
+        self.q_instance = get_quantum_instance('sv')
+        self._run_vqe()
+
     
-    def run_vqe(self):
+    def _run_vqe(self):
         """Calculates the ground state of the Hamiltonian using VQE."""
         assert self.ansatz_func is not None
         assert self.q_instance is not None
@@ -190,3 +194,10 @@ class GroundStateSolver:
                 save_circuit(self.ansatz.copy(), 'circuits/vqe_circuit')
 
         print(f'Ground state energy = {self.energy:.3f} eV')
+
+    def run(self, method='vqe'):
+        """Runs the N+/-1 electron states calculation."""
+        if method == 'exact':
+            self._run_exact()
+        elif method == 'vqe':
+            self._run_vqe()

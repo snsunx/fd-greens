@@ -22,7 +22,8 @@ from recompilation import CircuitRecompiler
 from operators import SecondQuantizedOperators
 from qubit_indices import QubitIndices
 from circuits import CircuitConstructor, CircuitData, transpile_across_barrier
-from vqe import vqe_minimize, get_ansatz, get_ansatz_e, get_ansatz_h
+from vqe import vqe_minimize
+from ansatze import build_ansatz_gs, build_ansatz_e, build_ansatz_h
 from z2_symmetries import transform_4q_hamiltonian
 from utils import save_circuit, state_tomography, solve_energy_probabilities, get_overlap
 from helpers import get_quantum_instance
@@ -220,9 +221,8 @@ class GreensFunctionRestricted:
         else:
             print("===== Start calculating the ground state using VQE =====")
             self.energy_gs, self.ansatz = vqe_minimize(
-                self.qiskit_op_gs, ansatz_func=get_ansatz, 
+                self.qiskit_op_gs, ansatz_func=build_ansatz_gs, 
                 init_params=(-5., 0., 0., 5.), q_instance=q_instance)
-            self.energy_gs *= HARTREE_TO_EV
             print("===== Finish calculating the ground state using VQE =====")
 
             if save_params:
@@ -272,10 +272,10 @@ class GreensFunctionRestricted:
 
         elif self.methods['eh'] == 'ssvqe':
             energy_min, circ_min = vqe_minimize(
-                self.qiskit_op_spin, ansatz_func=get_ansatz_e,
+                self.qiskit_op_spin, ansatz_func=build_ansatz_e,
                 init_params=(0.,), q_instance=self.q_instances['eh'])
             m_energy_max, circ_max = vqe_minimize(
-                -self.qiskit_op_spin, ansatz_func=get_ansatz_e,
+                -self.qiskit_op_spin, ansatz_func=build_ansatz_e,
                 init_params=(0.,), q_instance=self.q_instances['eh'])
             self.eigenenergies_e = np.array([energy_min, -m_energy_max])
             eigenstates_e = [state_tomography(circ_min, q_instance=self.q_instances['tomo']), 
@@ -283,10 +283,10 @@ class GreensFunctionRestricted:
             self.eigenstates_e = [rho[self.inds_e.int_form][:, self.inds_e.int_form] for rho in eigenstates_e]
 
             energy_min, circ_min = vqe_minimize(
-                self.qiskit_op_spin, ansatz_func=get_ansatz_h,
+                self.qiskit_op_spin, ansatz_func=build_ansatz_h,
                 init_params=(0.,), q_instance=self.q_instances['eh'])
             m_energy_max, circ_max = vqe_minimize(
-                -self.qiskit_op_spin, ansatz_func=get_ansatz_h,
+                -self.qiskit_op_spin, ansatz_func=build_ansatz_h,
                 init_params=(0.,), q_instance=self.q_instances['eh'])
             self.eigenenergies_h = np.array([energy_min, -m_energy_max])
             eigenstates_h = [state_tomography(circ_min, q_instance=self.q_instances['tomo']),
@@ -296,8 +296,6 @@ class GreensFunctionRestricted:
             
         print("===== Finish calculating (N±1)-electron states =====")
 
-        self.eigenenergies_e *= HARTREE_TO_EV
-        self.eigenenergies_h *= HARTREE_TO_EV
         print(f"(N+1)-electron energies are {self.eigenenergies_e} eV")
         print(f"(N-1)-electron energies are {self.eigenenergies_h} eV")
 
@@ -317,7 +315,7 @@ class GreensFunctionRestricted:
         inds_e = self.inds_e.include_ancilla('1').int_form
         inds_h = self.inds_h.include_ancilla('0').int_form
         for m in range(self.n_orb):
-            a_op_m = self.pauli_op_dict_tapered[(m, self.spin)]
+            a_op_m = self.pauli_op_dict_tapered[(m, self.spin[0])]
             circ = self.circuit_constructor.build_diagonal_circuits(a_op_m)
             print(f"Calculating m = {m}")
             fname = f'circuits/circuit_{m}'
@@ -364,8 +362,8 @@ class GreensFunctionRestricted:
                     # print(f'energy_e = {energy_e * HARTREE_TO_EV:.6f} eV')
                     # print(f'energy_h = {energy_h * HARTREE_TO_EV:.6f} eV')
 
-                    B_e_mm = p_e * solve_energy_probabilities(self.eigenenergies_e, energy_e * HARTREE_TO_EV)
-                    B_h_mm = p_h * solve_energy_probabilities(self.eigenenergies_h, energy_h * HARTREE_TO_EV)
+                    B_e_mm = p_e * solve_energy_probabilities(self.eigenenergies_e, energy_e)
+                    B_h_mm = p_h * solve_energy_probabilities(self.eigenenergies_h, energy_h)
                 
                 elif self.methods['amp'] == 'tomo':
                     rho = state_tomography(circ, q_instance=self.q_instances['tomo'])
@@ -406,10 +404,10 @@ class GreensFunctionRestricted:
         inds_hp = self.inds_h.include_ancilla('00').int_form
         inds_hm = self.inds_h.include_ancilla('10').int_form
         for m in range(self.n_orb):
-            a_op_m = self.pauli_op_dict_tapered[(m, self.spin)]
+            a_op_m = self.pauli_op_dict_tapered[(m, self.spin[0])]
             for n in range(self.n_orb):
                 if m < n:
-                    a_op_n = self.pauli_op_dict_tapered[(n, self.spin)]
+                    a_op_n = self.pauli_op_dict_tapered[(n, self.spin[0])]
                     print(f"Calculating m = {m}, n = {n}")
 
                     circ = self.circuit_constructor.build_off_diagonal_circuits(a_op_m, a_op_n)
@@ -465,10 +463,10 @@ class GreensFunctionRestricted:
                             energy_hm = measure_operator(
                                 circ.copy(), self.qiskit_op_down, q_instance=q_instance, anc_state=[0, 1])
 
-                            D_ep_mn = p_ep * solve_energy_probabilities(self.eigenenergies_e, energy_ep * HARTREE_TO_EV)
-                            D_em_mn = p_em * solve_energy_probabilities(self.eigenenergies_e, energy_em * HARTREE_TO_EV)
-                            D_hp_mn = p_hp * solve_energy_probabilities(self.eigenenergies_h, energy_hp * HARTREE_TO_EV)
-                            D_hm_mn = p_hm * solve_energy_probabilities(self.eigenenergies_h, energy_hm * HARTREE_TO_EV)
+                            D_ep_mn = p_ep * solve_energy_probabilities(self.eigenenergies_e, energy_ep)
+                            D_em_mn = p_em * solve_energy_probabilities(self.eigenenergies_e, energy_em)
+                            D_hp_mn = p_hp * solve_energy_probabilities(self.eigenenergies_h, energy_hp)
+                            D_hm_mn = p_hm * solve_energy_probabilities(self.eigenenergies_h, energy_hm)
                                 
                             
                         elif self.methods['amp'] == 'tomo':

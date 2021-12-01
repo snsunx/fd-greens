@@ -1,0 +1,30 @@
+%%%%%%%%%%%%%%%%%%%% r = 3.0 %%%%%%%%%%%%%%%%%%%%
+Number of orbitals is 2
+Number of occupied orbitals is 1
+Number of virtual orbitals is 1
+Number of (N+1)-electron states is 2
+Number of (N-1)-electron states is 2
+===== Start calculating the ground state using VQE =====
+===== Finish calculating the ground state using VQE =====
+Ground state energy = -210.247 eV
+===== Start calculating (N+1)-electron states =====
+===== Finish calculating (N±1)-electron states =====
+(N+1)-electron energies are [-208.307859 -204.548283] eV
+(N-1)-electron energies are [-205.855902 -197.708004] eV
+===== Start calculating diagonal transition amplitudes =====
+Calculating m = 0
+B_e[0, 0] = [0.017964+0.j 0.065905+0.j]
+B_h[0, 0] = [0.900782+0.j 0.015348+0.j]
+Calculating m = 1
+B_e[1, 1] = [0.909705+0.j 0.006425+0.j]
+B_h[1, 1] = [0.00586 +0.j 0.078009+0.j]
+===== Finish calculating diagonal transition amplitudes =====
+===== Start calculating off-diagonal transition amplitudes =====
+Calculating m = 0, n = 1
+D_ep[0, 1] = [0.18672 +0.j 0.025358+0.j]
+D_em[0, 1] = [0.277115+0.j 0.010807+0.j]
+D_hp[0, 1] = [0.252349+0.j 0.035573+0.j]
+D_hm[0, 1] = [0.200973+0.j 0.011106+0.j]
+B_e[0, 1] = [-0.127837+0.j  0.020578+0.j]
+B_h[0, 1] = [0.072657+0.j 0.034602+0.j]
+===== Finish calculating off-diagonal transition amplitudes =====

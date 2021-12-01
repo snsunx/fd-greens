@@ -239,7 +239,10 @@ class EHStatesSolver:
         self.q_instance = q_instance
         self.apply_tomography = apply_tomography
 
-    def run_exact(self):
+        self.states_e = None
+        self.states_h = None
+
+    def _run_exact(self):
         """Calculates the exact N+/-1 electron states of the Hamiltonian."""
         self.energies_e, self.states_e = number_state_eigensolver(self.h_op.to_matrix(), inds=self.inds_e.int_form)
         self.energies_h, self.states_h = number_state_eigensolver(self.h_op.to_matrix(), inds=self.inds_h.int_form)
@@ -248,7 +251,7 @@ class EHStatesSolver:
         print(f"N+1 electron energies are {self.energies_e} eV")
         print(f"N-1 electron energies are {self.energies_h} eV")
 
-    def run_vqe(self):
+    def _run_vqe(self):
         """Calculates the N+/-1 electron states of the Hamiltonian using VQE."""
         energy_min, circ_min = vqe_minimize(self.h_op, ansatz_func=self.ansatz_func_e,
                                             init_params=(0.,), q_instance=self.q_instance)
@@ -272,3 +275,10 @@ class EHStatesSolver:
 
         print(f"N+1 electron energies are {self.energies_e} eV")
         print(f"N-1 electron energies are {self.energies_h} eV")
+
+    def run(self, method='vqe'):
+        """Runs the N+/-1 electron states calculation."""
+        if method == 'exact':
+            self._run_exact()
+        elif method == 'vqe':
+            self._run_vqe()

@@ -19,14 +19,14 @@ cache_write = False
 
 ansatz = build_2q_ansatz()
 hamiltonians = []
-radii = np.arange(1, 5, 0.2)
+radii = np.arange(3, 3.1, 0.2)
 for r in radii:
     hamiltonian = get_lih_hamiltonian(r)
     hamiltonians.append(hamiltonian)
 ccx_data = get_berkeley_ccx_data()
 
 methods = {'gs': 'vqe', 'eh': 'ssvqe', 'amp': 'energy'}
-q_instance_type = 'qasm'
+q_instance_type = 'sv'
 q_instances = get_quantum_instance(q_instance_type)
 
 E1_list = []
@@ -48,21 +48,19 @@ for r, h in zip(radii, hamiltonians):
 E1_list = np.array(E1_list).real
 E2_list = np.array(E2_list).real
 
-fname = f'data/E1_red_{q_instance_type}e.dat'
-np.savetxt(fname, np.vstack((radii, E1_list)).T)
+#fname = f'data/E1_red_{q_instance_type}e.dat'
+#np.savetxt(fname, np.vstack((radii, E1_list)).T)
 
-fname = f'data/E2_red_{q_instance_type}e.dat'
-np.savetxt(fname, np.vstack((radii, E2_list)).T)
+#fname = f'data/E2_red_{q_instance_type}e.dat'
+#np.savetxt(fname, np.vstack((radii, E2_list)).T)
 
-"""
 omegas = np.arange(-30, 30, 0.1)
 A_list = []
 for omega in omegas:
     A = gf.get_spectral_function(omega + 0.02j * HARTREE_TO_EV)
     A_list.append(A)
 if methods['amp'] == 'energy':
-    fname = f'data/A_red_{q_instance_type}e.dat'
+    fname = f'data/A_red_{q_instance_type}e3.dat'
 else:
-    fname = f'data/A_red_{q_instance_type}.dat'
+    fname = f'data/A_red_{q_instance_type}3.dat'
 np.savetxt(fname, np.vstack((omegas, A_list)).T)
-"""

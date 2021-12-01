@@ -61,6 +61,7 @@ class SecondQuantizedOperators:
         self.sparse_pauli_op = transform_func(self.sparse_pauli_op)
         # print(self.sparse_pauli_op.table.to_labels(), self.sparse_pauli_op.coeffs)
 
+    # TODO: Deprecate this function.
     def get_op_dict(self, spin: str = 'up') -> Dict[int, Tuple[SparsePauliOp, SparsePauliOp]]:
         """Returns the second quantized operators in a certain spin state."""
         assert spin in ['up', 'down']
@@ -80,7 +81,7 @@ class SecondQuantizedOperators:
         dic = {}
         for i in range(self.n_qubits):
             if i % 2 == 0:
-                dic[(i // 2, 'up')] = [self.sparse_pauli_op[i], self.sparse_pauli_op[i + self.n_qubits]]
+                dic[(i // 2, 'u')] = [self.sparse_pauli_op[i], self.sparse_pauli_op[i + self.n_qubits]]
             else:
-                dic[(i // 2, 'down')] = [self.sparse_pauli_op[i], self.sparse_pauli_op[i + self.n_qubits]]
+                dic[(i // 2, 'd')] = [self.sparse_pauli_op[i], self.sparse_pauli_op[i + self.n_qubits]]
         return dic
