@@ -50,6 +50,7 @@ class GreensFunction:
         Returns:
             The Green's function numpy array.
         """
+
         # Green's function arrays
         G_e = np.zeros((self.n_orb, self.n_orb), dtype=complex)
         G_h = np.zeros((self.n_orb, self.n_orb), dtype=complex)
@@ -84,6 +85,8 @@ class GreensFunction:
             The self-energy numpy array.
         """
         G = self.greens_function(omega)
+        # print(np.linalg.norm(G.real))
+        # print(np.linalg.norm(G.imag))
 
         G_HF = np.zeros((self.n_orb, self.n_orb), dtype=complex)
         for i in range(self.n_orb):

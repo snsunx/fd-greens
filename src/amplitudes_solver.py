@@ -340,8 +340,10 @@ class AmplitudesSolver:
 
         print("----------------------------------------------------------")
 
-    def run(self) -> None:
+    def run(self, method=None) -> None:
         """Runs the functions to compute transition amplitudes."""
+        if method is not None:
+            self.method = method
         self.compute_diagonal_amplitudes()
         self.compute_off_diagonal_amplitudes()
 
