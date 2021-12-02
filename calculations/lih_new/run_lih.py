@@ -17,10 +17,10 @@ q_instance_type = 'qasm'
 q_instance = get_quantum_instance(q_instance_type)
 
 gs_solver = GroundStateSolver(h, ansatz_func=build_ansatz_gs, q_instance=q_instance)
-gs_solver.run(method='exact')
+gs_solver.run(method='vqe')
 
 eh_solver = EHStatesSolver(h, ansatz_func_e=build_ansatz_e, ansatz_func_h=build_ansatz_h, q_instance=q_instance)
-eh_solver.run(method='exact')
+eh_solver.run(method='vqe')
 
 amp_solver = AmplitudesSolver(h, gs_solver, eh_solver, q_instance=q_instance)
 amp_solver.run(method='energy')

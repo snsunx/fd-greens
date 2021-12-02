@@ -165,6 +165,13 @@ class QubitIndices:
         q_inds_new = QubitIndices(data_with_anc)
         return q_inds_new
 
+    def __or__(self, other: 'QubitIndices') -> 'QubitIndices':
+        self_str = self.str_form
+        other_str = other.str_form
+        str_form = sorted(self_str + other_str)
+        q_inds_new = QubitIndices(str_form)
+        return q_inds_new
+
     def copy(self):
         return copy.deepcopy(self)
 

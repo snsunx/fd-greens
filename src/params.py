@@ -10,3 +10,6 @@ eu_inds = QubitIndices(['1101', '0111'])
 ed_inds = QubitIndices(['1110', '1011'])
 hu_inds = QubitIndices(['0100', '0001'])
 hd_inds = QubitIndices(['1000', '0010'])
+
+singlet_inds = QubitIndices(['0011', '0110', '1001', '1100'])
+triplet_inds = QubitIndices(['0101', '1010'])

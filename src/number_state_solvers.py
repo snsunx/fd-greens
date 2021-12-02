@@ -104,6 +104,8 @@ def number_state_eigensolver(
     eigvecs = eigvecs[:, inds_new]
     return eigvals, eigvecs
 
+eigensolve = number_state_eigensolver
+
 def quantum_subspace_expansion(ansatz,
                                hamiltonian_op: PauliSumOp,
                                qse_ops: List[PauliSumOp],
@@ -203,6 +205,8 @@ def roothaan_eig(Hmat: np.ndarray,
 
 
 class EHStatesSolver:
+    """A class to calculate and store information of N+/-1 electron states."""
+
     def __init__(self,
                  h: MolecularHamiltonian,
                  ansatz_func_e: Optional[AnsatzFunction] = None, 
@@ -226,6 +230,7 @@ class EHStatesSolver:
             self.h_op = transform_4q_pauli(self.h.qiskit_op, init_state=[0, 1])
         elif spin == 'edhu': # e down h up
             self.h_op = transform_4q_pauli(self.h.qiskit_op, init_state=[1, 0])
+        self.h_mat = self.h_op.to_matrix()
 
         if spin == 'euhd':
             self.inds_e = transform_4q_indices(params.eu_inds)
@@ -244,8 +249,8 @@ class EHStatesSolver:
 
     def _run_exact(self):
         """Calculates the exact N+/-1 electron states of the Hamiltonian."""
-        self.energies_e, self.states_e = number_state_eigensolver(self.h_op.to_matrix(), inds=self.inds_e.int_form)
-        self.energies_h, self.states_h = number_state_eigensolver(self.h_op.to_matrix(), inds=self.inds_h.int_form)
+        self.energies_e, self.states_e = eigensolve(self.h_mat, inds=self.inds_e.int_form)
+        self.energies_h, self.states_h = eigensolve(self.h_mat, inds=self.inds_h.int_form)
         self.states_e = self.states_e.T
         self.states_h = self.states_h.T
         print(f"N+1 electron energies are {self.energies_e} eV")
@@ -282,3 +287,72 @@ class EHStatesSolver:
             self._run_exact()
         elif method == 'vqe':
             self._run_vqe()
+
+class ExcitedStatesSolver:
+    """A class to calculate and store information of excited states."""
+
+    def __init__(self,
+                 h: MolecularHamiltonian,
+                 ansatz_func_e: Optional[AnsatzFunction] = None, 
+                 ansatz_func_h: Optional[AnsatzFunction] = None,
+                 q_instance: Optional[QuantumInstance] = None,
+                 spin: str = 'edhu',
+                 apply_tomography: bool = False):
+        """Initializes a EHStatesSolver object.
+        
+        Args:
+            h: The MolecularHamiltonian object.
+            ansatz_func_e: The ansatz function for N+1 electron states.
+            ansatz_func_h: The ansatz function for N-1 electron states.
+            q_instance: The QuantumInstance object for N+/-1 electron state calculation.
+            apply_tomography: Whether tomography of the states is applied.
+        """
+        assert spin in ['euhd', 'edhu']
+
+        self.h = h
+        self.h_op = self.h.qiskit_op
+        self.h_op_s = transform_4q_hamiltonian(self.h_op, init_state=[1, 1])
+        self.h_op_t = transform_4q_hamiltonian(self.h_op, init_state=[0, 0])
+        self.h_mat_s = self.h_op_s.to_matrix()
+        self.h_mat_t = self.h_op_t.to_matrix()
+
+        self.inds_s = transform_4q_indices(params.singlet_inds, init_state=[1, 1])
+        self.inds_t = transform_4q_indices(params.singlet_inds, init_state=[0, 0])
+
+        """
+        h_mat = self.h_op.to_matrix()
+
+        h_mat_ = h_mat[params.singlet_inds.int_form][:,params.singlet_inds.int_form]
+        e, v = np.linalg.eigh(h_mat_)
+        print(e)
+        print(v[:,2])
+        
+        h_mat_ = h_mat[params.triplet_inds.int_form][:,params.triplet_inds.int_form]
+        e, v = np.linalg.eigh(h_mat_)
+        print(e)
+        print(v)
+
+        h_mat_ = h_mat[self.inds.int_form][:,self.inds.int_form]
+        e, v = np.linalg.eigh(h_mat_)
+        print(e)
+
+        self.ansatz_func_e = ansatz_func_e
+        self.ansatz_func_h = ansatz_func_h
+        self.q_instance = q_instance
+        self.apply_tomography = apply_tomography
+        """
+
+    def _run_exact(self):
+        self.energies_s, self.states_s = eigensolve(self.h_mat_s, inds=self.inds_s.int_form)
+        self.energies_t, self.states_t = eigensolve(self.h_mat_t, inds=self.inds_t.int_form)
+        self.states_s = self.states_s.T
+        self.states_t = self.states_t.T
+        print(f"Singlet excited-state energies are {self.energies_s} eV")
+        print(f"Triplet excited state energies are {self.energies_t} eV")
+
+    def run(self, method='exact'):
+        """Runs the excited states calculation."""
+        if method == 'exact':
+            self._run_exact()
+        elif method == 'vqe':
+            pass
