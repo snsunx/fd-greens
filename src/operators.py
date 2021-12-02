@@ -53,7 +53,7 @@ class SecondQuantizedOperators:
         pauli_table = PauliTable.from_labels(labels)
         # print(pauli_table.to_labels())
         coeffs = [1.] * n_qubits + [1j] * n_qubits
-        coeffs = -1 * np.array(coeffs) # XXX: hardcoded
+        coeffs = -1 * np.array(coeffs) # THIS IS HARDCODED FOR THE SPECIAL CASE
         self.sparse_pauli_op = SparsePauliOp(pauli_table, coeffs=coeffs)
 
     def transform(self, transform_func: Callable) -> None:

@@ -296,7 +296,6 @@ class ExcitedStatesSolver:
                  ansatz_func_e: Optional[AnsatzFunction] = None, 
                  ansatz_func_h: Optional[AnsatzFunction] = None,
                  q_instance: Optional[QuantumInstance] = None,
-                 spin: str = 'edhu',
                  apply_tomography: bool = False):
         """Initializes a EHStatesSolver object.
         
@@ -307,8 +306,6 @@ class ExcitedStatesSolver:
             q_instance: The QuantumInstance object for N+/-1 electron state calculation.
             apply_tomography: Whether tomography of the states is applied.
         """
-        assert spin in ['euhd', 'edhu']
-
         self.h = h
         self.h_op = self.h.qiskit_op
         self.h_op_s = transform_4q_hamiltonian(self.h_op, init_state=[1, 1])
@@ -316,8 +313,8 @@ class ExcitedStatesSolver:
         self.h_mat_s = self.h_op_s.to_matrix()
         self.h_mat_t = self.h_op_t.to_matrix()
 
-        self.inds_s = transform_4q_indices(params.singlet_inds, init_state=[1, 1])
-        self.inds_t = transform_4q_indices(params.singlet_inds, init_state=[0, 0])
+        self.inds_s = transform_4q_indices(params.singlet_inds)
+        self.inds_t = transform_4q_indices(params.triplet_inds)
 
         """
         h_mat = self.h_op.to_matrix()

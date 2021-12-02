@@ -39,17 +39,20 @@ class CircuitConstructor:
         """
         self.ansatz = ansatz.copy()
         self.add_barriers = add_barriers
-        self.ccx_data = ccx_data
+        if ccx_data is None:
+            self.ccx_data = [(CCXGate(), [0, 1, 2], [])]
+        else:
+            self.ccx_data = ccx_data
 
-        ccx_data_matrix = get_unitary(ccx_data)
-        self.ccx_angle = polar(ccx_data_matrix[3, 7])[1]
-        ccx_data_matrix[3, 7] /= np.exp(1j * self.ccx_angle)
-        ccx_data_matrix[7, 3] /= np.exp(1j * self.ccx_angle)
-        ccx_matrix = CCXGate().to_matrix()
-        assert np.allclose(ccx_data_matrix, ccx_matrix)
+            ccx_data_matrix = get_unitary(ccx_data)
+            self.ccx_angle = polar(ccx_data_matrix[3, 7])[1]
+            ccx_data_matrix[3, 7] /= np.exp(1j * self.ccx_angle)
+            ccx_data_matrix[7, 3] /= np.exp(1j * self.ccx_angle)
+            ccx_matrix = CCXGate().to_matrix()
+            assert np.allclose(ccx_data_matrix, ccx_matrix)
 
     def build_diagonal_circuits(self,
-                                a_op: SparsePauliOp
+                                a_op: List[SparsePauliOp]
                                 ) -> QuantumCircuit:
         """Constructs the circuit to calculate a diagonal transition amplitude.
 
@@ -75,8 +78,8 @@ class CircuitConstructor:
         return circ
 
     def build_off_diagonal_circuits(self,
-                                    a_op_m: SparsePauliOp,
-                                    a_op_n: SparsePauliOp
+                                    a_op_m: List[SparsePauliOp],
+                                    a_op_n: List[SparsePauliOp]
                                     ) -> QuantumCircuit:
         """Constructs the circuit to calculate off-diagonal transition amplitudes.
 
@@ -103,6 +106,27 @@ class CircuitConstructor:
         self._apply_controlled_gate(circ, a_op_n[0], ctrl=(0, 1), n_anc=2)
         if self.add_barriers: circ.barrier()
         self._apply_controlled_gate(circ, a_op_n[1], ctrl=(1, 1), n_anc=2)
+        if self.add_barriers: circ.barrier()
+        circ.h([0, 1])
+
+        return circ
+
+    def build_charge_diagonal(self, a_op: List[SparsePauliOp]) -> QuantumCircuit:
+        """Constructs the circuit to calculate diagonal charge-charge transition elements."""
+        circ = copy_circuit_with_ancilla(self.ansatz, [0, 1])
+
+        print('a_op[0] & a_op[1] =', a_op[0] & a_op[1])
+        print('a_op[1] & a_op[0] =', a_op[1] & a_op[0])
+        
+        # Apply the gates corresponding to a charge operator
+        if self.add_barriers: circ.barrier()
+        circ.h([0, 1])
+        if self.add_barriers: circ.barrier()
+        self._apply_controlled_gate(circ, a_op[0] & a_op[1], ctrl=(1, 0), n_anc=2)
+        if self.add_barriers: circ.barrier()
+        self._apply_controlled_gate(circ, a_op[1] & a_op[0], ctrl=(0, 1), n_anc=2)
+        if self.add_barriers: circ.barrier()
+        circ.cz(0, 1)
         if self.add_barriers: circ.barrier()
         circ.h([0, 1])
 
