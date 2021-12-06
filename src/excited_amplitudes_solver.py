@@ -36,7 +36,8 @@ class ExcitedAmplitudesSolver:
                  ccx_data: CircuitData = [(CCXGate(), [0, 1, 2], [])],
                  add_barriers: bool = True,
                  transpiled: bool = False,
-                 push: bool = False) -> None:
+                 push: bool = False,
+                 save: bool = False) -> None:
         """Initializes a AmplitudesSolver object.
 
         Args:
@@ -77,6 +78,7 @@ class ExcitedAmplitudesSolver:
         # Circuit construction variables
         self.transpiled = transpiled
         self.push = push
+        self.save = save
         self.add_barriers = add_barriers
         self.ccx_data = ccx_data
         self.suffix = ''
@@ -110,62 +112,50 @@ class ExcitedAmplitudesSolver:
     
     def _initialize_operators(self) -> None:
         """Initializes operator attributes."""
-        # self.h_op = self.h.qiskit_op
-        # self.h_op_s = transform_4q_pauli(self.h_op, init_state=[1, 1])
-        # self.h_op_t = transform_4q_pauli(self.h_op, init_state=[0, 0])
-
-        # Create Pauli dictionaries for the transformed and tapered operators
-        second_q_ops = SecondQuantizedOperators(self.n_elec)
-        second_q_ops.transform(partial(transform_4q_pauli, init_state=[1, 1], tapered=False))
-        pauli_dict = second_q_ops.get_op_dict_all()
-        for key, val in pauli_dict.items():
-            print(key, val[0].coeffs[0], val[0].table, val[1].coeffs[0], val[1].table)
-        print('')
-        
-        second_q_ops = SecondQuantizedOperators(self.n_elec)
-        second_q_ops.transform(partial(transform_4q_pauli, init_state=[1, 1]))
-        self.pauli_dict = second_q_ops.get_op_dict_all()
-        for key, val in self.pauli_dict.items():
-            print(key, val[0].coeffs[0], val[0].table, val[1].coeffs[0], val[1].table)
-        print('')
-
+        # Create Pauli dictionaries for operators after symmetry transformation
         charge_ops = ChargeOperators(self.n_elec)
         charge_ops.transform(partial(transform_4q_pauli, init_state=[1, 1]))
-        self.charge_dict = charge_ops.get_op_dict_all()
-        for key, val in self.charge_dict.items():
-            print(key, val.coeffs[0], val.table)
+        self.charge_dict_s = charge_ops.get_op_dict_all()
+        #for key, val in self.charge_dict.items():
+        #    print(key, val.coeffs[0], val.table)
+
+        charge_ops = ChargeOperators(self.n_elec)
+        charge_ops.transform(partial(transform_4q_pauli, init_state=[0, 0]))
+        self.charge_dict_t = charge_ops.get_op_dict_all()
 
     def compute_charge_diagonal(self) -> None:
         """Calculates diagonal transition amplitudes."""
         print("----- Calculating diagonal transition amplitudes -----")
-        inds_anc = QubitIndices(['01'])
+        inds_anc = QubitIndices(['10'])
         inds_tot_s = self.inds_s + inds_anc
         inds_tot_t = self.inds_t + inds_anc
         
         for m in range(self.n_orb):
-            a_op_m = self.charge_dict[(m, 'd')]
-            circ = self.circuit_constructor.build_charge_diagonal(a_op_m)
-            fname = f'circuits/circuit_{m}' + self.suffix
-            if self.transpiled:
-                circ = transpile(circ, basis_gates=['u3', 'swap', 'cz', 'cp'])
-            save_circuit(circ, fname)
+            U_op_s = self.charge_dict_s[(m, 'd')]
+            U_op_t = self.charge_dict_t[(m, 'd')]
+            circ_s = self.circuit_constructor.build_charge_diagonal(U_op_s)
+            circ_t = self.circuit_constructor.build_charge_diagonal(U_op_t)
+
+            #fname = f'circuits/circuit_{m}' + self.suffix
+            if self.transpiled: 
+                circ_s = transpile(circ_s, basis_gates=['u3', 'swap', 'cz', 'cp'])
+                circ_t = transpile(circ_t, basis_gates=['u3', 'swap', 'cz', 'cp'])
+            #if self.save: save_circuit(circ, fname)
 
             if self.method == 'exact' and self.backend.name() == 'statevector_simulator':
-                result = self.q_instance.execute(circ)
-                psi = result.get_statevector()
-
-                #for i in range(len(psi)):
-                #    if abs(psi[i]) > 1e-8:
-                #        print(format(i, '#06b')[2:], psi[i])
-
-                psi_s = psi[inds_tot_s.int_form]
+                result_s = self.q_instance.execute(circ_s)
+                psi_s = result_s.get_statevector()
+                psi_s = psi_s[inds_tot_s.int_form]
                 L_mm_s = np.abs(self.states_s.conj().T @ psi_s) ** 2
+                print('np.sum(L_mm_s) =', np.sum(L_mm_s))
 
-                psi_t = psi[inds_tot_t.int_form]
+                result_t = self.q_instance.execute(circ_t)
+                psi_t = result_t.get_statevector()
+                psi_t = psi_t[inds_tot_t.int_form]
                 L_mm_t = np.abs(self.states_t.conj().T @ psi_t) ** 2
+                print('np.sum(L_mm_t) =', np.sum(L_mm_t))
 
                 L_mm = np.hstack((L_mm_s, L_mm_t))
-                print('np.sum(L_mm) = ', np.sum(L_mm[:4]))
 
             self.L[m, m] = L_mm
 

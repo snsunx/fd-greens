@@ -77,6 +77,8 @@ class CircuitConstructor:
         if self.add_barriers: circ.barrier()
         return circ
 
+    build_eh_diagonal = build_diagonal_circuits
+
     def build_off_diagonal_circuits(self,
                                     a_op_m: List[SparsePauliOp],
                                     a_op_n: List[SparsePauliOp]
@@ -110,6 +112,8 @@ class CircuitConstructor:
         circ.h([0, 1])
 
         return circ
+
+    build_eh_off_diagonal = build_off_diagonal_circuits
 
     def build_charge_diagonal(self, U_op: List[SparsePauliOp]) -> QuantumCircuit:
         """Constructs the circuit to calculate diagonal charge-charge transition elements."""

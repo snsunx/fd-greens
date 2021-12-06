@@ -316,29 +316,6 @@ class ExcitedStatesSolver:
         self.inds_s = transform_4q_indices(params.singlet_inds)
         self.inds_t = transform_4q_indices(params.triplet_inds)
 
-        """
-        h_mat = self.h_op.to_matrix()
-
-        h_mat_ = h_mat[params.singlet_inds.int_form][:,params.singlet_inds.int_form]
-        e, v = np.linalg.eigh(h_mat_)
-        print(e)
-        print(v[:,2])
-        
-        h_mat_ = h_mat[params.triplet_inds.int_form][:,params.triplet_inds.int_form]
-        e, v = np.linalg.eigh(h_mat_)
-        print(e)
-        print(v)
-
-        h_mat_ = h_mat[self.inds.int_form][:,self.inds.int_form]
-        e, v = np.linalg.eigh(h_mat_)
-        print(e)
-
-        self.ansatz_func_e = ansatz_func_e
-        self.ansatz_func_h = ansatz_func_h
-        self.q_instance = q_instance
-        self.apply_tomography = apply_tomography
-        """
-
     def _run_exact(self):
         self.energies_s, self.states_s = eigensolve(self.h_mat_s, inds=self.inds_s.int_form)
         self.energies_t, self.states_t = eigensolve(self.h_mat_t, inds=self.inds_t.int_form)

@@ -37,7 +37,8 @@ class EHAmplitudesSolver:
                  ccx_data: Optional[CircuitData] = None,
                  add_barriers: bool = True,
                  transpiled: bool = True,
-                 push: bool = False) -> None:
+                 push: bool = False,
+                 save: bool = False) -> None:
         """Initializes a AmplitudesSolver object.
 
         Args:
@@ -84,6 +85,7 @@ class EHAmplitudesSolver:
         # Circuit construction variables
         self.transpiled = transpiled
         self.push = push
+        self.save = save
         self.add_barriers = add_barriers
         if ccx_data is None: 
             self.ccx_data = [(CCXGate(), [0, 1, 2], [])]
@@ -161,9 +163,8 @@ class EHAmplitudesSolver:
             a_op_m = self.pauli_dict[(m, self.spin[1])]
             circ = self.circuit_constructor.build_diagonal_circuits(a_op_m)
             fname = f'circuits/circuit_{m}' + self.suffix
-            if self.transpiled:
-                circ = transpile(circ, basis_gates=['u3', 'swap', 'cz', 'cp'])
-            save_circuit(circ, fname)
+            if self.transpiled: circ = transpile(circ, basis_gates=['u3', 'swap', 'cz', 'cp'])
+            if self.save: save_circuit(circ, fname)
 
             if self.method == 'exact' and self.backend.name() == 'statevector_simulator':
                 result = self.q_instance.execute(circ)
@@ -243,7 +244,7 @@ class EHAmplitudesSolver:
                         circ = transpile_across_barrier(
                             circ, basis_gates=['u3', 'swap', 'cz', 'cp'], 
                             push=self.push, ind=(m, n))
-                    save_circuit(circ, fname)
+                    if self.save: save_circuit(circ, fname)
 
                     if self.method == 'exact' or self.backend.name() == 'statevector_simulator':
                         result = self.q_instance.execute(circ)
