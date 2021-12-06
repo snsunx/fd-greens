@@ -111,20 +111,17 @@ class CircuitConstructor:
 
         return circ
 
-    def build_charge_diagonal(self, a_op: List[SparsePauliOp]) -> QuantumCircuit:
+    def build_charge_diagonal(self, U_op: List[SparsePauliOp]) -> QuantumCircuit:
         """Constructs the circuit to calculate diagonal charge-charge transition elements."""
         circ = copy_circuit_with_ancilla(self.ansatz, [0, 1])
-
-        print('a_op[0] & a_op[1] =', a_op[0] & a_op[1])
-        print('a_op[1] & a_op[0] =', a_op[1] & a_op[0])
         
         # Apply the gates corresponding to a charge operator
         if self.add_barriers: circ.barrier()
         circ.h([0, 1])
         if self.add_barriers: circ.barrier()
-        self._apply_controlled_gate(circ, a_op[0] & a_op[1], ctrl=(1, 0), n_anc=2)
+        self._apply_controlled_gate(circ, -U_op, ctrl=(1, 0), n_anc=2) # iXY = -Z
         if self.add_barriers: circ.barrier()
-        self._apply_controlled_gate(circ, a_op[1] & a_op[0], ctrl=(0, 1), n_anc=2)
+        self._apply_controlled_gate(circ, U_op, ctrl=(0, 1), n_anc=2) # iYX = Z
         if self.add_barriers: circ.barrier()
         circ.cz(0, 1)
         if self.add_barriers: circ.barrier()

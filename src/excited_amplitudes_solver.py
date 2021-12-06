@@ -13,7 +13,7 @@ from qiskit.extensions import CCXGate
 import params
 from hamiltonians import MolecularHamiltonian
 from number_state_solvers import measure_operator
-from operators import SecondQuantizedOperators
+from operators import SecondQuantizedOperators, ChargeOperators
 from qubit_indices import QubitIndices, transform_4q_indices
 from circuits import CircuitConstructor, CircuitData, transpile_across_barrier
 from z2_symmetries import transform_4q_pauli
@@ -127,18 +127,23 @@ class ExcitedAmplitudesSolver:
         self.pauli_dict = second_q_ops.get_op_dict_all()
         for key, val in self.pauli_dict.items():
             print(key, val[0].coeffs[0], val[0].table, val[1].coeffs[0], val[1].table)
+        print('')
 
-        exit()
+        charge_ops = ChargeOperators(self.n_elec)
+        charge_ops.transform(partial(transform_4q_pauli, init_state=[1, 1]))
+        self.charge_dict = charge_ops.get_op_dict_all()
+        for key, val in self.charge_dict.items():
+            print(key, val.coeffs[0], val.table)
 
     def compute_charge_diagonal(self) -> None:
         """Calculates diagonal transition amplitudes."""
         print("----- Calculating diagonal transition amplitudes -----")
-        inds_anc = QubitIndices(['10'])
+        inds_anc = QubitIndices(['01'])
         inds_tot_s = self.inds_s + inds_anc
         inds_tot_t = self.inds_t + inds_anc
         
         for m in range(self.n_orb):
-            a_op_m = self.pauli_dict[(m, 'd')]
+            a_op_m = self.charge_dict[(m, 'd')]
             circ = self.circuit_constructor.build_charge_diagonal(a_op_m)
             fname = f'circuits/circuit_{m}' + self.suffix
             if self.transpiled:
@@ -149,9 +154,9 @@ class ExcitedAmplitudesSolver:
                 result = self.q_instance.execute(circ)
                 psi = result.get_statevector()
 
-                for i in range(len(psi)):
-                    if abs(psi[i]) > 1e-8:
-                        print(format(i, '#06b')[2:], psi[i])
+                #for i in range(len(psi)):
+                #    if abs(psi[i]) > 1e-8:
+                #        print(format(i, '#06b')[2:], psi[i])
 
                 psi_s = psi[inds_tot_s.int_form]
                 L_mm_s = np.abs(self.states_s.conj().T @ psi_s) ** 2
@@ -160,7 +165,7 @@ class ExcitedAmplitudesSolver:
                 L_mm_t = np.abs(self.states_t.conj().T @ psi_t) ** 2
 
                 L_mm = np.hstack((L_mm_s, L_mm_t))
-                # print('np.sum(L_mm) = ', np.sum(L_mm[:4]))
+                print('np.sum(L_mm) = ', np.sum(L_mm[:4]))
 
             self.L[m, m] = L_mm
 

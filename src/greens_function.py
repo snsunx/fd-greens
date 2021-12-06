@@ -1,3 +1,5 @@
+"""A new GreensFunction class that takes solvers as inputs."""
+
 from typing import Union
 
 import numpy as np

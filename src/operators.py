@@ -43,7 +43,7 @@ def get_operator_dictionary(spin='up'):
 class SecondQuantizedOperators:
     """A class to store the X and Y parts of the second quantized operators."""
 
-    def __init__(self, n_qubits):
+    def __init__(self, n_qubits, factor=-1):
         """Creates an object containing second quantized operators."""
         self.n_qubits = n_qubits
 
@@ -53,7 +53,7 @@ class SecondQuantizedOperators:
         pauli_table = PauliTable.from_labels(labels)
         # print(pauli_table.to_labels())
         coeffs = [1.] * n_qubits + [1j] * n_qubits
-        coeffs = -1 * np.array(coeffs) # THIS IS HARDCODED FOR THE SPECIAL CASE
+        coeffs = factor * np.array(coeffs) # THIS IS HARDCODED TO -1 FOR SPECIAL CASE
         self.sparse_pauli_op = SparsePauliOp(pauli_table, coeffs=coeffs)
 
     def transform(self, transform_func: Callable) -> None:
@@ -77,7 +77,7 @@ class SecondQuantizedOperators:
         return dic
 
     def get_op_dict_all(self) -> Dict[int, Tuple[SparsePauliOp, SparsePauliOp]]:
-        """Returns the second quantized operators in a certain spin state."""
+        """Returns a dictionary of the second quantized operators."""
         dic = {}
         for i in range(self.n_qubits):
             if i % 2 == 0:
@@ -85,3 +85,30 @@ class SecondQuantizedOperators:
             else:
                 dic[(i // 2, 'd')] = [self.sparse_pauli_op[i], self.sparse_pauli_op[i + self.n_qubits]]
         return dic
+
+class ChargeOperators:
+    """A class to store U01 and U10 for calculating charge-charge response functions."""
+
+    def __init__(self, n_qubits):
+        self.n_qubits = n_qubits
+
+        labels = ['I' * (n_qubits - i - 1) + 'Z' + 'I' * i for i in range(n_qubits)]
+        pauli_table = PauliTable.from_labels(labels)
+        self.sparse_pauli_op = SparsePauliOp(pauli_table)
+
+    def transform(self, transform_func: Callable) -> None:
+        """Transforms the set of second quantized operators by Z2 symmetries."""
+        self.sparse_pauli_op = transform_func(self.sparse_pauli_op)
+
+    def get_op_dict_all(self) -> Dict[int, SparsePauliOp]:
+        """Returns a dictionary of the charge U operators."""
+        dic = {}
+        for i in range(self.n_qubits):
+            if i % 2 == 0:
+                dic[(i // 2, 'u')] = self.sparse_pauli_op[i]
+            else:
+                dic[(i // 2, 'd')] = self.sparse_pauli_op[i]
+        return dic
+
+
+
