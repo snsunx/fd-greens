@@ -5,7 +5,7 @@ from typing import Union
 import numpy as np
 from vqe import GroundStateSolver
 from number_state_solvers import EHStatesSolver
-from amplitudes_solver import AmplitudesSolver
+from eh_amplitudes_solver import EHAmplitudesSolver
 
 class GreensFunction:
     """A class to calculate frequency-domain Green's function."""
@@ -13,7 +13,7 @@ class GreensFunction:
     def __init__(self, 
                  gs_solver: GroundStateSolver,
                  eh_solver: EHStatesSolver,
-                 amp_solver: AmplitudesSolver
+                 amp_solver: EHAmplitudesSolver
                 ) -> None:
         """Initializes a GreensFunction object.
         

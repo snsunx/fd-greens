@@ -1,3 +1,0 @@
-from eh_amplitudes_solver import EHAmplitudesSolver
-
-AmplitudesSolver = EHAmplitudesSolver

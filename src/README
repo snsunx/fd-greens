@@ -1,0 +1,29 @@
+This folder contains the following scripts.
+
+Main scripts (6):
+vqe.py -> ground_state_solvers.py
+number_state_solvers.py
+eh_amplitudes_solver.py
+excited_amplitudes_solver.py
+greens_function.py
+response_function.py
+
+Auxiliary scripts (6):
+ansatze.py
+hamiltonians.py
+circuits.py
+operators.py
+qubit_indices.py
+z2_symmetries.py
+
+Helper scripts (4):
+helpers.py
+utils.py
+params.py
+constants.py
+
+Temporary scripts (3):
+greens_function_restricted.py
+recompilation.py (to be deprecated)
+io_utils.py (to be deprecated)
+

@@ -8,7 +8,7 @@ from helpers import get_lih_hamiltonian, get_quantum_instance
 from ansatze import build_ansatz_gs, build_ansatz_e, build_ansatz_h
 from vqe import GroundStateSolver
 from number_state_solvers import EHStatesSolver
-from amplitudes_solver import AmplitudesSolver
+from eh_amplitudes_solver import EHAmplitudesSolver
 from greens_function import GreensFunction
 from constants import HARTREE_TO_EV
 
@@ -22,7 +22,7 @@ gs_solver.run(method='vqe')
 eh_solver = EHStatesSolver(h, ansatz_func_e=build_ansatz_e, ansatz_func_h=build_ansatz_h, q_instance=q_instance)
 eh_solver.run(method='vqe')
 
-amp_solver = AmplitudesSolver(h, gs_solver, eh_solver, q_instance=q_instance)
+amp_solver = EHAmplitudesSolver(h, gs_solver, eh_solver, q_instance=q_instance)
 amp_solver.run(method='energy')
 
 gf = GreensFunction(gs_solver, eh_solver, amp_solver)
