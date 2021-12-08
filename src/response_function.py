@@ -51,7 +51,7 @@ class ResponseFunction:
         """
 
         chi = 0
-        for lam in range(self.n_states):
+        for lam in [1, 2, 3, 4, 5]:
             chi += self.L[i, j, lam] / (omega - (self.energies_exc[lam] - self.energy_gs))
             chi += self.L[i, j, lam].conjugate() / (-omega - (self.energies_exc[lam] - self.energy_gs))
 

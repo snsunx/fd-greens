@@ -1,4 +1,5 @@
 import numpy as np
+import h5py
 
 from qiskit import Aer
 from qiskit.utils import QuantumInstance
@@ -33,3 +34,16 @@ def get_berkeley_ccx_data():
                 (Barrier(4), [0, 1, 2, 3]),
                 (SwapGate(), [1, 2])]
     return ccx_data
+
+def save_solvers_data(gs_solver, es_solver, amp_solver, fname='lih'):
+    f = h5py.File(fname + '.h5py')
+    f['energy_gs'] = gs_solver.energy
+    f['energies_e'] = es_solver.energies_e
+    f['energies_h'] = es_solver.energies_h
+    f['B_e'] = amp_solver.B_e
+    f['B_h'] = amp_solver.B_h
+    h = amp_solver.h
+    e_orb = np.diag(h.molecule.orbital_energies)
+    f['e_orb'] = e_orb[h.act_inds][:, h.act_inds]
+    f.close()
+

@@ -301,3 +301,5 @@ def get_counts(result: Result) -> Mapping[str, int]:
     counts = defaultdict(lambda: 0)
     counts.update(result.get_counts())
     return counts
+
+

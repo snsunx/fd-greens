@@ -38,7 +38,7 @@ class EHAmplitudesSolver:
                  transpiled: bool = True,
                  push: bool = False,
                  save: bool = False) -> None:
-        """Initializes a AmplitudesSolver object.
+        """Initializes an EHAmplitudesSolver object.
 
         Args:
             ansatz: The parametrized circuit as an ansatz to VQE.
@@ -362,7 +362,7 @@ class ExcitedAmplitudesSolver:
                  transpiled: bool = False,
                  push: bool = False,
                  save: bool = False) -> None:
-        """Initializes a AmplitudesSolver object.
+        """Initializes an ExcitedAmplitudesSolver object.
 
         Args:
             ansatz: The parametrized circuit as an ansatz to VQE.
@@ -447,7 +447,7 @@ class ExcitedAmplitudesSolver:
         charge_ops.transform(partial(transform_4q_pauli, init_state=[0, 0]))
         self.charge_dict_t = charge_ops.get_op_dict_all()
 
-    def compute_charge_diagonal(self) -> None:
+    def compute_diagonal(self) -> None:
         """Calculates diagonal transition amplitudes."""
         print("----- Calculating diagonal transition amplitudes -----")
         inds_anc = QubitIndices(['10'])
@@ -469,23 +469,23 @@ class ExcitedAmplitudesSolver:
             if self.method == 'exact' and self.backend.name() == 'statevector_simulator':
                 result = self.q_instance.execute(circ_s)
                 psi = result.get_statevector()
-                for i in range(len(psi)):
-                    if abs(psi[i]) > 1e-8:
-                        print(format(i, '#06b')[2:], psi[i])
-                print('inds_tot_s =', inds_tot_s)
+                # for i in range(len(psi)):
+                #     if abs(psi[i]) > 1e-8:
+                #         print(format(i, '#06b')[2:], psi[i])
+                # print('inds_tot_s =', inds_tot_s)
                 psi_s = psi[inds_tot_s.int_form]
                 L_mm_s = np.abs(self.states_s.conj().T @ psi_s) ** 2
-                print('np.sum(L_mm_s) =', np.sum(L_mm_s))
+                # print('np.sum(L_mm_s) =', np.sum(L_mm_s))
 
                 result = self.q_instance.execute(circ_t)
                 psi = result.get_statevector()
-                for i in range(len(psi)):
-                    if abs(psi[i]) > 1e-8:
-                        print(format(i, '#06b')[2:], psi[i])
-                print('inds_tot_t =', inds_tot_t)
+                # for i in range(len(psi)):
+                #     if abs(psi[i]) > 1e-8:
+                #         print(format(i, '#06b')[2:], psi[i])
+                # print('inds_tot_t =', inds_tot_t)
                 psi_t = psi[inds_tot_t.int_form]
                 L_mm_t = np.abs(self.states_t.conj().T @ psi_t) ** 2
-                print('np.sum(L_mm_t) =', np.sum(L_mm_t))
+                # print('np.sum(L_mm_t) =', np.sum(L_mm_t))
 
                 L_mm = np.hstack((L_mm_s, L_mm_t))
 
@@ -498,6 +498,6 @@ class ExcitedAmplitudesSolver:
         """Runs the functions to compute transition amplitudes."""
         if method is not None:
             self.method = method
-        self.compute_charge_diagonal()
+        self.compute_diagonal()
 
 

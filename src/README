@@ -1,8 +1,8 @@
 This folder contains the following scripts.
 
 Main scripts (5):
-vqe.py -> ground_state_solvers.py
-number_state_solvers.py
+ground_state_solvers.py
+number_states_solvers.py
 amplitudes_solvers.py
 greens_function.py
 response_function.py
@@ -20,6 +20,6 @@ helpers.py
 utils.py
 params.py
 
-Temporary scripts (3):
+Temporary scripts (1):
 greens_function_restricted.py
 

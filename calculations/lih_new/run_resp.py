@@ -13,8 +13,8 @@ from helpers import get_lih_hamiltonian, get_quantum_instance
 from params import HARTREE_TO_EV
 
 h = get_lih_hamiltonian(3.0)
-q_instance_type = 'qasm'
-q_instance = get_quantum_instance(q_instance_type)
+q_inst_type = 'qasm'
+q_instance = get_quantum_instance(q_inst_type)
 
 gs_solver = GroundStateSolver(h, ansatz_func=build_ansatz_gs, q_instance=q_instance)
 gs_solver.run(method='exact')
@@ -45,6 +45,6 @@ chi00s = np.array(chi00s)
 chi11s = np.array(chi11s)
 sigmas = np.array(sigmas)
 
-np.savetxt(f'data/chi00_{q_instance_type}.dat', np.vstack((omegas, chi00s.real, chi00s.imag)).T)
-np.savetxt(f'data/chi11_{q_instance_type}.dat', np.vstack((omegas, chi11s.real, chi11s.imag)).T)
-np.savetxt(f'data/sigma_{q_instance_type}.dat', np.vstack((omegas, sigmas.real, sigmas.imag)).T)
+np.savetxt(f'data/chi00_{q_inst_type}.dat', np.vstack((omegas, chi00s.real, chi00s.imag)).T)
+np.savetxt(f'data/chi11_{q_inst_type}.dat', np.vstack((omegas, chi11s.real, chi11s.imag)).T)
+np.savetxt(f'data/sigma_{q_inst_type}.dat', np.vstack((omegas, sigmas.real, sigmas.imag)).T)
