@@ -140,3 +140,57 @@ def get_off_diagonal_circuits1(ansatz, ind_left, ind_right, measure=True):
     # TODO: Implement phase estimation on the system qubits
 
     return circ 
+
+'''
+# TODO: Pass in n_gate_rounds and cache_options in a simpler way
+def append_qpe_circuit(circ: QuantumCircuit,
+                       hamiltonian_arr: np.ndarray,
+                       ind_qpe: int,
+                       recompiled: bool = False,
+                       n_gate_rounds=None,
+                       cache_options=None
+                       ) -> QuantumCircuit:
+    """Appends single-qubit QPE circuit to a given circuit.
+
+    Args:
+        circ: The quantum circuit on which the QPE circuit is to be appended.
+        hamiltonian_arr: The Hamiltonian in array form.
+        ind_qpe: Index of the QPE ancilla qubit.
+        recompiled: Whether the controlled e^{iHt} gate is recompiled.
+
+    Returns:
+        A new quantum circuit on which the QPE circuit has been appended.
+    """
+    U_mat = expm(1j * hamiltonian_arr * HARTREE_TO_EV)
+    n_sys = int(np.log2(U_mat.shape[0]))
+    n_all = len(circ.qregs[0])
+    n_anc = n_all - n_sys
+    circ = copy_circuit_with_ancilla(circ, [ind_qpe])
+
+    if recompiled:
+        # Construct the controlled e^{iHt}
+        cU_mat = np.kron(np.diag([1, 0]), np.eye(2 ** n_sys)) \
+                + np.kron(np.diag([0, 1]), U_mat)
+        cU_mat = np.kron(np.eye(2 ** n_anc), cU_mat)
+
+        # Append single-qubit QPE circuit
+        circ.barrier()
+        circ.h(ind_qpe)
+        statevector = reverse_qubit_order(get_statevector(circ))
+        quimb_gates = recompile_with_statevector(
+            statevector, cU_mat, n_gate_rounds=n_gate_rounds, cache_options=cache_options)
+        circ = apply_quimb_gates(quimb_gates, circ.copy(), reverse=False)
+        circ.h(ind_qpe)
+        circ.barrier()
+    else:
+        # Construct the controlled e^{iHt}
+        cU_gate = UnitaryGate(U_mat).control(1)
+
+        # Append single-qubit QPE circuit
+        circ.barrier()
+        circ.h(ind_qpe)
+        circ.append(cU_gate, np.arange(n_sys + 1) + n_anc)
+        circ.h(ind_qpe)
+        circ.barrier()
+    return circ
+'''

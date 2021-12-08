@@ -1,5 +1,8 @@
 from qubit_indices import QubitIndices
 
+HARTREE_TO_EV = 27.211386245988
+c = 1
+
 basis_gates = ['u3', 'cz', 'swap', 'cp']
 swap_direcs_round1 = {(0, 1): [['left', 'left'], ['right', 'right', 'left'], ['right', 'left'], ['right', 'right'], ['right']],
                       (1, 0): [['left'], ['right', 'right'], ['left', 'left', 'left'], ['right', 'right', 'left'], ['right']]}

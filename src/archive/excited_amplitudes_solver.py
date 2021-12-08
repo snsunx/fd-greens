@@ -30,7 +30,7 @@ class ExcitedAmplitudesSolver:
     def __init__(self,
                  h: MolecularHamiltonian,
                  gs_solver: GroundStateSolver,
-                 exc_solver: ExcitedStatesSolver,
+                 es_solver: ExcitedStatesSolver,
                  method: str = 'energy',
                  q_instance: QuantumInstance = get_quantum_instance('sv'),
                  ccx_data: CircuitData = [(CCXGate(), [0, 1, 2], [])],
@@ -63,12 +63,12 @@ class ExcitedAmplitudesSolver:
         self.state_gs = gs_solver.state
         self.ansatz = gs_solver.ansatz
 
-        # Attributes from N+/-1 electron states solver
-        self.exc_solver = exc_solver
-        self.energies_s = exc_solver.energies_s
-        self.states_s = exc_solver.states_s
-        self.energies_t = exc_solver.energies_t
-        self.states_t = exc_solver.states_t
+        # Attributes from excited states solver
+        self.es_solver = es_solver
+        self.energies_s = es_solver.energies_s
+        self.states_s = es_solver.states_s
+        self.energies_t = es_solver.energies_t
+        self.states_t = es_solver.states_t
 
         # Method and quantum instance
         self.method = method
@@ -143,15 +143,23 @@ class ExcitedAmplitudesSolver:
             #if self.save: save_circuit(circ, fname)
 
             if self.method == 'exact' and self.backend.name() == 'statevector_simulator':
-                result_s = self.q_instance.execute(circ_s)
-                psi_s = result_s.get_statevector()
-                psi_s = psi_s[inds_tot_s.int_form]
+                result = self.q_instance.execute(circ_s)
+                psi = result.get_statevector()
+                for i in range(len(psi)):
+                    if abs(psi[i]) > 1e-8:
+                        print(format(i, '#06b')[2:], psi[i])
+                print('inds_tot_s =', inds_tot_s)
+                psi_s = psi[inds_tot_s.int_form]
                 L_mm_s = np.abs(self.states_s.conj().T @ psi_s) ** 2
                 print('np.sum(L_mm_s) =', np.sum(L_mm_s))
 
-                result_t = self.q_instance.execute(circ_t)
-                psi_t = result_t.get_statevector()
-                psi_t = psi_t[inds_tot_t.int_form]
+                result = self.q_instance.execute(circ_t)
+                psi = result.get_statevector()
+                for i in range(len(psi)):
+                    if abs(psi[i]) > 1e-8:
+                        print(format(i, '#06b')[2:], psi[i])
+                print('inds_tot_t =', inds_tot_t)
+                psi_t = psi[inds_tot_t.int_form]
                 L_mm_t = np.abs(self.states_t.conj().T @ psi_t) ** 2
                 print('np.sum(L_mm_t) =', np.sum(L_mm_t))
 
@@ -161,12 +169,6 @@ class ExcitedAmplitudesSolver:
 
             print(f'L[{m}, {m}] = {self.L[m, m]}')
         print("------------------------------------------------------")
-
-    def compute_spin_diagonal(self):
-        pass
-
-    def compute_spin_off_diagonal(self):
-        pass
 
     def run(self, method=None) -> None:
         """Runs the functions to compute transition amplitudes."""

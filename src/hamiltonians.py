@@ -1,3 +1,5 @@
+"""The MolecularHamiltonian class."""
+
 from typing import Union, Sequence, List, Tuple, Optional
 
 import numpy as np
@@ -10,7 +12,7 @@ from openfermionpyscf import run_pyscf
 from openfermion.transforms import jordan_wigner, get_fermion_operator
 from openfermion.linalg import get_sparse_operator
 
-from constants import HARTREE_TO_EV
+from params import HARTREE_TO_EV
 
 GeometryType = List[Tuple[str, Sequence[Union[int, float]]]]
 

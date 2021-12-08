@@ -1,3 +1,5 @@
+"""Ground state solver module."""
+
 from typing import Optional, Sequence, Tuple, Callable, Union
 
 import numpy as np

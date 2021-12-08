@@ -13,12 +13,12 @@ from qiskit.utils import QuantumInstance
 from qiskit.extensions import CCXGate
 from qiskit.opflow import PauliSumOp
 
-from constants import HARTREE_TO_EV
+from params import HARTREE_TO_EV
 from hamiltonians import MolecularHamiltonian
 from number_state_solvers import (number_state_eigensolver, 
                                   quantum_subspace_expansion,
                                   measure_operator)
-from recompilation import CircuitRecompiler
+# from recompilation import CircuitRecompiler
 from operators import SecondQuantizedOperators
 from qubit_indices import QubitIndices
 from circuits import CircuitConstructor, CircuitData, transpile_across_barrier
@@ -319,10 +319,10 @@ class GreensFunctionRestricted:
             circ = self.circuit_constructor.build_diagonal_circuits(a_op_m)
             print(f"Calculating m = {m}")
             fname = f'circuits/circuit_{m}'
-            if self.recompiled:
-                recompiler = CircuitRecompiler()
-                circ = recompiler.recompile_all(circ)
-                fname += '_rec'
+            # if self.recompiled:
+            #     recompiler = CircuitRecompiler()
+            #     circ = recompiler.recompile_all(circ)
+            #     fname += '_rec'
             if self.transpiled:
                 circ = transpile(circ, basis_gates=['u3', 'swap', 'cz', 'cp'])
                 fname += '_trans'
@@ -412,10 +412,10 @@ class GreensFunctionRestricted:
 
                     circ = self.circuit_constructor.build_off_diagonal_circuits(a_op_m, a_op_n)
                     fname = f'circuits/circuit_{m}{n}'
-                    if self.recompiled:
-                        recompiler = CircuitRecompiler()
-                        circ = recompiler.recompile_all(circ)
-                        fname += '_rec'
+                    # if self.recompiled:
+                    #     recompiler = CircuitRecompiler()
+                    #     circ = recompiler.recompile_all(circ)
+                    #     fname += '_rec'
                     if self.transpiled:
                         circ = transpile_across_barrier(
                             circ, basis_gates=['u3', 'swap', 'cz', 'cp'], 

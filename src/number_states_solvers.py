@@ -1,3 +1,5 @@
+"""Number states solver module."""
+
 from typing import Union, Tuple, List, Iterable, Optional, Sequence, Callable
 from itertools import combinations
 
@@ -15,9 +17,9 @@ from openfermion.ops.operators.qubit_operator import QubitOperator
 from hamiltonians import MolecularHamiltonian
 from z2_symmetries import transform_4q_hamiltonian, transform_4q_pauli
 import params
-from constants import HARTREE_TO_EV
+from params import HARTREE_TO_EV
 from utils import get_statevector, measure_operator
-from vqe import vqe_minimize
+from ground_state_solvers import vqe_minimize
 from helpers import get_quantum_instance
 from ansatze import AnsatzFunction
 from utils import state_tomography

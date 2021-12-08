@@ -1,31 +1,31 @@
-"""A new GreensFunction class that takes solvers as inputs."""
+"""Green's function module."""
 
 from typing import Union
 
 import numpy as np
-from vqe import GroundStateSolver
-from number_state_solvers import EHStatesSolver
-from eh_amplitudes_solver import EHAmplitudesSolver
+from ground_state_solvers import GroundStateSolver
+from number_states_solvers import EHStatesSolver
+from amplitudes_solvers import EHAmplitudesSolver
 
 class GreensFunction:
     """A class to calculate frequency-domain Green's function."""
     
     def __init__(self, 
                  gs_solver: GroundStateSolver,
-                 eh_solver: EHStatesSolver,
+                 es_solver: EHStatesSolver,
                  amp_solver: EHAmplitudesSolver
                 ) -> None:
         """Initializes a GreensFunction object.
         
         Args:
             gs_solver: The ground state solver.
-            eh_solver: The N+/-1 electron states solver.
+            es_solver: The N+/-1 electron states solver.
             amp_solver: The transition amplitudes solver.
         """
         # Ground state and N+/-1 electron states energies
         self.energy_gs = gs_solver.energy
-        self.energies_e = eh_solver.energies_e
-        self.energies_h = eh_solver.energies_h
+        self.energies_e = es_solver.energies_e
+        self.energies_h = es_solver.energies_h
 
         # Transition amplitudes
         self.B_e = amp_solver.B_e
@@ -39,7 +39,7 @@ class GreensFunction:
 
     @property
     def density_matrix(self) -> np.ndarray:
-        """The density matrix obtained from the transition amplitudes"""
+        """The density matrix obtained from the transition amplitudes."""
         rho = np.sum(self.B_h, axis=2)
         return rho
 

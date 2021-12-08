@@ -6,6 +6,7 @@ from qiskit.circuit import Barrier
 from qiskit.extensions import UnitaryGate, SwapGate
 
 from hamiltonians import MolecularHamiltonian
+from params import QubitIndices
 
 def get_lih_hamiltonian(r: float) -> MolecularHamiltonian:
     """Returns the HOMO-LUMO LiH Hamiltonian with bond length r."""

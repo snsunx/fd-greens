@@ -8,7 +8,7 @@ import os
 from qiskit import QuantumCircuit
 from qiskit.algorithms import VQEResult
 
-from params import HARTREE_TO_EV
+from constants import HARTREE_TO_EV
 from hamiltonians import MolecularHamiltonian
 
 class CacheRecompilation:
