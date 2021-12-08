@@ -1,6 +1,6 @@
 """Green's function module."""
 
-from typing import Union, Sequence
+from typing import Union, Sequence, Optional
 
 import h5py
 import numpy as np
@@ -55,12 +55,13 @@ class GreensFunction:
         rho = np.sum(self.B_h, axis=2)
         return rho
 
-    def greens_function(self, omega: Union[float, complex]) -> np.ndarray:
+    def greens_function(self, omega: float, eta: float = 0.0) -> np.ndarray:
         """Returns the the Green's function at frequency omega.
 
         Args:
             omega: The frequency at which the Green's function is calculated.
-
+            eta: The imaginary part, i.e. broadening factor.
+        
         Returns:
             The Green's function numpy array.
         """
@@ -71,15 +72,15 @@ class GreensFunction:
 
         for m in range(self.n_orb):
             for n in range(self.n_orb):
-                G_e[m, n] = 2 * np.sum(self.B_e[m, n] / (omega + self.energy_gs - self.energies_e))
-                G_h[m, n] = 2 * np.sum(self.B_h[m, n] / (omega - self.energy_gs + self.energies_h))
+                G_e[m, n] = 2 * np.sum(self.B_e[m, n] / (omega + 1j * eta + self.energy_gs - self.energies_e))
+                G_h[m, n] = 2 * np.sum(self.B_h[m, n] / (omega + 1j * eta - self.energy_gs + self.energies_h))
         G = G_e + G_h
         return G
 
     def spectral_function(self,
                           omegas: Sequence[float], 
                           eta: float = 0.0,
-                          save: bool = True) -> np.ndarray:
+                          save: bool = True) -> Optional[np.ndarray]:
         """Returns the spectral function at frequency omega.
 
         Args:
@@ -92,9 +93,10 @@ class GreensFunction:
         """
         As = []
         for omega in omegas:
-            G = self.greens_function(omega + 1j * eta)
+            G = self.greens_function(omega, eta)
             A = -1 / np.pi * np.imag(np.trace(G))
             As.append(A)
+        As = np.array(As)
         
         if save:
             np.savetxt('data/' + self.fname + '_A.dat', np.vstack((omegas, As)).T)
@@ -104,7 +106,7 @@ class GreensFunction:
     def self_energy(self, 
                     omegas: Sequence[float],
                     eta: float = 0.0,
-                    save: bool = True) -> np.ndarray:
+                    save: bool = True) -> Optional[np.ndarray]:
         """Returns the self-energy at frequency omega.
 
         Args:
@@ -124,8 +126,8 @@ class GreensFunction:
 
             Sigma = np.linalg.pinv(G_HF) - np.linalg.pinv(G)
             TrSigmas.append(np.trace(Sigma))
-        
         TrSigmas = np.array(TrSigmas)
+
         if save:
             np.savetxt('data/' + self.fname + '_TrSigma.dat', 
                        np.vstack((omegas, TrSigmas.real, TrSigmas.imag)).T)

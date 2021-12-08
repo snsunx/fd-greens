@@ -20,7 +20,6 @@ import params
 from params import HARTREE_TO_EV
 from utils import get_statevector, measure_operator
 from ground_state_solvers import vqe_minimize
-from helpers import get_quantum_instance
 from ansatze import AnsatzFunction
 from utils import state_tomography
 from qubit_indices import QubitIndices, transform_4q_indices

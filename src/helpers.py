@@ -1,3 +1,5 @@
+from typing import Union 
+
 import numpy as np
 import h5py
 
@@ -7,7 +9,9 @@ from qiskit.circuit import Barrier
 from qiskit.extensions import UnitaryGate, SwapGate
 
 from hamiltonians import MolecularHamiltonian
-from params import QubitIndices
+#from ground_state_solvers import GroundStateSolver
+#from number_states_solvers import EHStatesSolver, ExcitedStatesSolver
+#from amplitudes_solvers import EHAmplitudesSolver, ExcitedAmplitudesSolver
 
 def get_lih_hamiltonian(r: float) -> MolecularHamiltonian:
     """Returns the HOMO-LUMO LiH Hamiltonian with bond length r."""
@@ -35,8 +39,11 @@ def get_berkeley_ccx_data():
                 (SwapGate(), [1, 2])]
     return ccx_data
 
-def save_solvers_data(gs_solver, es_solver, amp_solver, fname='lih'):
-    f = h5py.File(fname + '.h5py')
+def save_eh_data(gs_solver: 'GroundStateSolver', 
+                 es_solver: 'EHStatesSolver',
+                 amp_solver: 'EHAmplitudesSolver',
+                 fname: str = 'lih') -> None:
+    f = h5py.File(fname + '_eh.h5py', 'w')
     f['energy_gs'] = gs_solver.energy
     f['energies_e'] = es_solver.energies_e
     f['energies_h'] = es_solver.energies_h
@@ -47,3 +54,14 @@ def save_solvers_data(gs_solver, es_solver, amp_solver, fname='lih'):
     f['e_orb'] = e_orb[h.act_inds][:, h.act_inds]
     f.close()
 
+def save_exc_data(gs_solver: 'GroundStateSolver', 
+                  es_solver: 'ExcitedStatesSolver',
+                  amp_solver: 'ExcitedAmplitudesSolver',
+                  fname: str = 'lih') -> None:
+    f = h5py.File(fname + '_exc.h5py', 'w')
+    f['energy_gs'] = gs_solver.energy
+    f['energies_s'] = es_solver.energies_s
+    f['energies_t'] = es_solver.energies_t
+    f['L'] = amp_solver.L
+    f['n_states'] = amp_solver.n_states
+    f.close()
