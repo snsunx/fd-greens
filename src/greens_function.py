@@ -40,7 +40,7 @@ class GreensFunction:
         # self.e_orb = e_orb[h.act_inds][:, h.act_inds]
 
         self.fname = fname
-        f = h5py.File(fname + '.h5py', 'r')
+        f = h5py.File(fname + '_eh.h5py', 'r')
         self.energy_gs = f['energy_gs']
         self.energies_e = f['energies_e']
         self.energies_h = f['energies_h']

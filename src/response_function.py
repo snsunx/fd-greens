@@ -5,9 +5,9 @@ from typing import Sequence, Union
 import h5py
 import numpy as np
 import params
-from ground_state_solvers import GroundStateSolver
-from number_states_solvers import ExcitedStatesSolver
-from amplitudes_solvers import ExcitedAmplitudesSolver
+# from ground_state_solvers import GroundStateSolver
+# from number_states_solvers import ExcitedStatesSolver
+# from amplitudes_solvers import ExcitedAmplitudesSolver
 
 class ResponseFunction:
     """A class to calculate frequency-domain Green's function."""
@@ -54,6 +54,7 @@ class ResponseFunction:
             omegas: The frequencies at which the response function is calculated.
             i: Row orbital index.
             j: Column orbital index.
+            eta: The imaginary part, i.e. broadening factor.
             save: Whether to save the response function to file.
 
         Returns:
@@ -63,7 +64,7 @@ class ResponseFunction:
         chis = []
         for omega in omegas:
             chi = 0
-            for lam in [1, 2, 3, 4, 5]: # XXX: Hardcoded
+            for lam in [1, 2, 3]: # XXX: Hardcoded
                 chi += self.L[i, j, lam] / (omega + 1j * eta - (self.energies_exc[lam] - self.energy_gs))
                 chi += self.L[i, j, lam].conjugate() / (-omega - 1j * eta - (self.energies_exc[lam] - self.energy_gs))
             chis.append(chi)
@@ -82,6 +83,7 @@ class ResponseFunction:
         
         Args:
             omegas: The frequencies at which the response function is calculated.
+            eta: The imaginary part, i.e. broadening factor.
             save: Whether to save the photo-absorption cross section to file.
 
         Returns:
@@ -90,7 +92,7 @@ class ResponseFunction:
         sigmas = []
         for omega in omegas:
             alpha = 0
-            for i in range(2): # XXX: 2 is hardcoded.
+            for i in range(2): # XXX: Hardcoded.
                 alpha += -self.response_function([omega + 1j * eta], i, i, save=False)
 
             sigma = 4 * np.pi / params.c * omega * alpha.imag

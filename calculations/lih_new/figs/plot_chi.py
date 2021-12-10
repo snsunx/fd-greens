@@ -1,15 +1,16 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-omegas, chi00_real, chi00_imag = np.loadtxt('data/chi00_qasm.dat').T
-omegas, chi11_real, chi11_imag = np.loadtxt('data/chi11_qasm.dat').T
-omegas, sigma_real, sigma_imag = np.loadtxt('data/sigma_qasm.dat').T
+ind = '11'
+ystr = '\chi_{' + ind + '}'
+fname = 'chi' + ind
+
+omegas, chi_real, chi_imag = np.loadtxt(f'../data/chi{ind}_qasm.dat').T
 
 fig, ax = plt.subplots()
-ax.plot(omegas, sigma_real, label="Re")
-ax.plot(omegas, sigma_imag, label="Im")
+ax.plot(omegas, chi_real, label="Real")
+ax.plot(omegas, chi_imag, label="Imag")
 ax.set_xlabel('$\omega$ (eV)')
-#ax.set_ylabel("$\chi$ (eV$^{-1}$)")
-ax.set_ylabel("$\sigma$")
+ax.set_ylabel(f"${ystr}$ (eV$^{-1}$)")
 ax.legend()
-fig.savefig('sigma.png', dpi=300)
+fig.savefig(f'chi{ind}.png', dpi=300)

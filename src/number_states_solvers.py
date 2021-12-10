@@ -213,8 +213,7 @@ class EHStatesSolver:
                  ansatz_func_e: Optional[AnsatzFunction] = None, 
                  ansatz_func_h: Optional[AnsatzFunction] = None,
                  q_instance: Optional[QuantumInstance] = None,
-                 spin: str = 'edhu',
-                 apply_tomography: bool = False):
+                 spin: str = 'edhu'):
         """Initializes a EHStatesSolver object.
         
         Args:
@@ -243,7 +242,6 @@ class EHStatesSolver:
         self.ansatz_func_e = ansatz_func_e
         self.ansatz_func_h = ansatz_func_h
         self.q_instance = q_instance
-        self.apply_tomography = apply_tomography
 
         self.states_e = None
         self.states_h = None
@@ -264,20 +262,18 @@ class EHStatesSolver:
         m_energy_max, circ_max = vqe_minimize(-self.h_op, ansatz_func=self.ansatz_func_e,
                                               init_params=(0.,), q_instance=self.q_instance)
         self.energies_e = np.array([energy_min, -m_energy_max])
-        if self.apply_tomography:
-            states_e = [state_tomography(circ_min, q_instance=self.q_instance), 
-                        state_tomography(circ_max, q_instance=self.q_instance)]
-            self.states_e = [rho[self.inds_e.int_form][:, self.inds_e.int_form] for rho in states_e]
+        states_e = [state_tomography(circ_min, q_instance=self.q_instance), 
+                    state_tomography(circ_max, q_instance=self.q_instance)]
+        self.states_e = [rho[self.inds_e.int_form][:, self.inds_e.int_form] for rho in states_e]
 
         energy_min, circ_min = vqe_minimize(self.h_op, ansatz_func=self.ansatz_func_h, 
                                             init_params=(0.,), q_instance=self.q_instance)
         m_energy_max, circ_max = vqe_minimize(-self.h_op, ansatz_func=self.ansatz_func_h,
                                               init_params=(0.,), q_instance=self.q_instance)
         self.energies_h = np.array([energy_min, -m_energy_max])
-        if self.apply_tomography:
-            states_h = [state_tomography(circ_min, q_instance=self.q_instance), 
-                        state_tomography(circ_max, q_instance=self.q_instance)]
-            self.states_h = [rho[self.inds_h.int_form][:, self.inds_h.int_form] for rho in states_h]
+        states_h = [state_tomography(circ_min, q_instance=self.q_instance), 
+                    state_tomography(circ_max, q_instance=self.q_instance)]
+        self.states_h = [rho[self.inds_h.int_form][:, self.inds_h.int_form] for rho in states_h]
 
         print(f"N+1 electron energies are {self.energies_e} eV")
         print(f"N-1 electron energies are {self.energies_h} eV")

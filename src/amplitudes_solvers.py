@@ -45,8 +45,7 @@ class EHAmplitudesSolver:
             hamiltonian: The hamiltonian of the molecule.
             spin: A string indicating the spin in the tapered N+/-1 electron operators. 
                 Either 'euhd' (N+1 up, N-1 down) or 'edhu' (N+1 down, N-1 up).
-            method: The method for extracting the transition amplitudes. Either 'energy'
-                or 'tomography'.
+            method: The method for extracting the transition amplitudes. Either 'energy' or 'tomo'.
             q_instance: The QuantumInstance for executing the transition amplitude circuits.
             ccx_data: A CircuitData object indicating how CCX gate is applied.
             recompiled: Whether the QPE circuit is recompiled.
@@ -204,6 +203,8 @@ class EHAmplitudesSolver:
 
                 B_e_mm = np.zeros((self.n_e,), dtype=float)
                 B_h_mm = np.zeros((self.n_h,), dtype=float)
+                print(self.states_e)
+                print(rho_e)
                 for i in range(self.n_e):
                     B_e_mm[i] = get_overlap(self.states_e[i], rho_e)
                 for i in range(self.n_h):
