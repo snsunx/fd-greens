@@ -137,11 +137,11 @@ class GroundStateSolver:
                  init_params: Optional[Sequence[float]] = None,
                  q_instance: Optional[QuantumInstance] = None,
                  save_params: bool = False,
-                 load_params: bool = False):
+                 load_params: bool = False) -> None:
         """Initializes a VQE object.
         
         Args:
-            h_op: The Hamiltonian operator.
+            h: The Hamiltonian.
             ansatz_func: The ansatz function for VQE.
             init_params: Initial guess parameters for VQE.
             q_instance: The QuantumInstance for VQE.
@@ -160,18 +160,18 @@ class GroundStateSolver:
         self.state = None
         self.ansatz = None
     
-    def _run_exact(self):
+    def _run_exact(self) -> None:
         """Calculates the exact ground state of the Hamiltonian."""
         # e, v = np.linalg.eigh(self.h_op.to_matrix())
         # self.energy = e[0]
         # self.state = v[:, 0]
         # print(f'Ground state energy = {self.energy:.3f} eV')
-        from helpers import get_quantum_instance
+        from utils import get_quantum_instance
         self.q_instance = get_quantum_instance('sv')
         self._run_vqe()
 
     
-    def _run_vqe(self):
+    def _run_vqe(self) -> None:
         """Calculates the ground state of the Hamiltonian using VQE."""
         assert self.ansatz_func is not None
         assert self.q_instance is not None

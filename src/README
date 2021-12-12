@@ -7,7 +7,7 @@ amplitudes_solvers.py
 greens_function.py
 response_function.py
 
-Auxiliary scripts (6):
+Supporting scripts (6):
 ansatze.py
 hamiltonians.py
 circuits.py
@@ -15,11 +15,7 @@ operators.py
 qubit_indices.py
 z2_symmetries.py
 
-Helper scripts (3):
-helpers.py
+Utility scripts (2):
 utils.py
 params.py
-
-Temporary scripts (1):
-greens_function_restricted.py
 

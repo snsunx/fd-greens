@@ -11,7 +11,7 @@ from amplitudes_solvers import EHAmplitudesSolver
 class GreensFunction:
     """A class to calculate frequency-domain Green's function."""
     
-    def __init__(self, fname: str
+    def __init__(self, fname: str = 'lih', dsetname: str = 'eh'
                  # gs_solver: GroundStateSolver,
                  # es_solver: EHStatesSolver,
                  # amp_solver: EHAmplitudesSolver
@@ -39,15 +39,16 @@ class GreensFunction:
         # e_orb = np.diag(h.molecule.orbital_energies)
         # self.e_orb = e_orb[h.act_inds][:, h.act_inds]
 
-        self.fname = fname
-        f = h5py.File(fname + '_eh.h5py', 'r')
-        self.energy_gs = f['energy_gs']
-        self.energies_e = f['energies_e']
-        self.energies_h = f['energies_h']
-        self.B_e = f['B_e']
-        self.B_h = f['B_h']
+        f = h5py.File(fname + '.hdf5', 'r')
+        dset = f[dsetname]
+        self.energy_gs = dset.attrs['energy_gs']
+        self.energies_e = dset.attrs['energies_e']
+        self.energies_h = dset.attrs['energies_h']
+        self.B_e = dset.attrs['B_e']
+        self.B_h = dset.attrs['B_h']
         self.n_orb = self.B_e.shape[0]
-        self.e_orb = f['e_orb']
+        self.e_orb = dset.attrs['e_orb']
+        exit()
 
     @property
     def density_matrix(self) -> np.ndarray:

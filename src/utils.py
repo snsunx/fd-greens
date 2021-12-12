@@ -1,8 +1,11 @@
 """Utility functions"""
 
-from typing import ClassVar, Optional, Union, Iterable, List, Tuple, Sequence, Mapping
+import os
+import h5py
+from typing import Optional, Union, Iterable, List, Tuple, Sequence, Mapping
 import numpy as np
 from collections import defaultdict
+from hamiltonians import MolecularHamiltonian
 
 from qiskit import QuantumCircuit, QuantumRegister, ClassicalRegister, Aer, IBMQ, execute
 from qiskit.utils import QuantumInstance
@@ -17,6 +20,7 @@ from qiskit.result import Result
 CircuitData = Iterable[Tuple[Instruction, List[int], Optional[List[int]]]]
 
 
+"""
 def get_quantum_instance(backend,
                          noise_model_name=None,
                          optimization_level=0,
@@ -37,6 +41,7 @@ def get_quantum_instance(backend,
                 optimization_level=optimization_level,
                 initial_layout=initial_layout)
     return q_instance
+"""
 
 def get_statevector(circ: QuantumCircuit,
                     reverse: bool = False) -> np.ndarray:
@@ -165,8 +170,25 @@ def state_tomography(circ: QuantumCircuit,
     rho_fit = qst_fitter.fit(method='lstsq')
     return rho_fit
 
-def save_circuit(circ, 
-                 fname,
+def get_lih_hamiltonian(r: float) -> MolecularHamiltonian:
+    """Returns the HOMO-LUMO LiH Hamiltonian with bond length r."""
+    hamiltonian = MolecularHamiltonian(
+        [['Li', (0, 0, 0)], ['H', (0, 0, r)]], 'sto3g', 
+        occ_inds=[0], act_inds=[1, 2])
+    return hamiltonian
+
+def get_quantum_instance(type_str: str) -> QuantumInstance:
+    """Returns the QuantumInstance from type string."""
+    if type_str == 'sv':
+        q_instance = QuantumInstance(Aer.get_backend('statevector_simulator'))
+    elif type_str == 'qasm':
+        q_instance = QuantumInstance(Aer.get_backend('qasm_simulator', shots=10000), shots=10000)
+    elif type_str == 'noisy':
+        q_instance = QuantumInstance(Aer.get_backend('qasm_simulator', shots=10000, noise_model_name='ibmq_jakarta'), shots=10000)
+    return q_instance
+
+def save_circuit(circ: QuantumCircuit, 
+                 fname: str,
                  savetxt: bool = True,
                  savefig: bool = True) -> None:
     """Saves a circuit to disk in QASM string form and/or figure form.
@@ -301,5 +323,69 @@ def get_counts(result: Result) -> Mapping[str, int]:
     counts = defaultdict(lambda: 0)
     counts.update(result.get_counts())
     return counts
+
+
+def save_eh_data(gs_solver: 'GroundStateSolver', 
+                 es_solver: 'EHStatesSolver',
+                 amp_solver: 'EHAmplitudesSolver',
+                 fname: str = 'lih',
+                 dsetname: str = 'eh') -> None:
+    """Saves N+/-1 electron states data to file.
+    
+    Args:
+        gs_solver: The ground state solver.
+        es_solver: The N+/-1 electron states solver.
+        amp_solver: The transition amplitudes solver.
+        fname: The file name string.
+        dsetname: The dataset name string.
+    """
+    fname += '.hdf5'
+    if os.path.exists(fname):
+        f = h5py.File(fname, 'r+')
+    else:
+        f = h5py.File(fname, 'w')
+    if dsetname in f.keys():
+        dset = f[dsetname]
+    else:
+        dset = f.create_dataset(dsetname, shape=())
+    dset.attrs['energy_gs'] = gs_solver.energy
+    dset.attrs['energies_e'] = es_solver.energies_e
+    dset.attrs['energies_h'] = es_solver.energies_h
+    dset.attrs['B_e'] = amp_solver.B_e
+    dset.attrs['B_h'] = amp_solver.B_h
+    e_orb = np.diag(amp_solver.h.molecule.orbital_energies)
+    act_inds = amp_solver.h.act_inds
+    dset.attrs['e_orb'] = e_orb[act_inds][:, act_inds]
+    f.close()
+
+def save_exc_data(gs_solver: 'GroundStateSolver', 
+                  es_solver: 'ExcitedStatesSolver',
+                  amp_solver: 'ExcitedAmplitudesSolver',
+                  fname: str = 'lih',
+                  dsetname: str = 'exc') -> None:
+    """Saves excited states data to file.
+    
+    Args:
+        gs_solver: The ground state solver.
+        es_solver: The excited states solver.
+        amp_solver: The transition amplitudes solver.
+        fname: The file name string.
+        dsetname: The dataset name string.
+    """
+    fname += '.hdf5'
+    if os.path.exists(fname):
+        f = h5py.File(fname, 'r+')
+    else:
+        f = h5py.File(fname, 'w')
+    if dsetname in f.keys():
+        dset = f[dsetname]
+    else:
+        dset = f.create_dataset(dsetname, shape=())
+    dset.attrs['energy_gs'] = gs_solver.energy
+    dset.attrs['energies_s'] = es_solver.energies_s
+    dset.attrs['energies_t'] = es_solver.energies_t
+    dset.attrs['L'] = amp_solver.L
+    dset.attrs['n_states'] = amp_solver.n_states
+    f.close()
 
 

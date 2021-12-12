@@ -1,4 +1,11 @@
 from qubit_indices import QubitIndices
+from typing import Union 
+
+import numpy as np
+
+from qiskit.circuit import Barrier
+from qiskit.extensions import UnitaryGate, SwapGate
+
 
 HARTREE_TO_EV = 27.211386245988
 c = 1
@@ -16,3 +23,10 @@ hd_inds = QubitIndices(['1000', '0010'])
 
 singlet_inds = QubitIndices(['0011', '0110', '1001', '1100'])
 triplet_inds = QubitIndices(['0101', '1010'])
+
+iX = np.array([[0, 1j], [1j, 0]])
+ccx_data = [(SwapGate(), [1, 2]), 
+            (Barrier(4), [0, 1, 2, 3]), 
+            (UnitaryGate(iX).control(2), [0, 2, 1]), 
+            (Barrier(4), [0, 1, 2, 3]),
+            (SwapGate(), [1, 2])]

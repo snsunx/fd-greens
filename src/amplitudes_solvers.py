@@ -17,8 +17,7 @@ from operators import SecondQuantizedOperators, ChargeOperators
 from qubit_indices import QubitIndices, transform_4q_indices
 from circuits import CircuitConstructor, CircuitData, transpile_across_barrier
 from z2_symmetries import transform_4q_pauli
-from utils import save_circuit, state_tomography, solve_energy_probabilities, get_overlap, get_counts
-from helpers import get_quantum_instance
+from utils import save_circuit, state_tomography, solve_energy_probabilities, get_overlap, get_counts, get_quantum_instance
 from ground_state_solvers import GroundStateSolver
 
 np.set_printoptions(precision=6)
@@ -29,7 +28,7 @@ class EHAmplitudesSolver:
     def __init__(self,
                  h: MolecularHamiltonian,
                  gs_solver: GroundStateSolver,
-                 eh_solver: EHStatesSolver,
+                 es_solver: EHStatesSolver,
                  spin: str = 'edhu',
                  method: str = 'energy',
                  q_instance: QuantumInstance = None,
@@ -66,11 +65,11 @@ class EHAmplitudesSolver:
         self.ansatz = gs_solver.ansatz
 
         # Attributes from N+/-1 electron states solver
-        self.eh_solver = eh_solver
-        self.energies_e = eh_solver.energies_e
-        self.states_e = eh_solver.states_e
-        self.energies_h = eh_solver.energies_h
-        self.states_h = eh_solver.states_h
+        self.es_solver = es_solver
+        self.energies_e = es_solver.energies_e
+        self.states_e = es_solver.states_e
+        self.energies_h = es_solver.energies_h
+        self.states_h = es_solver.states_h
 
         # Method and quantum instance
         self.method = method
