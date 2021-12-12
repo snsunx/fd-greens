@@ -48,7 +48,7 @@ class GreensFunction:
         self.B_h = dset.attrs['B_h']
         self.n_orb = self.B_e.shape[0]
         self.e_orb = dset.attrs['e_orb']
-        exit()
+        self.datfname = fname + '_' + dsetname
 
     @property
     def density_matrix(self) -> np.ndarray:
@@ -100,7 +100,7 @@ class GreensFunction:
         As = np.array(As)
         
         if save:
-            np.savetxt('data/' + self.fname + '_A.dat', np.vstack((omegas, As)).T)
+            np.savetxt('data/' + self.datfname + '_A.dat', np.vstack((omegas, As)).T)
         else:
             return As
 
@@ -130,7 +130,7 @@ class GreensFunction:
         TrSigmas = np.array(TrSigmas)
 
         if save:
-            np.savetxt('data/' + self.fname + '_TrSigma.dat', 
+            np.savetxt('data/' + self.datfname + '_TrSigma.dat', 
                        np.vstack((omegas, TrSigmas.real, TrSigmas.imag)).T)
         else:
             return TrSigmas
