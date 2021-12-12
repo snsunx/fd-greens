@@ -2,46 +2,21 @@
 
 import os
 import h5py
+import math
 from typing import Optional, Union, Iterable, List, Tuple, Sequence, Mapping
 import numpy as np
 from collections import defaultdict
 from hamiltonians import MolecularHamiltonian
 
-from qiskit import QuantumCircuit, QuantumRegister, ClassicalRegister, Aer, IBMQ, execute
+from qiskit import QuantumCircuit, QuantumRegister, ClassicalRegister, Aer, execute
 from qiskit.utils import QuantumInstance
-from qiskit.providers.aer.noise import NoiseModel
-from qiskit.providers.aer.backends.aerbackend import AerBackend
 from qiskit.ignis.verification.tomography import (state_tomography_circuits,
                                                   StateTomographyFitter)
 from qiskit.circuit import Instruction
 from qiskit.opflow import PauliSumOp
-from qiskit.result import Result
+from qiskit.result import Result, Counts
 
 CircuitData = Iterable[Tuple[Instruction, List[int], Optional[List[int]]]]
-
-
-"""
-def get_quantum_instance(backend,
-                         noise_model_name=None,
-                         optimization_level=0,
-                         initial_layout=None,
-                         shots=1):
-    # TODO: Write the part for IBMQ backends
-    if isinstance(backend, AerBackend):
-        if noise_model_name is None:
-            q_instance = QuantumInstance(backend=backend, shots=shots)
-        else:
-            IBMQ.load_account()
-            provider = IBMQ.get_provider(hub='ibm-q-research', group='caltech-1', project='main')
-            device = provider.get_backend(noise_model_name)
-            q_instance = QuantumInstance(
-                backend=backend, shots=shots,
-                noise_model=NoiseModel.from_backend(device.properties()),
-                coupling_map=device.configuration().coupling_map,
-                optimization_level=optimization_level,
-                initial_layout=initial_layout)
-    return q_instance
-"""
 
 def get_statevector(circ: QuantumCircuit,
                     reverse: bool = False) -> np.ndarray:
@@ -325,6 +300,26 @@ def get_counts(result: Result) -> Mapping[str, int]:
     return counts
 
 
+def counts_dict_to_arr(counts: Counts, n_qubits: int = None) -> np.ndarray:
+    """Converts counts from dictionary form to array form."""
+    if n_qubits is None:
+        n_qubits = math.ceil(np.log2(max(counts.keys())))
+
+    arr = np.zeros((2 ** n_qubits,))
+    for key, val in counts.items():
+        arr[key] = val
+    return arr
+
+def counts_arr_to_dict(arr: np.ndarray) -> np.ndarray:
+    """Converts counts from array form to dictionary form."""
+    data = {}
+    for i in range(arr.shape[0]):
+        data[i] = arr[i]
+
+    counts = Counts(data)
+    return counts
+
+
 def save_eh_data(gs_solver: 'GroundStateSolver', 
                  es_solver: 'EHStatesSolver',
                  amp_solver: 'EHAmplitudesSolver',
@@ -344,9 +339,9 @@ def save_eh_data(gs_solver: 'GroundStateSolver',
         f = h5py.File(fname, 'r+')
     else:
         f = h5py.File(fname, 'w')
-    if dsetname in f.keys():
+    if dsetname in f.keys(): 
         dset = f[dsetname]
-    else:
+    else: 
         dset = f.create_dataset(dsetname, shape=())
     dset.attrs['energy_gs'] = gs_solver.energy
     dset.attrs['energies_e'] = es_solver.energies_e
@@ -387,5 +382,3 @@ def save_exc_data(gs_solver: 'GroundStateSolver',
     dset.attrs['L'] = amp_solver.L
     dset.attrs['n_states'] = amp_solver.n_states
     f.close()
-
-
