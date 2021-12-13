@@ -37,13 +37,13 @@ class EHAmplitudesSolver:
                  es_solver: EHStatesSolver,
                  spin: str = 'edhu',
                  method: str = 'exact',
-                 q_instance: QuantumInstance = None,
-                 ccx_data: Optional[CircuitData] = None,
+                 q_instance: QuantumInstance = get_quantum_instance('sv'),
+                 ccx_data: Optional[CircuitData] = params.ccx_data,
                  add_barriers: bool = True,
-                 transpiled: bool = False,
+                 transpiled: bool = True,
                  push: bool = False,
                  h5fname: str = 'lih',
-                 dsetname: str = 'eh_exact') -> None:
+                 dsetname: str = 'eh') -> None:
         """Initializes an EHAmplitudesSolver object.
 
         Args:
@@ -83,20 +83,14 @@ class EHAmplitudesSolver:
 
         # Method and quantum instance
         self.method = method
-        if q_instance is None:
-            self.q_instance = get_quantum_instance('sv')
-        else:
-            self.q_instance = q_instance
+        self.q_instance = q_instance
         self.backend = self.q_instance.backend
 
         # Circuit construction variables
         self.transpiled = transpiled
         self.push = push
         self.add_barriers = add_barriers
-        if ccx_data is None: 
-            self.ccx_data = [(CCXGate(), [0, 1, 2], [])]
-        else: 
-            self.ccx_data = ccx_data
+        self.ccx_data = ccx_data
         self.suffix = ''
         if self.transpiled: self.suffix = self.suffix + '_trans'
         if self.push: self.suffix = self.suffix + '_push'

@@ -341,7 +341,19 @@ def split_counts_on_anc(counts: Union[Counts, np.ndarray], n_anc: int = 1) -> Co
         counts11 /= np.sum(counts11)
         return counts00, counts01, counts10, counts11
 
-
+def initialize_hdf5(fname: str = 'lih', dsetname: str = 'eh') -> None:
+    """Initializes the hdf5 file and dataset if they do not exist."""
+    fname += '.hdf5'
+    if os.path.exists(fname):
+        f = h5py.File(fname, 'r+')
+    else:
+        f = h5py.File(fname, 'w')
+    if dsetname in f.keys(): 
+        dset = f[dsetname]
+    else: 
+        dset = f.create_dataset(dsetname, shape=())
+    f.close()
+    
 def save_eh_data(gs_solver: 'GroundStateSolver', 
                  es_solver: 'EHStatesSolver',
                  amp_solver: 'EHAmplitudesSolver',
