@@ -13,10 +13,10 @@ h = get_lih_hamiltonian(3.0)
 q_instance = get_quantum_instance('qasm')
 
 gs_solver = GroundStateSolver(h, ansatz_func=build_ansatz_gs, q_instance=q_instance)
-gs_solver.run(method='exact')
+gs_solver.run(method='vqe')
 
 es_solver = EHStatesSolver(h, ansatz_func_e=build_ansatz_e, ansatz_func_h=build_ansatz_h, q_instance=q_instance)
-es_solver.run(method='exact')
+es_solver.run(method='vqe')
 
 amp_solver = EHAmplitudesSolver(h, gs_solver, es_solver, q_instance=q_instance)
 amp_solver.run(method='tomo')

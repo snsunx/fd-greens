@@ -319,6 +319,28 @@ def counts_arr_to_dict(arr: np.ndarray) -> np.ndarray:
     counts = Counts(data)
     return counts
 
+def split_counts_on_anc(counts: Union[Counts, np.ndarray], n_anc: int = 1) -> Counts:
+    """Splits the counts on ancilla qubit state."""
+    if isinstance(counts, Counts):
+        counts = counts_dict_to_arr(counts)
+    step = 2 ** n_anc
+    if n_anc == 1:
+        counts0 = counts[::step]
+        counts1 = counts[1::step]
+        counts0 /= np.sum(counts0)
+        counts1 /= np.sum(counts1)
+        return counts0, counts1
+    elif n_anc == 2:
+        counts00 = counts[::step]
+        counts01 = counts[1::step]
+        counts10 = counts[2::step]
+        counts11 = counts[3::step]
+        counts00 /= np.sum(counts00)
+        counts01 /= np.sum(counts01)
+        counts10 /= np.sum(counts10)
+        counts11 /= np.sum(counts11)
+        return counts00, counts01, counts10, counts11
+
 
 def save_eh_data(gs_solver: 'GroundStateSolver', 
                  es_solver: 'EHStatesSolver',

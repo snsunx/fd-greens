@@ -22,7 +22,8 @@ from qubit_indices import QubitIndices, transform_4q_indices
 from circuits import CircuitConstructor, CircuitData, transpile_across_barrier
 from z2_symmetries import transform_4q_pauli
 from utils import (state_tomography, solve_energy_probabilities, get_overlap,
-                   get_counts, get_quantum_instance, counts_arr_to_dict, counts_dict_to_arr)
+                   get_counts, get_quantum_instance, counts_arr_to_dict, counts_dict_to_arr, 
+                   split_counts_on_anc)
 from ground_state_solvers import GroundStateSolver
 
 np.set_printoptions(precision=6)
@@ -232,20 +233,31 @@ class EHAmplitudesSolver:
                 B_h_mm = np.abs(self.states_h.conj().T @ psi_h) ** 2
             
             elif self.method == 'tomo':
-                counts = dset.attrs[f'counts{m}']
+                basis_matrix = params.basis_matrix
+                data_h = np.array([])
+                data_e = np.array([])
 
-                # TODO: Implement tomography from counts here
-                rho = state_tomography(None)
+                labels = itertools.product('xyz', repeat=2)
+                for label in labels:
+                    label_str = ''.join(label)
+                    counts = dset.attrs[f'counts{m}{label_str}']
+                    counts_h, counts_e = split_counts_on_anc(counts, n_anc=1)
 
-                rho_e = rho[inds_tot_e.int_form][:, inds_tot_e.int_form]
-                rho_h = rho[inds_tot_h.int_form][:, inds_tot_h.int_form]
+                    data_h = np.hstack((data_h, counts_h))
+                    data_e = np.hstack((data_e, counts_e))
+                    
+                rho_h = np.linalg.lstsq(basis_matrix, data_h)[0].reshape(4, 4, order='F')
+                rho_e = np.linalg.lstsq(basis_matrix, data_e)[0].reshape(4, 4, order='F')
+                rho_h = rho_h[self.inds_h.int_form][:, self.inds_h.int_form]
+                rho_e = rho_e[self.inds_e.int_form][:, self.inds_e.int_form]
 
-                B_e_mm = np.zeros((self.n_e,), dtype=float)
                 B_h_mm = np.zeros((self.n_h,), dtype=float)
-                for i in range(self.n_e):
-                    B_e_mm[i] = get_overlap(self.states_e[i], rho_e)
+                B_e_mm = np.zeros((self.n_e,), dtype=float)
                 for i in range(self.n_h):
                     B_h_mm[i] = get_overlap(self.states_h[i], rho_h)
+                for i in range(self.n_e):
+                    B_e_mm[i] = get_overlap(self.states_e[i], rho_e)
+
 
             self.B_e[m, m] = B_e_mm
             self.B_h[m, m] = B_h_mm
@@ -307,6 +319,11 @@ class EHAmplitudesSolver:
                         counts = result.get_counts()
                         counts_dict = counts.int_raw
                         counts_arr = counts_dict_to_arr(counts_dict)
+
+                        #if label_str == 'xx':
+                        #    print(counts)
+                        #    print(counts_dict)
+                        #    print(counts_arr)
                         dset.attrs[f'counts{m}{n}{label_str}'] = counts_arr
 
         h5file.close()
@@ -316,10 +333,11 @@ class EHAmplitudesSolver:
         h5file = h5py.File(self.h5fname, 'r+')
         dset = h5file[self.dsetname]
 
-        inds_anc_ep = QubitIndices(['01'])
-        inds_anc_em = QubitIndices(['11'])
         inds_anc_hp = QubitIndices(['00'])
+        inds_anc_ep = QubitIndices(['01'])
         inds_anc_hm = QubitIndices(['10'])
+        inds_anc_em = QubitIndices(['11'])
+
         inds_tot_ep = self.inds_e + inds_anc_ep
         inds_tot_em = self.inds_e + inds_anc_em
         inds_tot_hp = self.inds_h + inds_anc_hp
@@ -341,28 +359,43 @@ class EHAmplitudesSolver:
                     D_hm_mn = abs(self.states_h.conj().T @ psi_hm) ** 2
                             
                 elif self.method == 'tomo':
-                    counts = dset.attrs[f'counts{m}{n}']
+                    basis_matrix = params.basis_matrix
+                    data_hp = np.array([])
+                    data_ep = np.array([])
+                    data_hm = np.array([])
+                    data_em = np.array([])
 
-                    # TODO: Implement tomography here.
-                    rho = state_tomography(None)
+                    labels = itertools.product('xyz', repeat=2)
+                    for label in labels:
+                        label_str = ''.join([label[1], label[0]])
+                        counts = dset.attrs[f'counts{m}{n}{label_str}']
+                        counts_hp, counts_ep, counts_hm, counts_em = split_counts_on_anc(counts, n_anc=2)
 
-                    rho_ep = rho[inds_tot_ep.int_form][:, inds_tot_ep.int_form]
-                    rho_em = rho[inds_tot_em.int_form][:, inds_tot_em.int_form]
-                    rho_hp = rho[inds_tot_hp.int_form][:, inds_tot_hp.int_form]
-                    rho_hm = rho[inds_tot_hm.int_form][:, inds_tot_hm.int_form]
+                        data_hp = np.hstack((data_hp, counts_hp))
+                        data_ep = np.hstack((data_ep, counts_ep))
+                        data_hm = np.hstack((data_hm, counts_hm))
+                        data_em = np.hstack((data_em, counts_em))
+                        
+                    rho_hp = np.linalg.lstsq(basis_matrix, data_hp)[0].reshape(4, 4, order='F')
+                    rho_ep = np.linalg.lstsq(basis_matrix, data_ep)[0].reshape(4, 4, order='F')
+                    rho_hm = np.linalg.lstsq(basis_matrix, data_hm)[0].reshape(4, 4, order='F')
+                    rho_em = np.linalg.lstsq(basis_matrix, data_em)[0].reshape(4, 4, order='F')
 
-                    D_ep_mn = np.zeros((self.n_e,), dtype=float)
-                    D_em_mn = np.zeros((self.n_e,), dtype=float)
+                    rho_hp = rho_hp[self.inds_h.int_form][:, self.inds_h.int_form]
+                    rho_ep = rho_ep[self.inds_e.int_form][:, self.inds_e.int_form]
+                    rho_hm = rho_hm[self.inds_h.int_form][:, self.inds_h.int_form]
+                    rho_em = rho_em[self.inds_e.int_form][:, self.inds_e.int_form]
+
                     D_hp_mn = np.zeros((self.n_h,), dtype=float)
+                    D_ep_mn = np.zeros((self.n_e,), dtype=float)
                     D_hm_mn = np.zeros((self.n_h,), dtype=float)
-
-                    for i in range(self.n_e):
-                        D_ep_mn[i] = get_overlap(self.states_e[i], rho_ep)
-                        D_em_mn[i] = get_overlap(self.states_e[i], rho_em)
-
+                    D_em_mn = np.zeros((self.n_e,), dtype=float)
                     for i in range(self.n_h):
                         D_hp_mn[i] = get_overlap(self.states_h[i], rho_hp)
                         D_hm_mn[i] = get_overlap(self.states_h[i], rho_hm)
+                    for i in range(self.n_e):
+                        D_ep_mn[i] = get_overlap(self.states_e[i], rho_ep)
+                        D_em_mn[i] = get_overlap(self.states_e[i], rho_em)
 
                 self.D_ep[m, n] = self.D_ep[n, m] = D_ep_mn
                 self.D_em[m, n] = self.D_em[n, m] = D_em_mn
@@ -391,8 +424,8 @@ class EHAmplitudesSolver:
         self.build_off_diagonal()
         self.run_diagonal()
         self.run_off_diagonal()
-        # self.process_diagonal()
-        # self.process_off_diagonal()
+        self.process_diagonal()
+        self.process_off_diagonal()
 
 
 class ExcitedAmplitudesSolver:
