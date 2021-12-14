@@ -10,17 +10,17 @@ from ansatze import build_ansatz_gs, build_ansatz_e, build_ansatz_h
 from utils import get_lih_hamiltonian, get_quantum_instance, initialize_hdf5
 
 h = get_lih_hamiltonian(3.0)
-q_instance = get_quantum_instance('qasm')
+q_instance = get_quantum_instance('sv')
 fname = 'lih'
-dsetname = 'eh_tomo'
+dsetname = 'eh_exact'
 initialize_hdf5(fname, dsetname)
 
 gs_solver = GroundStateSolver(h, ansatz_func=build_ansatz_gs, q_instance=q_instance, h5fname=fname, dsetname=dsetname)
-gs_solver.run(method='vqe')
+gs_solver.run(method='exact')
 
 es_solver = EHStatesSolver(h, ansatz_func_e=build_ansatz_e, ansatz_func_h=build_ansatz_h, 
                            q_instance=q_instance, h5fname=fname, dsetname=dsetname)
-es_solver.run(method='vqe')
+es_solver.run(method='exact')
 
 amp_solver = EHAmplitudesSolver(h, q_instance=q_instance, h5fname=fname, dsetname=dsetname)
-amp_solver.run(method='tomo')
+amp_solver.run(method='exact')

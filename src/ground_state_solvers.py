@@ -1,6 +1,6 @@
 """Ground state solver module."""
 
-from typing import Optional, Sequence, Tuple, Callable, Union
+from typing import Optional, Sequence, Tuple
 import h5py
 import numpy as np
 from scipy.optimize import minimize
@@ -10,9 +10,8 @@ from qiskit.opflow import PauliSumOp
 from qiskit.utils import QuantumInstance
 
 from hamiltonians import MolecularHamiltonian
-from utils import save_circuit
 from ansatze import AnsatzFunction, build_ansatz_gs
-from z2_symmetries import transform_4q_pauli
+from operators import transform_4q_pauli
 
 def objective_function_sv(params: Sequence[float],
                           h_op: PauliSumOp,
@@ -190,12 +189,6 @@ class GroundStateSolver:
                 self.h_op, ansatz_func=self.ansatz_func, 
                 init_params=self.init_params, q_instance=self.q_instance)
             # print("===== Finish calculating the ground state using VQE =====")
-
-            #if self.save_params:
-            #    print("Save VQE circuit to file")
-            #    with open('data/vqe_energy.txt', 'w') as f: 
-            #        f.write(str(self.energy))
-            #    save_circuit(self.ansatz.copy(), 'circuits/vqe_circuit')
 
         print(f'Ground state energy = {self.energy:.3f} eV')
 

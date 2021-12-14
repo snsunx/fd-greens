@@ -1,44 +1,10 @@
 """Operator utility functions"""
 
-from typing import Callable, Tuple, Dict
+from typing import Callable, Tuple, Dict, Union, Sequence, Optional, List
 import numpy as np
+from qiskit import *
 from qiskit.quantum_info import PauliTable, SparsePauliOp
-from z2_symmetries import transform_4q_hamiltonian
-
-def get_a_operator(n_qubits: int, ind: int) -> SparsePauliOp:
-    """Returns the creation/annihilation operator.
-
-    Args:
-        n_qubits: Number of qubits.
-        ind: The index of the creation/annihilation operator.
-
-    Returns:
-        The X and Y part of the creation/annihilation operator as a
-            SparsePauliOp.
-    """
-    label_x = 'I' * (n_qubits - ind - 1) + 'X' + 'Z' * ind
-    label_y = 'I' * (n_qubits - ind - 1) + 'Y' + 'Z' * ind
-    pauli_table = PauliTable.from_labels([label_x, label_y])
-    sparse_pauli_op = SparsePauliOp(pauli_table, coeffs=[1.0, 1.0j])
-    return sparse_pauli_op
-
-# XXX: Treating the spin this way is not correct. See Markdown document.
-def get_operator_dictionary(spin='up'):
-    """Returns the operator dictionary for restricted orbital calculations."""
-    labels_x = ['IIIX', 'IIXZ', 'IXZZ', 'XZZZ']
-    labels_y = ['IIIY', 'IIYZ', 'IYZZ', 'YZZZ']
-    pauli_table = PauliTable.from_labels(labels_x + labels_y)
-    sparse_pauli_op = SparsePauliOp(pauli_table, coeffs=[1.] * 4 + [1j] * 4)
-
-    sparse_pauli_op = transform_4q_hamiltonian(sparse_pauli_op, init_state=[1, 1])
-    dic = {}
-    if spin == 'up':
-        for i in range(2):
-            dic.update({i: [sparse_pauli_op[2 * i], sparse_pauli_op[2 * i + 4]]})
-    else:
-        for i in range(2):
-            dic.update({i: [sparse_pauli_op[2 * i + 1], sparse_pauli_op[2 * i + 1 + 4]]})
-    return dic
+from qiskit.opflow import PauliSumOp
 
 class SecondQuantizedOperators:
     """A class to store the X and Y parts of the second quantized operators."""
@@ -111,4 +77,163 @@ class ChargeOperators:
         return dic
 
 
+def apply_cnot_z2(op: Union[PauliSumOp, SparsePauliOp],
+                  ctrl: int,
+                  targ: int) -> Union[PauliSumOp, SparsePauliOp]:
+    """Applies a CNOT gate to the Z2 representation of a Pauli string.
 
+    Note that the operator in string form follows Qiskit qubit order,
+    but in vector (PauliTable) form follows normal qubit order.
+
+    Args:
+        pauli_sum_op: An operator on which a CNOT is to be applied.
+        ctrl: An integer indicating the index of the control qubit.
+        targ: An integer indicating the index of the target qubit.
+
+    Returns:
+        The new operator after CNOT is applied.
+    """
+    if isinstance(op, PauliSumOp):
+        sparse_pauli_op = op.primitive.copy()
+    elif isinstance(op, SparsePauliOp):
+        sparse_pauli_op = op.copy()
+    else:
+        raise TypeError("Operator must be a PauliSumOp or SparsePauliOp")
+
+    coeffs = sparse_pauli_op.coeffs.copy()
+    x_arr = sparse_pauli_op.table.X.copy()
+    z_arr = sparse_pauli_op.table.Z.copy()
+    n_paulis, n_qubits = x_arr.shape
+
+    # Flip sign when the pauli is X_cZ_t or Y_cY_t
+    for i in range(n_paulis):
+        x = x_arr[i]
+        z = z_arr[i]
+        if z[targ] == x[ctrl] == True and z[ctrl] == x[targ]:
+            coeffs[i] *= -1
+
+    # Apply binary addition forward on the X part, backward on the Z part
+    x_arr[:, targ] ^= x_arr[:, ctrl]
+    z_arr[:, ctrl] ^= z_arr[:, targ]
+
+    # Stack the new X and Z arrays and create the new operator
+    op_new = SparsePauliOp(np.hstack((x_arr, z_arr)), coeffs=coeffs)
+    if isinstance(op, PauliSumOp):
+        op_new = PauliSumOp(op_new)
+    return op_new
+
+cnot_pauli = apply_cnot_z2
+
+def swap_z2(op: Union[PauliSumOp, SparsePauliOp], q1: int, q2: int
+            ) -> Union[PauliSumOp, SparsePauliOp]:
+    if isinstance(op, PauliSumOp):
+        sparse_pauli_op = op.primitive.copy()
+    elif isinstance(op, SparsePauliOp):
+        sparse_pauli_op = op.copy()
+    else:
+        raise TypeError("Operator must be a PauliSumOp or SparsePauliOp")
+
+    coeffs = sparse_pauli_op.coeffs.copy()
+    x_arr = sparse_pauli_op.table.X.copy()
+    z_arr = sparse_pauli_op.table.Z.copy()
+    n_paulis, n_qubits = x_arr.shape
+
+    x_tmp = x_arr[:, q1].copy()
+    z_tmp = z_arr[:, q1].copy()
+    x_arr[:, q1] = x_arr[:, q2].copy()
+    z_arr[:, q1] = z_arr[:, q2].copy()
+    x_arr[:, q2] = x_tmp
+    z_arr[:, q2] = z_tmp
+
+    # Stack the new X and Z arrays and create the new operator
+    op_new = SparsePauliOp(np.hstack((x_arr, z_arr)), coeffs=coeffs)
+    if isinstance(op, PauliSumOp):
+        op_new = PauliSumOp(op_new)
+    return op_new
+
+swap_pauli = swap_z2
+
+def taper(op: Union[PauliSumOp, SparsePauliOp],
+          inds_tapered: Sequence[int],
+          init_state: Optional[Sequence[int]] = None
+          ) -> Union[PauliSumOp, SparsePauliOp]:
+    """Tapers certain qubits off an operator.
+
+    Note that the operator in string form follows Qiskit qubit order,
+    but in vector (PauliTable) form follows normal qubit order.
+
+    Args:
+        pauli_sum_op: An operator on which qubits are to be tapered.
+        inds_tapered: Indices of the tapered qubits.
+        init_state: A sequence of 0 and 1 indicating the initial state on the
+            tapered qubits. Default to 0 on all the tapered qubits.
+
+    Returns:
+        The new operator after certain qubits are tapered.
+    """
+    # TODO: Checking statements for inds_tapered and init_state
+    if isinstance(op, PauliSumOp):
+        sparse_pauli_op = op.primitive.copy()
+    elif isinstance(op, SparsePauliOp):
+        sparse_pauli_op = op.copy()
+    else:
+        raise TypeError("Operator must be a PauliSumOp or SparsePauliOp")
+
+    coeffs = sparse_pauli_op.coeffs.copy()
+    x_arr = sparse_pauli_op.table.X.copy()
+    z_arr = sparse_pauli_op.table.Z.copy()
+    n_paulis, n_qubits = x_arr.shape
+    n_tapered = len(inds_tapered)
+    if init_state is None:
+        init_state = [0] * n_tapered
+
+    for i in range(n_paulis):
+        x = x_arr[i]
+        z = z_arr[i]
+        for j in range(n_tapered):
+            # Z acts on |1>
+            if z[j] == True and x[j] == False and init_state[j] == 1:
+                coeffs[i] *= -1.0
+            # Y acting on either |0> or |1>
+            if z[j] == True and x[j] == True:
+                if init_state[j] == 0:
+                    coeffs[i] *= 1j
+                elif init_state[j] == 1:
+                    coeffs[i] *= -1j
+
+    inds_kept = sorted(set(range(n_qubits)) - set(inds_tapered))
+    x_arr = x_arr[:, inds_kept]
+    z_arr = z_arr[:, inds_kept]
+
+    op_new = SparsePauliOp(np.hstack((x_arr, z_arr)), coeffs=coeffs)
+    if isinstance(op, PauliSumOp):
+        op_new = PauliSumOp(op_new)
+    return op_new
+
+taper_pauli = taper
+
+def transform_4q_pauli(
+        op: Union[PauliSumOp, SparsePauliOp],
+        init_state: List[int],
+        tapered: bool = True
+    ) -> Union[PauliSumOp, SparsePauliOp]:
+    """Converts a four-qubit Hamiltonian to a two-qubit Hamiltonian,
+    assuming the symmetry operators are ZIZI and IZIZ.
+
+    Args:
+        op: An four-qubit operator in PauliSumOp or SparsePauliOp form.
+        spin: A string indicating the spin subspace of the transformed Hamiltonian.
+
+    Returns:
+        A two-qubit operator in the original form after symmetry reduction.
+    """
+    op_new = cnot_pauli(op, 2, 0)
+    op_new = cnot_pauli(op_new, 3, 1)
+    op_new = swap_pauli(op_new, 2, 3)
+    if tapered:
+        op_new = taper_pauli(op_new, [0, 1], init_state=init_state)
+    if isinstance(op_new, PauliSumOp):
+        op_new = op_new.reduce()
+    return op_new
+
+transform_4q = transform_4q_hamiltonian = transform_4q_pauli

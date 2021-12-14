@@ -61,7 +61,7 @@ def get_unitary(circ: Union[QuantumCircuit, CircuitData],
         unitary = reverse_qubit_order(unitary)
     return unitary
 
-def remove_barriers(circ_data):
+def remove_barriers(circ_data: CircuitData) -> CircuitData:
     """Removes barriers in circuit data."""
     circ_data_new = []
     for inst_tup in circ_data:
@@ -69,7 +69,7 @@ def remove_barriers(circ_data):
             circ_data_new.append(inst_tup)
     return circ_data_new
 
-def data_to_circuit(data, n_qubits=None, remove_barr=True):
+def data_to_circuit(data: CircuitData, n_qubits: int = None, remove_barr: bool = True) -> QuantumCircuit:
     """Converts circuit data to circuit."""
     if remove_barr:
         data = remove_barriers(data)
@@ -162,37 +162,7 @@ def get_quantum_instance(type_str: str) -> QuantumInstance:
         q_instance = QuantumInstance(Aer.get_backend('qasm_simulator', shots=10000, noise_model_name='ibmq_jakarta'), shots=10000)
     return q_instance
 
-def save_circuit(circ: QuantumCircuit, 
-                 fname: str,
-                 savetxt: bool = True,
-                 savefig: bool = True) -> None:
-    """Saves a circuit to disk in QASM string form and/or figure form.
-    
-    Args:
-        fname: The file name.
-        savetxt: Whether to save the QASM string of the circuit as a text file.
-        savefig: Whether to save the figure of the circuit.
-    """
-        
-    if savefig:
-        fig = circ.draw(output='mpl')
-        fig.savefig(fname + '.png')
-    
-    if savetxt:
-        circ_data = []
-        for inst_tup in circ.data:
-            if inst_tup[0].name != 'c-unitary':
-                circ_data.append(inst_tup)
-        circ = data_to_circuit(circ_data, remove_barr=False)
-        # for inst_tup in circ_data:
-        #    print(inst_tup[0].name)
-        # exit()
-        f = open(fname + '.txt', 'w')
-        qasm_str = circ.qasm()
-        f.write(qasm_str)
-        f.close()
-
-def solve_energy_probabilities(a, b):
+def solve_energy_probabilities(a: np.ndarray, b: np.ndarray) -> np.ndarray:
     A = np.array([[1, 1], [a[0], a[1]]])
     x = np.linalg.inv(A) @ np.array([1.0, b])
     return x

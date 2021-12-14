@@ -17,10 +17,9 @@ from qiskit.ignis.verification.tomography import (state_tomography_circuits,
 import params
 from hamiltonians import MolecularHamiltonian
 from number_states_solvers import measure_operator, EHStatesSolver, ExcitedStatesSolver
-from operators import SecondQuantizedOperators, ChargeOperators
+from operators import SecondQuantizedOperators, ChargeOperators, transform_4q_pauli
 from qubit_indices import QubitIndices, transform_4q_indices
 from circuits import CircuitConstructor, CircuitData, transpile_across_barrier
-from z2_symmetries import transform_4q_pauli
 from utils import (state_tomography, solve_energy_probabilities, get_overlap,
                    get_counts, get_quantum_instance, counts_arr_to_dict, counts_dict_to_arr, 
                    split_counts_on_anc)
@@ -541,11 +540,9 @@ class ExcitedAmplitudesSolver:
             circ_s = self.circuit_constructor.build_charge_diagonal(U_op_s)
             circ_t = self.circuit_constructor.build_charge_diagonal(U_op_t)
 
-            #fname = f'circuits/circuit_{m}' + self.suffix
             if self.transpiled: 
                 circ_s = transpile(circ_s, basis_gates=['u3', 'swap', 'cz', 'cp'])
                 circ_t = transpile(circ_t, basis_gates=['u3', 'swap', 'cz', 'cp'])
-            #if self.save: save_circuit(circ, fname)
 
             if self.method == 'exact' and self.backend.name() == 'statevector_simulator':
                 result = self.q_instance.execute(circ_s)

@@ -24,3 +24,33 @@ def save_eh_data(gs_solver: 'GroundStateSolver',
     #act_inds = amp_solver.h.act_inds
     #dset.attrs['e_orb'] = e_orb[act_inds][:, act_inds]
     #f.close()
+
+def save_circuit(circ: QuantumCircuit, 
+                 fname: str,
+                 savetxt: bool = True,
+                 savefig: bool = True) -> None:
+    """Saves a circuit to disk in QASM string form and/or figure form.
+    
+    Args:
+        fname: The file name.
+        savetxt: Whether to save the QASM string of the circuit as a text file.
+        savefig: Whether to save the figure of the circuit.
+    """
+        
+    if savefig:
+        fig = circ.draw(output='mpl')
+        fig.savefig(fname + '.png')
+    
+    if savetxt:
+        circ_data = []
+        for inst_tup in circ.data:
+            if inst_tup[0].name != 'c-unitary':
+                circ_data.append(inst_tup)
+        circ = data_to_circuit(circ_data, remove_barr=False)
+        # for inst_tup in circ_data:
+        #    print(inst_tup[0].name)
+        # exit()
+        f = open(fname + '.txt', 'w')
+        qasm_str = circ.qasm()
+        f.write(qasm_str)
+        f.close()
