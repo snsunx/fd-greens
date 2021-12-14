@@ -593,3 +593,24 @@ def build_tomography_circuit(circ: QuantumCircuit,
             qst_circ.u3(np.pi/2, 0, np.pi/2, q)
         qst_circ.measure(q, q)
     return qst_circ
+
+def transpile_last_section(circ: QuantumCircuit) -> QuantumCircuit:
+    """Transpiles the last section of the circuit."""
+    circ_data = []
+    while True:
+        inst_tup = circ.data.pop()
+        if inst_tup[0].name != 'barrier':
+            circ_data.insert(0, inst_tup)
+        else:
+            break
+
+    #for inst_tup in circ_data:
+    #    print(inst_tup[0].name, inst_tup[1], inst_tup[2])
+    circ_last = create_circuit_from_data(circ_data)
+    circ_last = push_swap_gates(circ_last, direcs=['right'])
+    circ_last = transpile(circ_last, basis_gates=['u3', 'swap'])
+    circ.barrier()
+    circ += circ_last
+    return circ
+
+    

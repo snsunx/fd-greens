@@ -19,7 +19,8 @@ from hamiltonians import MolecularHamiltonian
 from number_states_solvers import measure_operator, EHStatesSolver, ExcitedStatesSolver
 from operators import SecondQuantizedOperators, ChargeOperators, transform_4q_pauli
 from qubit_indices import QubitIndices, transform_4q_indices
-from circuits import CircuitConstructor, CircuitData, transpile_across_barrier, push_swap_gates, build_tomography_circuit
+from circuits import (CircuitConstructor, CircuitData, transpile_across_barrier, 
+                      push_swap_gates, build_tomography_circuit, transpile_last_section, remove_measure_gates)
 from utils import (solve_energy_probabilities, get_overlap,
                    get_counts, get_quantum_instance, counts_arr_to_dict, counts_dict_to_arr, 
                    split_counts_on_anc)
@@ -291,7 +292,9 @@ class EHAmplitudesSolver:
                     for label in labels:
                         label_str = ''.join(label)
                         qst_circ = build_tomography_circuit(circ, [2, 3], label)
-                        qst_circ = push_swap_gates(qst_circ, direcs=params.swap_direcs_tomo[(m, n)])
+                        # qst_circ = push_swap_gates(qst_circ, direcs=params.swap_direcs_tomo[(m, n)])
+                        qst_circ = remove_measure_gates(qst_circ)
+                        qst_circ = transpile_last_section(qst_circ)
                         dset.attrs[f'circ{m}{n}{label_str}'] = qst_circ.qasm()
 
         h5file.close()

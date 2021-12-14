@@ -5,18 +5,11 @@ from typing import Sequence, Union
 import h5py
 import numpy as np
 import params
-# from ground_state_solvers import GroundStateSolver
-# from number_states_solvers import ExcitedStatesSolver
-# from amplitudes_solvers import ExcitedAmplitudesSolver
 
 class ResponseFunction:
     """A class to calculate frequency-domain Green's function."""
     
-    def __init__(self, fname: str
-                 # gs_solver: GroundStateSolver,
-                 # es_solver: ExcitedStatesSolver,
-                 # amp_solver: ExcitedAmplitudesSolver
-                ) -> None:
+    def __init__(self, fname: str) -> None:
         """Initializes a ResponseFunction object.
         
         Args:
