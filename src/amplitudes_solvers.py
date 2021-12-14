@@ -33,8 +33,6 @@ class EHAmplitudesSolver:
 
     def __init__(self,
                  h: MolecularHamiltonian,
-                 gs_solver: GroundStateSolver,
-                 es_solver: EHStatesSolver,
                  spin: str = 'edhu',
                  method: str = 'exact',
                  q_instance: QuantumInstance = get_quantum_instance('sv'),
@@ -48,8 +46,6 @@ class EHAmplitudesSolver:
 
         Args:
             h: The Hamiltonian object.
-            gs_solver: The ground state solver.
-            es_solver: The N+/-1 electron states solver.
             spin: A string indicating the spin in the tapered N+/-1 electron operators. 
                 Either 'euhd' (N+1 up, N-1 down) or 'edhu' (N+1 down, N-1 up).
             method: The method for extracting the transition amplitudes. Either 'energy' or 'tomo'.
@@ -68,22 +64,10 @@ class EHAmplitudesSolver:
         self.h = h
         self.spin = spin
 
+        # Load data from hdf5 file
         self.h5fname = h5fname + '.hdf5'
         self.dsetname = dsetname
-        h5file = h5py.File(self.h5fname, 'r+')
-        dset = h5file[self.dsetname]
-
-        # Attributes from ground state solver
-        self.energy_gs = dset.attrs['energy_gs']
-        self.ansatz = QuantumCircuit.from_qasm_str(dset.attrs['ansatz'])
-        
-        # Attributes from N+/-1 electron states solver
-        self.energies_e = dset.attrs['energies_e']
-        self.energies_h = dset.attrs['energies_h']
-        self.states_e = dset.attrs['states_e']
-        self.states_h = dset.attrs['states_h']
-
-        h5file.close()
+        self._load_data()
 
         # Method and quantum instance
         self.method = method
@@ -101,11 +85,27 @@ class EHAmplitudesSolver:
         self.circuit_constructor = CircuitConstructor(
             self.ansatz, add_barriers=self.add_barriers, ccx_data=self.ccx_data)
 
-        
-
         # Initialize operators and physical quantities
         self._initialize_quantities()
         self._initialize_operators()
+
+
+    def _load_data(self) -> None:
+        """Loads ground state and N+/-1 electron states data from hdf5 file. """
+        h5file = h5py.File(self.h5fname, 'r+')
+        dset = h5file[self.dsetname]
+
+        # Attributes from ground state solver
+        self.energy_gs = dset.attrs['energy_gs']
+        self.ansatz = QuantumCircuit.from_qasm_str(dset.attrs['ansatz'])
+        
+        # Attributes from N+/-1 electron states solver
+        self.energies_e = dset.attrs['energies_e']
+        self.energies_h = dset.attrs['energies_h']
+        self.states_e = dset.attrs['states_e']
+        self.states_h = dset.attrs['states_h']
+
+        h5file.close()
 
     def _initialize_quantities(self) -> None:
         """Initializes physical quantity attributes."""
@@ -166,7 +166,6 @@ class EHAmplitudesSolver:
         for m in range(self.n_orb):
             a_op = self.pauli_dict[(m, self.spin[1])]
             circ = self.circuit_constructor.build_eh_diagonal(a_op)
-            #fname = f'circuits/circuit_{m}' + self.suffix
             if self.transpiled: circ = transpile(circ, basis_gates=['u3', 'swap', 'cz', 'cp'])
             dset.attrs[f'circ{m}'] = circ.qasm()
 
@@ -255,7 +254,6 @@ class EHAmplitudesSolver:
                 for i in range(self.n_e):
                     B_e_mm[i] = get_overlap(self.states_e[i], rho_e)
 
-
             self.B_e[m, m] = B_e_mm
             self.B_h[m, m] = B_h_mm
             print(f'B_e[{m}, {m}] = {self.B_e[m, m]}')
@@ -272,7 +270,6 @@ class EHAmplitudesSolver:
                 a_op_n = self.pauli_dict[(n, self.spin[1])]
 
                 circ = self.circuit_constructor.build_eh_off_diagonal(a_op_m, a_op_n)
-                # fname = f'circuits/circuit_{m}{n}' + self.suffix
                 if self.transpiled:
                     circ = transpile_across_barrier(
                         circ, basis_gates=['u3', 'swap', 'cz', 'cp'], 
@@ -316,11 +313,6 @@ class EHAmplitudesSolver:
                         counts = result.get_counts()
                         counts_dict = counts.int_raw
                         counts_arr = counts_dict_to_arr(counts_dict)
-
-                        #if label_str == 'xx':
-                        #    print(counts)
-                        #    print(counts_dict)
-                        #    print(counts_arr)
                         dset.attrs[f'counts{m}{n}{label_str}'] = counts_arr
 
         h5file.close()
