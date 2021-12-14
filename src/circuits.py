@@ -59,7 +59,7 @@ class CircuitConstructor:
         circ = copy_circuit_with_ancilla(self.ansatz, [0])
 
         # Apply the gates corresponding to the creation/annihilation terms
-        if self.add_barriers: circ.barrier()
+        # if self.add_barriers: circ.barrier()
         circ.h(0)
         if self.add_barriers: circ.barrier()
         self._apply_controlled_gate(circ, a_op[0], ctrl=[0], n_anc=1)
@@ -67,7 +67,7 @@ class CircuitConstructor:
         self._apply_controlled_gate(circ, a_op[1], ctrl=[1], n_anc=1)
         if self.add_barriers: circ.barrier()
         circ.h(0)
-        if self.add_barriers: circ.barrier()
+        # if self.add_barriers: circ.barrier()
         return circ
 
     build_eh_diagonal = build_diagonal_circuits
@@ -89,9 +89,9 @@ class CircuitConstructor:
         circ = copy_circuit_with_ancilla(self.ansatz, [0, 1])
 
         # Apply the gates corresponding to the creation/annihilation terms
-        if self.add_barriers: circ.barrier()
+        # if self.add_barriers: circ.barrier()
         circ.h([0, 1])
-        if self.add_barriers: circ.barrier()
+        #if self.add_barriers: circ.barrier()
         self._apply_controlled_gate(circ, a_op_m[0], ctrl=(0, 0), n_anc=2)
         if self.add_barriers: circ.barrier()
         self._apply_controlled_gate(circ, a_op_m[1], ctrl=(1, 0), n_anc=2)
@@ -101,7 +101,7 @@ class CircuitConstructor:
         self._apply_controlled_gate(circ, a_op_n[0], ctrl=(0, 1), n_anc=2)
         if self.add_barriers: circ.barrier()
         self._apply_controlled_gate(circ, a_op_n[1], ctrl=(1, 1), n_anc=2)
-        if self.add_barriers: circ.barrier()
+        #if self.add_barriers: circ.barrier()
         circ.h([0, 1])
 
         return circ
@@ -289,8 +289,8 @@ def transpile_across_barrier(circ: QuantumCircuit,
 
     qreg = circ.qregs[0]
     circ_data = circ.data.copy()
-    circ_data_split = []
-    circ_data_single = []
+    circ_data_split = [] # all circ_data_single
+    circ_data_single = [] # temporary variable to hold circ_data_split components
 
     # Split when encoutering a barrier
     for i, inst_tup in enumerate(circ_data):
@@ -309,14 +309,16 @@ def transpile_across_barrier(circ: QuantumCircuit,
     for i, circ_data_single in enumerate(circ_data_split):
         if len(circ_data_single) > 1:
             circ_single = create_circuit_from_data(circ_data_single, qreg=qreg)
+            print(circ_single)
             circ_single = transpile(circ_single, basis_gates=basis_gates)
+            #print(circ_single)
             if i == 4: 
                 # Swap positions of CPhase and U3
-                # print(circ_single)
-                # for j, inst_tup in enumerate(circ_single.data):
-                #     print(j, inst_tup[0].name)
-                tmp = circ_single.data[3]
-                circ_single.data[3] = circ_single.data[4]
+                for j, inst_tup in enumerate(circ_single.data):
+                    print(j, inst_tup[0].name, inst_tup[1])
+                tmp = circ_single.data[6]
+                circ_single.data[6] = circ_single.data[5]
+                circ_single.data[5] = circ_single.data[4]
                 circ_single.data[4] = tmp
             if push:
                 # First round pushes do not push through two-qubit gates
@@ -333,7 +335,7 @@ def transpile_across_barrier(circ: QuantumCircuit,
                 circ_single = transpile(circ_single, basis_gates=basis_gates)
                 if i == 0 and ind == (0, 1): 
                    # The SWAP gates at the beginning and the end can be kept track of classically
-                  del circ_single.data[2]
+                   del circ_single.data[2]
             circ_new += circ_single
             count += 1
         else:

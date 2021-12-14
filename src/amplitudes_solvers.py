@@ -20,7 +20,7 @@ from number_states_solvers import measure_operator, EHStatesSolver, ExcitedState
 from operators import SecondQuantizedOperators, ChargeOperators, transform_4q_pauli
 from qubit_indices import QubitIndices, transform_4q_indices
 from circuits import CircuitConstructor, CircuitData, transpile_across_barrier
-from utils import (state_tomography, solve_energy_probabilities, get_overlap,
+from utils import (solve_energy_probabilities, get_overlap,
                    get_counts, get_quantum_instance, counts_arr_to_dict, counts_dict_to_arr, 
                    split_counts_on_anc)
 from ground_state_solvers import GroundStateSolver
@@ -36,9 +36,9 @@ class EHAmplitudesSolver:
                  method: str = 'exact',
                  q_instance: QuantumInstance = get_quantum_instance('sv'),
                  ccx_data: Optional[CircuitData] = params.ccx_data,
-                 add_barriers: bool = True,
+                 add_barriers: bool = False,
                  transpiled: bool = True,
-                 push: bool = False,
+                 push: bool = True,
                  h5fname: str = 'lih',
                  dsetname: str = 'eh') -> None:
         """Initializes an EHAmplitudesSolver object.

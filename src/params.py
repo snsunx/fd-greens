@@ -2,7 +2,7 @@ import itertools
 import numpy as np
 
 from qiskit.circuit import Barrier
-from qiskit.extensions import UnitaryGate, SwapGate, CCXGate
+from qiskit.extensions import SwapGate, CCXGate, XGate
 
 from qubit_indices import QubitIndices
 
@@ -27,16 +27,14 @@ singlet_inds = QubitIndices(['0011', '0110', '1001', '1100'])
 triplet_inds = QubitIndices(['0101', '1010'])
 
 # CCX instruction
-#iX = np.array([[0, 1j], [1j, 0]])
-#ccx_data = [(SwapGate(), [1, 2]), 
-#            (Barrier(4), [0, 1, 2, 3]), 
-#            (UnitaryGate(iX).control(2), [0, 2, 1]), 
-#            (Barrier(4), [0, 1, 2, 3]),
-#            (SwapGate(), [1, 2])]
 ccx_data = [(SwapGate(), [1, 2]), 
+            (XGate(), [0]),
+            (XGate(), [2]),
             (Barrier(4), [0, 1, 2, 3]), 
-            (CCXGate(), [0, 2, 1], []),
+            (CCXGate(ctrl_state='00'), [0, 2, 1], []),
             (Barrier(4), [0, 1, 2, 3]),
+            (XGate(), [0]),
+            (XGate(), [2]),
             (SwapGate(), [1, 2])]
 
 
