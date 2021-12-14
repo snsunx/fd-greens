@@ -68,18 +68,22 @@ class EHAmplitudesSolver:
         self.h = h
         self.spin = spin
 
-        # Attributes from ground state solver
-        self.gs_solver = gs_solver
-        self.energy_gs = gs_solver.energy
-        self.state_gs = gs_solver.state
-        self.ansatz = gs_solver.ansatz
+        self.h5fname = h5fname + '.hdf5'
+        self.dsetname = dsetname
+        h5file = h5py.File(self.h5fname, 'r+')
+        dset = h5file[self.dsetname]
 
+        # Attributes from ground state solver
+        self.energy_gs = dset.attrs['energy_gs']
+        self.ansatz = QuantumCircuit.from_qasm_str(dset.attrs['ansatz'])
+        
         # Attributes from N+/-1 electron states solver
-        self.es_solver = es_solver
-        self.energies_e = es_solver.energies_e
-        self.states_e = es_solver.states_e
-        self.energies_h = es_solver.energies_h
-        self.states_h = es_solver.states_h
+        self.energies_e = dset.attrs['energies_e']
+        self.energies_h = dset.attrs['energies_h']
+        self.states_e = dset.attrs['states_e']
+        self.states_h = dset.attrs['states_h']
+
+        h5file.close()
 
         # Method and quantum instance
         self.method = method
@@ -97,8 +101,7 @@ class EHAmplitudesSolver:
         self.circuit_constructor = CircuitConstructor(
             self.ansatz, add_barriers=self.add_barriers, ccx_data=self.ccx_data)
 
-        self.h5fname = h5fname + '.hdf5'
-        self.dsetname = dsetname
+        
 
         # Initialize operators and physical quantities
         self._initialize_quantities()
@@ -410,6 +413,17 @@ class EHAmplitudesSolver:
                 print(f'B_e[{m}, {n}] = {self.B_e[m, n]}')
                 print(f'B_h[{m}, {n}] = {self.B_h[m, n]}')
 
+    def save_data(self) -> None:
+        """Saves the data to file."""
+        h5file = h5py.File(self.h5fname, 'r+')
+        dset = h5file[self.dsetname]
+        dset.attrs['B_e'] = self.B_e
+        dset.attrs['B_h'] = self.B_h
+        e_orb = np.diag(self.h.molecule.orbital_energies)
+        act_inds = self.h.act_inds
+        dset.attrs['e_orb'] = e_orb[act_inds][:, act_inds]
+        h5file.close()
+
     def run(self, method=None) -> None:
         """Runs the functions to compute transition amplitudes."""
         if method is not None:
@@ -420,6 +434,7 @@ class EHAmplitudesSolver:
         self.run_off_diagonal()
         self.process_diagonal()
         self.process_off_diagonal()
+        self.save_data()
 
 
 class ExcitedAmplitudesSolver:

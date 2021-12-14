@@ -3,6 +3,7 @@
 from typing import Union, Tuple, List, Iterable, Optional, Sequence, Callable
 from itertools import combinations
 
+import h5py
 import numpy as np
 from scipy.sparse.data import _data_matrix
 
@@ -213,7 +214,9 @@ class EHStatesSolver:
                  ansatz_func_e: Optional[AnsatzFunction] = None, 
                  ansatz_func_h: Optional[AnsatzFunction] = None,
                  q_instance: Optional[QuantumInstance] = None,
-                 spin: str = 'edhu'):
+                 spin: str = 'edhu',
+                 h5fname: str = 'lih', 
+                 dsetname: str = 'eh'):
         """Initializes a EHStatesSolver object.
         
         Args:
@@ -246,7 +249,10 @@ class EHStatesSolver:
         self.states_e = None
         self.states_h = None
 
-    def _run_exact(self):
+        self.h5fname = h5fname + '.hdf5'
+        self.dsetname = dsetname
+
+    def run_exact(self):
         """Calculates the exact N+/-1 electron states of the Hamiltonian."""
         self.energies_e, self.states_e = eigensolve(self.h_mat, inds=self.inds_e.int_form)
         self.energies_h, self.states_h = eigensolve(self.h_mat, inds=self.inds_h.int_form)
@@ -255,7 +261,7 @@ class EHStatesSolver:
         print(f"N+1 electron energies are {self.energies_e} eV")
         print(f"N-1 electron energies are {self.energies_h} eV")
 
-    def _run_vqe(self):
+    def run_vqe(self):
         """Calculates the N+/-1 electron states of the Hamiltonian using VQE."""
         energy_min, circ_min = vqe_minimize(self.h_op, ansatz_func=self.ansatz_func_e,
                                             init_params=(0.,), q_instance=self.q_instance)
@@ -278,12 +284,24 @@ class EHStatesSolver:
         print(f"N+1 electron energies are {self.energies_e} eV")
         print(f"N-1 electron energies are {self.energies_h} eV")
 
+    def save_data(self) -> None:
+        h5file = h5py.File(self.h5fname, 'r+')
+        dset = h5file[self.dsetname]
+
+        dset.attrs['energies_e'] = self.energies_e
+        dset.attrs['energies_h'] = self.energies_h
+        dset.attrs['states_e'] = self.states_e
+        dset.attrs['states_h'] = self.states_h
+
+        h5file.close()
+
     def run(self, method='vqe'):
         """Runs the N+/-1 electron states calculation."""
         if method == 'exact':
-            self._run_exact()
+            self.run_exact()
         elif method == 'vqe':
-            self._run_vqe()
+            self.run_vqe()
+        self.save_data()
 
 class ExcitedStatesSolver:
     """A class to calculate and store information of excited states."""

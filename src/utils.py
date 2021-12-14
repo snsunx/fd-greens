@@ -342,51 +342,17 @@ def split_counts_on_anc(counts: Union[Counts, np.ndarray], n_anc: int = 1) -> Co
         return counts00, counts01, counts10, counts11
 
 def initialize_hdf5(fname: str = 'lih', dsetname: str = 'eh') -> None:
-    """Initializes the hdf5 file and dataset if they do not exist."""
+    """Creates the hdf5 file and dataset if they do not exist."""
     fname += '.hdf5'
     if os.path.exists(fname):
         f = h5py.File(fname, 'r+')
     else:
         f = h5py.File(fname, 'w')
-    if dsetname in f.keys(): 
-        dset = f[dsetname]
-    else: 
-        dset = f.create_dataset(dsetname, shape=())
-    f.close()
-    
-def save_eh_data(gs_solver: 'GroundStateSolver', 
-                 es_solver: 'EHStatesSolver',
-                 amp_solver: 'EHAmplitudesSolver',
-                 fname: str = 'lih',
-                 dsetname: str = 'eh') -> None:
-    """Saves N+/-1 electron states data to file.
-    
-    Args:
-        gs_solver: The ground state solver.
-        es_solver: The N+/-1 electron states solver.
-        amp_solver: The transition amplitudes solver.
-        fname: The file name string.
-        dsetname: The dataset name string.
-    """
-    fname += '.hdf5'
-    if os.path.exists(fname):
-        f = h5py.File(fname, 'r+')
-    else:
-        f = h5py.File(fname, 'w')
-    if dsetname in f.keys(): 
-        dset = f[dsetname]
-    else: 
-        dset = f.create_dataset(dsetname, shape=())
-    dset.attrs['energy_gs'] = gs_solver.energy
-    dset.attrs['energies_e'] = es_solver.energies_e
-    dset.attrs['energies_h'] = es_solver.energies_h
-    dset.attrs['B_e'] = amp_solver.B_e
-    dset.attrs['B_h'] = amp_solver.B_h
-    e_orb = np.diag(amp_solver.h.molecule.orbital_energies)
-    act_inds = amp_solver.h.act_inds
-    dset.attrs['e_orb'] = e_orb[act_inds][:, act_inds]
+    if dsetname not in f.keys(): 
+        f.create_dataset(dsetname, shape=())
     f.close()
 
+# TODO: Move these functionalities to the solvers
 def save_exc_data(gs_solver: 'GroundStateSolver', 
                   es_solver: 'ExcitedStatesSolver',
                   amp_solver: 'ExcitedAmplitudesSolver',
@@ -402,14 +368,8 @@ def save_exc_data(gs_solver: 'GroundStateSolver',
         dsetname: The dataset name string.
     """
     fname += '.hdf5'
-    if os.path.exists(fname):
-        f = h5py.File(fname, 'r+')
-    else:
-        f = h5py.File(fname, 'w')
-    if dsetname in f.keys():
-        dset = f[dsetname]
-    else:
-        dset = f.create_dataset(dsetname, shape=())
+    f = h5py.File(fname, 'r+')
+    dset = f[dsetname]
     dset.attrs['energy_gs'] = gs_solver.energy
     dset.attrs['energies_s'] = es_solver.energies_s
     dset.attrs['energies_t'] = es_solver.energies_t

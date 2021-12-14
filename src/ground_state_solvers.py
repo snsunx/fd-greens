@@ -1,7 +1,7 @@
 """Ground state solver module."""
 
 from typing import Optional, Sequence, Tuple, Callable, Union
-
+import h5py
 import numpy as np
 from scipy.optimize import minimize
 
@@ -137,7 +137,9 @@ class GroundStateSolver:
                  init_params: Optional[Sequence[float]] = None,
                  q_instance: Optional[QuantumInstance] = None,
                  save_params: bool = False,
-                 load_params: bool = False) -> None:
+                 load_params: bool = False,
+                 h5fname: str = 'lih',
+                 dsetname: str = 'eh') -> None:
         """Initializes a VQE object.
         
         Args:
@@ -159,19 +161,19 @@ class GroundStateSolver:
 
         self.state = None
         self.ansatz = None
-    
-    def _run_exact(self) -> None:
+
+        self.h5fname = h5fname + '.hdf5'
+        self.dsetname = dsetname
+
+
+    def run_exact(self) -> None:
         """Calculates the exact ground state of the Hamiltonian."""
-        # e, v = np.linalg.eigh(self.h_op.to_matrix())
-        # self.energy = e[0]
-        # self.state = v[:, 0]
-        # print(f'Ground state energy = {self.energy:.3f} eV')
         from utils import get_quantum_instance
         self.q_instance = get_quantum_instance('sv')
-        self._run_vqe()
+        self.run_vqe()
 
     
-    def _run_vqe(self) -> None:
+    def run_vqe(self) -> None:
         """Calculates the ground state of the Hamiltonian using VQE."""
         assert self.ansatz_func is not None
         assert self.q_instance is not None
@@ -189,17 +191,29 @@ class GroundStateSolver:
                 init_params=self.init_params, q_instance=self.q_instance)
             # print("===== Finish calculating the ground state using VQE =====")
 
-            if self.save_params:
-                print("Save VQE circuit to file")
-                with open('data/vqe_energy.txt', 'w') as f: 
-                    f.write(str(self.energy))
-                save_circuit(self.ansatz.copy(), 'circuits/vqe_circuit')
+            #if self.save_params:
+            #    print("Save VQE circuit to file")
+            #    with open('data/vqe_energy.txt', 'w') as f: 
+            #        f.write(str(self.energy))
+            #    save_circuit(self.ansatz.copy(), 'circuits/vqe_circuit')
 
         print(f'Ground state energy = {self.energy:.3f} eV')
+
+
+    def save_data(self) -> None:
+        """Saves the data to file."""
+        h5file = h5py.File(self.h5fname, 'r+')
+        dset = h5file[self.dsetname]
+
+        dset.attrs['energy_gs'] = self.energy
+        dset.attrs['ansatz'] = self.ansatz.qasm()
+
+        h5file.close()
 
     def run(self, method='vqe'):
         """Runs the N+/-1 electron states calculation."""
         if method == 'exact':
-            self._run_exact()
+            self.run_exact()
         elif method == 'vqe':
-            self._run_vqe()
+            self.run_vqe()
+        self.save_data()
