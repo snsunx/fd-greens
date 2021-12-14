@@ -19,7 +19,7 @@ from hamiltonians import MolecularHamiltonian
 from number_states_solvers import measure_operator, EHStatesSolver, ExcitedStatesSolver
 from operators import SecondQuantizedOperators, ChargeOperators, transform_4q_pauli
 from qubit_indices import QubitIndices, transform_4q_indices
-from circuits import CircuitConstructor, CircuitData, transpile_across_barrier
+from circuits import CircuitConstructor, CircuitData, transpile_across_barrier, push_swap_gates, build_tomography_circuit
 from utils import (solve_energy_probabilities, get_overlap,
                    get_counts, get_quantum_instance, counts_arr_to_dict, counts_dict_to_arr, 
                    split_counts_on_anc)
@@ -273,6 +273,8 @@ class EHAmplitudesSolver:
                     circ = transpile_across_barrier(
                         circ, basis_gates=['u3', 'swap', 'cz', 'cp'], 
                         push=self.push, ind=(m, n))
+                dset.attrs[f'circ{m}{n}'] = circ.qasm()
+
 
                 if self.method == 'tomo':
                     circ.add_register(ClassicalRegister(2))
@@ -281,11 +283,16 @@ class EHAmplitudesSolver:
                     qst_circs = state_tomography_circuits(circ, [2, 3])
                     labels = itertools.product('xyz', repeat=2)
 
-                    for label, qst_circ in zip(labels, qst_circs):
+                    # for label, qst_circ in zip(labels, qst_circs):
+                    #     label_str = ''.join(label)
+                        # qst_circ = push_swap_gates(qst_circ, direcs=params.swap_direcs_tomo[(m, n)])
+                    #     dset.attrs[f'circ{m}{n}{label_str}'] = qst_circ.qasm()
+
+                    for label in labels:
                         label_str = ''.join(label)
+                        qst_circ = build_tomography_circuit(circ, [2, 3], label)
+                        qst_circ = push_swap_gates(qst_circ, direcs=params.swap_direcs_tomo[(m, n)])
                         dset.attrs[f'circ{m}{n}{label_str}'] = qst_circ.qasm()
-                
-                dset.attrs[f'circ{m}{n}'] = circ.qasm()
 
         h5file.close()
 
@@ -421,11 +428,11 @@ class EHAmplitudesSolver:
             self.method = method
         self.build_diagonal()
         self.build_off_diagonal()
-        self.run_diagonal()
-        self.run_off_diagonal()
-        self.process_diagonal()
-        self.process_off_diagonal()
-        self.save_data()
+        #self.run_diagonal()
+        #self.run_off_diagonal()
+        #self.process_diagonal()
+        #self.process_off_diagonal()
+        #self.save_data()
 
 
 class ExcitedAmplitudesSolver:

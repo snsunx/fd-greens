@@ -16,6 +16,7 @@ swap_direcs_round1 = {(0, 1): [['left', 'left'], ['right', 'right', 'left'], ['r
                       (1, 0): [['left'], ['right', 'right'], ['left', 'left', 'left'], ['right', 'right', 'left'], ['right']]}
 swap_direcs_round2 = {(0, 1): [['left', None], [None, None, None], [None, None], [], [None]],
                       (1, 0): [[None], [], [None, None, None], [None, None, None], [None]]}
+swap_direcs_tomo = {(0, 1): [[None, None], [None, None, None], [None, None], [], ['right']]}
 
 # Qubit indices
 eu_inds = QubitIndices(['1101', '0111'])

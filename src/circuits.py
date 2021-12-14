@@ -5,7 +5,7 @@ from cmath import polar
 
 import numpy as np
 
-from qiskit import QuantumCircuit, QuantumRegister, transpile
+from qiskit import QuantumCircuit, QuantumRegister, ClassicalRegister, transpile
 from qiskit.circuit import Instruction, Barrier
 from qiskit.extensions import UnitaryGate, CCXGate, SwapGate
 from qiskit.quantum_info import SparsePauliOp
@@ -338,7 +338,7 @@ def transpile_across_barrier(circ: QuantumCircuit,
                    del circ_single.data[2]
             circ_new += circ_single
             count += 1
-        else:
+        else: # 3-qubit gate
             circ_new.barrier()
             circ_new.append(*circ_data_single[0])
             circ_new.barrier()
@@ -353,7 +353,7 @@ def push_swap_gates(circ: QuantumCircuit,
     
     Args:
         circ: The quantum circuit on which SWAP gates are pushed.
-        direcs: The directions on which each swap gate is pushed.
+        direcs: The directions to which each swap gate is pushed.
         qreg: The quantum register of the circuit.
 
     Returns:
@@ -554,3 +554,42 @@ def remove_swap_gates(circ: QuantumCircuit) -> QuantumCircuit:
             circ_data.append(inst_tup)
     circ_new = create_circuit_from_data(circ_data, qreg=qreg)
     return circ_new
+
+def remove_measure_gates(circ: QuantumCircuit) -> QuantumCircuit:
+    """Removes measurement gates in a circuit."""
+    qreg = circ.qregs[0]
+    circ_data = []
+    for inst_tup in circ.data:
+        if inst_tup[0].name != 'measure':
+            circ_data.append(inst_tup)
+    circ_new = create_circuit_from_data(circ_data, qreg=qreg)
+    return circ_new
+
+def build_tomography_circuit(circ: QuantumCircuit, 
+                             qubits: Sequence[int],
+                             label: Tuple[str]) -> QuantumCircuit:
+    """Constructs a circuit with the tomography gates appended.
+    
+    Args:
+        circ: The QuantumCircuit object.
+        qubits: The qubits to be tomographed.
+        label: The tomography states label.
+    
+    Returns:
+        A new circuit with tomography gates appended.
+    """
+    assert len(qubits) == len(label)
+    qst_circ = circ.copy()
+    creg = ClassicalRegister(len(qubits))
+    qst_circ.add_register(creg)
+
+    for q, s in zip(qubits, label):
+        if s == 'x':
+            # qst_circ.h(q)
+            qst_circ.u3(np.pi/2, 0, np.pi, q)
+        elif s == 'y':
+            # qst_circ.sdg(q)
+            # qst_circ.h(q)
+            qst_circ.u3(np.pi/2, 0, np.pi/2, q)
+        qst_circ.measure(q, q)
+    return qst_circ
