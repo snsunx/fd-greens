@@ -1,9 +1,9 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-omegas, reTrS_red_sv, imTrS_red_sv = np.loadtxt('../data/TrS_red_sv.dat').T
+omegas, reTrS_red_sv, imTrS_red_sv = np.loadtxt('data/TrS_red_sv.dat').T
 #omegas, reTrS_red_qasm, imTrS_red_qasm = np.loadtxt('../data/TrS_red_qasm.dat').T
-omegas, re_lih_tomo_TrS, im_lih_tomo_TrS = np.loadtxt('../data/lih_eh_exact_TrSigma.dat').T
+omegas, re_lih_tomo_TrS, im_lih_tomo_TrS = np.loadtxt('data/lih_eh_exact_TrSigma.dat').T
 
 fig, ax = plt.subplots()
 ax.plot(omegas, reTrS_red_sv, label="Real, SV")

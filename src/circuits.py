@@ -580,8 +580,8 @@ def build_tomography_circuit(circ: QuantumCircuit,
     """
     assert len(qubits) == len(label)
     qst_circ = circ.copy()
-    creg = ClassicalRegister(len(qubits))
-    qst_circ.add_register(creg)
+    # creg = ClassicalRegister(len(qubits))
+    # qst_circ.add_register(creg)
 
     for q, s in zip(qubits, label):
         if s == 'x':
@@ -591,7 +591,7 @@ def build_tomography_circuit(circ: QuantumCircuit,
             # qst_circ.sdg(q)
             # qst_circ.h(q)
             qst_circ.u3(np.pi/2, 0, np.pi/2, q)
-        qst_circ.measure(q, q)
+        # qst_circ.measure(q, q)
     return qst_circ
 
 def transpile_last_section(circ: QuantumCircuit) -> QuantumCircuit:
