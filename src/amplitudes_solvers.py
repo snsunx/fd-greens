@@ -173,11 +173,12 @@ class EHAmplitudesSolver:
                 circ.add_register(ClassicalRegister(1))
                 circ.measure(0, 0)
 
-                qst_circs = state_tomography_circuits(circ, [1, 2])
                 labels = itertools.product('xyz', repeat=2)
-
-                for label, qst_circ in zip(labels, qst_circs):
+                for label in labels:
                     label_str = ''.join(label)
+                    qst_circ = build_tomography_circuit(circ, [1, 2], label)
+                    qst_circ = remove_measure_gates(qst_circ)
+                    qst_circ = transpile(qst_circ, basis_gates=params.basis_gates)
                     dset.attrs[f'circ{m}{label_str}'] = qst_circ.qasm()
 
         h5file.close()
@@ -281,18 +282,10 @@ class EHAmplitudesSolver:
                     circ.add_register(ClassicalRegister(2))
                     circ.measure([0, 1], [0, 1])
 
-                    qst_circs = state_tomography_circuits(circ, [2, 3])
                     labels = itertools.product('xyz', repeat=2)
-
-                    # for label, qst_circ in zip(labels, qst_circs):
-                    #     label_str = ''.join(label)
-                        # qst_circ = push_swap_gates(qst_circ, direcs=params.swap_direcs_tomo[(m, n)])
-                    #     dset.attrs[f'circ{m}{n}{label_str}'] = qst_circ.qasm()
-
                     for label in labels:
                         label_str = ''.join(label)
                         qst_circ = build_tomography_circuit(circ, [2, 3], label)
-                        # qst_circ = push_swap_gates(qst_circ, direcs=params.swap_direcs_tomo[(m, n)])
                         qst_circ = remove_measure_gates(qst_circ)
                         qst_circ = transpile_last_section(qst_circ)
                         dset.attrs[f'circ{m}{n}{label_str}'] = qst_circ.qasm()
