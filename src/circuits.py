@@ -26,7 +26,7 @@ class CircuitConstructor:
                  add_barriers: bool = True,
                  transpiled: bool = True,
                  swap_gates_pushed: bool = True,
-                 ccx_data: Optional[Iterable[InstructionTuple]] = None) -> None:
+                 ccx_inst_tups: Optional[Iterable[InstructionTuple]] = None) -> None:
         """Creates a CircuitConstructor object.
 
         Args:
@@ -34,23 +34,23 @@ class CircuitConstructor:
             add_barriers: Whether to add barriers to the circuit.
             transpiled: Whether the circuits are transpiled.
             swap_gates_pushed: Whether the SWAP gates are pushed.
-            ccx_data: The circuit data for customized CCX gate.
+            ccx_inst_tups: The circuit data for customized CCX gate.
         """
         self.ansatz = ansatz.copy()
         self.add_barriers = add_barriers
         self.transpiled = transpiled
         self.swap_gates_pushed = swap_gates_pushed
-        if ccx_data is None:
-            self.ccx_data = [(CCXGate(), [0, 1, 2], [])]
+        if ccx_inst_tups is None:
+            self.ccx_inst_tups = [(CCXGate(), [0, 1, 2], [])]
         else:
-            self.ccx_data = ccx_data
+            self.ccx_inst_tups = ccx_inst_tups
 
-            ccx_data_matrix = get_unitary(ccx_data)
-            self.ccx_angle = polar(ccx_data_matrix[3, 7])[1]
-            ccx_data_matrix[3, 7] /= np.exp(1j * self.ccx_angle)
-            ccx_data_matrix[7, 3] /= np.exp(1j * self.ccx_angle)
+            ccx_inst_tups_matrix = get_unitary(ccx_inst_tups)
+            self.ccx_angle = polar(ccx_inst_tups_matrix[3, 7])[1]
+            ccx_inst_tups_matrix[3, 7] /= np.exp(1j * self.ccx_angle)
+            ccx_inst_tups_matrix[7, 3] /= np.exp(1j * self.ccx_angle)
             ccx_matrix = CCXGate().to_matrix()
-            assert np.allclose(ccx_data_matrix, ccx_matrix)
+            assert np.allclose(ccx_inst_tups_matrix, ccx_matrix)
 
     def build_eh_diagonal(self, a_op: List[SparsePauliOp]) -> QuantumCircuit:
         """Constructs the circuit to calculate a diagonal transition amplitude.
@@ -211,8 +211,8 @@ class CircuitConstructor:
             else:
                 circ.h(n_anc)
                 # Apply the central CCX gate
-                if self.ccx_data is not None:
-                    for inst_tup in self.ccx_data:
+                if self.ccx_inst_tups is not None:
+                    for inst_tup in self.ccx_inst_tups:
                         circ.append(*inst_tup)
                 else:
                     circ.ccx(0, n_anc, 1)
@@ -353,7 +353,6 @@ def transpile_across_barrier(circ: QuantumCircuit,
             circ_new.append(*inst_tups_single[0])
             circ_new.barrier()
     return circ_new
-
 
 def push_swap_gates(circ: QuantumCircuit, 
                     direcs: List[str] = [],
@@ -513,7 +512,6 @@ def push_swap_gates(circ: QuantumCircuit,
     circ_new = create_circuit_from_data(inst_tups, qreg=qreg)
     return circ_new
 
-
 def combine_swap_gates(circ: QuantumCircuit) -> QuantumCircuit:
     """Combines adjacent SWAP gates."""
     qreg = circ.qregs[0]
@@ -551,27 +549,6 @@ def combine_swap_gates(circ: QuantumCircuit) -> QuantumCircuit:
     for i, inst_tup in zip(new_gate_pos, new_gates):
         inst_tups.insert(i, inst_tup)
 
-    circ_new = create_circuit_from_data(inst_tups, qreg=qreg)
-    return circ_new
-
-
-def remove_swap_gates(circ: QuantumCircuit) -> QuantumCircuit:
-    """Removes SWAP gates in a circuit."""
-    qreg = circ.qregs[0]
-    inst_tups = []
-    for inst_tup in circ.data:
-        if inst_tup[0].name != 'swap':
-            inst_tups.append(inst_tup)
-    circ_new = create_circuit_from_data(inst_tups, qreg=qreg)
-    return circ_new
-
-def remove_measure_gates(circ: QuantumCircuit) -> QuantumCircuit:
-    """Removes measurement gates in a circuit."""
-    qreg = circ.qregs[0]
-    inst_tups = []
-    for inst_tup in circ.data:
-        if inst_tup[0].name != 'measure':
-            inst_tups.append(inst_tup)
     circ_new = create_circuit_from_data(inst_tups, qreg=qreg)
     return circ_new
 

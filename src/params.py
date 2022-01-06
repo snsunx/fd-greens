@@ -28,15 +28,15 @@ singlet_inds = QubitIndices(['0011', '0110', '1001', '1100'])
 triplet_inds = QubitIndices(['0101', '1010'])
 
 # CCX instruction
-ccx_data = [(SwapGate(), [1, 2]), 
-            (XGate(), [0]),
-            (XGate(), [2]),
-            (Barrier(4), [0, 1, 2, 3]), 
-            (CCXGate(ctrl_state='00'), [0, 2, 1], []),
-            (Barrier(4), [0, 1, 2, 3]),
-            (XGate(), [0]),
-            (XGate(), [2]),
-            (SwapGate(), [1, 2])]
+ccx_inst_tups = [(SwapGate(), [1, 2]), 
+                 (XGate(), [0]),
+                 (XGate(), [2]),
+                 (Barrier(4), [0, 1, 2, 3]), 
+                 (CCXGate(ctrl_state='00'), [0, 2, 1], []),
+                 (Barrier(4), [0, 1, 2, 3]),
+                 (XGate(), [0]),
+                 (XGate(), [2]),
+                 (SwapGate(), [1, 2])]
 
 
 # Basis matrix for tomography

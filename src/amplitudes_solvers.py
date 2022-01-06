@@ -8,19 +8,16 @@ import h5py
 import numpy as np
 from scipy.special import binom
 
-from qiskit import QuantumCircuit, ClassicalRegister, transpile
+from qiskit import QuantumCircuit, transpile
 from qiskit.utils import QuantumInstance
 from qiskit.extensions import CCXGate
-from qiskit.ignis.verification.tomography import (state_tomography_circuits,
-                                                  StateTomographyFitter)
 
 import params
 from hamiltonians import MolecularHamiltonian
 from number_states_solvers import measure_operator, EHStatesSolver, ExcitedStatesSolver
 from operators import SecondQuantizedOperators, ChargeOperators, transform_4q_pauli
 from qubit_indices import QubitIndices, transform_4q_indices
-from circuits import (CircuitConstructor, InstructionTuple, transpile_across_barrier, 
-                      push_swap_gates, build_tomography_circuit, transpile_last_section, remove_measure_gates)
+from circuits import (CircuitConstructor, InstructionTuple, build_tomography_circuit)
 from utils import (solve_energy_probabilities, get_overlap,
                    get_counts, get_quantum_instance, counts_arr_to_dict, counts_dict_to_arr, 
                    split_counts_on_anc)
@@ -36,13 +33,12 @@ class EHAmplitudesSolver:
                  spin: str = 'edhu',
                  method: str = 'exact',
                  q_instance: QuantumInstance = get_quantum_instance('sv'),
-                 ccx_data: Optional[Iterable[InstructionTuple]] = params.ccx_data,
-                 add_barriers: bool = False,
-                 add_measurements: bool = True,
-                 transpiled: bool = True,
-                 swap_gates_pushed: bool = True,
                  h5fname: str = 'lih',
-                 dsetname: str = 'eh') -> None:
+                 dsetname: str = 'eh',
+                 ccx_inst_tups: Optional[Iterable[InstructionTuple]] = params.ccx_inst_tups,
+                 add_barriers: bool = False,
+                 transpiled: bool = True,
+                 swap_gates_pushed: bool = True) -> None:
         """Initializes an EHAmplitudesSolver object.
 
         Args:
@@ -51,42 +47,37 @@ class EHAmplitudesSolver:
                 Either 'euhd' (N+1 up, N-1 down) or 'edhu' (N+1 down, N-1 up).
             method: The method for extracting the transition amplitudes. Either 'energy' or 'tomo'.
             q_instance: The QuantumInstance for executing the transition amplitude circuits.
-            ccx_data: An iterable of instruction tuples indicating how CCX gate is applied.
+            h5fname: The hdf5 file name.
+            dsetname: The dataset name in the hdf5 file.
+            ccx_inst_tups: An iterable of instruction tuples indicating how CCX gate is applied.
             add_barriers: Whether to add barriers to the circuit.
             transpiled: Whether the circuit is transpiled.
             swap_gates_pushed: Whether the SWAP gates are pushed.
-            h5fname: The hdf5 file name.
-            dsetname: The dataset name in the hdf5 file.
         """
         assert spin in ['euhd', 'edhu']
         assert method in ['exact', 'tomo']
 
-        # Basic variables of the system
+        # Basic variables
         self.h = h
         self.spin = spin
-
-        # Load data from hdf5 file
-        self.h5fname = h5fname + '.hdf5'
-        self.dsetname = dsetname
-        self._load_data()
-
-        # Method and quantum instance
         self.method = method
         self.q_instance = q_instance
         self.backend = self.q_instance.backend
 
-        # Circuit construction variables
-        self.add_measurements = add_measurements
+        # Load data and initialize quantities
+        self.h5fname = h5fname + '.hdf5'
+        self.dsetname = dsetname
+        self._load_data()
+        self._initialize_quantities()
+        self._initialize_operators()
+
+        # Circuit constructor
         self.circuit_constructor = CircuitConstructor(
             self.ansatz,
             add_barriers=add_barriers, 
             transpiled=transpiled,
             swap_gates_pushed=swap_gates_pushed,
-            ccx_data=ccx_data)
-
-        # Initialize operators and physical quantities
-        self._initialize_quantities()
-        self._initialize_operators()
+            ccx_inst_tups=ccx_inst_tups)
 
 
     def _load_data(self) -> None:
@@ -424,7 +415,7 @@ class ExcitedAmplitudesSolver:
                  es_solver: ExcitedStatesSolver,
                  method: str = 'energy',
                  q_instance: QuantumInstance = get_quantum_instance('sv'),
-                 ccx_data: Iterable[InstructionTuple] = [(CCXGate(), [0, 1, 2], [])],
+                 ccx_inst_tups: Iterable[InstructionTuple] = [(CCXGate(), [0, 1, 2], [])],
                  add_barriers: bool = True,
                  transpiled: bool = False,
                  push: bool = False,
@@ -439,7 +430,7 @@ class ExcitedAmplitudesSolver:
             method: The method for extracting the transition amplitudes. Either 'energy'
                 or 'tomography'.
             q_instance: The QuantumInstance for executing the transition amplitude circuits.
-            ccx_data: An iterable of instruction tuple indicating how CCX gate is applied.
+            ccx_inst_tups: An iterable of instruction tuple indicating how CCX gate is applied.
             recompiled: Whether the QPE circuit is recompiled.
             add_barriers: Whether to add barriers to the circuit.
             transpiled: Whether the circuit is transpiled.
@@ -471,12 +462,12 @@ class ExcitedAmplitudesSolver:
         self.push = push
         self.save = save
         self.add_barriers = add_barriers
-        self.ccx_data = ccx_data
+        self.ccx_inst_tups = ccx_inst_tups
         self.suffix = ''
         if self.transpiled: self.suffix = self.suffix + '_trans'
         if self.push: self.suffix = self.suffix + '_push'
         self.circuit_constructor = CircuitConstructor(
-            self.ansatz, add_barriers=self.add_barriers, ccx_data=self.ccx_data)
+            self.ansatz, add_barriers=self.add_barriers, ccx_inst_tups=self.ccx_inst_tups)
 
         # Initialize operators and physical quantities
         self._initialize_quantities()
