@@ -114,7 +114,7 @@ class CircuitConstructor:
         if self.transpiled:
             circ = transpile_across_barrier(
                 circ, basis_gates=params.basis_gates, 
-                swap_gates_pushed=self.swap_gates_pushed, ind=(0, 1)) # XXX: (0, 1) is hardcoded
+                swap_gates_pushed=self.swap_gates_pushed)
 
         return circ
 
@@ -293,9 +293,8 @@ def create_circuit_from_inst_tups(
 create_circuit_from_data = create_circuit_from_inst_tups
 
 def transpile_across_barriers(circ: QuantumCircuit,
-                             basis_gates: List[str] = None,
-                             swap_gates_pushed: bool = False, 
-                             ind = None
+                              basis_gates: List[str] = None,
+                              swap_gates_pushed: bool = False
                              ) -> QuantumCircuit:
     """Transpiles a circuit across barriers."""
     if basis_gates is None:
@@ -310,7 +309,7 @@ def transpile_across_barriers(circ: QuantumCircuit,
         if len(inst_tups_single) > 1: # not 3-qubit gate
             # Create a single circuit between the barriers
             circ_single = create_circuit_from_inst_tups(inst_tups_single, qreg=qreg)
-            circ_single = transpile(circ_single, basis_gates=params.basis_gates)
+            circ_single = transpile(circ_single, basis_gates=basis_gates)
 
             # Swap positions of CPhase and U3 in the 5th sub-circuit
             if i == 4: swap_cp_and_u3(circ_single)
@@ -320,19 +319,19 @@ def transpile_across_barriers(circ: QuantumCircuit,
                 # First round pushes do not push through two-qubit gates
                 circ_single = push_swap_gates(
                     circ_single, 
-                    direcs=params.swap_direcs_round1[ind][count].copy(),
+                    direcs=params.swap_direcs_round1[count].copy(),
                     qreg=qreg)
                 circ_single = combine_swap_gates(circ_single)
 
                 # Second-round pushes push through two-qubit gates
                 circ_single = push_swap_gates(
                     circ_single, 
-                    direcs=params.swap_direcs_round2[ind][count].copy(),
+                    direcs=params.swap_direcs_round2[count].copy(),
                     qreg=qreg, 
                     push_through_2q=True)
 
                 # Final transpilation
-                circ_single = transpile(circ_single, basis_gates=params.basis_gates)
+                circ_single = transpile(circ_single, basis_gates=basis_gates)
 
                 # Remove SWAP gates at the beginning
                 if i == 0: remove_first_swap_gate(circ_single)
@@ -367,7 +366,7 @@ def swap_cp_and_u3(circ: QuantumCircuit) -> None:
     circ.data[4] = tmp
 
 def split_circuit_into_inst_tups(circ: QuantumCircuit) -> List[List[InstructionTuple]]:
-    """Splits a circuit into sub-circuits between barriers."""
+    """Splits a circuit into instruction tuples between barriers."""
     inst_tups = circ.data.copy()
     inst_tups_all = [] # all inst_tups_single
     inst_tups_single = [] # temporary variable to hold inst_tups_all components
@@ -545,42 +544,22 @@ def push_swap_gates(circ: QuantumCircuit,
 
 def combine_swap_gates(circ: QuantumCircuit) -> QuantumCircuit:
     """Combines adjacent SWAP gates."""
-    qreg = circ.qregs[0]
     inst_tups = circ.data.copy()
+    n_inst_tups = len(inst_tups)
+    inst_tup_pos = list(range(n_inst_tups))
 
-    old_gate_pos = []
-    new_gate_pos = []
-    new_gates = []
-    pos_shift = 0
-    for i, inst_tup in enumerate(inst_tups[:-1]):
-        if inst_tup[0].name == 'swap' and inst_tups[i + 1][0].name == 'swap':
-            inst, qargs, cargs = inst_tup
-            inst_, qargs_, cargs_ = inst_tups[i + 1]
-            common_qargs = set(qargs).intersection(set(qargs_))
-            # if len(common_qargs) == 1:
-            #     old_gate_pos.append(i + pos_shift)
-            #     old_gate_pos.append(i + pos_shift)
-            #     new_gate_pos.append(i + pos_shift)
-
-            #     common_qarg = list(common_qargs)[0]
-            #     qargs.remove(common_qarg)
-            #     qargs_.remove(common_qarg)
-            #     inst_tup_new = (SwapGate(), [qargs[0], qargs_[0]], [])
-            #     new_gates.append(inst_tup_new)
-
-            #     pos_shift -= 1
+    for i in range(n_inst_tups - 1):
+        inst0, qargs0, _ = inst_tups[i]
+        inst1, qargs1, _ = inst_tups[i + 1]
+        if inst0.name == 'swap' and inst1.name == 'swap':
+            common_qargs = set(qargs0).intersection(set(qargs1))
             if len(common_qargs) == 2:
-                old_gate_pos.append(i + pos_shift)
-                old_gate_pos.append(i + pos_shift)
-                pos_shift -= 2
+                inst_tup_pos.remove(i)
+                inst_tup_pos.remove(i + 1)
 
-    for i in old_gate_pos:
-        del inst_tups[i]
-
-    for i, inst_tup in zip(new_gate_pos, new_gates):
-        inst_tups.insert(i, inst_tup)
-
-    circ_new = create_circuit_from_data(inst_tups, qreg=qreg)
+    inst_tups_new = [inst_tups[i] for i in inst_tup_pos]
+    qreg = circ.qregs[0]
+    circ_new = create_circuit_from_inst_tups(inst_tups_new, qreg=qreg)
     return circ_new
 
 def build_tomography_circuit(circ: QuantumCircuit, 
