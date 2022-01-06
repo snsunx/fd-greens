@@ -589,20 +589,32 @@ def build_tomography_circuit(circ: QuantumCircuit,
         A new circuit with tomography gates appended.
     """
     assert len(qubits) == len(label)
-    qst_circ = circ.copy()
+    tomo_circ = circ.copy()
+    n_qubits = len(circ.qregs[0])
     # creg = ClassicalRegister(len(qubits))
-    # qst_circ.add_register(creg)
+    # tomo_circ.add_register(creg)
 
     for q, s in zip(qubits, label):
         if s == 'x':
-            # qst_circ.h(q)
-            qst_circ.u3(np.pi/2, 0, np.pi, q)
+            # tomo_circ.h(q)
+            tomo_circ.u3(np.pi/2, 0, np.pi, q)
         elif s == 'y':
-            # qst_circ.sdg(q)
-            # qst_circ.h(q)
-            qst_circ.u3(np.pi/2, 0, np.pi/2, q)
-        # qst_circ.measure(q, q)
-    return qst_circ
+            # tomo_circ.sdg(q)
+            # tomo_circ.h(q)
+            tomo_circ.u3(np.pi/2, 0, np.pi/2, q)
+        # tomo_circ.measure(q, q)
+
+    if n_qubits == 3:
+        tomo_circ = transpile(tomo_circ, basis_gates=params.basis_gates)
+    elif n_qubits == 4:
+        tomo_circ = transpile_last_section(tomo_circ)
+    else:
+        raise ValueError
+
+    tomo_circ.barrier()
+    tomo_circ.add_register(ClassicalRegister(n_qubits))
+    tomo_circ.measure(range(n_qubits), range(n_qubits))
+    return tomo_circ
 
 def transpile_last_section(circ: QuantumCircuit) -> QuantumCircuit:
     """Transpiles the last section of the circuit."""

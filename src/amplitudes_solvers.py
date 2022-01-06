@@ -38,11 +38,11 @@ class EHAmplitudesSolver:
                  q_instance: QuantumInstance = get_quantum_instance('sv'),
                  ccx_data: Optional[Iterable[InstructionTuple]] = params.ccx_data,
                  add_barriers: bool = False,
+                 add_measurements: bool = True,
                  transpiled: bool = True,
                  swap_gates_pushed: bool = True,
                  h5fname: str = 'lih',
-                 dsetname: str = 'eh',
-                 add_measurements: bool = True) -> None:
+                 dsetname: str = 'eh') -> None:
         """Initializes an EHAmplitudesSolver object.
 
         Args:
@@ -165,21 +165,14 @@ class EHAmplitudesSolver:
         for m in range(self.n_orb):
             a_op = self.pauli_dict[(m, self.spin[1])]
             circ = self.circuit_constructor.build_eh_diagonal(a_op)
-            # if self.transpiled:
-            #     circ = transpile(circ, basis_gates=['u3', 'swap', 'cz', 'cp'])
             dset.attrs[f'circ{m}'] = circ.qasm()
 
             if self.method == 'tomo':
                 labels = itertools.product('xyz', repeat=2)
                 for label in labels:
+                    tomo_circ = build_tomography_circuit(circ, [1, 2], label)
                     label_str = ''.join(label)
-                    qst_circ = build_tomography_circuit(circ, [1, 2], label)
-                    qst_circ = transpile(qst_circ, basis_gates=params.basis_gates)
-                    if self.add_measurements:
-                        qst_circ.barrier()
-                        qst_circ.add_register(ClassicalRegister(3))
-                        qst_circ.measure(range(3), range(3))
-                    dset.attrs[f'circ{m}{label_str}'] = qst_circ.qasm()
+                    dset.attrs[f'circ{m}{label_str}'] = tomo_circ.qasm()
 
         h5file.close()
 
@@ -269,21 +262,15 @@ class EHAmplitudesSolver:
             a_op_m = self.pauli_dict[(m, self.spin[1])]
             for n in range(m + 1, self.n_orb):
                 a_op_n = self.pauli_dict[(n, self.spin[1])]
-
                 circ = self.circuit_constructor.build_eh_off_diagonal(a_op_m, a_op_n)
                 dset.attrs[f'circ{m}{n}'] = circ.qasm()
 
                 if self.method == 'tomo':
                     labels = itertools.product('xyz', repeat=2)
                     for label in labels:
+                        tomo_circ = build_tomography_circuit(circ, [2, 3], label)
                         label_str = ''.join(label)
-                        qst_circ = build_tomography_circuit(circ, [2, 3], label)
-                        qst_circ = transpile_last_section(qst_circ)
-                        if self.add_measurements:
-                            qst_circ.barrier()
-                            qst_circ.add_register(ClassicalRegister(4))
-                            qst_circ.measure(range(4), range(4))
-                        dset.attrs[f'circ{m}{n}{label_str}'] = qst_circ.qasm()
+                        dset.attrs[f'circ{m}{n}{label_str}'] = tomo_circ.qasm()
 
         h5file.close()
 
@@ -419,8 +406,10 @@ class EHAmplitudesSolver:
             self.method = method
         self.build_diagonal()
         self.build_off_diagonal()
+
         self.run_diagonal()
         self.run_off_diagonal()
+        
         self.process_diagonal()
         self.process_off_diagonal()
         self.save_data()
