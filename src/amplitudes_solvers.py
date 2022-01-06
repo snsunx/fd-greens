@@ -519,8 +519,8 @@ class ExcitedAmplitudesSolver:
             circ_t = self.circuit_constructor.build_charge_diagonal(U_op_t)
 
             if self.transpiled: 
-                circ_s = transpile(circ_s, basis_gates=['u3', 'swap', 'cz', 'cp'])
-                circ_t = transpile(circ_t, basis_gates=['u3', 'swap', 'cz', 'cp'])
+                circ_s = transpile(circ_s, basis_gates=params.basis_gates)
+                circ_t = transpile(circ_t, basis_gates=params.basis_gates)
 
             if self.method == 'exact' and self.backend.name() == 'statevector_simulator':
                 result = self.q_instance.execute(circ_s)
