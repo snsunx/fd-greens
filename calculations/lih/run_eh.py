@@ -12,7 +12,7 @@ from utils import get_lih_hamiltonian, get_quantum_instance, initialize_hdf5
 h = get_lih_hamiltonian(3.0)
 q_instance = get_quantum_instance('qasm')
 fname = 'lih'
-dsetname = 'eh_exact'
+dsetname = 'eh_sv'
 initialize_hdf5(fname, dsetname)
 
 gs_solver = GroundStateSolver(h, ansatz_func=build_ansatz_gs, q_instance=q_instance, h5fname=fname, dsetname=dsetname)

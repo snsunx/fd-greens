@@ -12,11 +12,13 @@ from qiskit import QuantumCircuit, QuantumRegister, ClassicalRegister, Aer, exec
 from qiskit.utils import QuantumInstance
 from qiskit.ignis.verification.tomography import (state_tomography_circuits,
                                                   StateTomographyFitter)
-from qiskit.circuit import Instruction
+from qiskit.circuit import Instruction, Qubit, Clbit
 from qiskit.opflow import PauliSumOp
 from qiskit.result import Result, Counts
 
-CircuitData = Iterable[Tuple[Instruction, List[int], Optional[List[int]]]]
+QubitLike = Union[int, Qubit]
+ClbitLike = Union[int, Clbit]
+InstructionTuple = Tuple[Instruction, List[QubitLike], Optional[List[ClbitLike]]]
 
 def get_statevector(circ: QuantumCircuit,
                     reverse: bool = False) -> np.ndarray:
@@ -29,7 +31,7 @@ def get_statevector(circ: QuantumCircuit,
     Returns:
         The statevector array of the circuit.
     """
-    if isinstance(circ, list): # CircuitData
+    if isinstance(circ, list): # Instruction tuples
         circ = data_to_circuit(circ)
     backend = Aer.get_backend('statevector_simulator')
     job = execute(circ, backend)
@@ -39,7 +41,7 @@ def get_statevector(circ: QuantumCircuit,
         statevector = reverse_qubit_order(statevector)
     return statevector
 
-def get_unitary(circ: Union[QuantumCircuit, CircuitData],
+def get_unitary(circ: Union[QuantumCircuit, Iterable[InstructionTuple]],
                 reverse: bool = False, n_qubits = None) -> np.ndarray:
     """Returns the unitary of a quantum circuit.
 
@@ -51,7 +53,7 @@ def get_unitary(circ: Union[QuantumCircuit, CircuitData],
         The unitary array of the circuit.
     """
 
-    if isinstance(circ, list): # CircuitData
+    if isinstance(circ, list): # Instruction tuples
         circ = data_to_circuit(circ, n_qubits=n_qubits)
     backend = Aer.get_backend('unitary_simulator')
     job = execute(circ, backend)
@@ -61,15 +63,18 @@ def get_unitary(circ: Union[QuantumCircuit, CircuitData],
         unitary = reverse_qubit_order(unitary)
     return unitary
 
-def remove_barriers(circ_data: CircuitData) -> CircuitData:
+def remove_barriers(inst_tups: Iterable[InstructionTuple]) -> List[InstructionTuple]:
     """Removes barriers in circuit data."""
-    circ_data_new = []
-    for inst_tup in circ_data:
+    inst_tups_new = []
+    for inst_tup in inst_tups:
         if inst_tup[0].name != 'barrier':
-            circ_data_new.append(inst_tup)
-    return circ_data_new
+            inst_tups_new.append(inst_tup)
+    return inst_tups_new
 
-def data_to_circuit(data: CircuitData, n_qubits: int = None, remove_barr: bool = True) -> QuantumCircuit:
+def data_to_circuit(data: Iterable[InstructionTuple], 
+                    n_qubits: int = None,
+                    remove_barr: bool = True
+                   ) -> QuantumCircuit:
     """Converts circuit data to circuit."""
     if remove_barr:
         data = remove_barriers(data)

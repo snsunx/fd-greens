@@ -1,6 +1,6 @@
 """Amplitudes solver module."""
 
-from typing import Optional
+from typing import Optional, Iterable
 from functools import partial
 
 import itertools
@@ -19,7 +19,7 @@ from hamiltonians import MolecularHamiltonian
 from number_states_solvers import measure_operator, EHStatesSolver, ExcitedStatesSolver
 from operators import SecondQuantizedOperators, ChargeOperators, transform_4q_pauli
 from qubit_indices import QubitIndices, transform_4q_indices
-from circuits import (CircuitConstructor, CircuitData, transpile_across_barrier, 
+from circuits import (CircuitConstructor, InstructionTuple, transpile_across_barrier, 
                       push_swap_gates, build_tomography_circuit, transpile_last_section, remove_measure_gates)
 from utils import (solve_energy_probabilities, get_overlap,
                    get_counts, get_quantum_instance, counts_arr_to_dict, counts_dict_to_arr, 
@@ -36,7 +36,7 @@ class EHAmplitudesSolver:
                  spin: str = 'edhu',
                  method: str = 'exact',
                  q_instance: QuantumInstance = get_quantum_instance('sv'),
-                 ccx_data: Optional[CircuitData] = params.ccx_data,
+                 ccx_data: Optional[Iterable[InstructionTuple]] = params.ccx_data,
                  add_barriers: bool = False,
                  transpiled: bool = True,
                  push: bool = True,
@@ -51,7 +51,7 @@ class EHAmplitudesSolver:
                 Either 'euhd' (N+1 up, N-1 down) or 'edhu' (N+1 down, N-1 up).
             method: The method for extracting the transition amplitudes. Either 'energy' or 'tomo'.
             q_instance: The QuantumInstance for executing the transition amplitude circuits.
-            ccx_data: A CircuitData object indicating how CCX gate is applied.
+            ccx_data: An iterable of instruction tuples indicating how CCX gate is applied.
             add_barriers: Whether to add barriers to the circuit.
             transpiled: Whether the circuit is transpiled.
             push: Whether the SWAP gates are pushed.
@@ -442,7 +442,7 @@ class ExcitedAmplitudesSolver:
                  es_solver: ExcitedStatesSolver,
                  method: str = 'energy',
                  q_instance: QuantumInstance = get_quantum_instance('sv'),
-                 ccx_data: CircuitData = [(CCXGate(), [0, 1, 2], [])],
+                 ccx_data: Iterable[InstructionTuple] = [(CCXGate(), [0, 1, 2], [])],
                  add_barriers: bool = True,
                  transpiled: bool = False,
                  push: bool = False,
@@ -457,7 +457,7 @@ class ExcitedAmplitudesSolver:
             method: The method for extracting the transition amplitudes. Either 'energy'
                 or 'tomography'.
             q_instance: The QuantumInstance for executing the transition amplitude circuits.
-            ccx_data: A CircuitData object indicating how CCX gate is applied.
+            ccx_data: An iterable of instruction tuple indicating how CCX gate is applied.
             recompiled: Whether the QPE circuit is recompiled.
             add_barriers: Whether to add barriers to the circuit.
             transpiled: Whether the circuit is transpiled.
