@@ -39,7 +39,7 @@ class EHAmplitudesSolver:
                  ccx_data: Optional[Iterable[InstructionTuple]] = params.ccx_data,
                  add_barriers: bool = False,
                  transpiled: bool = True,
-                 push: bool = True,
+                 swap_gates_pushed: bool = True,
                  h5fname: str = 'lih',
                  dsetname: str = 'eh',
                  add_measurements: bool = True) -> None:
@@ -54,7 +54,7 @@ class EHAmplitudesSolver:
             ccx_data: An iterable of instruction tuples indicating how CCX gate is applied.
             add_barriers: Whether to add barriers to the circuit.
             transpiled: Whether the circuit is transpiled.
-            push: Whether the SWAP gates are pushed.
+            swap_gates_pushed: Whether the SWAP gates are pushed.
             h5fname: The hdf5 file name.
             dsetname: The dataset name in the hdf5 file.
         """
@@ -76,16 +76,13 @@ class EHAmplitudesSolver:
         self.backend = self.q_instance.backend
 
         # Circuit construction variables
-        self.transpiled = transpiled
-        self.push = push
-        self.add_barriers = add_barriers
         self.add_measurements = add_measurements
-        self.ccx_data = ccx_data
-        self.suffix = ''
-        if self.transpiled: self.suffix = self.suffix + '_trans'
-        if self.push: self.suffix = self.suffix + '_push'
         self.circuit_constructor = CircuitConstructor(
-            self.ansatz, add_barriers=self.add_barriers, ccx_data=self.ccx_data)
+            self.ansatz,
+            add_barriers=add_barriers, 
+            transpiled=transpiled,
+            swap_gates_pushed=swap_gates_pushed,
+            ccx_data=ccx_data)
 
         # Initialize operators and physical quantities
         self._initialize_quantities()
@@ -168,7 +165,8 @@ class EHAmplitudesSolver:
         for m in range(self.n_orb):
             a_op = self.pauli_dict[(m, self.spin[1])]
             circ = self.circuit_constructor.build_eh_diagonal(a_op)
-            if self.transpiled: circ = transpile(circ, basis_gates=['u3', 'swap', 'cz', 'cp'])
+            # if self.transpiled:
+            #     circ = transpile(circ, basis_gates=['u3', 'swap', 'cz', 'cp'])
             dset.attrs[f'circ{m}'] = circ.qasm()
 
             if self.method == 'tomo':
@@ -273,12 +271,7 @@ class EHAmplitudesSolver:
                 a_op_n = self.pauli_dict[(n, self.spin[1])]
 
                 circ = self.circuit_constructor.build_eh_off_diagonal(a_op_m, a_op_n)
-                if self.transpiled:
-                    circ = transpile_across_barrier(
-                        circ, basis_gates=['u3', 'swap', 'cz', 'cp'], 
-                        push=self.push, ind=(m, n))
                 dset.attrs[f'circ{m}{n}'] = circ.qasm()
-
 
                 if self.method == 'tomo':
                     labels = itertools.product('xyz', repeat=2)

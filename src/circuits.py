@@ -24,16 +24,22 @@ class CircuitConstructor:
     def __init__(self,
                  ansatz: QuantumCircuit,
                  add_barriers: bool = True,
+                 transpiled: bool = True,
+                 swap_gates_pushed: bool = True,
                  ccx_data: Optional[Iterable[InstructionTuple]] = None) -> None:
         """Creates a CircuitConstructor object.
 
         Args:
             ansatz: The ansatz quantum circuit containing the ground state.
             add_barriers: Whether to add barriers to the circuit.
+            transpiled: Whether the circuits are transpiled.
+            swap_gates_pushed: Whether the SWAP gates are pushed.
             ccx_data: The circuit data for customized CCX gate.
         """
         self.ansatz = ansatz.copy()
         self.add_barriers = add_barriers
+        self.transpiled = transpiled
+        self.swap_gates_pushed = swap_gates_pushed
         if ccx_data is None:
             self.ccx_data = [(CCXGate(), [0, 1, 2], [])]
         else:
@@ -46,9 +52,7 @@ class CircuitConstructor:
             ccx_matrix = CCXGate().to_matrix()
             assert np.allclose(ccx_data_matrix, ccx_matrix)
 
-    def build_diagonal_circuits(self,
-                                a_op: List[SparsePauliOp]
-                                ) -> QuantumCircuit:
+    def build_eh_diagonal(self, a_op: List[SparsePauliOp]) -> QuantumCircuit:
         """Constructs the circuit to calculate a diagonal transition amplitude.
 
         Args:
@@ -70,14 +74,15 @@ class CircuitConstructor:
         if self.add_barriers: circ.barrier()
         circ.h(0)
         # if self.add_barriers: circ.barrier()
+
+        if self.transpiled:
+            circ = transpile(circ, basis_gates=params.basis_gates)
         return circ
 
-    build_eh_diagonal = build_diagonal_circuits
-
-    def build_off_diagonal_circuits(self,
-                                    a_op_m: List[SparsePauliOp],
-                                    a_op_n: List[SparsePauliOp]
-                                    ) -> QuantumCircuit:
+    def build_eh_off_diagonal(self,
+                              a_op_m: List[SparsePauliOp],
+                              a_op_n: List[SparsePauliOp]
+                              ) -> QuantumCircuit:
         """Constructs the circuit to calculate off-diagonal transition amplitudes.
 
         Args:
@@ -106,9 +111,12 @@ class CircuitConstructor:
         #if self.add_barriers: circ.barrier()
         circ.h([0, 1])
 
-        return circ
+        if self.transpiled:
+            circ = transpile_across_barrier(
+                circ, basis_gates=params.basis_gates, 
+                push=self.swap_gates_pushed, ind=(0, 1))
 
-    build_eh_off_diagonal = build_off_diagonal_circuits
+        return circ
 
     def build_charge_diagonal(self, U_op: List[SparsePauliOp]) -> QuantumCircuit:
         """Constructs the circuit to calculate diagonal charge-charge transition elements."""
