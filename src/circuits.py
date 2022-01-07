@@ -394,6 +394,7 @@ def push_swap_gates(circ: QuantumCircuit,
         circ: The quantum circuit on which SWAP gates are pushed.
         direcs: The directions to which each swap gate is pushed.
         qreg: The quantum register of the circuit.
+        push_through_2q: Whether to push through two-qubit gates.
 
     Returns:
         A new circuit on which SWAP gates are pushed.
@@ -406,25 +407,80 @@ def push_swap_gates(circ: QuantumCircuit,
         qreg = circ.qregs[0]
     n_qubits = len(qreg)
     
-    # Copy circ.data to two objects, inst_tups_ref and inst_tups.
-    # inst_tups_ref will not be modified while inst_tups will be.
-    # Also add barriers to first and last positions for easy processing.
-    barr = Barrier(n_qubits)
-    inst_tups_ref = circ.data.copy()
-    inst_tups_ref.insert(0, (barr, qreg, []))
-    inst_tups_ref.append((barr, qreg, []))
-    inst_tups = inst_tups_ref.copy()
+    # Prepend and append barriers for easy processing
+    inst_tups = circ.data.copy()
+    inst_tups = [(Barrier(n_qubits), qreg, [])] + inst_tups + [(Barrier(n_qubits), qreg, [])]
 
-    # Record SWAP gate positions
+    # Store positions of SWAP gates that need to be pushed
     swap_gate_pos = []
-    swap_gate_ind = 0
+    count = 0
     for i, inst_tup in enumerate(inst_tups):
-        if inst_tup[0].name == 'swap' and direcs[swap_gate_ind] is not None:
+        if inst_tup[0].name == 'swap' and direcs[count] is not None:
             swap_gate_pos.append(i)
-            swap_gate_ind += 1
-    # print('swap gate pos', swap_gate_pos)
+            count += 1
     direcs = [d for d in direcs if d is not None]
 
+    # Reorder SWAP gate positions due to pushing rightmost gates when pushing to the right
+    for i, direc in enumerate(direcs):
+        if direc == 'right':
+            swap_gate_pos[i] *= -1
+    sort_inds = np.argsort(swap_gate_pos)
+    swap_gate_pos = [abs(swap_gate_pos[i]) for i in sort_inds]
+    direcs = [direcs[i] for i in sort_inds]
+
+    for i in swap_gate_pos:
+        inst_tup = inst_tups[i]
+        qargs = inst_tup[1]
+        direc = direcs.pop(0)
+        
+        # Set up the data enumeration direction
+        if direc == 'right':
+            enumeration = zip(range(i + 1, len(inst_tups)), inst_tups[i + 1:])
+        else:
+            enumeration = zip(range(i - 1, -1, -1), reversed(inst_tups[:i]))
+
+        # Start sweeping to the left or the right.
+        # The int(direc == 'left) term was due to whether to insert the new SWAP gate 
+        # in front of or behind the barrier
+        for j, inst_tup_ in enumeration:
+            inst_, qargs_, cargs_ = inst_tup_
+            if inst_.name == 'barrier': # barrier
+                inst_tups.insert(j + int(direc == 'left'), inst_tup)
+                break
+            else: # gate
+                if len(qargs_) == 1: # 1q gate
+                    # Swap the indices and move on
+                    if qargs_ == [qargs[0]]:
+                        inst_tups[j] = (inst_, [qargs[1]], cargs_)
+                    elif qargs_ == [qargs[1]]:
+                        inst_tups[j] = (inst_, [qargs[0]], cargs_)
+                elif len(qargs_) == 2: # 2q gate but not SWAP gate
+                    common_qargs = set(qargs).intersection(set(qargs_))
+                    if push_through_2q:
+                        if len(common_qargs) == 2:
+                            # Overlap on both qubits. Swap the two-qubit gate and move on
+                            inst_tups[j]  = (inst_, [qargs_[1], qargs_[0]], cargs_)
+                        else:
+                            # Overlap on one qubit. Insert here and exit the loop
+                            inst_tups.insert(j + int(direc == 'left'), inst_tup)
+                            break
+                    else:
+                        if len(common_qargs) > 0:
+                            inst_tups.insert(j + int(direc == 'left'), inst_tup)
+                            break
+                        
+                else:
+                    # n-qubit (n > 2) gate. Insert here and exit the loop
+                    inst_tups.insert(j + int(direc == 'left'), inst_tup)
+                    break
+
+        del inst_tups[i + int(direc == 'left')]
+
+    inst_tups = inst_tups[1:-1] # remove the barriers
+    circ_new = create_circuit_from_inst_tups(inst_tups, qreg=qreg)
+    return circ_new
+
+def process_direcs(direcs, swap_gate_pos):
     # Process direcs with swap_gate_pos
     direcs_single = []
     swap_gate_pos_direc = None
@@ -451,96 +507,7 @@ def push_swap_gates(circ: QuantumCircuit,
 
     # Flatten the folded_swap_gate_pos_direc list
     flattened_swap_gate_pos_direc = [x for y in folded_swap_gate_pos_direc for x in y]
-    # print('flattened swap gate pos direc =', flattened_swap_gate_pos_direc)
-
-    for i in flattened_swap_gate_pos_direc:
-        # print('i =', i)
-        inst_tup = inst_tups[i]
-        qargs = inst_tup[1]
-
-        try:
-            direc = direcs.pop(0)
-        except:
-            direc = 'right'
-        
-        # Set up the data enumeration direction
-        if direc == 'right':
-            enumeration = zip(range(i + 1, len(inst_tups)), inst_tups[i + 1:])
-        else:
-            enumeration = zip(range(i - 1, -1, -1), reversed(inst_tups[:i]))
-
-        # Start sweeping to the left or the right.
-        # The int(direc == 'left) term was due to whether to insert the new SWAP gate 
-        # in front of or behind the barrier
-        for j, inst_tup_ in enumeration:
-            # print('j =', j)
-            inst_, qargs_, cargs_ = inst_tup_
-            if inst_.name == 'barrier':
-                # Barrier. Insert here and exit the loop
-                # print("Barrier")
-                # print('inserting at position', j + int(direc == 'left'))
-                inst_tups.insert(j + int(direc == 'left'), inst_tup)
-                break
-            else:
-                # Gate
-                if len(qargs_) == 1:
-                    # Single-qubit gate. Swap the indices and move on
-                    # print("Single-qubit gate")
-                    if qargs_ == [qargs[0]]:
-                        inst_tups[j] = (inst_, [qargs[1]], cargs_)
-                    elif qargs_ == [qargs[1]]:
-                        inst_tups[j] = (inst_, [qargs[0]], cargs_)
-                elif len(qargs_) == 2:
-                    # Two-qubit gate but not SWAP gate
-                    # print("Two-qubit gate")
-                    common_qargs = set(qargs).intersection(set(qargs_))
-                    if push_through_2q:
-                        '''
-                        if inst_.name != 'swap':
-                            if len(common_qargs) == 1:
-                                # Overlap on one qubit. Insert here and exit the loop
-                                print("Overlap on one qubit")
-                                common_qarg = list(common_qargs)[0]
-                                qargs_copy = qargs.copy()
-                                qargs__copy = qargs_.copy()
-                                qargs_copy.remove(common_qarg)
-                                qargs__copy.remove(common_qarg)
-                                print(qargs_copy)
-                                print(qargs__copy)
-                                inst_tups[j] = (inst_, [qargs_copy[0], qargs__copy[0]], [])
-                                # inst_tups.insert(j + int(direc == 'right'), inst_tup)
-                            elif len(common_qargs) == 2:
-                                # Overlap on both qubits. Swap the two-qubit gate and move on
-                                print("Overlap on both qubits")
-                                inst_tups[j]  = (inst_, [qargs_[1], qargs_[0]], cargs_)
-                        '''
-                        if len(common_qargs) == 2:
-                            # Overlap on both qubits. Swap the two-qubit gate and move on
-                            inst_tups[j]  = (inst_, [qargs_[1], qargs_[0]], cargs_)
-                        else:
-                            # Overlap on one qubit. Insert here and exit the loop
-                            # print('inserting at position', j + int(direc == 'left'))
-                            inst_tups.insert(j + int(direc == 'left'), inst_tup)
-                            break
-                    else:
-                        if len(common_qargs) > 0:
-                            # print('inserting at position', j + int(direc == 'left'))
-                            inst_tups.insert(j + int(direc == 'left'), inst_tup)
-                            break
-                        
-                else:
-                    # n-qubit (n > 2) gate. Insert here and exit the loop
-                    # print("n-qubit (n > 2) gate")
-                    # print('inserting at position', j + int(direc == 'left'))
-                    inst_tups.insert(j + int(direc == 'left'), inst_tup)
-                    break
-            # print(create_circuit_from_data(inst_tups, qreg=qreg))
-        # print('deleting position', i + int(direc == 'left'))
-        del inst_tups[i + int(direc == 'left')]
-
-    inst_tups = inst_tups[1:-1] # Remove the barriers
-    circ_new = create_circuit_from_data(inst_tups, qreg=qreg)
-    return circ_new
+    return flattened_swap_gate_pos_direc
 
 def combine_swap_gates(circ: QuantumCircuit) -> QuantumCircuit:
     """Combines adjacent SWAP gates."""
