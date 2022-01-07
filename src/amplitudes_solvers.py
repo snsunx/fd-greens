@@ -17,7 +17,7 @@ from hamiltonians import MolecularHamiltonian
 from number_states_solvers import measure_operator, EHStatesSolver, ExcitedStatesSolver
 from operators import SecondQuantizedOperators, ChargeOperators, transform_4q_pauli
 from qubit_indices import QubitIndices, transform_4q_indices
-from circuits import (CircuitConstructor, InstructionTuple, build_tomography_circuit)
+from circuits import (CircuitConstructor, CircuitTranspiler, InstructionTuple, build_tomography_circuit)
 from utils import (solve_energy_probabilities, get_overlap,
                    get_counts, get_quantum_instance, counts_arr_to_dict, counts_dict_to_arr, 
                    split_counts_on_anc)
@@ -67,20 +67,21 @@ class EHAmplitudesSolver:
         # Load data and initialize quantities
         self.h5fname = h5fname + '.hdf5'
         self.dsetname = dsetname
-        self._load_data()
+        self._load_data_from_hdf5()
         self._initialize_quantities()
         self._initialize_operators()
 
-        # Circuit constructor
+        # Circuit constructor and transpiler
+        self.transpiled = transpiled
         self.circuit_constructor = CircuitConstructor(
             self.ansatz,
             add_barriers=add_barriers, 
-            transpiled=transpiled,
-            swap_gates_pushed=swap_gates_pushed,
             ccx_inst_tups=ccx_inst_tups)
+        self.circuit_transpiler = CircuitTranspiler(
+            basis_gates=params.basis_gates,
+            swap_gates_pushed=swap_gates_pushed)
 
-
-    def _load_data(self) -> None:
+    def _load_data_from_hdf5(self) -> None:
         """Loads ground state and N+/-1 electron states data from hdf5 file. """
         h5file = h5py.File(self.h5fname, 'r+')
         dset = h5file[self.dsetname]
@@ -156,6 +157,8 @@ class EHAmplitudesSolver:
         for m in range(self.n_orb):
             a_op = self.pauli_dict[(m, self.spin[1])]
             circ = self.circuit_constructor.build_eh_diagonal(a_op)
+            if self.transpiled:
+                circ = self.circuit_transpiler.transpile(circ)
             dset.attrs[f'circ{m}'] = circ.qasm()
 
             if self.method == 'tomo':
@@ -254,6 +257,8 @@ class EHAmplitudesSolver:
             for n in range(m + 1, self.n_orb):
                 a_op_n = self.pauli_dict[(n, self.spin[1])]
                 circ = self.circuit_constructor.build_eh_off_diagonal(a_op_m, a_op_n)
+                if self.transpiled:
+                    circ = self.circuit_transpiler.transpile_across_barriers(circ)
                 dset.attrs[f'circ{m}{n}'] = circ.qasm()
 
                 if self.method == 'tomo':

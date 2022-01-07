@@ -10,8 +10,7 @@ from hamiltonians import MolecularHamiltonian
 
 from qiskit import QuantumCircuit, QuantumRegister, ClassicalRegister, Aer, execute
 from qiskit.utils import QuantumInstance
-from qiskit.ignis.verification.tomography import (state_tomography_circuits,
-                                                  StateTomographyFitter)
+from qiskit.ignis.verification.tomography import state_tomography_circuits, StateTomographyFitter
 from qiskit.circuit import Instruction, Qubit, Clbit
 from qiskit.opflow import PauliSumOp
 from qiskit.result import Result, Counts
@@ -327,27 +326,73 @@ def initialize_hdf5(fname: str = 'lih', dsetname: str = 'eh') -> None:
         f.create_dataset(dsetname, shape=())
     f.close()
 
-# TODO: Move these functionalities to the solvers
-def save_exc_data(gs_solver: 'GroundStateSolver', 
-                  es_solver: 'ExcitedStatesSolver',
-                  amp_solver: 'ExcitedAmplitudesSolver',
-                  fname: str = 'lih',
-                  dsetname: str = 'exc') -> None:
-    """Saves excited states data to file.
+def copy_circuit_with_ancilla(circ: QuantumCircuit,
+                              inds_anc: Sequence[int]) -> QuantumCircuit:
+    """Copies a circuit with specific indices for ancillas.
+
+    Args:
+        circ: The quantum circuit to be copied.
+        inds_anc: Indices of the ancilla qubits.
+
+    Returns:
+        The new quantum circuit with empty ancilla positions.
+    """
+    # Create a new circuit along with the quantum registers
+    n_sys = circ.num_qubits
+    n_anc = len(inds_anc)
+    n_qubits = n_sys + n_anc
+    inds_new = [i for i in range(n_qubits) if i not in inds_anc]
+    qreg_new = QuantumRegister(n_qubits, name='q')
+    circ_new = QuantumCircuit(qreg_new)
+
+    # Copy instructions from the ansatz circuit to the new circuit
+    for inst, qargs, cargs in circ.data:
+        qargs = [inds_new[q._index] for q in qargs]
+        circ_new.append(inst, qargs, cargs)
+    return circ_new
+
+def create_circuit_from_inst_tups(
+        inst_tups: Iterable[InstructionTuple], 
+        qreg: QuantumRegister = None,
+        n_qubits: int = None
+    ) -> QuantumCircuit:
+    """Creates a circuit from circuit data.
     
     Args:
-        gs_solver: The ground state solver.
-        es_solver: The excited states solver.
-        amp_solver: The transition amplitudes solver.
-        fname: The file name string.
-        dsetname: The dataset name string.
-    """
-    fname += '.hdf5'
-    f = h5py.File(fname, 'r+')
-    dset = f[dsetname]
-    dset.attrs['energy_gs'] = gs_solver.energy
-    dset.attrs['energies_s'] = es_solver.energies_s
-    dset.attrs['energies_t'] = es_solver.energies_t
-    dset.attrs['L'] = amp_solver.L
-    dset.attrs['n_states'] = amp_solver.n_states
-    f.close()
+        inst_tups: """
+    
+    n_qubits = 4 # XXX: 4 is hardcoded
+    # if n_qubits is None:
+    # n_qubits1 = max([max([y.index for y in x[1]]) for x in inst_tups]) + 1
+    # print("!!!!!!!!!!!!!!!!!!!!!!!!", n_qubits1)
+    if qreg is None:
+        qreg = QuantumRegister(n_qubits, name='q')
+    circ = QuantumCircuit(qreg)
+    for inst_tup in inst_tups:
+        try:
+            circ.append(*inst_tup)
+        except:
+            inst, qargs, cargs = inst_tup
+            qargs = [q._index for q in qargs]
+            circ.append(inst, qargs, cargs)
+    return circ
+
+def split_circuit_across_barriers(circ: QuantumCircuit) -> List[List[InstructionTuple]]:
+    """Splits a circuit into instruction tuples between barriers."""
+    inst_tups = circ.data.copy()
+    inst_tups_all = [] # all inst_tups_single
+    inst_tups_single = [] # temporary variable to hold inst_tups_all components
+
+    # Split when encoutering a barrier
+    for i, inst_tup in enumerate(inst_tups):
+        if inst_tup[0].name == 'barrier': # append and start a new inst_tups_single
+            inst_tups_all.append(inst_tups_single)
+            inst_tups_single = []
+        elif i == len(inst_tups) - 1: # append and end
+            inst_tups_single.append(inst_tup)
+            inst_tups_all.append(inst_tups_single)
+        else: # just append
+            inst_tups_single.append(inst_tup)
+
+    return inst_tups_all
+
