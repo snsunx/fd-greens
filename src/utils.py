@@ -326,31 +326,6 @@ def initialize_hdf5(fname: str = 'lih', dsetname: str = 'eh') -> None:
         f.create_dataset(dsetname, shape=())
     f.close()
 
-def copy_circuit_with_ancilla(circ: QuantumCircuit,
-                              inds_anc: Sequence[int]) -> QuantumCircuit:
-    """Copies a circuit with specific indices for ancillas.
-
-    Args:
-        circ: The quantum circuit to be copied.
-        inds_anc: Indices of the ancilla qubits.
-
-    Returns:
-        The new quantum circuit with empty ancilla positions.
-    """
-    # Create a new circuit along with the quantum registers
-    n_sys = circ.num_qubits
-    n_anc = len(inds_anc)
-    n_qubits = n_sys + n_anc
-    inds_new = [i for i in range(n_qubits) if i not in inds_anc]
-    qreg_new = QuantumRegister(n_qubits, name='q')
-    circ_new = QuantumCircuit(qreg_new)
-
-    # Copy instructions from the ansatz circuit to the new circuit
-    for inst, qargs, cargs in circ.data:
-        qargs = [inds_new[q._index] for q in qargs]
-        circ_new.append(inst, qargs, cargs)
-    return circ_new
-
 def create_circuit_from_inst_tups(
         inst_tups: Iterable[InstructionTuple], 
         qreg: QuantumRegister = None,

@@ -11,7 +11,7 @@ from qiskit.extensions import CCXGate
 from qiskit.quantum_info import SparsePauliOp
 
 import params
-from utils import (get_unitary, copy_circuit_with_ancilla,
+from utils import (get_unitary,
                    create_circuit_from_inst_tups, split_circuit_across_barriers)
 
 QubitLike = Union[int, Qubit]
@@ -58,7 +58,7 @@ class CircuitConstructor:
             The new circuit with the creation/annihilation operator appended.
         """
         # Copy the circuit with empty ancilla positions
-        circ = copy_circuit_with_ancilla(self.ansatz, [0])
+        circ = self._copy_circuit_with_ancilla(self.ansatz, [0])
 
         # Apply the gates corresponding to the creation/annihilation terms
         # if self.add_barriers: circ.barrier()
@@ -87,7 +87,7 @@ class CircuitConstructor:
             The new circuit with the two creation/annihilation operators appended.
         """
         # Copy the circuit with empty ancilla positions
-        circ = copy_circuit_with_ancilla(self.ansatz, [0, 1])
+        circ = self._copy_circuit_with_ancilla(self.ansatz, [0, 1])
 
         # Apply the gates corresponding to the creation/annihilation terms
         # if self.add_barriers: circ.barrier()
@@ -109,7 +109,7 @@ class CircuitConstructor:
 
     def build_charge_diagonal(self, U_op: List[SparsePauliOp]) -> QuantumCircuit:
         """Constructs the circuit to calculate diagonal charge-charge transition elements."""
-        circ = copy_circuit_with_ancilla(self.ansatz, [0, 1])
+        circ = self._copy_circuit_with_ancilla(self.ansatz, [0, 1])
         
         # Apply the gates corresponding to a charge operator
         if self.add_barriers: circ.barrier()
@@ -124,6 +124,32 @@ class CircuitConstructor:
         circ.h([0, 1])
 
         return circ
+
+    def _copy_circuit_with_ancilla(self,
+                                   circ: QuantumCircuit,
+                                   inds_anc: Sequence[int]) -> QuantumCircuit:
+        """Copies a circuit with specific indices for ancillas.
+
+        Args:
+            circ: The quantum circuit to be copied.
+            inds_anc: Indices of the ancilla qubits.
+
+        Returns:
+            The new quantum circuit with empty ancilla positions.
+        """
+        # Create a new circuit along with the quantum registers
+        n_sys = circ.num_qubits
+        n_anc = len(inds_anc)
+        n_qubits = n_sys + n_anc
+        inds_new = [i for i in range(n_qubits) if i not in inds_anc]
+        qreg_new = QuantumRegister(n_qubits, name='q')
+        circ_new = QuantumCircuit(qreg_new)
+
+        # Copy instructions from the ansatz circuit to the new circuit
+        for inst, qargs, cargs in circ.data:
+            qargs = [inds_new[q._index] for q in qargs]
+            circ_new.append(inst, qargs, cargs)
+        return circ_new
 
     def _apply_controlled_gate(self,
                               circ: QuantumCircuit,
@@ -141,6 +167,7 @@ class CircuitConstructor:
         Raises:
             NotImplementedError: Control on more than two qubits is not implemented.
         """
+        # Sanity check
         assert set(ctrl).issubset({0, 1})
         assert len(op.coeffs) == 1
         coeff = op.coeffs[0]
@@ -229,6 +256,65 @@ class CircuitConstructor:
             if ctrl[i] == 0:
                 circ.x(i)
 
+    @staticmethod
+    def append_tomography_gates(circ: QuantumCircuit, 
+                                qubits: Iterable[QubitLike],
+                                label: Tuple[str],
+                                transpiled: bool = True,
+                                use_u3: bool = True,
+                                add_measurements: bool = True) -> QuantumCircuit:
+        """Constructs a circuit with the tomography gates appended.
+        
+        Args:
+            circ: The QuantumCircuit object.
+            qubits: The qubits to be tomographed.
+            label: The tomography states label.
+            transpiled: Whether the tomography circuit is transpiled.
+            use_u3: Whether to use U3 or Clifford gates for basis changes.
+            add_measurements: Whether to add measurement gates at the end.
+        
+        Returns:
+            A new circuit with tomography gates appended.
+        """
+        assert len(qubits) == len(label)
+        tomo_circ = circ.copy()
+        # n_qubits = len(circ.qregs[0])
+
+        for q, s in zip(qubits, label):
+            if s == 'x':
+                if use_u3:
+                    tomo_circ.u3(np.pi/2, 0, np.pi, q)
+                else:
+                    tomo_circ.h(q)
+            elif s == 'y':
+                if use_u3:
+                    tomo_circ.u3(np.pi/2, 0, np.pi/2, q)
+                else:
+                    tomo_circ.sdg(q)
+                    tomo_circ.h(q)
+
+        # if transpiled:
+        #     if n_qubits == 3:
+        #         tomo_circ = CircuitTranspiler.transpile(tomo_circ, basis_gates=params.basis_gates)
+        #     elif n_qubits == 4:
+        #         tomo_circ = CircuitTranspiler.transpile_last_section(tomo_circ)
+
+        # if add_measurements:
+        #     tomo_circ.barrier()
+        #     tomo_circ.add_register(ClassicalRegister(n_qubits))
+        #     tomo_circ.measure(range(n_qubits), range(n_qubits))
+        return tomo_circ
+
+    @staticmethod
+    def append_measurement_gates(circ: QuantumCircuit) -> QuantumCircuit:
+        """Appends measurement gates to a circuit."""
+        n_qubits = len(circ.qregs[0])
+        circ.barrier()
+        circ.add_register(ClassicalRegister(n_qubits))
+        circ.measure(range(n_qubits), range(n_qubits))
+        return circ
+
+'''
 def build_tomography_circuit(circ: QuantumCircuit, 
                              qubits: Sequence[int],
                              label: Tuple[str]) -> QuantumCircuit:
@@ -263,7 +349,7 @@ def build_tomography_circuit(circ: QuantumCircuit,
     elif n_qubits == 4:
         tomo_circ = transpile_last_section(tomo_circ)
     else:
-        raise ValueError
+        raise ValueError("There should be either 3 or 4 qubits in the circuit.")
 
     tomo_circ.barrier()
     tomo_circ.add_register(ClassicalRegister(n_qubits))
@@ -287,6 +373,7 @@ def transpile_last_section(circ: QuantumCircuit) -> QuantumCircuit:
     circ.barrier()
     circ += circ_last
     return circ
+'''
     
 class CircuitTranspiler:
     def __init__(self, basis_gates, swap_gates_pushed: bool = True):
@@ -484,7 +571,7 @@ class CircuitTranspiler:
                 break
 
         circ_last = create_circuit_from_inst_tups(inst_tups)
-        circ_last = push_swap_gates(circ_last, direcs=['right'])
+        circ_last = self.push_swap_gates(circ_last, direcs=['right'])
         circ_last = transpile(circ_last, basis_gates=['u3', 'swap'])
         circ.barrier()
         circ += circ_last
