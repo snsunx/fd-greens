@@ -23,7 +23,7 @@ class CircuitConstructor:
     def __init__(self,
                  ansatz: QuantumCircuit,
                  add_barriers: bool = True,
-                 ccx_inst_tups: Optional[Iterable[InstructionTuple]] = None
+                 ccx_inst_tups: Iterable[InstructionTuple] = [(CCXGate(), [0, 1, 2], [])]
                  ) -> None:
         """Creates a CircuitConstructor object.
 
@@ -34,17 +34,14 @@ class CircuitConstructor:
         """
         self.ansatz = ansatz.copy()
         self.add_barriers = add_barriers
-        if ccx_inst_tups is None:
-            self.ccx_inst_tups = [(CCXGate(), [0, 1, 2], [])]
-        else:
-            self.ccx_inst_tups = ccx_inst_tups
+        self.ccx_inst_tups = ccx_inst_tups
 
-            ccx_inst_tups_matrix = get_unitary(ccx_inst_tups)
-            self.ccx_angle = polar(ccx_inst_tups_matrix[3, 7])[1]
-            ccx_inst_tups_matrix[3, 7] /= np.exp(1j * self.ccx_angle)
-            ccx_inst_tups_matrix[7, 3] /= np.exp(1j * self.ccx_angle)
-            ccx_matrix = CCXGate().to_matrix()
-            assert np.allclose(ccx_inst_tups_matrix, ccx_matrix)
+        ccx_inst_tups_matrix = get_unitary(ccx_inst_tups)
+        self.ccx_angle = polar(ccx_inst_tups_matrix[3, 7])[1]
+        ccx_inst_tups_matrix[3, 7] /= np.exp(1j * self.ccx_angle)
+        ccx_inst_tups_matrix[7, 3] /= np.exp(1j * self.ccx_angle)
+        ccx_matrix = CCXGate().to_matrix()
+        assert np.allclose(ccx_inst_tups_matrix, ccx_matrix)
 
     def build_eh_diagonal(self, a_op: List[SparsePauliOp]) -> QuantumCircuit:
         """Constructs the circuit to calculate a diagonal transition amplitude.
