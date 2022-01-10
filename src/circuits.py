@@ -515,7 +515,8 @@ class CircuitTranspiler:
             else:
                 break
 
-        circ_last = create_circuit_from_inst_tups(inst_tups)
+        qreg = circ.qregs[0]
+        circ_last = create_circuit_from_inst_tups(inst_tups, qreg=qreg)
         circ_last = self.push_swap_gates(circ_last, direcs=['right'])
         # circ_last = transpile(circ_last, basis_gates=['u3', 'swap'])
         circ_last = self.transpile(circ_last)

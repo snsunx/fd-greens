@@ -18,6 +18,7 @@ from qiskit.result import Result, Counts
 QubitLike = Union[int, Qubit]
 ClbitLike = Union[int, Clbit]
 InstructionTuple = Tuple[Instruction, List[QubitLike], Optional[List[ClbitLike]]]
+QuantumCircuitLike = Union[QuantumCircuit, Iterable[InstructionTuple]]
 
 def get_statevector(circ: QuantumCircuit,
                     reverse: bool = False) -> np.ndarray:
@@ -51,9 +52,9 @@ def get_unitary(circ: Union[QuantumCircuit, Iterable[InstructionTuple]],
     Returns:
         The unitary array of the circuit.
     """
+    circ = remove_instructions(circ, ['barrier', 'measure'])
     if not isinstance(circ, QuantumCircuit): # instruction tuples
         circ = create_circuit_from_inst_tups(circ)
-    circ = remove_instructions(circ, ['barrier', 'measure'])
 
     backend = Aer.get_backend('unitary_simulator')
     result = execute(circ, backend).result()
@@ -63,7 +64,9 @@ def get_unitary(circ: Union[QuantumCircuit, Iterable[InstructionTuple]],
         unitary = reverse_qubit_order(unitary)
     return unitary
 
-def remove_instructions(circ: QuantumCircuit, instructions: Iterable[str]) -> QuantumCircuit:
+def remove_instructions(circ_like: QuantumCircuitLike,
+                        instructions: Iterable[str]
+                        ) -> QuantumCircuitLike:
     """Removes certain instructions in a circuit.
     
     Args:
@@ -73,21 +76,39 @@ def remove_instructions(circ: QuantumCircuit, instructions: Iterable[str]) -> Qu
     Returns:
         A new quantum circuit on which certain instructions are removed.
     """
-    inst_tups = circ.data.copy()
-    qreg = circ.qregs[0] if circ.qregs != [] else None
-    creg = circ.cregs[0] if circ.cregs != [] else None
+    if isinstance(circ_like, QuantumCircuit):
+        inst_tups = circ_like.data.copy()
+    else:
+        inst_tups = circ_like
+    qreg, creg = get_registers_in_inst_tups(inst_tups)
+    # qreg = circ.qregs[0] if circ.qregs != [] else None
+    # creg = circ.cregs[0] if circ.cregs != [] else None
 
     inst_tups_new = []
     for inst_tup in inst_tups:
         if inst_tup[0].name not in instructions:
             inst_tups_new.append(inst_tup)
-    circ_new = create_circuit_from_inst_tups(inst_tups_new, qreg=qreg, creg=creg)
-    return circ_new
+
+    if isinstance(circ_like, QuantumCircuit):
+        circ_new = create_circuit_from_inst_tups(inst_tups_new, qreg=qreg, creg=creg)
+        return circ_new
+    else:
+        return inst_tups_new
 
 def get_registers_in_inst_tups(inst_tups: Iterable[InstructionTuple]
                               ) -> Tuple[QuantumRegister, ClassicalRegister]:
-    """Returns the quantum and classical registers from instruction tuples. Qubits and 
-    classical bits can be specified either as Qubit/Clbit instances or integers."""
+    """Returns the quantum and classical registers from instruction tuples. 
+    
+    Qubits and classical bits can be specified either as Qubit/Clbit instances or as 
+    integers. If registers not found, return as None.
+
+    Args:
+        The instruction tuples from which qreg and creg are extracted.
+
+    Returns:
+        qreg: The quantum register in the instruction tuples.
+        creg: The classical register in the instruction tuples.
+    """
     qreg = None
     creg = None
     n_qubits = 0
@@ -98,46 +119,22 @@ def get_registers_in_inst_tups(inst_tups: Iterable[InstructionTuple]
         if qargs != []: 
             if isinstance(qargs[0], int): # int
                 if max(qargs) > n_qubits:
-                    n_qubits = max(qargs)
+                    n_qubits = max(qargs) + 1
             else: # Qubit
                 qreg = qargs[0]._register
         if cargs != []:
             if isinstance(cargs[0], int): # int
                 if max(cargs) > n_clbits:
-                    n_clbits = max(cargs)
+                    n_clbits = max(cargs) + 1
             else: # Clbit
                 creg = cargs[0]._register
 
-    if n_qubits > 0: # XXX: might not be a good criterion
-        qreg = QuantumRegister(n_qubits)
+    # If specified as int, create new qreg and creg
+    if n_qubits > 0:
+        qreg = QuantumRegister(n_qubits, name='q')
     if n_clbits > 0:
-        creg = ClassicalRegister(n_qubits)
+        creg = ClassicalRegister(n_qubits, name='c')
     return qreg, creg
-
-
-'''
-def data_to_circuit(data: Iterable[InstructionTuple], 
-                    n_qubits: int = None,
-                    remove_barr: bool = True
-                   ) -> QuantumCircuit:
-    """Converts circuit data to circuit."""
-    if remove_barr:
-        data = remove_barriers(data)
-    if n_qubits is None:
-        try:
-            n_qubits = max([max(x[1]) for x in data]) + 1
-        except:
-            n_qubits = max([max([y.index for y in x[1]]) for x in data]) + 1
-    circ_new = QuantumCircuit(n_qubits)
-    for inst_tup in data:
-        inst, qargs = inst_tup[:2]
-        try:
-            circ_new.append(inst, qargs)
-        except:
-            qargs = [q.index for q in qargs]
-            circ_new.append(inst, qargs)
-    return circ_new
-'''
 
 def reverse_qubit_order(arr: np.ndarray) -> np.ndarray:
     """Reverses qubit order in a 1D or 2D array.
@@ -391,58 +388,12 @@ def create_circuit_from_inst_tups(
     Returns:
     	A quantum circuit constructed from the instruction tuples.
     """
-    # if qreg is None:
-    #     # XXX: Check the following
-    #     if n_qubits is None:
-    #         try: # int
-    #             n_qubits = max([max(inst_tup[1]) for inst_tup in inst_tups]) + 1
-    #         except: # Qubit
-    #             n_qubits = max([max([q._index for q in inst_tup[1]]) for inst_tup in inst_tups]) + 1
-    #     qreg = QuantumRegister(n_qubits, name='q')
-    if qreg is None or creg is None:
+    if qreg is None and creg is None:
         qreg, creg = get_registers_in_inst_tups(inst_tups)
     regs = [reg for reg in [qreg, creg] if reg is not None]
     circ = QuantumCircuit(*regs)
-    
     for inst_tup in inst_tups:
-        try:
-            circ.append(*inst_tup)
-        except:
-            inst, qargs, cargs = inst_tup
-            qargs = [q._index for q in qargs]
-            circ.append(inst, qargs, cargs)
-    return circ
-
-def create_circuit_from_inst_tups1(
-        inst_tups: Iterable[InstructionTuple],
-        n_qubits: Optional[int] = None,
-        qreg: Optional[QuantumRegister] = None
-    ) -> QuantumCircuit:
-    """Creates a circuit from instruction tuples.
-    
-    Args:
-        inst_tups: Instruction tuples from which the circuit is constructed.
-        n_qubits: Number of qubits.
-        qreg: The quantum register.
-    
-    Returns:
-    	A quantum circuit constructed from the instruction tuples.
-    """
-    
-    n_qubits = 4 # XXX: 4 is hardcoded
-    # if n_qubits is None:
-    # n_qubits1 = max([max([y.index for y in x[1]]) for x in inst_tups]) + 1
-    # print("!!!!!!!!!!!!!!!!!!!!!!!!", n_qubits1)
-    if qreg is None:
-        qreg = QuantumRegister(n_qubits, name='q')
-    circ = QuantumCircuit(qreg)
-    for inst_tup in inst_tups:
-        try: # qubits are integers or same as qreg
-            circ.append(*inst_tup)
-        except: # qubits are not compatible
-            inst, qargs, cargs = inst_tup
-            qargs = [q._index for q in qargs]
-            circ.append(inst, qargs, cargs)
+        circ.append(*inst_tup)
     return circ
 
 def split_circuit_across_barriers(circ: QuantumCircuit) -> List[List[InstructionTuple]]:
