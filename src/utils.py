@@ -353,7 +353,7 @@ def create_circuit_from_inst_tups(
     return circ
 
 def split_circuit_across_barriers(circ: QuantumCircuit) -> List[List[InstructionTuple]]:
-    """Splits a circuit into instruction tuples between barriers."""
+    """Splits a circuit into instruction tuples across barriers."""
     inst_tups = circ.data.copy()
     inst_tups_all = [] # all inst_tups_single
     inst_tups_single = [] # temporary variable to hold inst_tups_all components
@@ -363,7 +363,7 @@ def split_circuit_across_barriers(circ: QuantumCircuit) -> List[List[Instruction
         if inst_tup[0].name == 'barrier': # append and start a new inst_tups_single
             inst_tups_all.append(inst_tups_single)
             inst_tups_single = []
-        elif i == len(inst_tups) - 1: # append and end
+        elif i == len(inst_tups) - 1: # append and stop
             inst_tups_single.append(inst_tup)
             inst_tups_all.append(inst_tups_single)
         else: # just append

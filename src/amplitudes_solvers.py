@@ -35,14 +35,14 @@ class EHAmplitudesSolver:
                  q_instance: QuantumInstance = get_quantum_instance('sv'),
                  h5fname: str = 'lih',
                  dsetname: str = 'eh',
-                 ccx_inst_tups: Optional[Iterable[InstructionTuple]] = params.ccx_inst_tups,
+                 ccx_inst_tups: Iterable[InstructionTuple] = params.ccx_inst_tups,
                  add_barriers: bool = False,
                  transpiled: bool = True,
                  swap_gates_pushed: bool = True) -> None:
         """Initializes an EHAmplitudesSolver object.
 
         Args:
-            h: The Hamiltonian object.
+            h: The Hamiltonian of the molecule.
             spin: A string indicating the spin in the tapered N+/-1 electron operators. 
                 Either 'euhd' (N+1 up, N-1 down) or 'edhu' (N+1 down, N-1 up).
             method: The method for extracting the transition amplitudes. Either 'energy' or 'tomo'.
@@ -77,9 +77,7 @@ class EHAmplitudesSolver:
             self.ansatz,
             add_barriers=add_barriers, 
             ccx_inst_tups=ccx_inst_tups)
-        self.circuit_transpiler = CircuitTranspiler(
-            basis_gates=params.basis_gates,
-            swap_gates_pushed=swap_gates_pushed)
+        self.circuit_transpiler = CircuitTranspiler(swap_gates_pushed=swap_gates_pushed)
 
     def _load_data_from_hdf5(self) -> None:
         """Loads ground state and N+/-1 electron states data from hdf5 file. """

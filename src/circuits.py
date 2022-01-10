@@ -5,34 +5,32 @@ from cmath import polar
 
 import numpy as np
 
-from qiskit import QuantumCircuit, QuantumRegister, ClassicalRegister, transpile
+from qiskit import QuantumCircuit, QuantumRegister, ClassicalRegister
 from qiskit.circuit import Instruction, Qubit, Clbit, Barrier
 from qiskit.extensions import CCXGate
 from qiskit.quantum_info import SparsePauliOp
 
 import params
-from utils import (get_unitary,
-                   create_circuit_from_inst_tups, split_circuit_across_barriers)
+from utils import (get_unitary, create_circuit_from_inst_tups, split_circuit_across_barriers)
 
 QubitLike = Union[int, Qubit]
 ClbitLike = Union[int, Clbit]
 InstructionTuple = Tuple[Instruction, List[QubitLike], Optional[List[ClbitLike]]]
 
 class CircuitConstructor:
-    """A class to construct circuits for calculating Green's function."""
+    """A class to construct circuits for calculating transition amplitudes in Green's functions."""
 
     def __init__(self,
                  ansatz: QuantumCircuit,
                  add_barriers: bool = True,
-                 ccx_inst_tups: Optional[Iterable[InstructionTuple]] = None) -> None:
+                 ccx_inst_tups: Optional[Iterable[InstructionTuple]] = None
+                 ) -> None:
         """Creates a CircuitConstructor object.
 
         Args:
             ansatz: The ansatz quantum circuit containing the ground state.
             add_barriers: Whether to add barriers to the circuit.
-            transpiled: Whether the circuits are transpiled.
-            swap_gates_pushed: Whether the SWAP gates are pushed.
-            ccx_inst_tups: The circuit data for customized CCX gate.
+            ccx_inst_tups: The instruction tuples for customized CCX gate.
         """
         self.ansatz = ansatz.copy()
         self.add_barriers = add_barriers
@@ -107,7 +105,7 @@ class CircuitConstructor:
 
         return circ
 
-    def build_charge_diagonal(self, U_op: List[SparsePauliOp]) -> QuantumCircuit:
+    def build_charge_diagonal(self, U_op: SparsePauliOp) -> QuantumCircuit:
         """Constructs the circuit to calculate diagonal charge-charge transition elements."""
         circ = self._copy_circuit_with_ancilla(self.ansatz, [0, 1])
         
@@ -137,6 +135,8 @@ class CircuitConstructor:
         Returns:
             The new quantum circuit with empty ancilla positions.
         """
+        # TODO: Now this function looks like a static method. Write it more like an instance method.
+
         # Create a new circuit along with the quantum registers
         n_sys = circ.num_qubits
         n_anc = len(inds_anc)
@@ -260,25 +260,20 @@ class CircuitConstructor:
     def append_tomography_gates(circ: QuantumCircuit, 
                                 qubits: Iterable[QubitLike],
                                 label: Tuple[str],
-                                transpiled: bool = True,
-                                use_u3: bool = True,
-                                add_measurements: bool = True) -> QuantumCircuit:
-        """Constructs a circuit with the tomography gates appended.
-        
+                                use_u3: bool = True) -> QuantumCircuit:
+        """Appends tomography gates to a circuit.
+
         Args:
-            circ: The QuantumCircuit object.
+            circ: The circuit to which tomography gates are to be appended.
             qubits: The qubits to be tomographed.
             label: The tomography states label.
-            transpiled: Whether the tomography circuit is transpiled.
-            use_u3: Whether to use U3 or Clifford gates for basis changes.
-            add_measurements: Whether to add measurement gates at the end.
+            use_u3: Whether to use U3 rather than Clifford gates for basis change.
         
         Returns:
             A new circuit with tomography gates appended.
         """
         assert len(qubits) == len(label)
         tomo_circ = circ.copy()
-        # n_qubits = len(circ.qregs[0])
 
         for q, s in zip(qubits, label):
             if s == 'x':
@@ -292,93 +287,47 @@ class CircuitConstructor:
                 else:
                     tomo_circ.sdg(q)
                     tomo_circ.h(q)
-
-        # if transpiled:
-        #     if n_qubits == 3:
-        #         tomo_circ = CircuitTranspiler.transpile(tomo_circ, basis_gates=params.basis_gates)
-        #     elif n_qubits == 4:
-        #         tomo_circ = CircuitTranspiler.transpile_last_section(tomo_circ)
-
-        # if add_measurements:
-        #     tomo_circ.barrier()
-        #     tomo_circ.add_register(ClassicalRegister(n_qubits))
-        #     tomo_circ.measure(range(n_qubits), range(n_qubits))
         return tomo_circ
 
     @staticmethod
     def append_measurement_gates(circ: QuantumCircuit) -> QuantumCircuit:
-        """Appends measurement gates to a circuit."""
+        """Appends measurement gates to a circuit.
+        
+        Args:
+            The circuit to which measurement gates are to be appended.
+            
+        Returns:
+            A new circuit with measurement gates appended.
+        """
         n_qubits = len(circ.qregs[0])
         circ.barrier()
         circ.add_register(ClassicalRegister(n_qubits))
         circ.measure(range(n_qubits), range(n_qubits))
         return circ
-
-'''
-def build_tomography_circuit(circ: QuantumCircuit, 
-                             qubits: Sequence[int],
-                             label: Tuple[str]) -> QuantumCircuit:
-    """Constructs a circuit with the tomography gates appended.
-    
-    Args:
-        circ: The QuantumCircuit object.
-        qubits: The qubits to be tomographed.
-        label: The tomography states label.
-    
-    Returns:
-        A new circuit with tomography gates appended.
-    """
-    assert len(qubits) == len(label)
-    tomo_circ = circ.copy()
-    n_qubits = len(circ.qregs[0])
-    # creg = ClassicalRegister(len(qubits))
-    # tomo_circ.add_register(creg)
-
-    for q, s in zip(qubits, label):
-        if s == 'x':
-            # tomo_circ.h(q)
-            tomo_circ.u3(np.pi/2, 0, np.pi, q)
-        elif s == 'y':
-            # tomo_circ.sdg(q)
-            # tomo_circ.h(q)
-            tomo_circ.u3(np.pi/2, 0, np.pi/2, q)
-        # tomo_circ.measure(q, q)
-
-    if n_qubits == 3:
-        tomo_circ = transpile(tomo_circ, basis_gates=params.basis_gates)
-    elif n_qubits == 4:
-        tomo_circ = transpile_last_section(tomo_circ)
-    else:
-        raise ValueError("There should be either 3 or 4 qubits in the circuit.")
-
-    tomo_circ.barrier()
-    tomo_circ.add_register(ClassicalRegister(n_qubits))
-    tomo_circ.measure(range(n_qubits), range(n_qubits))
-    return tomo_circ
-
-def transpile_last_section(circ: QuantumCircuit) -> QuantumCircuit:
-    """Transpiles the last section of the circuit."""
-    inst_tups = []
-    while True:
-        inst_tup = circ.data.pop()
-        if inst_tup[0].name != 'barrier':
-            inst_tups.insert(0, inst_tup)
-        else:
-            break
-    
-    import qiskit
-    circ_last = create_circuit_from_inst_tups(inst_tups)
-    circ_last = CircuitTranspiler.push_swap_gates(circ_last, direcs=['right'])
-    circ_last = qiskit.transpile(circ_last, basis_gates=['u3', 'swap'])
-    circ.barrier()
-    circ += circ_last
-    return circ
-'''
     
 class CircuitTranspiler:
-    def __init__(self, basis_gates, swap_gates_pushed: bool = True):
+    """A class for circuit transpilation."""
+
+    def __init__(self, 
+                 basis_gates: Sequence[str] = params.basis_gates,
+                 swap_gates_pushed: bool = True,
+                 swap_direcs_round1: List[List[str]] = params.swap_direcs_round1,
+                 swap_direcs_round2: List[List[str]] = params.swap_direcs_round2
+                ) -> None:
+        """Initializes a CircuitTranspiler object.
+        
+        Args:
+            basis_gates: A sequence of strings representing the basis gates used in transpilation.
+            swap_gates_pushed: Whether SWAP gates are pushed.
+            swap_direcs_round1: Strings indicating to which direction each SWAP gate is pushed 
+                in the first round.
+            swap_direcs_round2: Strings indicating to which direction each SWAP gate is pushed 
+                in the second round.
+        """
         self.basis_gates = basis_gates
         self.swap_gates_pushed = swap_gates_pushed
+        self.swap_direcs_round1 = swap_direcs_round1
+        self.swap_direcs_round2 = swap_direcs_round2
 
     def transpile(self, circ: QuantumCircuit) -> QuantumCircuit:
         """Transpiles a circuit using Qiskit's built-in transpile function."""
@@ -390,21 +339,21 @@ class CircuitTranspiler:
         """Transpiles a circuit across barriers."""
         inst_tups_all = split_circuit_across_barriers(circ)
 
-        def remove_first_swap_gate(circ_):
+        def remove_first_swap_gate(circ_) -> None:
             """Removes the first SWAP gate in a circuit."""
             for i, inst_tup in enumerate(circ_.data):
                 if inst_tup[0].name == 'swap':
                     del circ_.data[i]
                     break
 
-        def swap_cp_and_u3(circ_):
+        def swap_cp_and_u3(circ_) -> None:
             """Swaps the positions of CPhase and U3 gates."""
             tmp = circ_.data[6]
             circ_.data[6] = circ_.data[5]
             circ_.data[5] = circ_.data[4]
             circ_.data[4] = tmp
 
-        # Transpile except for three-qubit gate
+        # Transpile except for three-qubit gates
         qreg = circ.qregs[0]
         circ_new = QuantumCircuit(qreg)
         count = 0
@@ -422,14 +371,14 @@ class CircuitTranspiler:
                     # First round pushes do not push through two-qubit gates
                     circ_single = self.push_swap_gates(
                         circ_single, 
-                        direcs=params.swap_direcs_round1[count].copy(),
+                        direcs=self.swap_direcs_round1[count].copy(),
                         qreg=qreg)
                     circ_single = self.combine_swap_gates(circ_single)
 
                     # Second-round pushes push through two-qubit gates
                     circ_single = self.push_swap_gates(
                         circ_single, 
-                        direcs=params.swap_direcs_round2[count].copy(),
+                        direcs=self.swap_direcs_round2[count].copy(),
                         qreg=qreg, 
                         push_through_2q=True)
 
@@ -458,7 +407,7 @@ class CircuitTranspiler:
         
         Args:
             circ: The quantum circuit on which SWAP gates are pushed.
-            direcs: The directions to which each swap gate is pushed.
+            direcs: The directions to which each SWAP gate is pushed.
             qreg: The quantum register of the circuit.
             push_through_2q: Whether to push through two-qubit gates.
 
@@ -501,8 +450,7 @@ class CircuitTranspiler:
             direc = direcs.pop(0)
             delete_pos = i + int(direc == 'left') # if direc == 'left', delete at i + 1
 
-            # Push the SWAP gate to the left or the right. First insert the new gate
-            # then delete the old gate
+            # Push the SWAP gate to the left or the right. Insertion done before removal
             j = i
             while j != 0 or j != n_inst_tups - 1:
                 insert_pos = j + int(direc == 'left') # if direc == left, insert at right side
@@ -572,7 +520,8 @@ class CircuitTranspiler:
 
         circ_last = create_circuit_from_inst_tups(inst_tups)
         circ_last = self.push_swap_gates(circ_last, direcs=['right'])
-        circ_last = transpile(circ_last, basis_gates=['u3', 'swap'])
+        # circ_last = transpile(circ_last, basis_gates=['u3', 'swap'])
+        circ_last = self.transpile(circ_last)
         circ.barrier()
         circ += circ_last
         return circ
