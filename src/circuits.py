@@ -376,7 +376,6 @@ class CircuitTranspiler:
                         direcs=self.swap_direcs_round2[count].copy(),
                         qreg=qreg, 
                         push_through_2q=True)
-
                     # Final transpilation
                     circ_single = self.transpile(circ_single)
 
@@ -410,10 +409,8 @@ class CircuitTranspiler:
             A new circuit on which SWAP gates are pushed.
         """
         assert set(direcs).issubset({'left', 'right', None})
-        if direcs == []:
-            return circ
-        if qreg is None:
-            qreg = circ.qregs[0]
+        if direcs == []: return circ
+        if qreg is None: qreg = circ.qregs[0]
         n_qubits = len(qreg)
         
         # Prepend and append barriers for easy processing
@@ -446,7 +443,7 @@ class CircuitTranspiler:
             delete_pos = i + int(direc == 'left') # if direc == 'left', delete at i + 1
 
             # Push the SWAP gate to the left or the right. Insertion done before removal
-            j = i
+            j = i + (-1) ** (direc == 'left')
             while j != 0 or j != n_inst_tups - 1:
                 insert_pos = j + int(direc == 'left') # if direc == left, insert at right side
                 inst_, qargs_, cargs_ = inst_tups[j]
@@ -474,7 +471,7 @@ class CircuitTranspiler:
                         # Insert here and exit the loop
                         inst_tups.insert(insert_pos, inst_tup)
                         break
-                j += (-1) ** (direc == 'left') # j += 1 for right, j += -1 for left 
+                j += (-1) ** (direc == 'left') # j += 1 for right, j += -1 for left
             del inst_tups[delete_pos]
 
         # Remove the barriers and create new circuit
