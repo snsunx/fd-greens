@@ -22,8 +22,7 @@ class GroundStateSolver:
                  ansatz_func: AnsatzFunction = build_ansatz_gs,
                  init_params: Sequence[float] = [-5., 0., 0., 5.],
                  q_instance: QuantumInstance = get_quantum_instance('sv'),
-                 h5fname: str = 'lih',
-                 dsetname: str = 'eh') -> None:
+                 h5fname: str = 'lih') -> None:
         """Initializes a GroudStateSolver object.
         
         Args:
@@ -41,7 +40,6 @@ class GroundStateSolver:
         self.q_instance = q_instance
 
         self.h5fname = h5fname + '.hdf5'
-        self.dsetname = dsetname
 
         self.energy = None
         self.ansatz = None
@@ -72,11 +70,10 @@ class GroundStateSolver:
     def save_data(self) -> None:
         """Saves ground state energy and ground state ansatz to hdf5 file."""
         h5file = h5py.File(self.h5fname, 'r+')
-        # dset = h5file[self.dsetname]
 
         h5file['gs/energy'] = self.energy
         h5file['gs/ansatz'] = self.ansatz.qasm()
-
+        
         h5file.close()
 
     def run(self, method: str = 'vqe') -> None:

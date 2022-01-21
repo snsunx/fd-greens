@@ -25,8 +25,7 @@ class EHStatesSolver:
                  ansatz_func_h: AnsatzFunction = build_ansatz_h,
                  q_instance: QuantumInstance = get_quantum_instance('sv'),
                  spin: str = 'edhu',
-                 h5fname: str = 'lih', 
-                 dsetname: str = 'eh') -> None:
+                 h5fname: str = 'lih') -> None:
         """Initializes an EHStatesSolver object.
         
         Args:
@@ -54,7 +53,6 @@ class EHStatesSolver:
         self.ansatz_func_h = ansatz_func_h
         self.q_instance = q_instance
         self.h5fname = h5fname + '.hdf5'
-        self.dsetname = dsetname
 
         self.energies_e = None
         self.energies_h = None
@@ -99,17 +97,12 @@ class EHStatesSolver:
     def save_data(self) -> None:
         """Saves (N+/-1)-electron energies and states to hdf5 file."""
         h5file = h5py.File(self.h5fname, 'r+')
+
         h5file['eh/energies_e'] = self.energies_e
         h5file['eh/energies_h'] = self.energies_h
         h5file['eh/states_e'] = self.states_e
         h5file['eh/states_h'] = self.states_h
         
-        # dset = h5file[self.dsetname]
-        # dset.attrs['energies_e'] = self.energies_e
-        # dset.attrs['energies_h'] = self.energies_h
-        # dset.attrs['states_e'] = self.states_e
-        # dset.attrs['states_h'] = self.states_h
-
         h5file.close()
 
     def run(self, method: str = 'vqe') -> None:
