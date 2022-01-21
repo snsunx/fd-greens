@@ -1,6 +1,6 @@
 """Number states solver module."""
 
-from typing import Union, Tuple, List, Iterable, Optional, Sequence, Callable
+from typing import Union, Tuple, List, Iterable, Optional, Sequence
 from itertools import combinations
 
 import h5py
@@ -8,22 +8,18 @@ import numpy as np
 from scipy.sparse.data import _data_matrix
 
 from qiskit import *
-from qiskit import Aer, QuantumCircuit, QuantumRegister, ClassicalRegister
 from qiskit.utils import QuantumInstance
-from qiskit.opflow import PauliSumOp
 
 from openfermion.linalg import get_sparse_operator
 from openfermion.ops.operators.qubit_operator import QubitOperator
 
 from hamiltonians import MolecularHamiltonian
-from operators import transform_4q_hamiltonian, transform_4q_pauli
+from operators import transform_4q_pauli
 import params
-from params import HARTREE_TO_EV
-from utils import get_statevector, measure_operator
 from ground_state_solvers import vqe_minimize
 from ansatze import AnsatzFunction
 from utils import state_tomography
-from qubit_indices import QubitIndices, transform_4q_indices
+from qubit_indices import transform_4q_indices
 
 def get_number_state_indices(n_orb: int,
                              n_elec: int,
@@ -224,8 +220,8 @@ class ExcitedStatesSolver:
         """
         self.h = h
         self.h_op = self.h.qiskit_op
-        self.h_op_s = transform_4q_hamiltonian(self.h_op, init_state=[1, 1])
-        self.h_op_t = transform_4q_hamiltonian(self.h_op, init_state=[0, 0])
+        self.h_op_s = transform_4q_pauli(self.h_op, init_state=[1, 1])
+        self.h_op_t = transform_4q_pauli(self.h_op, init_state=[0, 0])
         self.h_mat_s = self.h_op_s.to_matrix()
         self.h_mat_t = self.h_op_t.to_matrix()
 

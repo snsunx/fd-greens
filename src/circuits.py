@@ -37,11 +37,14 @@ class CircuitConstructor:
         self.ccx_inst_tups = ccx_inst_tups
 
         ccx_inst_tups_matrix = get_unitary(ccx_inst_tups)
-        self.ccx_angle = polar(ccx_inst_tups_matrix[3, 7])[1]
-        ccx_inst_tups_matrix[3, 7] /= np.exp(1j * self.ccx_angle)
-        ccx_inst_tups_matrix[7, 3] /= np.exp(1j * self.ccx_angle)
         ccx_matrix = CCXGate().to_matrix()
         assert np.allclose(ccx_inst_tups_matrix, ccx_matrix)
+
+        # TODO: Forgot why need this part. Probably can remove
+        self.ccx_angle = 0
+        # self.ccx_angle = polar(ccx_inst_tups_matrix[3, 7])[1]
+        # ccx_inst_tups_matrix[3, 7] /= np.exp(1j * self.ccx_angle)
+        # ccx_inst_tups_matrix[7, 3] /= np.exp(1j * self.ccx_angle)
 
     def build_eh_diagonal(self, a_op: List[SparsePauliOp]) -> QuantumCircuit:
         """Constructs the circuit to calculate a diagonal transition amplitude.
@@ -53,7 +56,7 @@ class CircuitConstructor:
             The new circuit with the creation/annihilation operator appended.
         """
         # Copy the circuit with empty ancilla positions
-        circ = self._copy_circuit_with_ancilla(self.ansatz, [0])
+        circ = self._copy_circuit_with_ancilla([0])
 
         # Apply the gates corresponding to the creation/annihilation terms
         # if self.add_barriers: circ.barrier()
@@ -82,7 +85,7 @@ class CircuitConstructor:
             The new circuit with the two creation/annihilation operators appended.
         """
         # Copy the circuit with empty ancilla positions
-        circ = self._copy_circuit_with_ancilla(self.ansatz, [0, 1])
+        circ = self._copy_circuit_with_ancilla([0, 1])
 
         # Apply the gates corresponding to the creation/annihilation terms
         # if self.add_barriers: circ.barrier()
@@ -103,8 +106,8 @@ class CircuitConstructor:
         return circ
 
     def build_charge_diagonal(self, U_op: SparsePauliOp) -> QuantumCircuit:
-        """Constructs the circuit to calculate diagonal charge-charge transition elements."""
-        circ = self._copy_circuit_with_ancilla(self.ansatz, [0, 1])
+        """Constructs the circuit to calculate diagonal charge-charge transition amplitudes."""
+        circ = self._copy_circuit_with_ancilla([0, 1])
         
         # Apply the gates corresponding to a charge operator
         if self.add_barriers: circ.barrier()
@@ -120,22 +123,17 @@ class CircuitConstructor:
 
         return circ
 
-    def _copy_circuit_with_ancilla(self,
-                                   circ: QuantumCircuit,
-                                   inds_anc: Sequence[int]) -> QuantumCircuit:
+    def _copy_circuit_with_ancilla(self, inds_anc: Sequence[int]) -> QuantumCircuit:
         """Copies a circuit with specific indices for ancillas.
 
         Args:
-            circ: The quantum circuit to be copied.
-            inds_anc: Indices of the ancilla qubits.
+            Indices of the ancilla qubits.
 
         Returns:
             The new quantum circuit with empty ancilla positions.
         """
-        # TODO: Now this function looks like a static method. Write it more like an instance method.
-
         # Create a new circuit along with the quantum registers
-        n_sys = circ.num_qubits
+        n_sys = self.ansatz.num_qubits
         n_anc = len(inds_anc)
         n_qubits = n_sys + n_anc
         inds_new = [i for i in range(n_qubits) if i not in inds_anc]
@@ -143,7 +141,7 @@ class CircuitConstructor:
         circ_new = QuantumCircuit(qreg_new)
 
         # Copy instructions from the ansatz circuit to the new circuit
-        for inst, qargs, cargs in circ.data:
+        for inst, qargs, cargs in self.ansatz.data:
             qargs = [inds_new[q._index] for q in qargs]
             circ_new.append(inst, qargs, cargs)
         return circ_new

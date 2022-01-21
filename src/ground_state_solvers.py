@@ -203,8 +203,8 @@ class GroundStateSolver:
 
         h5file.close()
 
-    def run(self, method='vqe'):
-        """Runs the N+/-1 electron states calculation."""
+    def run(self, method: str = 'vqe') -> None:
+        """Runs the ground state calculation."""
         if method == 'exact':
             self.run_exact()
         elif method == 'vqe':

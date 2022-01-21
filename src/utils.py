@@ -20,19 +20,22 @@ ClbitLike = Union[int, Clbit]
 InstructionTuple = Tuple[Instruction, List[QubitLike], Optional[List[ClbitLike]]]
 QuantumCircuitLike = Union[QuantumCircuit, Iterable[InstructionTuple]]
 
-def get_statevector(circ: QuantumCircuit,
-                    reverse: bool = False) -> np.ndarray:
+# Functions to obtain physical quantites
+def get_statevector(circ_like: QuantumCircuitLike, reverse: bool = False) -> np.ndarray:
     """Returns the statevector of a quantum circuit.
 
     Args:
-        circ: The circuit on which the state is to be obtained.
+        circ_like: The circuit or instruction tuples on which the state is to be obtained.
         reverse: Whether qubit order is reversed.
 
     Returns:
         The statevector array of the circuit.
     """
-    # if isinstance(circ, list): # Instruction tuples
-    #     circ = data_to_circuit(circ)
+    if isinstance(circ_like, QuantumCircuit):
+        circ = circ_like
+    else: # instruction tuples
+        circ = create_circuit_from_inst_tups(circ_like)
+
     backend = Aer.get_backend('statevector_simulator')
     job = execute(circ, backend)
     result = job.result()
@@ -41,36 +44,59 @@ def get_statevector(circ: QuantumCircuit,
         statevector = reverse_qubit_order(statevector)
     return statevector
 
-def get_unitary(circ: Union[QuantumCircuit, Iterable[InstructionTuple]],
-                reverse: bool = False) -> np.ndarray:
+def get_unitary(circ_like: QuantumCircuitLike, reverse: bool = False) -> np.ndarray:
     """Returns the unitary of a quantum circuit.
 
     Args:
-        circ: The circuit on which the unitary is to be obtained.
+        circ_like: The circuit or instruction tuples on which the unitary is to be obtained.
         reverse: Whether qubit order is reversed.
 
     Returns:
         The unitary array of the circuit.
     """
-    circ = remove_instructions(circ, ['barrier', 'measure'])
-    if not isinstance(circ, QuantumCircuit): # instruction tuples
-        circ = create_circuit_from_inst_tups(circ)
+    circ_like = remove_instructions(circ_like, ['barrier', 'measure'])
+    if isinstance(circ_like, QuantumCircuit):
+        circ = circ_like
+    else: # instruction tuples
+        circ = create_circuit_from_inst_tups(circ_like)
 
     backend = Aer.get_backend('unitary_simulator')
     result = execute(circ, backend).result()
     unitary = result.get_unitary()
-    # TODO: Should deprecate the following?
     if reverse:
         unitary = reverse_qubit_order(unitary)
     return unitary
 
-def remove_instructions(circ_like: QuantumCircuitLike,
+def get_overlap(state1: np.ndarray, state2: np.ndarray) -> float:
+    """Returns the overlap of two states in either statevector or density matrix form.
+    
+    Args:
+        state1: A 1D or 2D numpy array corresponding to the first state.
+        state2: A 1D or 2D numpy array corresponding to the second state.
+
+    Returns:
+        The overlap between the two states.
+    """
+    if len(state1.shape) == 1 and len(state2.shape) == 1:
+        return abs(state1.conj() @ state2) ** 2
+    
+    elif len(state1.shape) == 1 and len(state2.shape) == 2:
+        return (state1.conj() @ state2 @ state1).real
+    
+    elif len(state1.shape) == 2 and len(state2.shape) == 1:
+        return (state2.conj() @ state1 @ state2).real
+
+    elif len(state1.shape) == 2 and len(state2.shape) == 2:
+        return np.trace(state1.conj().T @ state2).real
+
+# Circuit utility functions
+def remove_instructions_in_circuit(circ_like: QuantumCircuitLike,
                         instructions: Iterable[str]
                         ) -> QuantumCircuitLike:
     """Removes certain instructions in a circuit.
     
     Args:
-        circ: The quantum circuit on which certain instructions are removed.
+        circ_like: The circuit or instruction tuples on which certain instructions are removed.
         instructions: An iterable of strings representing instruction names.
         
     Returns:
@@ -94,9 +120,10 @@ def remove_instructions(circ_like: QuantumCircuitLike,
         return circ_new
     else:
         return inst_tups_new
+remove_instructions = remove_instructions_in_circuit
 
-def get_registers_in_inst_tups(inst_tups: Iterable[InstructionTuple]
-                              ) -> Tuple[QuantumRegister, ClassicalRegister]:
+def get_registers_in_circuit(circ_like: QuantumCircuitLike
+                            ) -> Tuple[QuantumRegister, ClassicalRegister]:
     """Returns the quantum and classical registers from instruction tuples. 
     
     Qubits and classical bits can be specified either as Qubit/Clbit instances or as 
@@ -109,11 +136,15 @@ def get_registers_in_inst_tups(inst_tups: Iterable[InstructionTuple]
         qreg: The quantum register in the instruction tuples.
         creg: The classical register in the instruction tuples.
     """
+    if isinstance(circ_like, QuantumCircuit):
+        inst_tups = circ_like.data.copy()
+    else:
+        inst_tups = circ_like
+
     qreg = None
     creg = None
     n_qubits = 0
     n_clbits = 0
-
     for inst_tup in inst_tups:
         _, qargs, cargs = inst_tup
         if qargs != []: 
@@ -135,7 +166,51 @@ def get_registers_in_inst_tups(inst_tups: Iterable[InstructionTuple]
     if n_clbits > 0:
         creg = ClassicalRegister(n_qubits, name='c')
     return qreg, creg
+get_registers_in_inst_tups = get_registers_in_circuit
 
+def create_circuit_from_inst_tups(
+        inst_tups: Iterable[InstructionTuple],
+        qreg: Optional[QuantumRegister] = None,
+        creg: Optional[ClassicalRegister] = None) -> QuantumCircuit:
+    """Creates a circuit from instruction tuples.
+    
+    Args:
+        inst_tups: Instruction tuples from which the circuit is to be constructed.
+        n_qubits: Number of qubits.
+        qreg: The quantum register.
+        
+    Returns:
+    	A quantum circuit constructed from the instruction tuples.
+    """
+    if qreg is None and creg is None:
+        qreg, creg = get_registers_in_inst_tups(inst_tups)
+    regs = [reg for reg in [qreg, creg] if reg is not None]
+    circ = QuantumCircuit(*regs)
+    for inst_tup in inst_tups:
+        circ.append(*inst_tup)
+    return circ
+
+def split_circuit_across_barriers(circ: QuantumCircuit) -> List[List[InstructionTuple]]:
+    """Splits a circuit into instruction tuples across barriers."""
+    inst_tups = circ.data.copy()
+    inst_tups_all = [] # all inst_tups_single
+    inst_tups_single = [] # temporary variable to hold inst_tups_all components
+
+    # Split when encoutering a barrier
+    for i, inst_tup in enumerate(inst_tups):
+        if inst_tup[0].name == 'barrier': # append and start a new inst_tups_single
+            inst_tups_all.append(inst_tups_single)
+            inst_tups_single = []
+        elif i == len(inst_tups) - 1: # append and stop
+            inst_tups_single.append(inst_tup)
+            inst_tups_all.append(inst_tups_single)
+        else: # just append
+            inst_tups_single.append(inst_tup)
+
+    return inst_tups_all
+
+
+# Other utility functions
 def reverse_qubit_order(arr: np.ndarray) -> np.ndarray:
     """Reverses qubit order in a 1D or 2D array.
 
@@ -192,27 +267,6 @@ def state_tomography(circ: QuantumCircuit,
     qst_fitter = StateTomographyFitter(result, qst_circs)
     rho_fit = qst_fitter.fit(method='lstsq')
     return rho_fit
-
-def get_lih_hamiltonian(r: float) -> MolecularHamiltonian:
-    """Returns the HOMO-LUMO LiH Hamiltonian with bond length r."""
-    hamiltonian = MolecularHamiltonian(
-        [['Li', (0, 0, 0)], ['H', (0, 0, r)]], 'sto3g', 
-        occ_inds=[0], act_inds=[1, 2])
-    return hamiltonian
-
-def get_quantum_instance(type_str: str) -> QuantumInstance:
-    """Returns the QuantumInstance from type string."""
-    if type_str == 'sv':
-        q_instance = QuantumInstance(Aer.get_backend('statevector_simulator'))
-    elif type_str == 'qasm':
-        q_instance = QuantumInstance(
-            Aer.get_backend('qasm_simulator', shots=10000),
-            shots=10000)
-    elif type_str == 'noisy':
-        q_instance = QuantumInstance(
-            Aer.get_backend('qasm_simulator', shots=10000, noise_model_name='ibmq_jakarta'),
-            shots=10000)
-    return q_instance
 
 def solve_energy_probabilities(a: np.ndarray, b: np.ndarray) -> np.ndarray:
     A = np.array([[1, 1], [a[0], a[1]]])
@@ -293,33 +347,13 @@ def measure_operator(circ: QuantumCircuit,
                 value -= coeff * val / shots
     return value
 
-def get_overlap(state1: np.ndarray, state2: np.ndarray) -> float:
-    """Returns the overlap of two states in either statevector or density matrix form.
-    
-    Args:
-        state1: A 1D or 2D numpy array corresponding to the first state.
-        state2: A 1D or 2D numpy array corresponding to the second state.
-
-    Returns:
-        The overlap between the two states.
-    """
-    if len(state1.shape) == 1 and len(state2.shape) == 1:
-        return abs(state1.conj() @ state2) ** 2
-    
-    elif len(state1.shape) == 1 and len(state2.shape) == 2:
-        return (state1.conj() @ state2 @ state1).real
-    
-    elif len(state1.shape) == 2 and len(state2.shape) == 1:
-        return (state2.conj() @ state1 @ state2).real
-
-    elif len(state1.shape) == 2 and len(state2.shape) == 2:
-        return np.trace(state1.conj().T @ state2).real
-
+# Counts utility functions
 def get_counts(result: Result) -> Mapping[str, int]:
     """Returns the counts from a Result object with default set to 0."""
     counts = defaultdict(lambda: 0)
     counts.update(result.get_counts())
     return counts
+get_counts_default_0 = get_counts
 
 def counts_dict_to_arr(counts: Counts, n_qubits: int = None) -> np.ndarray:
     """Converts counts from dictionary form to array form."""
@@ -362,6 +396,7 @@ def split_counts_on_anc(counts: Union[Counts, np.ndarray], n_anc: int = 1) -> Co
         counts11 /= np.sum(counts11)
         return counts00, counts01, counts10, counts11
 
+# HDF5 utility function
 def initialize_hdf5(fname: str = 'lih', dsetname: str = 'eh') -> None:
     """Creates the hdf5 file and dataset if they do not exist."""
     fname += '.hdf5'
@@ -373,48 +408,6 @@ def initialize_hdf5(fname: str = 'lih', dsetname: str = 'eh') -> None:
         f.create_dataset(dsetname, shape=())
     f.close()
 
-
-def create_circuit_from_inst_tups(
-        inst_tups: Iterable[InstructionTuple],
-        qreg: Optional[QuantumRegister] = None,
-        creg: Optional[ClassicalRegister] = None) -> QuantumCircuit:
-    """Creates a circuit from instruction tuples.
-    
-    Args:
-        inst_tups: Instruction tuples from which the circuit is to be constructed.
-        n_qubits: Number of qubits.
-        qreg: The quantum register.
-        
-    Returns:
-    	A quantum circuit constructed from the instruction tuples.
-    """
-    if qreg is None and creg is None:
-        qreg, creg = get_registers_in_inst_tups(inst_tups)
-    regs = [reg for reg in [qreg, creg] if reg is not None]
-    circ = QuantumCircuit(*regs)
-    for inst_tup in inst_tups:
-        circ.append(*inst_tup)
-    return circ
-
-def split_circuit_across_barriers(circ: QuantumCircuit) -> List[List[InstructionTuple]]:
-    """Splits a circuit into instruction tuples across barriers."""
-    inst_tups = circ.data.copy()
-    inst_tups_all = [] # all inst_tups_single
-    inst_tups_single = [] # temporary variable to hold inst_tups_all components
-
-    # Split when encoutering a barrier
-    for i, inst_tup in enumerate(inst_tups):
-        if inst_tup[0].name == 'barrier': # append and start a new inst_tups_single
-            inst_tups_all.append(inst_tups_single)
-            inst_tups_single = []
-        elif i == len(inst_tups) - 1: # append and stop
-            inst_tups_single.append(inst_tup)
-            inst_tups_all.append(inst_tups_single)
-        else: # just append
-            inst_tups_single.append(inst_tup)
-
-    return inst_tups_all
-
 '''
 def check_ccx_inst_tups(inst_tups):
     """Checks whether the instruction tuples are equivalent to CCX up to a phase."""
@@ -425,3 +418,25 @@ def check_ccx_inst_tups(inst_tups):
     ccx_matrix = CCXGate().to_matrix()
     assert np.allclose(ccx_inst_tups_matrix, ccx_matrix)
 '''
+
+# Helper functions
+def get_lih_hamiltonian(r: float) -> MolecularHamiltonian:
+    """Returns the HOMO-LUMO LiH Hamiltonian with bond length r."""
+    hamiltonian = MolecularHamiltonian(
+        [['Li', (0, 0, 0)], ['H', (0, 0, r)]], 'sto3g', 
+        occ_inds=[0], act_inds=[1, 2])
+    return hamiltonian
+
+def get_quantum_instance(type_str: str) -> QuantumInstance:
+    """Returns the QuantumInstance from type string."""
+    if type_str == 'sv':
+        q_instance = QuantumInstance(Aer.get_backend('statevector_simulator'))
+    elif type_str == 'qasm':
+        q_instance = QuantumInstance(
+            Aer.get_backend('qasm_simulator', shots=10000),
+            shots=10000)
+    elif type_str == 'noisy':
+        q_instance = QuantumInstance(
+            Aer.get_backend('qasm_simulator', shots=10000, noise_model_name='ibmq_jakarta'),
+            shots=10000)
+    return q_instance

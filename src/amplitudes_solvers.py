@@ -1,6 +1,6 @@
 """Amplitudes solver module."""
 
-from typing import Optional, Iterable
+from typing import Iterable
 from functools import partial
 
 import itertools
@@ -14,14 +14,12 @@ from qiskit.extensions import CCXGate
 
 import params
 from hamiltonians import MolecularHamiltonian
-from number_states_solvers import measure_operator, EHStatesSolver, ExcitedStatesSolver
+from ground_state_solvers import GroundStateSolver
+from number_states_solvers import ExcitedStatesSolver
 from operators import SecondQuantizedOperators, ChargeOperators, transform_4q_pauli
 from qubit_indices import QubitIndices, transform_4q_indices
 from circuits import (CircuitConstructor, CircuitTranspiler, InstructionTuple)
-from utils import (solve_energy_probabilities, get_overlap,
-                   get_counts, get_quantum_instance, counts_arr_to_dict, counts_dict_to_arr, 
-                   split_counts_on_anc)
-from ground_state_solvers import GroundStateSolver
+from utils import (get_overlap, get_quantum_instance, counts_dict_to_arr, split_counts_on_anc)
 
 np.set_printoptions(precision=6)
 
@@ -72,7 +70,7 @@ class EHAmplitudesSolver:
         self._initialize_operators()
 
         # Circuit constructor and transpiler
-        self.transpiled = transpiled # XXX: can assume transpiled in any case?
+        self.transpiled = transpiled
         self.circuit_constructor = CircuitConstructor(
             self.ansatz,
             add_barriers=add_barriers, 
@@ -80,7 +78,7 @@ class EHAmplitudesSolver:
         self.circuit_transpiler = CircuitTranspiler(swap_gates_pushed=swap_gates_pushed)
 
     def _load_data_from_hdf5(self) -> None:
-        """Loads ground state and N+/-1 electron states data from hdf5 file. """
+        """Loads ground state and (N+/-1)-electron states data from hdf5 file. """
         h5file = h5py.File(self.h5fname, 'r+')
         dset = h5file[self.dsetname]
 
@@ -402,8 +400,8 @@ class EHAmplitudesSolver:
 
     def run(self, method=None) -> None:
         """Runs the functions to compute transition amplitudes."""
-        if method is not None:
-            self.method = method
+        if method is not None: self.method = method
+
         self.build_diagonal()
         self.build_off_diagonal()
 
@@ -416,7 +414,7 @@ class EHAmplitudesSolver:
 
 
 class ExcitedAmplitudesSolver:
-    """A class to calculate transition amplitudes"""
+    """A class to calculate transition amplitudes."""
 
     def __init__(self,
                  h: MolecularHamiltonian,
