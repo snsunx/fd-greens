@@ -99,21 +99,23 @@ class EHStatesSolver:
     def save_data(self) -> None:
         """Saves (N+/-1)-electron energies and states to hdf5 file."""
         h5file = h5py.File(self.h5fname, 'r+')
-        dset = h5file[self.dsetname]
-
-        dset.attrs['energies_e'] = self.energies_e
-        dset.attrs['energies_h'] = self.energies_h
-        dset.attrs['states_e'] = self.states_e
-        dset.attrs['states_h'] = self.states_h
+        h5file['eh/energies_e'] = self.energies_e
+        h5file['eh/energies_h'] = self.energies_h
+        h5file['eh/states_e'] = self.states_e
+        h5file['eh/states_h'] = self.states_h
+        
+        # dset = h5file[self.dsetname]
+        # dset.attrs['energies_e'] = self.energies_e
+        # dset.attrs['energies_h'] = self.energies_h
+        # dset.attrs['states_e'] = self.states_e
+        # dset.attrs['states_h'] = self.states_h
 
         h5file.close()
 
     def run(self, method: str = 'vqe') -> None:
         """Runs the (N+/-1)-electron states calculation."""
-        if method == 'exact':
-            self.run_exact()
-        elif method == 'vqe':
-            self.run_vqe()
+        if method == 'exact': self.run_exact()
+        elif method == 'vqe': self.run_vqe()
         self.save_data()
 
 class ExcitedStatesSolver:

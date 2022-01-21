@@ -72,19 +72,17 @@ class GroundStateSolver:
     def save_data(self) -> None:
         """Saves ground state energy and ground state ansatz to hdf5 file."""
         h5file = h5py.File(self.h5fname, 'r+')
-        dset = h5file[self.dsetname]
+        # dset = h5file[self.dsetname]
 
-        dset.attrs['energy_gs'] = self.energy
-        dset.attrs['ansatz'] = self.ansatz.qasm()
+        h5file['gs/energy'] = self.energy
+        h5file['gs/ansatz'] = self.ansatz.qasm()
 
         h5file.close()
 
     def run(self, method: str = 'vqe') -> None:
         """Runs the ground state calculation."""
-        if method == 'exact':
-            self.run_exact()
-        elif method == 'vqe':
-            self.run_vqe()
+        if method == 'exact': self.run_exact()
+        elif method == 'vqe': self.run_vqe()
         self.save_data()
 
 def vqe_minimize(h_op: PauliSumOp,

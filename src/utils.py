@@ -404,8 +404,11 @@ def initialize_hdf5(fname: str = 'lih', dsetname: str = 'eh') -> None:
         f = h5py.File(fname, 'r+')
     else:
         f = h5py.File(fname, 'w')
-    if dsetname not in f.keys(): 
-        f.create_dataset(dsetname, shape=())
+    for gname in ['gs', 'eh', 'amp', 'circ0', 'circ1', 'circ01']:
+        if gname in f.keys(): del f[gname]
+        f.create_group(gname)
+    # if dsetname not in f.keys(): 
+    #     f.create_dataset(dsetname, shape=())
     f.close()
 
 '''

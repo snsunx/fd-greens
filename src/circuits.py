@@ -334,14 +334,14 @@ class CircuitTranspiler:
         """Transpiles a circuit across barriers."""
         inst_tups_all = split_circuit_across_barriers(circ)
 
-        def remove_first_swap_gate(circ_) -> None:
+        def remove_first_swap_gate(circ_):
             """Removes the first SWAP gate in a circuit."""
             for i, inst_tup in enumerate(circ_.data):
                 if inst_tup[0].name == 'swap':
                     del circ_.data[i]
                     break
 
-        def swap_cp_and_u3(circ_) -> None:
+        def swap_cp_and_u3(circ_):
             """Swaps the positions of CPhase and U3 gates."""
             tmp = circ_.data[6]
             circ_.data[6] = circ_.data[5]
