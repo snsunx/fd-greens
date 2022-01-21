@@ -17,7 +17,8 @@ from params import HARTREE_TO_EV
 GeometryType = List[Tuple[str, Sequence[Union[int, float]]]]
 
 class MolecularHamiltonian:
-    """A class to hold a molecular Hamiltonian."""
+    """A class to store a molecular Hamiltonian."""
+
     def __init__(self,
                  geometry: GeometryType,
                  basis: str,
@@ -76,7 +77,7 @@ class MolecularHamiltonian:
         if build_ops:
             self.build()
 
-    def _build_openfermion_operator(self):
+    def _build_openfermion_operator(self) -> None:
         """A private method for constructing the Openfermion qubit operator
         in QubitOperator form. Called by the `build` function."""
         # if self.occ_inds is None and self.act_inds is None:
@@ -89,7 +90,7 @@ class MolecularHamiltonian:
         qubit_op.compress()
         self._openfermion_op = qubit_op
 
-    def _build_qiskit_operator(self):
+    def _build_qiskit_operator(self) -> None:
         """A private method for constructing the Qiskit qubit operator
         in PauliSumOp form. Called by the `build` function."""
         if self._openfermion_op is None:
@@ -120,7 +121,7 @@ class MolecularHamiltonian:
 
     def build(self,
               build_openfermion_op: bool = True,
-              build_qiskit_op: bool = True):
+              build_qiskit_op: bool = True) -> None:
         """Constructs both the Openfermion and the Qiskit qubit operators.
 
         Args:
@@ -150,7 +151,7 @@ class MolecularHamiltonian:
         """Converts the molecular Hamiltonian to an array form.
 
         Args:
-            array_type: A string indicating the type of the array.
+            A string indicating the type of the output array.
         """
         assert array_type in ['sparse', 'matrix', 'array', 'ndarray']
         if self._openfermion_op is None:
