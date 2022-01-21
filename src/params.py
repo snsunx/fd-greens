@@ -20,16 +20,17 @@ swap_direcs_round1 = [['left', 'left'], ['right', 'right', 'left'], ['right', 'l
 swap_direcs_round2 = [['left', None], [None, None, None], [None, None], [], [None]]
 swap_direcs_tomo = {(0, 1): [[None, None], [None, None, None], [None, None], [], ['right']]}
 
-# Qubit indices
+# Qubit indices for Green's functions
 eu_inds = QubitIndices(['1101', '0111'])
 ed_inds = QubitIndices(['1110', '1011'])
 hu_inds = QubitIndices(['0100', '0001'])
 hd_inds = QubitIndices(['1000', '0010'])
 
+# Qubit indices for charge-charge correlation functions
 singlet_inds = QubitIndices(['0011', '0110', '1001', '1100'])
 triplet_inds = QubitIndices(['0101', '1010'])
 
-# CCX instruction
+# CCX gate decomposition
 ccx_inst_tups = [(SwapGate(), [1, 2], []), 
                  (XGate(), [0], []),
                  (XGate(), [2], []),
@@ -39,7 +40,6 @@ ccx_inst_tups = [(SwapGate(), [1, 2], []),
                  (XGate(), [0], []),
                  (XGate(), [2], []),
                  (SwapGate(), [1, 2], [])]
-
 
 # Basis matrix for tomography
 basis_matrix = []

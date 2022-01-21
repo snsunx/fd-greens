@@ -1,6 +1,6 @@
 """Operator utility functions"""
 
-from typing import Callable, Tuple, Dict, Union, Sequence, Optional, List
+from typing import Callable, Tuple, Dict, Union, Sequence, Optional
 import numpy as np
 from qiskit import *
 from qiskit.quantum_info import PauliTable, SparsePauliOp
