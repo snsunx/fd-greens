@@ -7,10 +7,11 @@ import numpy as np
 
 from qiskit import QuantumCircuit, QuantumRegister, ClassicalRegister
 from qiskit.circuit import Instruction, Qubit, Clbit, Barrier
-from qiskit.extensions import CCXGate
+from qiskit.extensions import CCXGate, XGate, HGate, RXGate, CXGate, RZGate, CPhaseGate, CZGate, PhaseGate
 from qiskit.quantum_info import SparsePauliOp
 
 import params
+from params import CCZGate
 from utils import (get_unitary, create_circuit_from_inst_tups, split_circuit_across_barriers)
 
 QubitLike = Union[int, Qubit]
@@ -23,7 +24,8 @@ class CircuitConstructor:
     def __init__(self,
                  ansatz: QuantumCircuit,
                  add_barriers: bool = True,
-                 ccx_inst_tups: Iterable[InstructionTuple] = [(CCXGate(), [0, 1, 2], [])]
+                 ccx_inst_tups: Iterable[InstructionTuple] = [(CCXGate(), [0, 1, 2], [])],
+                 anc: Sequence[int] = [0, 1]
                  ) -> None:
         """Creates a CircuitConstructor object.
 
@@ -31,10 +33,13 @@ class CircuitConstructor:
             ansatz: The ansatz quantum circuit containing the ground state.
             add_barriers: Whether to add barriers to the circuit.
             ccx_inst_tups: The instruction tuples for customized CCX gate.
+            anc: Indices of the ancilla qubits in the off-diagonal circuits.
         """
         self.ansatz = ansatz.copy()
         self.add_barriers = add_barriers
         self.ccx_inst_tups = ccx_inst_tups
+        self.anc = anc
+        self.sys = [i for i in range(4) if i not in anc]
 
         ccx_inst_tups_matrix = get_unitary(ccx_inst_tups)
         ccx_matrix = CCXGate().to_matrix()
@@ -59,7 +64,7 @@ class CircuitConstructor:
         circ = self._copy_circuit_with_ancilla([0])
 
         # Apply the gates corresponding to the creation/annihilation terms
-        # if self.add_barriers: circ.barrier()
+        if self.add_barriers: circ.barrier()
         circ.h(0)
         if self.add_barriers: circ.barrier()
         self._apply_controlled_gate(circ, a_op[0], ctrl=[0], n_anc=1)
@@ -67,8 +72,37 @@ class CircuitConstructor:
         self._apply_controlled_gate(circ, a_op[1], ctrl=[1], n_anc=1)
         if self.add_barriers: circ.barrier()
         circ.h(0)
-        # if self.add_barriers: circ.barrier()
+        if self.add_barriers: circ.barrier()
 
+        return circ
+
+    def build_eh_diagonal1(self, a_op: SparsePauliOp) -> QuantumCircuit:
+        """Constructs the circuit to calculate a diagonal transition amplitude.
+
+        Args:
+            The creation/annihilation operator of the circuit.
+
+        Returns:
+            The new circuit with the creation/annihilation operator added.
+        """
+        assert len(a_op) == 2
+
+        # Copy the ansatz circuit into the system qubit indices
+        inst_tups = self.ansatz.data.copy()
+        for i, (inst, qargs, cargs) in enumerate(inst_tups):
+            qargs = [q._index + 1 for q in qargs]
+            inst_tups[i] = (inst, qargs, cargs)
+        
+        # Main part of the circuit to add creation/annihilation operator
+        inst_tups += [(HGate(), [0], [])]
+        if self.add_barriers: inst_tups += [(Barrier(3), range(3), [])]
+        inst_tups += self._get_controlled_gate_inst_tups(a_op[0], ctrl_states=[0])
+        if self.add_barriers: inst_tups += [(Barrier(3), range(3), [])]
+        inst_tups += self._get_controlled_gate_inst_tups(a_op[1], ctrl_states=[1])
+        if self.add_barriers: inst_tups += [(Barrier(3), range(3), [])]
+        inst_tups += [(HGate(), [0], [])]
+
+        circ = create_circuit_from_inst_tups(inst_tups)
         return circ
 
     def build_eh_off_diagonal(self,
@@ -82,7 +116,7 @@ class CircuitConstructor:
             a_op_n: The second creation/annihilation operator of the circuit.
 
         Returns:
-            The new circuit with the two creation/annihilation operators appended.
+            The new circuit with the two creation/annihilation operators added.
         """
         # Copy the circuit with empty ancilla positions
         circ = self._copy_circuit_with_ancilla([0, 1])
@@ -90,7 +124,7 @@ class CircuitConstructor:
         # Apply the gates corresponding to the creation/annihilation terms
         # if self.add_barriers: circ.barrier()
         circ.h([0, 1])
-        #if self.add_barriers: circ.barrier()
+        if self.add_barriers: circ.barrier()
         self._apply_controlled_gate(circ, a_op_m[0], ctrl=(0, 0), n_anc=2)
         if self.add_barriers: circ.barrier()
         self._apply_controlled_gate(circ, a_op_m[1], ctrl=(1, 0), n_anc=2)
@@ -100,9 +134,52 @@ class CircuitConstructor:
         self._apply_controlled_gate(circ, a_op_n[0], ctrl=(0, 1), n_anc=2)
         if self.add_barriers: circ.barrier()
         self._apply_controlled_gate(circ, a_op_n[1], ctrl=(1, 1), n_anc=2)
-        #if self.add_barriers: circ.barrier()
+        if self.add_barriers: circ.barrier()
         circ.h([0, 1])
 
+        return circ
+
+    def build_eh_off_diagonal1(self,
+                               a_op_m: SparsePauliOp,
+                               a_op_n: SparsePauliOp
+                               ) -> QuantumCircuit:
+        """Constructs the circuit to calculate off-diagonal transition amplitudes.
+
+        Args:
+            a_op_m: The first creation/annihilation operator of the circuit.
+            a_op_n: The second creation/annihilation operator of the circuit.
+
+        Returns:
+            The new circuit with the two creation/annihilation operators appended.
+        """
+        assert len(a_op_m) == len(a_op_n) == 2
+
+        # Copy the ansatz circuit into the system qubit indices
+        inst_tups = self.ansatz.data.copy()
+        for i, (inst, qargs, cargs) in enumerate(inst_tups):
+            qargs = [self.sys[q._index] for q in qargs]
+            inst_tups[i] = (inst, qargs, cargs)
+
+        # Add the first creation/annihilation operator
+        inst_tups += [(HGate(), [self.anc[0]], []), (HGate(), [self.anc[1]], [])]
+        if self.add_barriers: inst_tups += [(Barrier(4), range(4), [])]
+        inst_tups += self._get_controlled_gate_inst_tups(a_op_m[0], ctrl_states=[0, 0])
+        if self.add_barriers: inst_tups += [(Barrier(4), range(4), [])]
+        inst_tups += self._get_controlled_gate_inst_tups(a_op_m[1], ctrl_states=[1, 0])
+        if self.add_barriers: inst_tups += [(Barrier(4), range(4), [])]
+
+        # Add the phase gate in the middle
+        inst_tups += [(RZGate(np.pi/4), [self.anc[1]], [])]
+        if self.add_barriers: inst_tups += [(Barrier(4), range(4), [])]
+
+        # Add the second creation/annihilation operator
+        inst_tups += self._get_controlled_gate_inst_tups(a_op_n[0], ctrl_states=[0, 1])
+        if self.add_barriers: inst_tups += [(Barrier(4), range(4), [])]
+        inst_tups += self._get_controlled_gate_inst_tups(a_op_n[1], ctrl_states=[1, 1])
+        if self.add_barriers: inst_tups += [(Barrier(4), range(4), [])]
+        inst_tups += [(HGate(), [self.anc[0]], []), (HGate(), [self.anc[1]], [])]
+        
+        circ = create_circuit_from_inst_tups(inst_tups)
         return circ
 
     def build_charge_diagonal(self, U_op: SparsePauliOp) -> QuantumCircuit:
@@ -123,7 +200,7 @@ class CircuitConstructor:
 
         return circ
 
-    def _copy_circuit_with_ancilla(self, inds_anc: Sequence[int]) -> QuantumCircuit:
+    def _copy_circuit_with_ancilla(self, anc: Sequence[int]) -> QuantumCircuit:
         """Copies a circuit with specific indices for ancillas.
 
         Args:
@@ -134,9 +211,9 @@ class CircuitConstructor:
         """
         # Create a new circuit along with the quantum registers
         n_sys = self.ansatz.num_qubits
-        n_anc = len(inds_anc)
+        n_anc = len(anc)
         n_qubits = n_sys + n_anc
-        inds_new = [i for i in range(n_qubits) if i not in inds_anc]
+        inds_new = [i for i in range(n_qubits) if i not in anc]
         qreg_new = QuantumRegister(n_qubits, name='q')
         circ_new = QuantumCircuit(qreg_new)
 
@@ -149,7 +226,7 @@ class CircuitConstructor:
     def _apply_controlled_gate(self,
                               circ: QuantumCircuit,
                               op: SparsePauliOp,
-                              ctrl: int = [1],
+                              ctrl: Sequence[int] = [1],
                               n_anc: int = 1) -> None:
         """Applies a controlled-U gate to a quantum circuit.
 
@@ -164,6 +241,7 @@ class CircuitConstructor:
         """
         # Sanity check
         assert set(ctrl).issubset({0, 1})
+        assert len(ctrl) <= 2
         assert len(op.coeffs) == 1
         coeff = op.coeffs[0]
         label = op.table.to_labels()[0]
@@ -204,16 +282,15 @@ class CircuitConstructor:
         if ind_min != 0:
             circ.swap(n_anc, ind_min + n_anc)
         
-        # Apply single controlled gate
-        if len(ctrl) == 1:
+        # Apply the controlled gate
+        if len(ctrl) == 1: # single-controlled gate
             if coeff != 1:
                 circ.p(angle, 0)
             if set(list(label)) == {'I'}:
                 pass
             else:
                 circ.cz(0, n_anc)
-        # Apply double controlled gate
-        elif len(ctrl) == 2:
+        elif len(ctrl) == 2: # double-controlled gate
             if coeff != 1:
                 circ.cp(angle, 0, 1)
             if set(list(label)) == {'I'}:
@@ -250,6 +327,84 @@ class CircuitConstructor:
         for i in range(len(ctrl)):
             if ctrl[i] == 0:
                 circ.x(i)
+
+    def _get_controlled_gate_inst_tups(
+            self,
+            sparse_pauli_op: SparsePauliOp,
+            ctrl_states: Sequence[int] = [1]) -> Sequence[InstructionTuple]:
+        """Applies a controlled-U gate to a quantum circuit.
+
+        Args:
+            sparse_pauli_op: The operator from which the controlled gate is constructed.
+            ctrl_states: The qubit states on which the cU gate is controlled on.
+        """
+        assert len(sparse_pauli_op) == 1
+        coeff = sparse_pauli_op.coeffs[0]
+        label = sparse_pauli_op.table.to_labels()[0][::-1]
+        _, angle = polar(coeff)
+
+        # Find the indices and the pivot
+        if len(ctrl_states) == 1:
+            cnot_inds = [i + 1 for i in range(len(label)) if label[i] != 'I']
+            pivot = min(cnot_inds)
+            cnot_inds.remove(pivot)
+            x_inds = [0] if ctrl_states == [0] else []
+            h_inds = [i + 1 for i in range(len(label)) if label[i] == 'X']
+            rx_inds = [i + 1 for i in range(len(label)) if label[i] == 'Y']
+        else:
+            cnot_inds = [self.sys[i] for i in range(len(label)) if label[i] != 'I']
+            pivot = min(cnot_inds)
+            cnot_inds.remove(pivot)
+            x_inds = [self.anc[i] for i in range(len(ctrl_states)) if ctrl_states[i] == 0]
+            h_inds = [self.sys[i] for i in range(len(label)) if label[i] == 'X']
+            rx_inds = [self.sys[i] for i in range(len(label)) if label[i] == 'Y']
+
+        # print('pivot =', pivot)
+        # print('cnot_inds =', cnot_inds)
+
+        # Apply the controlled gate
+        inst_tups = []
+        if len(ctrl_states) == 1:
+            if coeff != 1:
+                inst_tups += [(PhaseGate(angle), [0], [])]
+            if set(label) != {'I'}:
+                inst_tups += [(CZGate(), [0, pivot], [])]
+        elif len(ctrl_states) == 2:
+            if coeff != 1:
+                inst_tups += [(CPhaseGate(angle), [self.anc[0], self.anc[1]], [])]
+            if set(label) == {'I'}:
+                if self.ccx_angle != 0:
+                    inst_tups += [(CPhaseGate(self.ccx_angle), [self.anc[0], self.anc[1]], [])]
+            else:
+                inst_tups += [(CCZGate, [self.anc[0], self.anc[1], pivot], [])]
+
+        # Wrap CNOT gates around for multi-qubit Pauli string
+        # Note that these CNOTs are applied in the reverse way
+        for ind in cnot_inds:
+            cx_inst_tups = [(HGate(), [pivot], []),
+                            (CZGate(), [pivot, ind], []),
+                            (HGate(), [pivot], [])]
+            inst_tups = cx_inst_tups + inst_tups
+            inst_tups = inst_tups + cx_inst_tups
+            pivot = ind
+
+        # Wrap X gates around for control on 0
+        for ind in x_inds:
+            inst_tups = [(XGate(), [ind], [])] + inst_tups
+            inst_tups = inst_tups + [(XGate(), [ind], [])]
+
+        # Wrap H gates around for Pauli X
+        for ind in h_inds:
+            inst_tups = [(HGate(), [ind], [])] + inst_tups
+            inst_tups = inst_tups + [(HGate(), [ind], [])]
+
+        # Wrap Rx gates around for Pauli Y
+        for ind in rx_inds:
+            inst_tups = [(RXGate(np.pi/2), [ind], [])] + inst_tups
+            inst_tups = inst_tups + [(RXGate(-np.pi/2), [ind], [])]
+
+        return inst_tups
+
 
     @staticmethod
     def append_tomography_gates(circ: QuantumCircuit, 

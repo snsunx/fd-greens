@@ -141,30 +141,34 @@ def get_registers_in_circuit(circ_like: QuantumCircuitLike
     else:
         inst_tups = circ_like
 
-    qreg = None
-    creg = None
     n_qubits = 0
     n_clbits = 0
     for inst_tup in inst_tups:
         _, qargs, cargs = inst_tup
         if qargs != []: 
             if isinstance(qargs[0], int): # int
-                if max(qargs) > n_qubits:
-                    n_qubits = max(qargs) + 1
+                max_q = max(qargs)
             else: # Qubit
-                qreg = qargs[0]._register
+                max_q = max([q._index for q in qargs])
+            if max_q + 1 > n_qubits:
+                n_qubits = max_q + 1
         if cargs != []:
             if isinstance(cargs[0], int): # int
-                if max(cargs) > n_clbits:
-                    n_clbits = max(cargs) + 1
-            else: # Clbit
-                creg = cargs[0]._register
+                max_c = max(cargs)
+            else: # Qubit
+                max_c = max([c._index for c in cargs])
+            if max_c + 1 > n_clbits: 
+                n_clbits = max_c + 1
 
     # If specified as int, create new qreg and creg
     if n_qubits > 0:
         qreg = QuantumRegister(n_qubits, name='q')
+    else:
+        qreg = None
     if n_clbits > 0:
-        creg = ClassicalRegister(n_qubits, name='c')
+        creg = ClassicalRegister(n_clbits, name='c')
+    else:
+        creg = None
     return qreg, creg
 get_registers_in_inst_tups = get_registers_in_circuit
 

@@ -2,7 +2,7 @@ import itertools
 import numpy as np
 
 from qiskit.circuit import Barrier
-from qiskit.extensions import SwapGate, CCXGate, XGate
+from qiskit.extensions import SwapGate, CCXGate, XGate, HGate, UnitaryGate
 
 from qubit_indices import QubitIndices
 
@@ -34,12 +34,34 @@ triplet_inds = QubitIndices(['0101', '1010'])
 ccx_inst_tups = [(SwapGate(), [1, 2], []), 
                  (XGate(), [0], []),
                  (XGate(), [2], []),
+                 # (Barrier(4), [0, 1, 2, 3], []), 
+                 (CCXGate(ctrl_state='00'), [0, 2, 1], []),
+                 # (Barrier(4), [0, 1, 2, 3], []),
+                 (XGate(), [0], []),
+                 (XGate(), [2], []),
+                 (SwapGate(), [1, 2], [])]
+
+cxc_inst_tups = [(XGate(), [0], []),
+                 (XGate(), [2], []),
                  (Barrier(4), [0, 1, 2, 3], []), 
                  (CCXGate(ctrl_state='00'), [0, 2, 1], []),
                  (Barrier(4), [0, 1, 2, 3], []),
                  (XGate(), [0], []),
-                 (XGate(), [2], []),
-                 (SwapGate(), [1, 2], [])]
+                 (XGate(), [2], [])]
+
+CCZGate = UnitaryGate(np.array([[1, 0], [0, -1]])).control(2, ctrl_state='11')
+
+def get_ccz_inst_tups(ctrl1, ctrl2, targ):
+    inst_tups = [(XGate(), [ctrl1], []), 
+                 (XGate(), [ctrl2], []),
+                 (HGate(), [targ], []),
+                 (Barrier(4), range(4), []), 
+                 (CCXGate(ctrl_state='00'), [ctrl1, ctrl2, targ], []),
+                 (Barrier(4), range(4), []),
+                 (XGate(), [ctrl1], []), 
+                 (XGate(), [ctrl2], []),
+                 (HGate(), [targ], [])]
+    return inst_tups
 
 # Basis matrix for tomography
 basis_matrix = []

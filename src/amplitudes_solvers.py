@@ -136,10 +136,17 @@ class EHAmplitudesSolver:
         elif self.spin == 'edhu': # e down h up
             self.qiskit_op_spin = transform_4q_pauli(self.qiskit_op, init_state=[1, 0])
 
+        print('qiskit_op_spin =', self.qiskit_op_spin)
+
         # Create Pauli dictionaries for the transformed and tapered operators
         second_q_ops = SecondQuantizedOperators(self.n_elec)
         second_q_ops.transform(partial(transform_4q_pauli, init_state=[1, 1]))
         self.pauli_dict = second_q_ops.get_op_dict_all()
+
+        print('pauli_dict =', self.pauli_dict)
+        for key, val in self.pauli_dict.items():
+            print(key, val[0].table, val[1].table)
+        exit()
 
     def build_diagonal(self) -> None:
         """Constructs diagonal transition amplitude circuits."""
