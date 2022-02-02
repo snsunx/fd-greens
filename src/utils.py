@@ -190,8 +190,12 @@ def create_circuit_from_inst_tups(
         qreg, creg = get_registers_in_inst_tups(inst_tups)
     regs = [reg for reg in [qreg, creg] if reg is not None]
     circ = QuantumCircuit(*regs)
-    for inst_tup in inst_tups:
-        circ.append(*inst_tup)
+    for inst, qargs, cargs in inst_tups:
+        try:
+            qargs = [q._index for q in qargs]
+        except:
+            pass
+        circ.append(inst, qargs, cargs)
     return circ
 
 def split_circuit_across_barriers(circ: QuantumCircuit) -> List[List[InstructionTuple]]:

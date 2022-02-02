@@ -34,9 +34,9 @@ class SecondQuantizedOperators:
         dic = {}
         for i in range(self.n_qubits):
             if i % 2 == 0:
-                dic[(i // 2, 'u')] = [self.sparse_pauli_op[i], self.sparse_pauli_op[i + self.n_qubits]]
+                dic[(i // 2, 'u')] = self.sparse_pauli_op[i] + self.sparse_pauli_op[i + self.n_qubits]
             else:
-                dic[(i // 2, 'd')] = [self.sparse_pauli_op[i], self.sparse_pauli_op[i + self.n_qubits]]
+                dic[(i // 2, 'd')] = self.sparse_pauli_op[i] + self.sparse_pauli_op[i + self.n_qubits]
         return dic
 
 class ChargeOperators:

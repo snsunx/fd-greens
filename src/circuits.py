@@ -4,15 +4,16 @@ from typing import Tuple, Optional, Iterable, Union, Sequence, List
 from cmath import polar
 
 import numpy as np
+from permutation import Permutation
 
 from qiskit import QuantumCircuit, QuantumRegister, ClassicalRegister
 from qiskit.circuit import Instruction, Qubit, Clbit, Barrier
-from qiskit.extensions import CCXGate, XGate, HGate, RXGate, CXGate, RZGate, CPhaseGate, CZGate, PhaseGate
+from qiskit.extensions import CCXGate, XGate, HGate, RXGate, CXGate, RZGate, CPhaseGate, CZGate, PhaseGate, SwapGate, SGate
 from qiskit.quantum_info import SparsePauliOp
 
 import params
 from params import CCZGate
-from utils import (get_unitary, create_circuit_from_inst_tups, split_circuit_across_barriers)
+from utils import (get_unitary, get_registers_in_inst_tups, create_circuit_from_inst_tups, remove_instructions_in_circuit, split_circuit_across_barriers)
 
 QubitLike = Union[int, Qubit]
 ClbitLike = Union[int, Clbit]
@@ -51,7 +52,7 @@ class CircuitConstructor:
         # ccx_inst_tups_matrix[3, 7] /= np.exp(1j * self.ccx_angle)
         # ccx_inst_tups_matrix[7, 3] /= np.exp(1j * self.ccx_angle)
 
-    def build_eh_diagonal(self, a_op: List[SparsePauliOp]) -> QuantumCircuit:
+    def build_eh_diagonal(self, a_op: SparsePauliOp) -> QuantumCircuit:
         """Constructs the circuit to calculate a diagonal transition amplitude.
 
         Args:
@@ -76,7 +77,7 @@ class CircuitConstructor:
 
         return circ
 
-    def build_eh_diagonal1(self, a_op: SparsePauliOp) -> QuantumCircuit:
+    def build_eh_diagonal_new(self, a_op: SparsePauliOp) -> QuantumCircuit:
         """Constructs the circuit to calculate a diagonal transition amplitude.
 
         Args:
@@ -106,8 +107,8 @@ class CircuitConstructor:
         return circ
 
     def build_eh_off_diagonal(self,
-                              a_op_m: List[SparsePauliOp],
-                              a_op_n: List[SparsePauliOp]
+                              a_op_m: SparsePauliOp,
+                              a_op_n: SparsePauliOp
                               ) -> QuantumCircuit:
         """Constructs the circuit to calculate off-diagonal transition amplitudes.
 
@@ -125,21 +126,21 @@ class CircuitConstructor:
         # if self.add_barriers: circ.barrier()
         circ.h([0, 1])
         if self.add_barriers: circ.barrier()
-        self._apply_controlled_gate(circ, a_op_m[0], ctrl=(0, 0), n_anc=2)
+        self._apply_controlled_gate(circ, a_op_m[0], ctrl=[0, 0], n_anc=2)
         if self.add_barriers: circ.barrier()
-        self._apply_controlled_gate(circ, a_op_m[1], ctrl=(1, 0), n_anc=2)
+        self._apply_controlled_gate(circ, a_op_m[1], ctrl=[1, 0], n_anc=2)
         if self.add_barriers: circ.barrier()
         circ.rz(np.pi / 4, 1)
         if self.add_barriers: circ.barrier()
-        self._apply_controlled_gate(circ, a_op_n[0], ctrl=(0, 1), n_anc=2)
+        self._apply_controlled_gate(circ, a_op_n[0], ctrl=[0, 1], n_anc=2)
         if self.add_barriers: circ.barrier()
-        self._apply_controlled_gate(circ, a_op_n[1], ctrl=(1, 1), n_anc=2)
+        self._apply_controlled_gate(circ, a_op_n[1], ctrl=[1, 1], n_anc=2)
         if self.add_barriers: circ.barrier()
         circ.h([0, 1])
 
         return circ
 
-    def build_eh_off_diagonal1(self,
+    def build_eh_off_diagonal_new(self,
                                a_op_m: SparsePauliOp,
                                a_op_n: SparsePauliOp
                                ) -> QuantumCircuit:
@@ -353,14 +354,11 @@ class CircuitConstructor:
             rx_inds = [i + 1 for i in range(len(label)) if label[i] == 'Y']
         else:
             cnot_inds = [self.sys[i] for i in range(len(label)) if label[i] != 'I']
-            pivot = min(cnot_inds)
+            pivot = max(cnot_inds)
             cnot_inds.remove(pivot)
             x_inds = [self.anc[i] for i in range(len(ctrl_states)) if ctrl_states[i] == 0]
             h_inds = [self.sys[i] for i in range(len(label)) if label[i] == 'X']
             rx_inds = [self.sys[i] for i in range(len(label)) if label[i] == 'Y']
-
-        # print('pivot =', pivot)
-        # print('cnot_inds =', cnot_inds)
 
         # Apply the controlled gate
         inst_tups = []
@@ -673,3 +671,174 @@ class CircuitTranspiler:
         circ.barrier()
         circ += circ_last
         return circ
+
+class CircuitTranspilerNew:
+    def __init__(self, basis_gates: Sequence[str] = params.basis_gates) -> None:
+        self.basis_gates = basis_gates
+    
+    def transpile(self, circ: QuantumCircuit, circ_ind: str) -> QuantumCircuit:
+        if circ_ind == '0':
+            circ_new = self.transpile_with_swap(circ, [1, 2], end=12)
+        elif circ_ind == '1':
+            circ_new = circ
+        elif circ_ind == '10':
+            fig = circ.draw('mpl')
+            fig.savefig('circ_untranspiled.png', bbox_inches='tight')
+
+            circ_new = self.transpile_with_swap(circ, [0, 3])
+            circ_new = self.transpile_with_swap(circ_new, [0, 1], start=26)
+            fig = circ_new.draw('mpl')
+            fig.savefig('circ_permuted.png', bbox_inches='tight')
+
+            circ_new = self.convert_ccz_to_cxc(circ_new)
+            circ_new = self.convert_swap_to_cz(circ_new)
+            circ_new = remove_instructions_in_circuit(circ_new, ['barrier'])
+            circ_new = self.combine_1q_gates(circ_new)
+            circ_new = self.combine_1q_gates(circ_new)
+            circ_new = self.convert_xh_to_xpi2(circ_new)
+
+            # uni = get_unitary(circ_new)
+            circ_new = self.combine_1q_gates(circ_new, verbose=True)
+            # uni1 = get_unitary(circ_new)
+            # print(np.allclose(uni, uni1))
+
+            fig = circ_new.draw('mpl')
+            fig.savefig('circ_additional.png', bbox_inches='tight')
+        return circ_new
+
+    @staticmethod
+    def transpile_with_swap(circ: QuantumCircuit, 
+                            swap_inds: Sequence[int], 
+                            start: Optional[int] = None, 
+                            end: Optional[int] = None
+                            ) -> QuantumCircuit:
+        """Transpiles a circuit by swapping indices.
+        
+        Args:
+            circ: The quantum circuit to be transpiled.
+            swap_inds: The indices to swap.
+            start: The starting index of transpilation.
+            end: The end index for transpilation.
+
+        Returns:
+            The circuit after transpilation by swapping indices.
+        """
+        if start is None: start = 0
+        if end is None: end = len(circ)
+        inst_tups = circ.data.copy()
+
+        def conjugate(gate_inds, swap_inds):
+            perm = Permutation.cycle(*[i + 1 for i in swap_inds])
+            gate_inds = [i + 1 for i in gate_inds]
+            gate_inds_new = [perm(i) for i in gate_inds]
+            gate_inds_new = sorted([i - 1 for i in gate_inds_new])
+            return gate_inds_new
+        
+        inst_tups_new = []
+        for i, (inst, qargs, cargs) in enumerate(inst_tups):
+            if i >= start and i < end:
+                qargs = sorted([q._index for q in qargs])
+                qargs = conjugate(qargs, swap_inds)
+            inst_tups_new.append((inst, qargs, cargs))
+        inst_tups_new.insert(end, (SwapGate(), swap_inds, []))
+        if start != 0:
+            inst_tups_new.insert(start, (SwapGate(), swap_inds, []))
+        circ_new = create_circuit_from_inst_tups(inst_tups_new)
+        return circ_new
+
+    @staticmethod
+    def convert_ccz_to_cxc(circ: QuantumCircuit) -> QuantumCircuit:
+        """Converts CCZ gates to CXC gates."""
+        inst_tups = circ.data.copy()
+        inst_tups_new = []
+        for inst, qargs, cargs in inst_tups:
+            if inst.name == 'c-unitary':
+                inst_tups_new += [(XGate(), [qargs[0]], []), 
+                                  (HGate(), [qargs[1]], []), 
+                                  (XGate(), [qargs[2]], []),
+                                  (CCXGate(ctrl_state='00'), [qargs[0], qargs[2], qargs[1]], []),
+                                  (XGate(), [qargs[0]], []), 
+                                  (HGate(), [qargs[1]], []), 
+                                  (XGate(), [qargs[2]], [])]
+            else:
+                inst_tups_new.append((inst, qargs, cargs))
+        circ_new = create_circuit_from_inst_tups(inst_tups_new)
+        return circ_new
+
+    @staticmethod
+    def convert_swap_to_cz(circ: QuantumCircuit) -> QuantumCircuit:
+        """Converts SWAP gates to CZ gates."""
+        inst_tups = circ.data.copy()
+        inst_tups_new = []
+
+        convert_swap = False
+        for inst, qargs, cargs in inst_tups[::-1]:
+            if inst.name == 'swap':
+                if convert_swap:
+                    inst_tups_new = [(RXGate(np.pi/2), [qargs[0]], []), 
+                                     (RXGate(np.pi/2), [qargs[1]], []), 
+                                     (CZGate(), [qargs[0], qargs[1]], [])] * 3 + inst_tups_new
+                else:
+                    inst_tups_new.insert(0, (inst, qargs, cargs))
+            else:
+                inst_tups_new.insert(0, (inst, qargs, cargs))
+                convert_swap = True
+
+        circ_new = create_circuit_from_inst_tups(inst_tups_new)
+        return circ_new
+
+    @staticmethod
+    def convert_xh_to_xpi2(circ: QuantumCircuit) -> QuantumCircuit:
+        inst_tups = circ.data.copy()
+        inst_tups_new = []
+        for inst, qargs, cargs in inst_tups:
+            if inst.name == 'h':
+                inst_tups_new += [(RZGate(np.pi/2), qargs, []), 
+                                  (RXGate(np.pi/2), qargs, []), 
+                                  (RZGate(np.pi/2), qargs, [])]
+            elif inst.name == 'x':
+                inst_tups_new += [(RXGate(np.pi/2), qargs, []),
+                                  (RXGate(np.pi/2), qargs, [])]
+            else:
+                inst_tups_new.append((inst, qargs, cargs))
+        circ_new = create_circuit_from_inst_tups(inst_tups_new)
+        return circ_new
+
+    @staticmethod
+    def combine_1q_gates(circ: QuantumCircuit, 
+                         qubits: Optional[Iterable[int]] = None, verbose=False
+                         ) -> QuantumCircuit:
+        """Combines single-qubit gates."""
+        inst_tups = circ.data.copy()
+        if qubits is None:
+            qreg, _ = get_registers_in_inst_tups(inst_tups)
+            qubits = range(len(qreg))
+
+        i_old = None
+        inst_old = SGate()
+        del_inds = []
+        for q in qubits:
+            for i, (inst, qargs, _) in enumerate(inst_tups):
+                if q in [x._index for x in qargs]:
+                    if len(qargs) == 1:
+                        if verbose and inst.name == 'rx' and qargs[0]._index == 1: 
+                            print(i, 'inst params', inst.params[0], len(qargs))
+                        if inst.name == inst_old.name:
+                            # if inst.name == 'rx': print(q, inst.params[0], inst_old.params[0])
+
+                            if inst.name in ['h', 'x'] or (inst.name == 'rx' and
+                                abs(inst.params[0] + inst_old.params[0]) < 1e-8): 
+                            # update del_inds and start over
+                                del_inds += [i, i_old]
+                                i_old = None
+                                inst_old = SGate() # random gate
+                        else: # update old vars and continue
+                            i_old = i
+                            inst_old = inst.copy()
+                    else: # start over
+                        i_old = None
+                        inst_old = SGate()
+
+        inst_tups_new = [inst_tups[i] for i in range(len(inst_tups)) if i not in del_inds]
+        circ_new = create_circuit_from_inst_tups(inst_tups_new)
+        return circ_new
