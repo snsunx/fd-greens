@@ -684,11 +684,14 @@ class CircuitTranspilerNew:
         elif circ_ind == '10':
             fig = circ.draw('mpl')
             fig.savefig('circ_untranspiled.png', bbox_inches='tight')
+            # uni = get_unitary(circ)
 
             circ_new = self.transpile_with_swap(circ, [0, 3])
             circ_new = self.transpile_with_swap(circ_new, [0, 1], start=26)
             fig = circ_new.draw('mpl')
             fig.savefig('circ_permuted.png', bbox_inches='tight')
+
+            # uni1 = get_unitary(circ_new)
 
             circ_new = self.convert_ccz_to_cxc(circ_new)
             circ_new = self.convert_swap_to_cz(circ_new)
@@ -698,9 +701,16 @@ class CircuitTranspilerNew:
             circ_new = self.convert_xh_to_xpi2(circ_new)
 
             # uni = get_unitary(circ_new)
-            circ_new = self.combine_1q_gates(circ_new, verbose=True)
-            # uni1 = get_unitary(circ_new)
-            # print(np.allclose(uni, uni1))
+            circ_new = self.combine_1q_gates(circ_new, verbose=False)
+            # uni2 = get_unitary(circ_new)
+            # vec1 = uni1[:, 0]
+            # vec1n = vec1 / (vec1[0] / abs(vec1[0]))
+
+            # vec2 = uni2[:, 0]
+            # vec2n = vec2 / (vec2[0] / abs(vec2[0]))
+
+            # print(np.allclose(vec1, vec2))
+            # print(np.allclose(vec1n, vec2n))
 
             fig = circ_new.draw('mpl')
             fig.savefig('circ_additional.png', bbox_inches='tight')
@@ -798,6 +808,12 @@ class CircuitTranspilerNew:
                                   (RZGate(np.pi/2), qargs, [])]
             elif inst.name == 'x':
                 inst_tups_new += [(RXGate(np.pi/2), qargs, []),
+                                  (RXGate(np.pi/2), qargs, [])]
+            elif inst.name == 'ry':
+                theta = inst.params[0]
+                inst_tups_new += [(RZGate(-np.pi), qargs, []), 
+                                  (RXGate(np.pi/2), qargs, []), 
+                                  (RZGate((np.pi-theta) % (2 * np.pi)), qargs, []),
                                   (RXGate(np.pi/2), qargs, [])]
             else:
                 inst_tups_new.append((inst, qargs, cargs))
