@@ -67,6 +67,23 @@ def get_unitary(circ_like: QuantumCircuitLike, reverse: bool = False) -> np.ndar
         unitary = reverse_qubit_order(unitary)
     return unitary
 
+def compare_matrices(mat1: np.ndarray, mat2: np.ndarray) -> bool:
+    """Determines whether two matrices are equal up to a phase.
+    
+    Args:
+        mat1: The first matrix.
+        mat2: The second matrix.
+        
+    Returns:
+        Whether two matrices are equal up to a phase.
+    """
+    phase1 = mat1[0, 0] / abs(mat1[0, 0])
+    phase2 = mat2[0, 0] / abs(mat2[0, 0])
+    mat1_new = mat1 / phase1
+    mat2_new = mat2 / phase2
+    equal = np.allclose(mat1_new, mat2_new)
+    return equal
+
 def get_overlap(state1: np.ndarray, state2: np.ndarray) -> float:
     """Returns the overlap of two states in either statevector or density matrix form.
     
@@ -191,6 +208,7 @@ def create_circuit_from_inst_tups(
     regs = [reg for reg in [qreg, creg] if reg is not None]
     circ = QuantumCircuit(*regs)
     for inst, qargs, cargs in inst_tups:
+        # print('inst =', inst.name, inst.params, 'qargs =', qargs)
         try:
             qargs = [q._index for q in qargs]
         except:

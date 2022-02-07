@@ -7,8 +7,8 @@ import numpy as np
 from permutation import Permutation
 
 from qiskit import QuantumCircuit, QuantumRegister, ClassicalRegister
-from qiskit.circuit import Instruction, Qubit, Clbit, Barrier
-from qiskit.extensions import CCXGate, XGate, HGate, RXGate, CXGate, RZGate, CPhaseGate, CZGate, PhaseGate, SwapGate, SGate
+from qiskit.circuit import Instruction, Qubit, Clbit, Barrier, Measure
+from qiskit.extensions import CCXGate, XGate, HGate, RXGate, CXGate, RZGate, CPhaseGate, CZGate, PhaseGate, SwapGate, UGate
 from qiskit.quantum_info import SparsePauliOp
 
 import params
@@ -403,38 +403,54 @@ class CircuitConstructor:
 
         return inst_tups
 
-
     @staticmethod
     def append_tomography_gates(circ: QuantumCircuit, 
                                 qubits: Iterable[QubitLike],
-                                label: Tuple[str],
-                                use_u3: bool = True) -> QuantumCircuit:
+                                label: Tuple[str]) -> QuantumCircuit:
         """Appends tomography gates to a circuit.
 
         Args:
             circ: The circuit to which tomography gates are to be appended.
             qubits: The qubits to be tomographed.
             label: The tomography states label.
-            use_u3: Whether to use U3 rather than Clifford gates for basis change.
         
         Returns:
             A new circuit with tomography gates appended.
         """
         assert len(qubits) == len(label)
-        tomo_circ = circ.copy()
+        inst_tups = circ.data.copy()
+        inst_tups_swap = []
+        perms = []
 
+        # Split off the last few SWAP gates
+        while True:
+            inst, qargs, cargs = inst_tups.pop()
+            if inst.name == 'swap':
+                inst_tups_swap.insert(0, (inst, qargs, cargs))
+                qinds = [q._index for q in qargs]
+                perms.append(Permutation.cycle(*[i + 1 for i in qinds]))
+            else:
+                inst_tups.append((inst, qargs, cargs))
+                break
+
+        # Append rotation gates when tomographing on X or Y
         for q, s in zip(qubits, label):
+            q_new = q + 1
+            for perm in perms: q_new = perm(q_new)
+            q_new -= 1
             if s == 'x':
-                if use_u3:
-                    tomo_circ.u3(np.pi/2, 0, np.pi, q)
-                else:
-                    tomo_circ.h(q)
+                inst_tups += [(RZGate(np.pi/2), [q_new], []), 
+                              (RXGate(np.pi/2), [q_new], []),
+                              (RZGate(np.pi/2), [q_new], [])]
+                # tomo_circ.h(q)
             elif s == 'y':
-                if use_u3:
-                    tomo_circ.u3(np.pi/2, 0, np.pi/2, q)
-                else:
-                    tomo_circ.sdg(q)
-                    tomo_circ.h(q)
+                inst_tups += [(RXGate(np.pi/2), [q_new], []),
+                              (RZGate(np.pi/2), [q_new], [])]
+                # tomo_circ.sdg(q)
+                # tomo_circ.h(q)
+
+        inst_tups += inst_tups_swap
+        tomo_circ = create_circuit_from_inst_tups(inst_tups)
         return tomo_circ
 
     @staticmethod
@@ -447,11 +463,33 @@ class CircuitConstructor:
         Returns:
             A new circuit with measurement gates appended.
         """
-        n_qubits = len(circ.qregs[0])
-        circ.barrier()
+        qreg = circ.qregs[0]
+        n_qubits = len(qreg)
         circ.add_register(ClassicalRegister(n_qubits))
-        circ.measure(range(n_qubits), range(n_qubits))
-        return circ
+        inst_tups = circ.data.copy()
+        perms = []
+
+        # Split off the last few SWAP gates
+        while True:
+            inst, qargs, cargs = inst_tups.pop()
+            if inst.name == 'swap':
+                qinds = [q._index for q in qargs]
+                perms.append(Permutation.cycle(*[i + 1 for i in qinds]))
+            else:
+                inst_tups.append((inst, qargs, cargs))
+                break
+        
+        # Append the measurement gates permuted by the SWAP gates
+        inst_tups += [(Barrier(n_qubits), qreg, [])]
+        for c in range(n_qubits):
+            q = c + 1
+            for perm in perms: q = perm(q)
+            q -= 1
+            inst_tups += [(Measure(), [q], [c])]
+        # circ.measure(range(n_qubits), range(n_qubits))
+
+        circ_new = create_circuit_from_inst_tups(inst_tups)
+        return circ_new
     
 class CircuitTranspiler:
     """A class for circuit transpilation."""
@@ -673,24 +711,44 @@ class CircuitTranspiler:
         return circ
 
 class CircuitTranspilerNew:
-    def __init__(self, basis_gates: Sequence[str] = params.basis_gates) -> None:
-        self.basis_gates = basis_gates
+    """A class to transpile circuits into native gates on Berkeley's device."""
+    def __init__(self) -> None:
+        """Initializes a CircuitTranspilerNew class."""
+        pass
     
-    def transpile(self, circ: QuantumCircuit, circ_ind: str) -> QuantumCircuit:
-        if circ_ind == '0':
+    def transpile(self, 
+                  circ: QuantumCircuit,
+                  circ_label: str,
+                  save_circuit: bool = True) -> QuantumCircuit:
+        """Transpiles the circuit according to the circuit label. 
+        
+        The basis gates are assumed to be X(pi/2), virtual Z, CS, CZ, and CXC (C-iX-C).
+        On the '0' and '1' circuits, the ancilla is 0 and system qubits are 1 and 2.
+        On the '01' circuit, the ancillae are 0 and 2 while the system qubits are 1 and 3.
+        
+        Args:
+            circ: The quantum circuit to be transpiled.
+            circ_label: The circuit label. One of '0', '1', and '01'.
+            save_circuit: Whether to save the circuit figures.
+        
+        Returns:
+            The circuit after transpilation.
+        """
+        if circ_label == '0':
             circ_new = self.transpile_with_swap(circ, [1, 2], end=12)
-        elif circ_ind == '1':
+        elif circ_label == '1':
             circ_new = circ
-        elif circ_ind == '10':
-            fig = circ.draw('mpl')
-            fig.savefig('circ_untranspiled.png', bbox_inches='tight')
+        elif circ_label == '01':
+            if save_circuit:
+                fig = circ.draw('mpl')
+                fig.savefig('circ_untranspiled.png', bbox_inches='tight')
             # uni = get_unitary(circ)
 
             circ_new = self.transpile_with_swap(circ, [0, 3])
             circ_new = self.transpile_with_swap(circ_new, [0, 1], start=26)
-            fig = circ_new.draw('mpl')
-            fig.savefig('circ_permuted.png', bbox_inches='tight')
-
+            if save_circuit:
+                fig = circ_new.draw('mpl')
+                fig.savefig('circ_permuted.png', bbox_inches='tight')
             # uni1 = get_unitary(circ_new)
 
             circ_new = self.convert_ccz_to_cxc(circ_new)
@@ -698,22 +756,20 @@ class CircuitTranspilerNew:
             circ_new = remove_instructions_in_circuit(circ_new, ['barrier'])
             circ_new = self.combine_1q_gates(circ_new)
             circ_new = self.combine_1q_gates(circ_new)
-            circ_new = self.convert_xh_to_xpi2(circ_new)
-
-            # uni = get_unitary(circ_new)
-            circ_new = self.combine_1q_gates(circ_new, verbose=False)
+            circ_new = self.convert_1q_to_xpi2(circ_new)
+            circ_new = self.combine_1q_gates(circ_new)
+            
+            # Some temporary checking statement
             # uni2 = get_unitary(circ_new)
             # vec1 = uni1[:, 0]
             # vec1n = vec1 / (vec1[0] / abs(vec1[0]))
-
             # vec2 = uni2[:, 0]
             # vec2n = vec2 / (vec2[0] / abs(vec2[0]))
-
             # print(np.allclose(vec1, vec2))
             # print(np.allclose(vec1n, vec2n))
-
-            fig = circ_new.draw('mpl')
-            fig.savefig('circ_additional.png', bbox_inches='tight')
+            if save_circuit:
+                fig = circ_new.draw('mpl')
+                fig.savefig('circ_additional.png', bbox_inches='tight')
         return circ_new
 
     @staticmethod
@@ -777,20 +833,21 @@ class CircuitTranspilerNew:
 
     @staticmethod
     def convert_swap_to_cz(circ: QuantumCircuit) -> QuantumCircuit:
-        """Converts SWAP gates to CZ gates."""
+        """Converts SWAP gates to CZ and X(pi/2) gates except for the ones at the end."""
         inst_tups = circ.data.copy()
         inst_tups_new = []
 
+        # Do not start converting SWAP gates except when encountering a non-SWAP gate
         convert_swap = False
         for inst, qargs, cargs in inst_tups[::-1]:
-            if inst.name == 'swap':
-                if convert_swap:
+            if inst.name == 'swap': # SWAP gate
+                if convert_swap: # SWAP gate not at the end
                     inst_tups_new = [(RXGate(np.pi/2), [qargs[0]], []), 
                                      (RXGate(np.pi/2), [qargs[1]], []), 
                                      (CZGate(), [qargs[0], qargs[1]], [])] * 3 + inst_tups_new
-                else:
+                else: # SWAP gate at the end
                     inst_tups_new.insert(0, (inst, qargs, cargs))
-            else:
+            else: # non-SWAP gate
                 inst_tups_new.insert(0, (inst, qargs, cargs))
                 convert_swap = True
 
@@ -798,7 +855,8 @@ class CircuitTranspilerNew:
         return circ_new
 
     @staticmethod
-    def convert_xh_to_xpi2(circ: QuantumCircuit) -> QuantumCircuit:
+    def convert_1q_to_xpi2(circ: QuantumCircuit) -> QuantumCircuit:
+        """Converts single-qubit gates to X(pi/2) pulses."""
         inst_tups = circ.data.copy()
         inst_tups_new = []
         for inst, qargs, cargs in inst_tups:
@@ -822,38 +880,37 @@ class CircuitTranspilerNew:
 
     @staticmethod
     def combine_1q_gates(circ: QuantumCircuit, 
-                         qubits: Optional[Iterable[int]] = None, verbose=False
+                         qubits: Optional[Iterable[int]] = None,
                          ) -> QuantumCircuit:
-        """Combines single-qubit gates."""
+        """Combines single-qubit gates on certain qubits."""
         inst_tups = circ.data.copy()
         if qubits is None:
             qreg, _ = get_registers_in_inst_tups(inst_tups)
             qubits = range(len(qreg))
 
         i_old = None
-        inst_old = SGate()
+        inst_old = UGate(0, 0, 0) # sentinel
         del_inds = []
         for q in qubits:
             for i, (inst, qargs, _) in enumerate(inst_tups):
                 if q in [x._index for x in qargs]:
-                    if len(qargs) == 1:
-                        if verbose and inst.name == 'rx' and qargs[0]._index == 1: 
-                            print(i, 'inst params', inst.params[0], len(qargs))
+                    if len(qargs) == 1: # 1q gate
+                        # if verbose and inst.name == 'rx' and qargs[0]._index == 1: 
+                        #     print(i, 'inst params', inst.params[0], len(qargs))
                         if inst.name == inst_old.name:
                             # if inst.name == 'rx': print(q, inst.params[0], inst_old.params[0])
-
                             if inst.name in ['h', 'x'] or (inst.name == 'rx' and
                                 abs(inst.params[0] + inst_old.params[0]) < 1e-8): 
                             # update del_inds and start over
                                 del_inds += [i, i_old]
                                 i_old = None
-                                inst_old = SGate() # random gate
+                                inst_old = UGate(0, 0, 0)
                         else: # update old vars and continue
                             i_old = i
                             inst_old = inst.copy()
-                    else: # start over
+                    else: # 2q gate, start over
                         i_old = None
-                        inst_old = SGate()
+                        inst_old = UGate(0, 0, 0)
 
         inst_tups_new = [inst_tups[i] for i in range(len(inst_tups)) if i not in del_inds]
         circ_new = create_circuit_from_inst_tups(inst_tups_new)

@@ -119,12 +119,12 @@ class GreensFunctionRestricted:
 
         # Create Pauli dictionaries for the original operators
         second_q_ops = SecondQuantizedOperators(4)
-        self.pauli_op_dict = second_q_ops.get_op_dict_all()
+        self.pauli_op_dict = second_q_ops.get_pauli_dict()
 
         # Create Pauli dictionaries for the transformed operators
         second_q_ops = SecondQuantizedOperators(4)
         second_q_ops.transform(partial(transform_4q_hamiltonian, init_state=[1, 1], tapered=False))
-        self.pauli_op_dict_trans = second_q_ops.get_op_dict_all()
+        self.pauli_op_dict_trans = second_q_ops.get_pauli_dict()
         #for key, (x_op, y_op) in self.pauli_op_dict_trans.items():
         #    print(key, x_op.table.to_labels()[0], y_op.table.to_labels()[0])
 
@@ -132,7 +132,7 @@ class GreensFunctionRestricted:
         second_q_ops = SecondQuantizedOperators(4)
         second_q_ops.transform(partial(transform_4q_hamiltonian, init_state=[1, 1]))
         # self.pauli_op_dict_tapered = second_q_ops.get_op_dict(spin=spin)
-        self.pauli_op_dict_tapered = second_q_ops.get_op_dict_all()
+        self.pauli_op_dict_tapered = second_q_ops.get_pauli_dict()
 
     def _initialize_quantities(self) -> None:
         """Initializes physical quantity attributes."""

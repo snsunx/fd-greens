@@ -1,6 +1,6 @@
 """Amplitudes solver module."""
 
-from typing import Iterable
+from typing import Iterable, Optional, Sequence
 from functools import partial
 
 import itertools
@@ -30,7 +30,8 @@ class EHAmplitudesSolver:
                  h: MolecularHamiltonian,
                  method: str = 'exact',
                  q_instance: QuantumInstance = get_quantum_instance('sv'),
-                 h5fname: str = 'lih') -> None:
+                 h5fname: str = 'lih',
+                 anc: Sequence[int] = [0, 2]) -> None:
         """Initializes an EHAmplitudesSolver object.
 
         Args:
@@ -45,6 +46,8 @@ class EHAmplitudesSolver:
         self.h = h
         self.method = method
         self.q_instance = q_instance
+        self.anc = anc
+        self.sys = [i for i in range(4) if i not in anc]
 
         # Load data and initialize quantities
         self.h5fname = h5fname + '.hdf5'
@@ -53,11 +56,11 @@ class EHAmplitudesSolver:
         self._initialize_operators()
 
         # Circuit constructor and transpiler
-        self.circuit_constructor = CircuitConstructor(self.ansatz, anc=[0, 2])
+        self.circuit_constructor = CircuitConstructor(self.ansatz, anc=self.anc)
         self.circuit_transpiler = CircuitTranspilerNew()
 
     def _load_data_from_hdf5(self) -> None:
-        """Loads ground state and (N+/-1)-electron states data from hdf5 file. """
+        """Loads ground state and (N+/-1)-electron states data from hdf5 file."""
         h5file = h5py.File(self.h5fname, 'r+')
 
         # Attributes from ground state solver
@@ -116,7 +119,7 @@ class EHAmplitudesSolver:
         # Create Pauli dictionaries for the transformed and tapered operators
         second_q_ops = SecondQuantizedOperators(self.n_elec)
         second_q_ops.transform(partial(transform_4q_pauli, init_state=[1, 1]))
-        self.pauli_dict = second_q_ops.get_op_dict_all()
+        self.pauli_dict = second_q_ops.get_pauli_dict()
 
     def build_diagonal(self) -> None:
         """Constructs diagonal transition amplitude circuits."""
@@ -129,13 +132,11 @@ class EHAmplitudesSolver:
             h5file[f'circ{m}/base'] = circ.qasm()
 
             if self.method == 'tomo':
-                labels = itertools.product('xyz', repeat=2)
+                labels = [''.join(x) for x in itertools.product('xyz', repeat=2)]
                 for label in labels:
                     tomo_circ = CircuitConstructor.append_tomography_gates(circ, [1, 2], label)
-                    # if self.transpiled: tomo_circ = self.circuit_transpiler.transpile(tomo_circ)
                     tomo_circ = CircuitConstructor.append_measurement_gates(tomo_circ)
-                    label_str = ''.join(label)
-                    h5file[f'circ{m}/{label_str}'] = tomo_circ.qasm()
+                    h5file[f'circ{m}/{label}'] = tomo_circ.qasm()
 
         h5file.close()
 
@@ -220,24 +221,21 @@ class EHAmplitudesSolver:
         h5file.close()
 
     def build_off_diagonal(self) -> None:
-        """Constructs the off-diagonal transition amplitude circuits."""
+        """Constructs off-diagonal transition amplitude circuits."""
         h5file = h5py.File(self.h5fname, 'r+')
 
         a_op_0 = self.pauli_dict[(0, 'd')]
         a_op_1 = self.pauli_dict[(1, 'd')]
         circ = self.circuit_constructor.build_eh_off_diagonal_new(a_op_1, a_op_0)
-        circ = self.circuit_transpiler.transpile(circ, '10')
+        circ = self.circuit_transpiler.transpile(circ, '01')
         h5file[f'circ01/base'] = circ.qasm()
 
         if self.method == 'tomo':
-            labels = itertools.product('xyz', repeat=2)
+            labels = [''.join(x) for x in itertools.product('xyz', repeat=2)]
             for label in labels:
-                tomo_circ = CircuitConstructor.append_tomography_gates(circ, [2, 3], label)
-                # if self.transpiled: 
-                #     tomo_circ = self.circuit_transpiler.transpile_last_section(tomo_circ)
+                tomo_circ = CircuitConstructor.append_tomography_gates(circ, self.sys, label)
                 tomo_circ = CircuitConstructor.append_measurement_gates(tomo_circ)
-                label_str = ''.join(label)
-                h5file[f'circ01/{label_str}'] = tomo_circ.qasm()
+                h5file[f'circ01/{label}'] = tomo_circ.qasm()
 
         h5file.close()
 
@@ -358,7 +356,6 @@ class EHAmplitudesSolver:
 
         h5file.close()
         
-
     def save_data(self) -> None:
         """Saves transition amplitudes data to hdf5 file."""
         h5file = h5py.File(self.h5fname, 'r+')
@@ -369,10 +366,10 @@ class EHAmplitudesSolver:
         h5file['amp/e_orb'] = e_orb[act_inds][:, act_inds]
         h5file.close()
 
-    def run(self, method=None) -> None:
+    def run(self, method: Optional[str] = None) -> None:
         """Runs the functions to compute transition amplitudes."""
         if method is not None: self.method = method
-        self.build_diagonal()
+        # self.build_diagonal()
         self.build_off_diagonal()
         # self.run_diagonal()
         # self.run_off_diagonal()
@@ -472,13 +469,13 @@ class ExcitedAmplitudesSolver:
         # Create Pauli dictionaries for operators after symmetry transformation
         charge_ops = ChargeOperators(self.n_elec)
         charge_ops.transform(partial(transform_4q_pauli, init_state=[1, 1]))
-        self.charge_dict_s = charge_ops.get_op_dict_all()
+        self.charge_dict_s = charge_ops.get_pauli_dict()
         #for key, val in self.charge_dict.items():
         #    print(key, val.coeffs[0], val.table)
 
         charge_ops = ChargeOperators(self.n_elec)
         charge_ops.transform(partial(transform_4q_pauli, init_state=[0, 0]))
-        self.charge_dict_t = charge_ops.get_op_dict_all()
+        self.charge_dict_t = charge_ops.get_pauli_dict()
 
     def compute_diagonal(self) -> None:
         """Calculates diagonal transition amplitudes."""

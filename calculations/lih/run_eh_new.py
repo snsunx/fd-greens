@@ -22,4 +22,4 @@ es_solver = EHStatesSolver(h, ansatz_func_e=build_ansatz_e, ansatz_func_h=build_
 es_solver.run(method='exact')
 
 amp_solver = EHAmplitudesSolver(h, q_instance=q_instance, h5fname=h5fname)
-amp_solver.run(method='exact')
+amp_solver.run(method='tomo')

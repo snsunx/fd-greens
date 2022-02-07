@@ -115,13 +115,13 @@ class ExcitedAmplitudesSolver:
         # Create Pauli dictionaries for operators after symmetry transformation
         charge_ops = ChargeOperators(self.n_elec)
         charge_ops.transform(partial(transform_4q_pauli, init_state=[1, 1]))
-        self.charge_dict_s = charge_ops.get_op_dict_all()
+        self.charge_dict_s = charge_ops.get_pauli_dict()
         #for key, val in self.charge_dict.items():
         #    print(key, val.coeffs[0], val.table)
 
         charge_ops = ChargeOperators(self.n_elec)
         charge_ops.transform(partial(transform_4q_pauli, init_state=[0, 0]))
-        self.charge_dict_t = charge_ops.get_op_dict_all()
+        self.charge_dict_t = charge_ops.get_pauli_dict()
 
     def compute_charge_diagonal(self) -> None:
         """Calculates diagonal transition amplitudes."""

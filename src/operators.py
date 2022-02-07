@@ -12,16 +12,19 @@ class SecondQuantizedOperators:
     """A class to store the X and Y parts of the creation and annihilation operators."""
 
     def __init__(self, n_qubits: int, factor: Union[int, float] = -1) -> None:
-        """Initializes a SecondQuantizedOperators object."""
+        """Initializes a SecondQuantizedOperators object.
+        
+        Args:
+            n_qubits: The number of qubits in the creation and annihilation operators.
+            factor: A multiplication factor for simpler gate implementation.
+        """
         self.n_qubits = n_qubits
-
         labels_x = ['I' * (n_qubits - i - 1) + 'X' + 'Z' * i for i in range(n_qubits)]
         labels_y = ['I' * (n_qubits - i - 1) + 'Y' + 'Z' * i for i in range(n_qubits)]
         labels = labels_x + labels_y
         pauli_table = PauliTable.from_labels(labels)
-        # print(pauli_table.to_labels())
         coeffs = [1.] * n_qubits + [1j] * n_qubits
-        coeffs = factor * np.array(coeffs) # THIS IS HARDCODED TO -1 FOR SPECIAL CASE
+        coeffs = factor * np.array(coeffs)
         self.sparse_pauli_op = SparsePauliOp(pauli_table, coeffs=coeffs)
 
     def transform(self, transform_func: Callable[[PauliOperator], PauliOperator]) -> None:
@@ -29,7 +32,7 @@ class SecondQuantizedOperators:
         self.sparse_pauli_op = transform_func(self.sparse_pauli_op)
         # print(self.sparse_pauli_op.table.to_labels(), self.sparse_pauli_op.coeffs)
 
-    def get_op_dict_all(self) -> Dict[int, Tuple[SparsePauliOp, SparsePauliOp]]:
+    def get_pauli_dict(self) -> Dict[int, Tuple[SparsePauliOp, SparsePauliOp]]:
         """Returns a dictionary of the second quantized operators."""
         dic = {}
         for i in range(self.n_qubits):
@@ -54,7 +57,7 @@ class ChargeOperators:
         """Transforms the set of second quantized operators by Z2 symmetries."""
         self.sparse_pauli_op = transform_func(self.sparse_pauli_op)
 
-    def get_op_dict_all(self) -> Dict[int, SparsePauliOp]:
+    def get_pauli_dict(self) -> Dict[int, SparsePauliOp]:
         """Returns a dictionary of the charge U operators."""
         dic = {}
         for i in range(self.n_qubits):
@@ -68,10 +71,11 @@ def cnot_pauli(pauli_op: PauliOperator, ctrl: int, targ: int) -> PauliOperator:
     """Applies a CNOT operation to the Z2 representation of a Pauli operator.
 
     Note that the operator in string form follows Qiskit qubit order,
-    but in vector (PauliTable) form follows normal qubit order.
+    but in vector (PauliTable) form follows normal qubit order. The returned 
+    type is the same as the input type.
 
     Args:
-        pauli_op: An Pauli operator on which a CNOT is to be applied.
+        pauli_op: A Pauli operator on which a CNOT is to be applied.
         ctrl: An integer indicating the index of the control qubit.
         targ: An integer indicating the index of the target qubit.
 
@@ -111,10 +115,11 @@ def swap_pauli(pauli_op: PauliOperator, q1: int, q2: int) -> PauliOperator:
     """Applies a SWAP operation to the Z2 representation of a Pauli operator.
 
     Note that the operator in string form follows Qiskit qubit order,
-    but in vector (PauliTable) form follows normal qubit order.
+    but in vector (PauliTable) form follows normal qubit order. The returned type
+    is the same as the input type.
 
     Args:
-        pauli_op: An Pauli operator on which a SWAP is to be applied.
+        pauli_op: A Pauli operator on which a SWAP is to be applied.
         q1: An integer indicating the first qubit index.
         q2: An integer indicating the second qubit index.
 
@@ -153,7 +158,8 @@ def taper_pauli(pauli_op: PauliOperator,
     """Tapers certain qubits off a Pauli operator.
 
     Note that the operator in string form follows Qiskit qubit order,
-    but in vector (PauliTable) form follows normal qubit order.
+    but in vector (PauliTable) form follows normal qubit order. THe returned type
+    is the same as the input type.
 
     Args:
         pauli_op: A Pauli operator on which certain qubits are to be tapered.
@@ -208,8 +214,11 @@ def transform_4q_pauli(
         init_state: Optional[Sequence[int]] = None,
         tapered: bool = True
     ) -> PauliOperator:
-    """Converts a four-qubit Hamiltonian to a two-qubit Hamiltonian, 
-    assuming the symmetries are ZIZI and IZIZ.
+    """Converts a four-qubit Hamiltonian to a two-qubit Hamiltonian.
+
+    THe symmetries are assumed to be ZIZI and IZIZ. The operations applied are 
+    CNOT(2, 0), CNOT(3, 1) and SWAP(2, 3), followed by optionally tapering off 0 and 1.
+
 
     Args:
         pauli_op: A four-qubit Pauli operator to be transformed.
@@ -217,7 +226,8 @@ def transform_4q_pauli(
         tapered: Whether qubit 0 and qubit 1 are tapered.
 
     Returns:
-        A two-qubit Pauli operator after transformation.
+        A two-qubit Pauli operator after transformation if tapered, otherwise a four-qubit
+        Pauli operator.
     """
     if tapered: 
         assert init_state is not None and len(init_state) == 2
