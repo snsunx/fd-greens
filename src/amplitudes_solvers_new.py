@@ -18,7 +18,8 @@ from ground_state_solvers import GroundStateSolver
 from number_states_solvers import ExcitedStatesSolver
 from operators import SecondQuantizedOperators, ChargeOperators, transform_4q_pauli
 from qubit_indices import QubitIndices, transform_4q_indices
-from circuits import (CircuitConstructor, CircuitTranspilerNew, InstructionTuple)
+from circuits import (CircuitConstructor, InstructionTuple, append_tomography_gates,
+                      append_measurement_gates, transpile_into_berkeley_gates)
 from utils import (get_overlap, get_quantum_instance, counts_dict_to_arr, split_counts_on_anc)
 
 np.set_printoptions(precision=6)
@@ -56,8 +57,7 @@ class EHAmplitudesSolver:
         self._initialize_operators()
 
         # Circuit constructor and transpiler
-        self.circuit_constructor = CircuitConstructor(self.ansatz, anc=self.anc)
-        self.circuit_transpiler = CircuitTranspilerNew()
+        self.constructor = CircuitConstructor(self.ansatz, anc=self.anc)
 
     def _load_data_from_hdf5(self) -> None:
         """Loads ground state and (N+/-1)-electron states data from hdf5 file."""
@@ -127,15 +127,15 @@ class EHAmplitudesSolver:
         
         for m in range(self.n_orb):
             a_op = self.pauli_dict[(m, 'd')]
-            circ = self.circuit_constructor.build_eh_diagonal(a_op)
-            circ = self.circuit_transpiler.transpile(circ, str(m))
+            circ = self.constructor.build_eh_diagonal(a_op)
+            circ = transpile_into_berkeley_gates(circ, str(m))
             h5file[f'circ{m}/base'] = circ.qasm()
 
             if self.method == 'tomo':
                 labels = [''.join(x) for x in itertools.product('xyz', repeat=2)]
                 for label in labels:
-                    tomo_circ = CircuitConstructor.append_tomography_gates(circ, [1, 2], label)
-                    tomo_circ = CircuitConstructor.append_measurement_gates(tomo_circ)
+                    tomo_circ = append_tomography_gates(circ, [1, 2], label)
+                    tomo_circ = append_measurement_gates(tomo_circ)
                     h5file[f'circ{m}/{label}'] = tomo_circ.qasm()
 
         h5file.close()
@@ -226,15 +226,15 @@ class EHAmplitudesSolver:
 
         a_op_0 = self.pauli_dict[(0, 'd')]
         a_op_1 = self.pauli_dict[(1, 'd')]
-        circ = self.circuit_constructor.build_eh_off_diagonal_new(a_op_1, a_op_0)
-        circ = self.circuit_transpiler.transpile(circ, '01')
+        circ = self.constructor.build_eh_off_diagonal(a_op_1, a_op_0)
+        circ = transpile_into_berkeley_gates(circ, '01')
         h5file[f'circ01/base'] = circ.qasm()
 
         if self.method == 'tomo':
             labels = [''.join(x) for x in itertools.product('xyz', repeat=2)]
             for label in labels:
-                tomo_circ = CircuitConstructor.append_tomography_gates(circ, self.sys, label)
-                tomo_circ = CircuitConstructor.append_measurement_gates(tomo_circ)
+                tomo_circ = append_tomography_gates(circ, self.sys, label)
+                tomo_circ = append_measurement_gates(tomo_circ)
                 h5file[f'circ01/{label}'] = tomo_circ.qasm()
 
         h5file.close()
@@ -438,7 +438,7 @@ class ExcitedAmplitudesSolver:
         self.suffix = ''
         if self.transpiled: self.suffix = self.suffix + '_trans'
         if self.push: self.suffix = self.suffix + '_push'
-        self.circuit_constructor = CircuitConstructor(
+        self.constructor = CircuitConstructor(
             self.ansatz, add_barriers=self.add_barriers, ccx_inst_tups=self.ccx_inst_tups)
 
         # Initialize operators and physical quantities
@@ -487,8 +487,8 @@ class ExcitedAmplitudesSolver:
         for m in range(self.n_orb):
             U_op_s = self.charge_dict_s[(m, 'd')]
             U_op_t = self.charge_dict_t[(m, 'd')]
-            circ_s = self.circuit_constructor.build_charge_diagonal(U_op_s)
-            circ_t = self.circuit_constructor.build_charge_diagonal(U_op_t)
+            circ_s = self.constructor.build_charge_diagonal(U_op_s)
+            circ_t = self.constructor.build_charge_diagonal(U_op_t)
 
             if self.transpiled: 
                 circ_s = transpile(circ_s, basis_gates=params.basis_gates)
