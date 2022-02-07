@@ -425,7 +425,7 @@ def split_counts_on_anc(counts: Union[Counts, np.ndarray], n_anc: int = 1) -> Co
 # HDF5 utility function
 def initialize_hdf5(fname: str = 'lih') -> None:
     """Creates the hdf5 file and dataset if they do not exist."""
-    fname += '.hdf5'
+    fname += '.h5'
     if os.path.exists(fname): f = h5py.File(fname, 'r+')
     else: f = h5py.File(fname, 'w')
     for gname in ['gs', 'eh', 'amp', 'circ0', 'circ1', 'circ01']:

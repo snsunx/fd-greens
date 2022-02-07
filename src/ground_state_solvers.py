@@ -38,8 +38,7 @@ class GroundStateSolver:
         self.ansatz_func = ansatz_func
         self.init_params = init_params
         self.q_instance = q_instance
-
-        self.h5fname = h5fname + '.hdf5'
+        self.h5fname = h5fname + '.h5'
 
         self.energy = None
         self.ansatz = None

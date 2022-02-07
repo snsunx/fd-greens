@@ -37,14 +37,12 @@ class MolecularHamiltonian:
             basis: A string giving the basis set.
             multiplicity: An integer giving the spin multiplicity.
             charge: An integer giving the total molecular charge. Defaults to 0.
-            name: The string identifer used for saving and loading
-                cached circuits.
-            run_pyscf_options: A dictionary of keyword arguments passed to the
-                run_pyscf function.
-            occ_inds: A list of spatial orbital indices
-                indicating which orbitals should be considered doubly occupied.
-            act_inds: A list of spatial orbital indices indicating
-                which orbitals should be considered active.
+            name: The string identifer used for saving and loading cached circuits.
+            run_pyscf_options: A dictionary of keyword arguments passed to the run_pyscf function.
+            occ_inds: A list of spatial orbital indices indicating which orbitals 
+                should be considered doubly occupied.
+            act_inds: A list of spatial orbital indices indicating which orbitals
+                should be considered active.
         """
         self.geometry = geometry
         self.basis = basis

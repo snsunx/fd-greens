@@ -24,7 +24,6 @@ class EHStatesSolver:
                  ansatz_func_e: AnsatzFunction = build_ansatz_e, 
                  ansatz_func_h: AnsatzFunction = build_ansatz_h,
                  q_instance: QuantumInstance = get_quantum_instance('sv'),
-                 spin: str = 'edhu',
                  h5fname: str = 'lih') -> None:
         """Initializes an EHStatesSolver object.
         
@@ -35,24 +34,16 @@ class EHStatesSolver:
             q_instance: The quantum instance for (N+/-1)-electron state calculation.
             spin: A string indicating which spin states are included.
             h5fname: The hdf5 file name.
-            dsetname: The dataset name in the hdf5 file.
         """
-        assert spin in ['euhd', 'edhu']
-
         self.h = h
-        if spin == 'euhd': # e up h down
-            self.h_op = transform_4q_pauli(self.h.qiskit_op, init_state=[0, 1])
-            self.inds_e = transform_4q_indices(params.eu_inds)
-            self.inds_h = transform_4q_indices(params.hd_inds)
-        elif spin == 'edhu': # e down h up
-            self.h_op = transform_4q_pauli(self.h.qiskit_op, init_state=[1, 0])
-            self.inds_e = transform_4q_indices(params.ed_inds)
-            self.inds_h = transform_4q_indices(params.hu_inds)
+        self.h_op = transform_4q_pauli(self.h.qiskit_op, init_state=[1, 0])
+        self.inds_e = transform_4q_indices(params.ed_inds)
+        self.inds_h = transform_4q_indices(params.hu_inds)
 
         self.ansatz_func_e = ansatz_func_e
         self.ansatz_func_h = ansatz_func_h
         self.q_instance = q_instance
-        self.h5fname = h5fname + '.hdf5'
+        self.h5fname = h5fname + '.h5'
 
         self.energies_e = None
         self.energies_h = None

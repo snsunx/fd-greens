@@ -1,6 +1,7 @@
 """Utility class for handling qubit indices."""
 
 import copy
+import numpy as np
 from typing import Union, Sequence, List, Optional
 from math import ceil, log2
 
@@ -68,27 +69,42 @@ class QubitIndices:
         assert self._str is not None
         self._list = [[int(c) for c in s[::-1]] for s in self._str]
 
-    def include_ancilla(self, anc: str, inplace: bool = False) -> Optional['QubitIndices']:
-        """Includes ancilla qubits as the first few qubits into a set of qubit indices.
+    def insert_ancilla(self,
+                       qind_anc: Union[str, Sequence[int]],
+                       loc: Optional[Sequence[int]] = None
+                       ) -> 'QubitIndices':
+        """Inserts ancilla qubit indices into a QubitIndices object.
 
         Args:
-            anc: The ancilla qubit states in str form.
-            inplace: Whether the indices are modified inplace.
-
+            qind_anc: The ancilla qubit states in string or list form.
+            loc: Location of the ancilla indices. Default to the first few locations.
+        
         Returns:
-            (Optional) The new qubit indices with ancilla qubits.
+            The new qubit indices with ancilla qubits.
         """
-        str_with_anc  = [s + anc for s in self._str]
-        if inplace:
-            self._str = str_with_anc
-            self._build_int_form()
-            self._build_list_form()
-        else:
-            qubit_inds_with_anc = self.copy()
-            qubit_inds_with_anc._str = str_with_anc
-            qubit_inds_with_anc._build_int_form()
-            qubit_inds_with_anc._build_list_form()
-            return qubit_inds_with_anc
+        # Convert qind_anc to list form.
+        if isinstance(qind_anc, str):
+            qind_anc = [int(c) for c in qind_anc[::-1]]
+        
+        qinds_list = copy.deepcopy(self._list)
+        qinds_data_new = []
+        for qind in qinds_list:
+            if loc is None: # Default to the first few locations
+                qind = qind_anc + qind
+            else: # Insert into the given locations
+                for i, q in zip(loc, qind_anc):
+                    qind.insert(i, q)
+            qinds_data_new.append(qind)
+        
+        qinds_new = QubitIndices(qinds_data_new)
+        return qinds_new
+
+    def slice(self, arr: np.ndarray) -> np.ndarray:
+        """Slices a 1D or 2D array by the qubit indices."""
+        if len(arr.shape) == 1:
+            return arr[self._int]
+        elif len(arr.shape) == 2:
+            return arr[self._int][:, self._int]
 
     # XXX: Isn't this same as include_ancilla?
     def __add__(self, other: 'QubitIndices') -> 'QubitIndices':
