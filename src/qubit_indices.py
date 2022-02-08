@@ -69,6 +69,13 @@ class QubitIndices:
         assert self._str is not None
         self._list = [[int(c) for c in s[::-1]] for s in self._str]
 
+    def __call__(self, arr: np.ndarray) -> np.ndarray:
+        """Slices a 1D or 2D array by the qubit indices."""
+        if len(arr.shape) == 1:
+            return arr[self._int]
+        elif len(arr.shape) == 2:
+            return arr[self._int][:, self._int]
+    
     def insert_ancilla(self,
                        qind_anc: Union[str, Sequence[int]],
                        loc: Optional[Sequence[int]] = None
@@ -98,13 +105,6 @@ class QubitIndices:
         
         qinds_new = QubitIndices(qinds_data_new)
         return qinds_new
-
-    def slice(self, arr: np.ndarray) -> np.ndarray:
-        """Slices a 1D or 2D array by the qubit indices."""
-        if len(arr.shape) == 1:
-            return arr[self._int]
-        elif len(arr.shape) == 2:
-            return arr[self._int][:, self._int]
 
     # XXX: Isn't this same as include_ancilla?
     def __add__(self, other: 'QubitIndices') -> 'QubitIndices':
