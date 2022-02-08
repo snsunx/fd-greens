@@ -2,6 +2,7 @@
 
 import os
 import h5py
+from itertools import product
 import math
 from typing import Optional, Union, Iterable, List, Tuple, Sequence, Mapping
 import numpy as np
@@ -408,8 +409,13 @@ def split_counts_on_anc(counts: Union[Counts, np.ndarray], n_anc: int = 1) -> Co
     if n_anc == 1:
         counts0 = counts[::step]
         counts1 = counts[1::step]
-        counts0 /= np.sum(counts0)
-        counts1 /= np.sum(counts1)
+        n_counts = np.sum(counts)
+        counts0 = counts0 / n_counts
+        counts1 = counts1 / n_counts
+        print('np.sum(counts) =', np.sum(counts))
+        print('##########################################################')
+        print(counts0, np.sum(counts0))
+        print(counts1, np.sum(counts1))
         return counts0, counts1
     elif n_anc == 2:
         counts00 = counts[::step]
@@ -421,6 +427,14 @@ def split_counts_on_anc(counts: Union[Counts, np.ndarray], n_anc: int = 1) -> Co
         counts10 /= np.sum(counts10)
         counts11 /= np.sum(counts11)
         return counts00, counts01, counts10, counts11
+
+def get_counts_from_key(counts, anc_inds, anc_loc):
+    if isinstance(counts, Counts):
+        counts = counts_dict_to_arr(counts)
+    n_tot = int(np.log2())
+    sys_inds = list(product([0, 1], repeat=n_tot))
+    
+    return
 
 # HDF5 utility function
 def initialize_hdf5(fname: str = 'lih') -> None:
@@ -462,6 +476,6 @@ def get_quantum_instance(type_str: str) -> QuantumInstance:
             shots=10000)
     elif type_str == 'noisy':
         q_instance = QuantumInstance(
-            Aer.get_backend('qasm_simulator', shots=10000, noise_model_name='ibmq_jakarta'),
-            shots=10000)
+            Aer.get_backend('qasm_simulator', shots=100000, noise_model_name='ibmq_jakarta'),
+            shots=100000)
     return q_instance

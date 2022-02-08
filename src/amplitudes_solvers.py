@@ -143,10 +143,8 @@ class EHAmplitudesSolver:
         second_q_ops.transform(partial(transform_4q_pauli, init_state=[1, 1]))
         self.pauli_dict = second_q_ops.get_pauli_dict()
 
-        print('pauli_dict =', self.pauli_dict)
         for key, val in self.pauli_dict.items():
             print(key, val[0].table, val[1].table)
-        exit()
 
     def build_diagonal(self) -> None:
         """Constructs diagonal transition amplitude circuits."""

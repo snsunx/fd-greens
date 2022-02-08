@@ -9,9 +9,9 @@ from amplitudes_solvers_new import EHAmplitudesSolver
 from ansatze import build_ansatz_gs, build_ansatz_e, build_ansatz_h
 from utils import get_lih_hamiltonian, get_quantum_instance, initialize_hdf5
 
-h = get_lih_hamiltonian(1.6)
+h = get_lih_hamiltonian(3.0)
 q_instance = get_quantum_instance('qasm')
-h5fname = 'lih_new'
+h5fname = 'lih_new_' + q_instance.backend.name()[:4] + 'a'
 initialize_hdf5(h5fname)
 
 gs_solver = GroundStateSolver(h, ansatz_func=build_ansatz_gs, q_instance=q_instance, h5fname=h5fname)

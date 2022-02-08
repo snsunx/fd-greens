@@ -271,6 +271,37 @@ def append_tomography_gates(circ: QuantumCircuit,
     tomo_circ = create_circuit_from_inst_tups(inst_tups)
     return tomo_circ
 
+def append_tomography_gates1(circ: QuantumCircuit, 
+                            qubits: Iterable[QubitLike],
+                            label: Tuple[str],
+                            use_u3: bool = True) -> QuantumCircuit:
+    """Appends tomography gates to a circuit.
+    Args:
+        circ: The circuit to which tomography gates are to be appended.
+        qubits: The qubits to be tomographed.
+        label: The tomography states label.
+        use_u3: Whether to use U3 rather than Clifford gates for basis change.
+    
+    Returns:
+        A new circuit with tomography gates appended.
+    """
+    assert len(qubits) == len(label)
+    tomo_circ = circ.copy()
+
+    for q, s in zip(qubits, label):
+        if s == 'x':
+            if use_u3:
+                tomo_circ.u3(np.pi/2, 0, np.pi, q)
+            else:
+                tomo_circ.h(q)
+        elif s == 'y':
+            if use_u3:
+                tomo_circ.u3(np.pi/2, 0, np.pi/2, q)
+            else:
+                tomo_circ.sdg(q)
+                tomo_circ.h(q)
+    return tomo_circ
+
 def append_measurement_gates(circ: QuantumCircuit) -> QuantumCircuit:
     """Appends measurement gates to a circuit.
     
@@ -284,7 +315,10 @@ def append_measurement_gates(circ: QuantumCircuit) -> QuantumCircuit:
     n_qubits = len(qreg)
     circ.add_register(ClassicalRegister(n_qubits))
     inst_tups = circ.data.copy()
-    perms = []
+    if n_qubits == 4:
+        perms = [] # [Permutation.cycle(2, 3)] # XXX
+    else:
+        perms = []
 
     # Split off the last few SWAP gates.
     while True:
@@ -302,11 +336,27 @@ def append_measurement_gates(circ: QuantumCircuit) -> QuantumCircuit:
         q = c + 1
         for perm in perms: q = perm(q)
         q -= 1
+        
         inst_tups += [(Measure(), [q], [c])]
     # circ.measure(range(n_qubits), range(n_qubits))
 
     circ_new = create_circuit_from_inst_tups(inst_tups)
     return circ_new
+
+def append_measurement_gates1(circ: QuantumCircuit) -> QuantumCircuit:
+    """Appends measurement gates to a circuit.
+    
+    Args:
+        The circuit to which measurement gates are to be appended.
+        
+    Returns:
+        A new circuit with measurement gates appended.
+    """
+    n_qubits = len(circ.qregs[0])
+    circ.barrier()
+    circ.add_register(ClassicalRegister(n_qubits))
+    circ.measure(range(n_qubits), range(n_qubits))
+    return circ
 
 def transpile_into_berkeley_gates(circ: QuantumCircuit,
                                   circ_label: str,

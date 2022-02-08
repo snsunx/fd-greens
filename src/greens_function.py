@@ -4,14 +4,11 @@ from typing import Union, Sequence, Optional
 
 import h5py
 import numpy as np
-from ground_state_solvers import GroundStateSolver
-from number_states_solvers import EHStatesSolver
-from amplitudes_solvers import EHAmplitudesSolver
 
 class GreensFunction:
     """A class to calculate frequency-domain Green's function."""
     
-    def __init__(self, fname: str = 'lih', dsetname: str = 'eh'
+    def __init__(self, fname: str = 'lih',
                  # gs_solver: GroundStateSolver,
                  # es_solver: EHStatesSolver,
                  # amp_solver: EHAmplitudesSolver
@@ -24,31 +21,15 @@ class GreensFunction:
             es_solver: The N+/-1 electron states solver.
             amp_solver: The transition amplitudes solver.
         """
-        # Ground state and N+/-1 electron states energies
-        # self.energy_gs = gs_solver.energy
-        # self.energies_e = es_solver.energies_e
-        # self.energies_h = es_solver.energies_h
-
-        # Transition amplitudes
-        # self.B_e = amp_solver.B_e
-        # self.B_h = amp_solver.B_h
-        # self.n_orb = amp_solver.n_orb
-
-        # Orbital energies
-        # h = amp_solver.h
-        # e_orb = np.diag(h.molecule.orbital_energies)
-        # self.e_orb = e_orb[h.act_inds][:, h.act_inds]
-
-        f = h5py.File(fname + '.hdf5', 'r')
-        dset = f[dsetname]
-        self.energy_gs = dset.attrs['energy_gs']
-        self.energies_e = dset.attrs['energies_e']
-        self.energies_h = dset.attrs['energies_h']
-        self.B_e = dset.attrs['B_e']
-        self.B_h = dset.attrs['B_h']
+        h5file = h5py.File(fname + '.h5', 'r')
+        self.energy_gs = h5file['gs/energy']
+        self.energies_e = h5file['eh/energies_e']
+        self.energies_h = h5file['eh/energies_h']
+        self.B_e = h5file['amp/B_e']
+        self.B_h = h5file['amp/B_h']
         self.n_orb = self.B_e.shape[0]
-        self.e_orb = dset.attrs['e_orb']
-        self.datfname = fname + '_' + dsetname
+        self.e_orb = h5file['amp/e_orb']
+        self.datfname = fname
 
     @property
     def density_matrix(self) -> np.ndarray:
