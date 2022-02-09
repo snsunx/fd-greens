@@ -412,8 +412,8 @@ def split_counts_on_anc(counts: Union[Counts, np.ndarray], n_anc: int = 1) -> Co
         n_counts = np.sum(counts)
         counts0 = counts0 / n_counts
         counts1 = counts1 / n_counts
-        print('np.sum(counts) =', np.sum(counts))
-        print('##########################################################')
+        # print('np.sum(counts) =', np.sum(counts))
+        # print('##########################################################')
         print(counts0, np.sum(counts0))
         print(counts1, np.sum(counts1))
         return counts0, counts1
@@ -422,10 +422,10 @@ def split_counts_on_anc(counts: Union[Counts, np.ndarray], n_anc: int = 1) -> Co
         counts01 = counts[1::step]
         counts10 = counts[2::step]
         counts11 = counts[3::step]
-        counts00 /= np.sum(counts00)
-        counts01 /= np.sum(counts01)
-        counts10 /= np.sum(counts10)
-        counts11 /= np.sum(counts11)
+        counts00 = counts00 / np.sum(counts)
+        counts01 = counts01 / np.sum(counts)
+        counts10 = counts10 / np.sum(counts)
+        counts11 = counts11 / np.sum(counts)
         return counts00, counts01, counts10, counts11
 
 def get_counts_from_key(counts, anc_inds, anc_loc):

@@ -260,12 +260,9 @@ def append_tomography_gates(circ: QuantumCircuit,
             inst_tups += [(RZGate(np.pi/2), [q_new], []), 
                           (RXGate(np.pi/2), [q_new], []),
                           (RZGate(np.pi/2), [q_new], [])]
-            # tomo_circ.h(q)
         elif s == 'y':
             inst_tups += [(RXGate(np.pi/2), [q_new], []),
                           (RZGate(np.pi/2), [q_new], [])]
-            # tomo_circ.sdg(q)
-            # tomo_circ.h(q)
 
     inst_tups += inst_tups_swap
     tomo_circ = create_circuit_from_inst_tups(inst_tups)
@@ -316,7 +313,7 @@ def append_measurement_gates(circ: QuantumCircuit) -> QuantumCircuit:
     circ.add_register(ClassicalRegister(n_qubits))
     inst_tups = circ.data.copy()
     if n_qubits == 4:
-        perms = [] # [Permutation.cycle(2, 3)] # XXX
+        perms = [Permutation.cycle(2, 3)] # XXX
     else:
         perms = []
 

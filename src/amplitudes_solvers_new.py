@@ -192,8 +192,8 @@ class EHAmplitudesSolver:
             if self.method == 'tomo':
                 labels = [''.join(x) for x in itertools.product('xyz', repeat=2)]
                 for label in labels:
-                    tomo_circ = append_tomography_gates1(circ, [1, 2], label)
-                    tomo_circ = append_measurement_gates1(tomo_circ)
+                    tomo_circ = append_tomography_gates(circ, [1, 2], label)
+                    tomo_circ = append_measurement_gates(tomo_circ)
                     h5file[f'circ{m}/{label}'] = tomo_circ.qasm()
 
         h5file.close()
@@ -290,7 +290,6 @@ class EHAmplitudesSolver:
                     label_str = ''.join(label)
                     dset = h5file[f'circ{m}/{label_str}']
                     counts = dset.attrs[f'counts{m}']
-                    print(counts)
                     counts_h, counts_e = split_counts_on_anc(counts, n_anc=1)
 
                     print(counts_h)
@@ -380,13 +379,13 @@ class EHAmplitudesSolver:
             for key, qind in zip(self.keys_off_diag, self.qinds_anc_off_diag):
                 counts_arr_key = np.array([])
                 for label in labels:
-                    counts_arr = h5file[f'circ01/{label[::-1]}'].attrs[f'counts01']
+                    counts_arr = h5file[f'circ01/{label}'].attrs[f'counts01']
                     start = int(''.join([str(i) for i in qind])[::-1], 2)
                     # print('start =', start)
                     counts_arr_label = counts_arr[start::4] # 4 is because 2 ** 2
                     # print('counts_arr_label =', counts_arr_label)
-                    if np.sum(counts_arr_label) != 0:
-                        counts_arr_label /= np.sum(counts_arr_label)
+                    counts_arr_label = counts_arr_label / np.sum(counts_arr)
+                    assert np.sum(counts_arr) == 10000
                     counts_arr_key = np.hstack((counts_arr_key, counts_arr_label))
 
                 rho = np.linalg.lstsq(basis_matrix, counts_arr_key)[0].reshape(4, 4, order='F')
@@ -430,11 +429,11 @@ class EHAmplitudesSolver:
         """Runs the functions to compute transition amplitudes."""
         if method is not None: self.method = method
         self.build_diagonal()
-        #self.build_off_diagonal()
+        self.build_off_diagonal()
         self.run_diagonal()
-        #self.run_off_diagonal()
+        self.run_off_diagonal()
         self.process_diagonal()
-        #self.process_off_diagonal()
+        self.process_off_diagonal()
         self.save_data()
 
 
