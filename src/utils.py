@@ -443,8 +443,8 @@ def initialize_hdf5(fname: str = 'lih') -> None:
     if os.path.exists(fname): f = h5py.File(fname, 'r+')
     else: f = h5py.File(fname, 'w')
     for gname in ['gs', 'eh', 'amp', 'circ0', 'circ1', 'circ01']:
-        if gname in f.keys(): del f[gname]
-        f.create_group(gname)
+        if gname not in f.keys():
+            f.create_group(gname)
     f.close()
 
 '''

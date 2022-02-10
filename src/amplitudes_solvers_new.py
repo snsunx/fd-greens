@@ -57,9 +57,9 @@ class EHAmplitudesSolver:
 
         # Load data and initialize quantities
         self.h5fname = h5fname + '.h5'
-        # self._initialize()
+        self._initialize()
 
-    def initialize(self) -> None:
+    def _initialize(self) -> None:
         """Loads ground state and (N+/-1)-electron states data from hdf5 file."""
         # Attributes from ground and (N+/-1)-electron state solver.
         h5file = h5py.File(self.h5fname, 'r+')
@@ -282,11 +282,11 @@ class EHAmplitudesSolver:
     def save_data(self) -> None:
         """Saves transition amplitudes data to hdf5 file."""
         h5file = h5py.File(self.h5fname, 'r+')
-        h5file['amp/B_e'] = self.B['e']
-        h5file['amp/B_h'] = self.B['h']
+        h5file[f'amp/B_e{self.suffix}'] = self.B['e']
+        h5file[f'amp/B_h{self.suffix}'] = self.B['h']
         e_orb = np.diag(self.h.molecule.orbital_energies)
         act_inds = self.h.act_inds
-        h5file['amp/e_orb'] = e_orb[act_inds][:, act_inds]
+        h5file[f'amp/e_orb{self.suffix}'] = e_orb[act_inds][:, act_inds]
         h5file.close()
 
     def build_all(self, method: Optional[str] = None) -> None:
