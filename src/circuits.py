@@ -380,14 +380,14 @@ def transpile_into_berkeley_gates(circ: QuantumCircuit,
     elif circ_label == '01':
         if save_figs:
             fig = circ.draw('mpl')
-            fig.savefig('circ_untranspiled.png', bbox_inches='tight')
+            fig.savefig('figs/circ_untranspiled.png', bbox_inches='tight')
         # uni = get_unitary(circ)
 
         circ_new = permute_qubits(circ, [0, 3])
         circ_new = permute_qubits(circ_new, [0, 1], start=26)
         if save_figs:
             fig = circ_new.draw('mpl')
-            fig.savefig('circ_permuted.png', bbox_inches='tight')
+            fig.savefig('figs/circ_permuted.png', bbox_inches='tight')
         # uni1 = get_unitary(circ_new)
 
         circ_new = convert_ccz_to_cxc(circ_new)
@@ -408,7 +408,7 @@ def transpile_into_berkeley_gates(circ: QuantumCircuit,
         # print(np.allclose(vec1n, vec2n))
         if save_figs:
             fig = circ_new.draw('mpl')
-            fig.savefig('circ_additional.png', bbox_inches='tight')
+            fig.savefig('figs/circ_additional.png', bbox_inches='tight')
     return circ_new
 
 def permute_qubits(circ: QuantumCircuit, 

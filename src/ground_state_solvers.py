@@ -1,6 +1,6 @@
 """Ground state solver module."""
 
-from typing import Sequence, Tuple
+from typing import Optional, Sequence, Tuple
 import h5py
 import numpy as np
 from scipy.optimize import minimize
@@ -22,6 +22,7 @@ class GroundStateSolver:
                  ansatz_func: AnsatzFunction = build_ansatz_gs,
                  init_params: Sequence[float] = [-5., 0., 0., 5.],
                  q_instance: QuantumInstance = get_quantum_instance('sv'),
+                 method: str = 'exact',
                  h5fname: str = 'lih') -> None:
         """Initializes a GroudStateSolver object.
         
@@ -38,6 +39,7 @@ class GroundStateSolver:
         self.ansatz_func = ansatz_func
         self.init_params = init_params
         self.q_instance = q_instance
+        self.method = method
         self.h5fname = h5fname + '.h5'
 
         self.energy = None
@@ -75,10 +77,11 @@ class GroundStateSolver:
         
         h5file.close()
 
-    def run(self, method: str = 'vqe') -> None:
+    def run(self, method: Optional[str] = None) -> None:
         """Runs the ground state calculation."""
-        if method == 'exact': self.run_exact()
-        elif method == 'vqe': self.run_vqe()
+        if method is not None: self.method = method
+        if self.method == 'exact': self.run_exact()
+        elif self.method == 'vqe': self.run_vqe()
         self.save_data()
 
 def vqe_minimize(h_op: PauliSumOp,

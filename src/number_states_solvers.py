@@ -24,6 +24,7 @@ class EHStatesSolver:
                  ansatz_func_e: AnsatzFunction = build_ansatz_e, 
                  ansatz_func_h: AnsatzFunction = build_ansatz_h,
                  q_instance: QuantumInstance = get_quantum_instance('sv'),
+                 method: str = 'exact',
                  h5fname: str = 'lih') -> None:
         """Initializes an EHStatesSolver object.
         
@@ -43,6 +44,7 @@ class EHStatesSolver:
         self.ansatz_func_e = ansatz_func_e
         self.ansatz_func_h = ansatz_func_h
         self.q_instance = q_instance
+        self.method = method
         self.h5fname = h5fname + '.h5'
 
         self.energies_e = None
@@ -96,10 +98,11 @@ class EHStatesSolver:
         
         h5file.close()
 
-    def run(self, method: str = 'vqe') -> None:
+    def run(self, method: Optional[str] = None) -> None:
         """Runs the (N+/-1)-electron states calculation."""
-        if method == 'exact': self.run_exact()
-        elif method == 'vqe': self.run_vqe()
+        if method is not None: self.method = method
+        if self.method == 'exact': self.run_exact()
+        elif self.method == 'vqe': self.run_vqe()
         self.save_data()
 
 class ExcitedStatesSolver:

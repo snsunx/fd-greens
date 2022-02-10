@@ -19,9 +19,9 @@ from ground_state_solvers import GroundStateSolver
 from number_states_solvers import ExcitedStatesSolver
 from operators import SecondQuantizedOperators, ChargeOperators, transform_4q_pauli
 from qubit_indices import QubitIndices, transform_4q_indices
-from circuits import (CircuitConstructor, InstructionTuple, append_tomography_gates, append_tomography_gates1,
-                      append_measurement_gates, append_measurement_gates1, transpile_into_berkeley_gates)
-from utils import get_overlap, get_quantum_instance, counts_dict_to_arr, split_counts_on_anc
+from circuits import (CircuitConstructor, InstructionTuple, append_tomography_gates,
+                      append_measurement_gates, transpile_into_berkeley_gates)
+from utils import get_overlap, get_quantum_instance, counts_dict_to_arr
 
 np.set_printoptions(precision=6)
 
@@ -30,10 +30,11 @@ class EHAmplitudesSolver:
 
     def __init__(self,
                  h: MolecularHamiltonian,
-                 method: str = 'exact',
                  q_instance: QuantumInstance = get_quantum_instance('sv'),
+                 method: str = 'exact',
                  h5fname: str = 'lih',
-                 anc: Sequence[int] = [0, 2]) -> None:
+                 anc: Sequence[int] = [0, 2],
+                 suffix: str = '') -> None:
         """Initializes an EHAmplitudesSolver object.
 
         Args:
@@ -47,87 +48,18 @@ class EHAmplitudesSolver:
 
         # Basic variables
         self.h = h
-        self.method = method
         self.q_instance = q_instance
+        self.method = method
         self.anc = anc
         self.sys = [i for i in range(4) if i not in anc]
-
-        self.spin = 'edhu'
+        # self.spin = 'edhu'
+        self.suffix = suffix
 
         # Load data and initialize quantities
         self.h5fname = h5fname + '.h5'
-        self._initialize()
-        self._load_data_from_hdf5()
-        self._initialize_operators()
-        self._initialize_quantities()
+        # self._initialize()
 
-        self.constructor = CircuitConstructor(self.ansatz, anc=self.anc)
-
-    def _load_data_from_hdf5(self) -> None:
-        """Loads ground state and (N+/-1)-electron states data from hdf5 file. """
-        h5file = h5py.File(self.h5fname, 'r+')
-
-        # Attributes from ground state solver
-        self.energy_gs = h5file['gs/energy'][()]
-        qasm_str = h5file['gs/ansatz'][()].decode()
-        self.ansatz = QuantumCircuit.from_qasm_str(qasm_str)
-
-        # Attributes from (N+/-1)-electron states solver
-        self.energies_e = h5file['eh/energies_e'][()]
-        self.energies_h = h5file['eh/energies_h'][()]
-        self.states_e = h5file['eh/states_e'][:]
-        self.states_h = h5file['eh/states_h'][:]
-
-        h5file.close()
-
-    def _initialize_quantities(self) -> None:
-        """Initializes physical quantity attributes."""
-        # Occupied and active orbital indices
-        self.occ_inds = self.h.occ_inds
-        self.act_inds = self.h.act_inds
-
-        # Number of spatial orbitals and (N+/-1)-electron states
-        self.n_elec = self.h.molecule.n_electrons
-        self.n_orb = len(self.act_inds)
-        self.n_occ = self.n_elec // 2 - len(self.occ_inds)
-        self.n_vir = self.n_orb - self.n_occ
-        self.n_e = int(binom(2 * self.n_orb, 2 * self.n_occ + 1)) // 2
-        self.n_h = int(binom(2 * self.n_orb, 2 * self.n_occ - 1)) // 2
-
-        if self.spin == 'euhd':
-            self.inds_e = transform_4q_indices(params.eu_inds)
-            self.inds_h = transform_4q_indices(params.hd_inds)
-        elif self.spin == 'edhu':
-            self.inds_e = transform_4q_indices(params.ed_inds)
-            self.inds_h = transform_4q_indices(params.hu_inds)
-
-        # Transition amplitude arrays
-        self.B_e = np.zeros((self.n_orb, self.n_orb, self.n_e), dtype=complex)
-        self.D_ep = np.zeros((self.n_orb, self.n_orb, self.n_e), dtype=complex)
-        self.D_em = np.zeros((self.n_orb, self.n_orb, self.n_e), dtype=complex)
-        self.B_h = np.zeros((self.n_orb, self.n_orb, self.n_h), dtype=complex)
-        self.D_hp = np.zeros((self.n_orb, self.n_orb, self.n_h), dtype=complex)
-        self.D_hm = np.zeros((self.n_orb, self.n_orb, self.n_h), dtype=complex)
-    
-    def _initialize_operators(self) -> None:
-        """Initializes operator attributes."""
-        self.qiskit_op = self.h.qiskit_op.copy()
-        if self.spin == 'euhd': # e up h down
-            self.qiskit_op_spin = transform_4q_pauli(self.qiskit_op, init_state=[0, 1])
-        elif self.spin == 'edhu': # e down h up
-            self.qiskit_op_spin = transform_4q_pauli(self.qiskit_op, init_state=[1, 0])
-
-        # print('qiskit_op_spin =', self.qiskit_op_spin)
-
-        # Create Pauli dictionaries for the transformed and tapered operators
-        second_q_ops = SecondQuantizedOperators(self.n_elec)
-        second_q_ops.transform(partial(transform_4q_pauli, init_state=[1, 1]))
-        self.pauli_dict = second_q_ops.get_pauli_dict()
-
-        # for key, val in self.pauli_dict.items():
-        #     print(key, val[0].table, val[1].table)
-
-    def _initialize(self) -> None:
+    def initialize(self) -> None:
         """Loads ground state and (N+/-1)-electron states data from hdf5 file."""
         # Attributes from ground and (N+/-1)-electron state solver.
         h5file = h5py.File(self.h5fname, 'r+')
@@ -170,6 +102,8 @@ class EHAmplitudesSolver:
         second_q_ops.transform(partial(transform_4q_pauli, init_state=[1, 1]))
         self.pauli_dict = second_q_ops.get_pauli_dict()
 
+        self.constructor = CircuitConstructor(self.ansatz, anc=self.anc)
+
         print("----- Printing out physical quantities -----")
         print(f"Number of electrons is {self.n_elec}")
         print(f"Number of orbitals is {self.n_orb}")
@@ -209,7 +143,7 @@ class EHAmplitudesSolver:
                 
                 result = self.q_instance.execute(circ)
                 psi = result.get_statevector()
-                dset.attrs[f'psi{m}'] = psi
+                dset.attrs[f'psi{self.suffix}'] = psi
             else:
                 labels = [''.join(x) for x in itertools.product('xyz', repeat=2)]
                 for label in labels:
@@ -219,7 +153,7 @@ class EHAmplitudesSolver:
                     result = self.q_instance.execute(circ)
                     counts = result.get_counts()
                     counts_arr = counts_dict_to_arr(counts.int_raw, n_qubits=3)
-                    dset.attrs[f'counts{m}'] = counts_arr
+                    dset.attrs[f'counts{self.suffix}'] = counts_arr
 
         h5file.close()
 
@@ -229,11 +163,11 @@ class EHAmplitudesSolver:
 
         for m in range(self.n_orb): # 0, 1
             if self.method == 'exact':
-                psi = h5file[f'circ{m}/base'].attrs[f'psi{m}']
+                psi = h5file[f'circ{m}/base'].attrs[f'psi{self.suffix}']
                 for key in self.keys_diag:
                     psi_key = self.qinds_tot_diag[key](psi)
                     self.B[key][m, m] = np.abs(self.states[key].conj().T @ psi_key) ** 2
-                    print(f'diagonal B[{key}][{m}, {m}] = {self.B[key][m, m]}')
+                    print(f'B[{key}][{m}, {m}] = {self.B[key][m, m]}')
 
             elif self.method == 'tomo':
                 basis_matrix = params.basis_matrix
@@ -243,77 +177,21 @@ class EHAmplitudesSolver:
                     # Stack counts_arr over all tomography labels together.
                     counts_arr_key = np.array([])
                     for label in labels:
-                        counts_arr = h5file[f'circ{m}/{label}'].attrs[f'counts{m}']
-                        print('np.sum(counts_arr) =', np.sum(counts_arr))
+                        counts_arr = h5file[f'circ{m}/{label}'].attrs[f'counts{self.suffix}']
+                        # print('np.sum(counts_arr) =', np.sum(counts_arr))
                         start = int(''.join([str(i) for i in qind])[::-1], 2)
                         counts_arr_label = counts_arr[start::2] # 2 is because 2 ** 1
                         counts_arr_label = counts_arr_label / np.sum(counts_arr)
                         counts_arr_key = np.hstack((counts_arr_key, counts_arr_label))
-                        print('np.sum(counts_arr) =', np.sum(counts_arr))
-                        print('np.sum(counts_arr_label) =', np.sum(counts_arr_label))
+                        # print('np.sum(counts_arr) =', np.sum(counts_arr))
+                        # print('np.sum(counts_arr_label) =', np.sum(counts_arr_label))
                     
                     # Obtain the density matrix from tomography.
                     rho = np.linalg.lstsq(basis_matrix, counts_arr_key)[0].reshape(4, 4, order='F')
                     rho = self.qinds_sys[key](rho)
 
                     self.B[key][m, m] = [get_overlap(self.states[key][:, i], rho) for i in range(2)]
-                    print(f'diagonal B[{key}][{m}, {m}] = {self.B[key][m, m]}')
-
-        h5file.close()
-
-    def process_diagonal1(self) -> None:
-        """Post-processes diagonal transition amplitude results."""
-        h5file = h5py.File(self.h5fname, 'r+')
-
-        inds_anc_e = QubitIndices(['1'])
-        inds_anc_h = QubitIndices(['0'])
-        inds_tot_e = self.inds_e + inds_anc_e
-        inds_tot_h = self.inds_h + inds_anc_h
-
-        for m in range(self.n_orb):
-            if self.method == 'exact':
-                psi = dset.attrs[f'psi{m}']
-
-                psi_e = psi[inds_tot_e.int_form]
-                B_e_mm = np.abs(self.states_e.conj().T @ psi_e) ** 2
-
-                psi_h = psi[inds_tot_h.int_form]
-                B_h_mm = np.abs(self.states_h.conj().T @ psi_h) ** 2
-            
-            elif self.method == 'tomo':
-                basis_matrix = params.basis_matrix
-                data_h = np.array([])
-                data_e = np.array([])
-
-                labels = itertools.product('xyz', repeat=2)
-                for label in labels:
-                    label_str = ''.join(label)
-                    dset = h5file[f'circ{m}/{label_str}']
-                    counts = dset.attrs[f'counts{m}']
-                    counts_h, counts_e = split_counts_on_anc(counts, n_anc=1)
-
-                    print(counts_h)
-                    print(counts_e)
-
-                    data_h = np.hstack((data_h, counts_h))
-                    data_e = np.hstack((data_e, counts_e))
-                    
-                rho_h = np.linalg.lstsq(basis_matrix, data_h)[0].reshape(4, 4, order='F')
-                rho_e = np.linalg.lstsq(basis_matrix, data_e)[0].reshape(4, 4, order='F')
-                rho_h = rho_h[self.inds_h.int_form][:, self.inds_h.int_form]
-                rho_e = rho_e[self.inds_e.int_form][:, self.inds_e.int_form]
-
-                B_h_mm = np.zeros((self.n_h,), dtype=float)
-                B_e_mm = np.zeros((self.n_e,), dtype=float)
-                for i in range(self.n_h):
-                    B_h_mm[i] = get_overlap(self.states_h[i], rho_h)
-                for i in range(self.n_e):
-                    B_e_mm[i] = get_overlap(self.states_e[i], rho_e)
-
-            self.B_e[m, m] = B_e_mm
-            self.B_h[m, m] = B_h_mm
-            print(f'B_e[{m}, {m}] = {self.B_e[m, m]}')
-            print(f'B_h[{m}, {m}] = {self.B_h[m, m]}')
+                    print(f'B[{key}][{m}, {m}] = {self.B[key][m, m]}')
 
         h5file.close()
 
@@ -346,7 +224,7 @@ class EHAmplitudesSolver:
 
             result = self.q_instance.execute(circ)
             psi = result.get_statevector()
-            dset.attrs[f'psi01'] = psi
+            dset.attrs[f'psi{self.suffix}'] = psi
         else:
             labels = [''.join(x) for x in itertools.product('xyz', repeat=2)]
             for label in labels:
@@ -356,7 +234,7 @@ class EHAmplitudesSolver:
                 result = self.q_instance.execute(circ)
                 counts = result.get_counts()
                 counts_arr = counts_dict_to_arr(counts.int_raw)
-                dset.attrs[f'counts01'] = counts_arr
+                dset.attrs[f'counts{self.suffix}'] = counts_arr
 
         h5file.close()
 
@@ -365,10 +243,9 @@ class EHAmplitudesSolver:
         h5file = h5py.File(self.h5fname, 'r+')
 
         if self.method == 'exact':
-            psi = h5file[f'circ01/base'].attrs[f'psi01']
+            psi = h5file[f'circ01/base'].attrs[f'psi{self.suffix}']
             for key in self.keys_off_diag:
                 psi_key = self.qinds_tot_off_diag[key](psi)
-                print('qinds_tot_off_diag =', self.qinds_tot_off_diag[key])
                 self.D[key][0, 1] = self.D[key][1, 0] = \
                     abs(self.states[key[0]].conj().T @ psi_key) ** 2
                 print(f'self.D[{key}][0, 1] =', self.D[key][0, 1])
@@ -379,13 +256,11 @@ class EHAmplitudesSolver:
             for key, qind in zip(self.keys_off_diag, self.qinds_anc_off_diag):
                 counts_arr_key = np.array([])
                 for label in labels:
-                    counts_arr = h5file[f'circ01/{label}'].attrs[f'counts01']
+                    counts_arr = h5file[f'circ01/{label}'].attrs[f'counts{self.suffix}']
                     start = int(''.join([str(i) for i in qind])[::-1], 2)
-                    # print('start =', start)
                     counts_arr_label = counts_arr[start::4] # 4 is because 2 ** 2
-                    # print('counts_arr_label =', counts_arr_label)
                     counts_arr_label = counts_arr_label / np.sum(counts_arr)
-                    assert np.sum(counts_arr) == 10000
+                    # assert np.sum(counts_arr) == 10000
                     counts_arr_key = np.hstack((counts_arr_key, counts_arr_label))
 
                 rho = np.linalg.lstsq(basis_matrix, counts_arr_key)[0].reshape(4, 4, order='F')
@@ -395,7 +270,6 @@ class EHAmplitudesSolver:
                 print(f'D[{key}][0, 1] =', self.D[key][0, 1])
 
 
-        print(self.D['ep'][0, 1] - self.D['em'][0, 1])
         # Unpack D values to B values.
         for key in self.keys_diag:
             self.B[key][0, 1] = self.B[key][1, 0] = \
@@ -415,18 +289,27 @@ class EHAmplitudesSolver:
         h5file['amp/e_orb'] = e_orb[act_inds][:, act_inds]
         h5file.close()
 
-    def save_data1(self) -> None:
-        """Saves transition amplitudes data to hdf5 file."""
-        h5file = h5py.File(self.h5fname, 'r+')
-        h5file['amp/B_e'] = self.B_e
-        h5file['amp/B_h'] = self.B_h
-        e_orb = np.diag(self.h.molecule.orbital_energies)
-        act_inds = self.h.act_inds
-        h5file['amp/e_orb'] = e_orb[act_inds][:, act_inds]
-        h5file.close()
+    def build_all(self, method: Optional[str] = None) -> None:
+        """Constructs the diagonal and off-diagonal circuits."""
+        if method is not None: self.method = method
+        self.build_diagonal()
+        self.build_off_diagonal()
+
+    def run_all(self, method: Optional[str] = None) -> None:
+        """Executes the diagonal and off-diagonal circuits."""
+        if method is not None: self.method = method
+        self.run_diagonal()
+        self.run_off_diagonal()
+
+    def process_all(self, method: Optional[str] = None) -> None:
+        """Post-processes data obtained from the diagonal and off-diagonal circuits."""
+        if method is not None: self.method = method
+        self.process_diagonal()
+        self.process_off_diagonal()
+        self.save_data()
 
     def run(self, method: Optional[str] = None) -> None:
-        """Runs the functions to compute transition amplitudes."""
+        """Executes all functions to calculate transition amplitudes."""
         if method is not None: self.method = method
         self.build_diagonal()
         self.build_off_diagonal()

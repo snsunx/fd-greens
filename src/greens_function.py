@@ -1,5 +1,6 @@
 """Green's function module."""
 
+from collections import defaultdict
 from typing import Union, Sequence, Optional
 
 import h5py
@@ -8,19 +9,13 @@ import numpy as np
 class GreensFunction:
     """A class to calculate frequency-domain Green's function."""
     
-    def __init__(self, fname: str = 'lih',
-                 # gs_solver: GroundStateSolver,
-                 # es_solver: EHStatesSolver,
-                 # amp_solver: EHAmplitudesSolver
-                ) -> None:
+    def __init__(self, fname: str = 'lih') -> None:
         """Initializes a GreensFunction object.
         
         Args:
             fname: The h5py file name.
-            gs_solver: The ground state solver.
-            es_solver: The N+/-1 electron states solver.
-            amp_solver: The transition amplitudes solver.
         """
+        self.fname = fname
         h5file = h5py.File(fname + '.h5', 'r')
         self.energy_gs = h5file['gs/energy']
         self.energies_e = h5file['eh/energies_e']
@@ -29,7 +24,15 @@ class GreensFunction:
         self.B_h = h5file['amp/B_h']
         self.n_orb = self.B_e.shape[0]
         self.e_orb = h5file['amp/e_orb']
-        self.datfname = fname
+
+        self.n_orb = 2
+        self.n_e = 2
+        self.n_h = 2
+
+        # Transition amplitude arrays.
+        assert self.n_e == self.n_h # XXX
+        self.B = defaultdict(lambda: np.zeros((self.n_orb, self.n_orb, self.n_e), dtype=complex))
+        self.D = defaultdict(lambda: np.zeros((self.n_orb, self.n_orb, self.n_e), dtype=complex))
 
     @property
     def density_matrix(self) -> np.ndarray:
@@ -81,7 +84,7 @@ class GreensFunction:
         As = np.array(As)
         
         if save:
-            np.savetxt('data/' + self.datfname + '_A.dat', np.vstack((omegas, As)).T)
+            np.savetxt('data/' + self.fname + '_A.dat', np.vstack((omegas, As)).T)
         else:
             return As
 
@@ -111,7 +114,7 @@ class GreensFunction:
         TrSigmas = np.array(TrSigmas)
 
         if save:
-            np.savetxt('data/' + self.datfname + '_TrSigma.dat', 
+            np.savetxt('data/' + self.fname + '_TrSigma.dat', 
                        np.vstack((omegas, TrSigmas.real, TrSigmas.imag)).T)
         else:
             return TrSigmas
