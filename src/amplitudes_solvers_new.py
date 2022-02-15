@@ -21,7 +21,7 @@ from operators import SecondQuantizedOperators, ChargeOperators, transform_4q_pa
 from qubit_indices import QubitIndices, transform_4q_indices
 from circuits import (CircuitConstructor, InstructionTuple, append_tomography_gates,
                       append_measurement_gates, transpile_into_berkeley_gates)
-from utils import get_overlap, get_quantum_instance, counts_dict_to_arr
+from utils import get_overlap, get_quantum_instance, counts_dict_to_arr, write_hdf5
 
 np.set_printoptions(precision=6)
 
@@ -121,14 +121,18 @@ class EHAmplitudesSolver:
             a_op = self.pauli_dict[(m, 'd')]
             circ = self.constructor.build_eh_diagonal(a_op)
             circ = transpile_into_berkeley_gates(circ, str(m))
-            h5file[f'circ{m}/base'] = circ.qasm()
+            write_hdf5(h5file, f'circ{m}', 'base', circ.qasm())
+            # if 'base' in h5file[f'circ{m}'].keys():
+            #     del h5file[f'circ{m}/base']
+            # h5file[f'circ{m}/base'] = circ.qasm()
 
             if self.method == 'tomo':
                 labels = [''.join(x) for x in itertools.product('xyz', repeat=2)]
                 for label in labels:
                     tomo_circ = append_tomography_gates(circ, [1, 2], label)
                     tomo_circ = append_measurement_gates(tomo_circ)
-                    h5file[f'circ{m}/{label}'] = tomo_circ.qasm()
+                    write_hdf5(h5file, f'circ{m}', label, tomo_circ.qasm())
+                    # h5file[f'circ{m}/{label}'] = tomo_circ.qasm()
 
         h5file.close()
 
@@ -203,14 +207,16 @@ class EHAmplitudesSolver:
         a_op_1 = self.pauli_dict[(1, 'd')]
         circ = self.constructor.build_eh_off_diagonal(a_op_1, a_op_0)
         circ = transpile_into_berkeley_gates(circ, '01')
-        h5file[f'circ01/base'] = circ.qasm()
+        write_hdf5(h5file, 'circ01', 'base', circ.qasm())
+        # h5file[f'circ01/base'] = circ.qasm()
 
         if self.method == 'tomo':
             labels = [''.join(x) for x in itertools.product('xyz', repeat=2)]
             for label in labels:
                 tomo_circ = append_tomography_gates(circ, self.sys, label)
                 tomo_circ = append_measurement_gates(tomo_circ)
-                h5file[f'circ01/{label}'] = tomo_circ.qasm()
+                write_hdf5(h5file, 'circ01', label, tomo_circ.qasm())
+                # h5file[f'circ01/{label}'] = tomo_circ.qasm()
 
         h5file.close()
 
@@ -282,11 +288,14 @@ class EHAmplitudesSolver:
     def save_data(self) -> None:
         """Saves transition amplitudes data to hdf5 file."""
         h5file = h5py.File(self.h5fname, 'r+')
-        h5file[f'amp/B_e{self.suffix}'] = self.B['e']
-        h5file[f'amp/B_h{self.suffix}'] = self.B['h']
+        # h5file[f'amp/B_e{self.suffix}'] = self.B['e']
+        # h5file[f'amp/B_h{self.suffix}'] = self.B['h']
+        write_hdf5(h5file, 'amp', f'B_e{self.suffix}', self.B['e'])
+        write_hdf5(h5file, 'amp', f'B_h{self.suffix}', self.B['h'])
         e_orb = np.diag(self.h.molecule.orbital_energies)
         act_inds = self.h.act_inds
-        h5file[f'amp/e_orb{self.suffix}'] = e_orb[act_inds][:, act_inds]
+        # h5file[f'amp/e_orb{self.suffix}'] = e_orb[act_inds][:, act_inds]
+        write_hdf5(h5file, 'amp', f'e_orb{self.suffix}', e_orb[act_inds][:, act_inds])
         h5file.close()
 
     def build_all(self, method: Optional[str] = None) -> None:
@@ -318,7 +327,6 @@ class EHAmplitudesSolver:
         self.process_diagonal()
         self.process_off_diagonal()
         self.save_data()
-
 
 class ExcitedAmplitudesSolver:
     """A class to calculate transition amplitudes."""

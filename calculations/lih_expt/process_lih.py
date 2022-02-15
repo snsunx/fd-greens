@@ -21,9 +21,9 @@ def main_greens(spec_func=True, self_e=True):
 if __name__ == '__main__':
     h = get_lih_hamiltonian(3.0)
     h5fname = 'lih_3A'
-    suffix = '_1'
+    suffix = '_sv'
     omegas = np.arange(-20, 10, 0.1)
     eta = 0.02 * HARTREE_TO_EV
 
-    main_amp('tomo')
+    main_amp('exact')
     main_greens()

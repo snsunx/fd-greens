@@ -25,10 +25,10 @@ def main_amp(build=True, run=True, method='exact'):
 
 if __name__ == '__main__': 
     h = get_lih_hamiltonian(3.0)
-    q_instance = get_quantum_instance('qasm')
+    q_instance = get_quantum_instance('sv')
     h5fname = 'lih_3A'
-    suffix = '_1'
+    suffix = '_sv'
 
     initialize_hdf5(h5fname)
-    main_gs_eh()
-    main_amp(build=True, method='tomo')
+    # main_gs_eh()
+    main_amp(build=True, method='exact')

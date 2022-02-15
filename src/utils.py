@@ -4,7 +4,7 @@ import os
 import h5py
 from itertools import product
 import math
-from typing import Optional, Union, Iterable, List, Tuple, Sequence, Mapping
+from typing import Optional, Union, Iterable, List, Tuple, Sequence, Mapping, Any
 import numpy as np
 from collections import defaultdict
 from hamiltonians import MolecularHamiltonian
@@ -190,6 +190,7 @@ def get_registers_in_circuit(circ_like: QuantumCircuitLike
     return qreg, creg
 get_registers_in_inst_tups = get_registers_in_circuit
 
+# TODO: There is still the qubit object vs qubit index issue. Think about how to fix it.
 def create_circuit_from_inst_tups(
         inst_tups: Iterable[InstructionTuple],
         qreg: Optional[QuantumRegister] = None,
@@ -237,7 +238,7 @@ def split_circuit_across_barriers(circ: QuantumCircuit) -> List[List[Instruction
     return inst_tups_all
 
 
-# Other utility functions
+# Other utility functions.
 def reverse_qubit_order(arr: np.ndarray) -> np.ndarray:
     """Reverses qubit order in a 1D or 2D array.
 
@@ -295,6 +296,7 @@ def state_tomography(circ: QuantumCircuit,
     rho_fit = qst_fitter.fit(method='lstsq')
     return rho_fit
 
+# TODO: Deprecate this function.
 def solve_energy_probabilities(a: np.ndarray, b: np.ndarray) -> np.ndarray:
     A = np.array([[1, 1], [a[0], a[1]]])
     x = np.linalg.inv(A) @ np.array([1.0, b])
@@ -401,6 +403,7 @@ def counts_arr_to_dict(arr: np.ndarray) -> np.ndarray:
     counts = Counts(data)
     return counts
 
+# TODO: Deprecate this function.
 def split_counts_on_anc(counts: Union[Counts, np.ndarray], n_anc: int = 1) -> Counts:
     """Splits the counts on ancilla qubit state."""
     if isinstance(counts, Counts):
@@ -428,24 +431,43 @@ def split_counts_on_anc(counts: Union[Counts, np.ndarray], n_anc: int = 1) -> Co
         counts11 = counts11 / np.sum(counts)
         return counts00, counts01, counts10, counts11
 
-def get_counts_from_key(counts, anc_inds, anc_loc):
-    if isinstance(counts, Counts):
-        counts = counts_dict_to_arr(counts)
-    n_tot = int(np.log2())
-    sys_inds = list(product([0, 1], repeat=n_tot))
-    
-    return
-
 # HDF5 utility function
 def initialize_hdf5(fname: str = 'lih') -> None:
-    """Creates the hdf5 file and dataset if they do not exist."""
+    """Creates the HDF5 file and group names if they do not exist.
+    
+    The group created in the HDF5 file are:
+    gs (for ground-state calculation), 
+    eh (for (N+/-1)-state calculation)),
+    amp (for transition amplitude calculation),
+    circ0 (the (0, 0)-element circuit),
+    circ1 (the (1, 1)-element circuit),
+    circ01 (The (0, 1)-element circuit).
+    
+    Args:
+        fname: The HDF5 file name.
+    """
     fname += '.h5'
-    if os.path.exists(fname): f = h5py.File(fname, 'r+')
-    else: f = h5py.File(fname, 'w')
-    for gname in ['gs', 'eh', 'amp', 'circ0', 'circ1', 'circ01']:
-        if gname not in f.keys():
-            f.create_group(gname)
-    f.close()
+    if os.path.exists(fname): 
+        h5file = h5py.File(fname, 'r+')
+    else: 
+        h5file = h5py.File(fname, 'w')
+    for grpname in ['gs', 'eh', 'amp', 'circ0', 'circ1', 'circ01']:
+        if grpname not in h5file.keys():
+            h5file.create_group(grpname)
+    h5file.close()
+
+def write_hdf5(h5file: h5py.File, grpname: str, dsetname: str, data: Any) -> None:
+    """Writes a data object to a dataset in an HDF5 file.
+    
+    Args:
+        h5file: The HDF5 file.
+        grpname: The name of the group to save the data under.
+        dsetname: The name of the dataset to save the data to.
+        data: The data to be saved.
+    """
+    if dsetname in h5file[grpname].keys():
+        del h5file[f'{grpname}/{dsetname}']
+    h5file[f'{grpname}/{dsetname}'] = data
 
 '''
 def check_ccx_inst_tups(inst_tups):
@@ -460,14 +482,32 @@ def check_ccx_inst_tups(inst_tups):
 
 # Helper functions
 def get_lih_hamiltonian(r: float) -> MolecularHamiltonian:
-    """Returns the HOMO-LUMO LiH Hamiltonian with bond length r."""
+    """Returns the HOMO-LUMO LiH Hamiltonian with bond length r.
+    
+    Args:
+        The bond length of the molecule in Angstrom.
+    
+    Returns:
+        The Hamiltonian object.
+    """
     hamiltonian = MolecularHamiltonian(
         [['Li', (0, 0, 0)], ['H', (0, 0, r)]], 'sto3g', 
         occ_inds=[0], act_inds=[1, 2])
     return hamiltonian
 
 def get_quantum_instance(type_str: str) -> QuantumInstance:
-    """Returns the QuantumInstance from type string."""
+    """Returns the QuantumInstance based on the input string.
+    
+    These three types of quantum instances are returned from this function: 
+    sv (statevector simulator), qasm (QASM simulator), noisy (noisy simulator).
+
+    Args:
+        A string indicating the type of the quantum instance.
+    
+    Returns:
+        The pre-defined quantum instance based on the input string.
+    """
+    # TODO: Figure out where to specify shots. Shouldn't need to specify it twice.
     if type_str == 'sv':
         q_instance = QuantumInstance(Aer.get_backend('statevector_simulator'))
     elif type_str == 'qasm':

@@ -13,7 +13,7 @@ from qiskit.quantum_info import SparsePauliOp
 
 from params import CCZGate
 from utils import (get_unitary, get_registers_in_inst_tups, create_circuit_from_inst_tups, 
-                   remove_instructions_in_circuit)
+                   remove_instructions)
 
 QubitLike = Union[int, Qubit]
 ClbitLike = Union[int, Clbit]
@@ -40,7 +40,7 @@ class CircuitConstructor:
         self.add_barriers = add_barriers
         self.ccx_inst_tups = ccx_inst_tups
         self.anc = anc
-        self.sys = [i for i in range(4) if i not in anc]
+        self.sys = [i for i in range(4) if i not in anc] # Total # of qubits = 4
 
         ccx_inst_tups_matrix = get_unitary(ccx_inst_tups)
         ccx_matrix = CCXGate().to_matrix()
@@ -71,7 +71,7 @@ class CircuitConstructor:
         
         # Main part of the circuit to add the creation/annihilation operator.
         inst_tups += [(HGate(), [0], [])]
-        if self.add_barriers: inst_tups += [(Barrier(3), range(3), [])]
+        if self.add_barriers: inst_tups += [(Barrier(3), range(3), [])] # Total # of qubits = 3
         inst_tups += self._get_controlled_gate_inst_tups(a_op[0], ctrl_states=[0])
         if self.add_barriers: inst_tups += [(Barrier(3), range(3), [])]
         inst_tups += self._get_controlled_gate_inst_tups(a_op[1], ctrl_states=[1])
@@ -124,6 +124,7 @@ class CircuitConstructor:
         circ = create_circuit_from_inst_tups(inst_tups)
         return circ
 
+    # TODO: Finish this function.
     def build_charge_diagonal(self, U_op: SparsePauliOp) -> QuantumCircuit:
         """Constructs the circuit to calculate diagonal charge-charge transition amplitudes."""
         '''
@@ -268,6 +269,7 @@ def append_tomography_gates(circ: QuantumCircuit,
     tomo_circ = create_circuit_from_inst_tups(inst_tups)
     return tomo_circ
 
+# TODO: Deprecate this function.
 def append_tomography_gates1(circ: QuantumCircuit, 
                             qubits: Iterable[QubitLike],
                             label: Tuple[str],
@@ -340,6 +342,7 @@ def append_measurement_gates(circ: QuantumCircuit) -> QuantumCircuit:
     circ_new = create_circuit_from_inst_tups(inst_tups)
     return circ_new
 
+# TODO: Deprecate this function.
 def append_measurement_gates1(circ: QuantumCircuit) -> QuantumCircuit:
     """Appends measurement gates to a circuit.
     
@@ -392,7 +395,7 @@ def transpile_into_berkeley_gates(circ: QuantumCircuit,
 
         circ_new = convert_ccz_to_cxc(circ_new)
         circ_new = convert_swap_to_cz(circ_new)
-        circ_new = remove_instructions_in_circuit(circ_new, ['barrier'])
+        circ_new = remove_instructions(circ_new, ['barrier'])
         circ_new = combine_1q_gates(circ_new)
         circ_new = combine_1q_gates(circ_new)
         circ_new = convert_1q_to_xpi2(circ_new)
@@ -472,8 +475,8 @@ def convert_swap_to_cz(circ: QuantumCircuit) -> QuantumCircuit:
     inst_tups = circ.data.copy()
     inst_tups_new = []
 
-    # Iterate from the end of the circuit, do not start converting SWAP gates to CZ unless 
-    # after encountering a non-SWAP gate.
+    # Iterate from the end of the circuit, do not start converting SWAP gates to CZ gates
+    # unless after encountering a non-SWAP gate.
     convert_swap = False
     for inst, qargs, cargs in inst_tups[::-1]:
         if inst.name == 'swap': # SWAP gate

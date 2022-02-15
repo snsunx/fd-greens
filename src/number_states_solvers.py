@@ -1,5 +1,6 @@
 """Number states solver module."""
 
+from asyncore import write
 from typing import Optional
 
 import h5py
@@ -13,7 +14,7 @@ from operators import transform_4q_pauli
 import params
 from ground_state_solvers import vqe_minimize
 from ansatze import AnsatzFunction, build_ansatz_e, build_ansatz_h
-from utils import state_tomography, get_quantum_instance
+from utils import state_tomography, get_quantum_instance, write_hdf5
 from qubit_indices import transform_4q_indices
 
 class EHStatesSolver:
@@ -91,11 +92,15 @@ class EHStatesSolver:
         """Saves (N+/-1)-electron energies and states to hdf5 file."""
         h5file = h5py.File(self.h5fname, 'r+')
 
-        h5file['eh/energies_e'] = self.energies_e
-        h5file['eh/energies_h'] = self.energies_h
-        h5file['eh/states_e'] = self.states_e
-        h5file['eh/states_h'] = self.states_h
-        
+        # h5file['eh/energies_e'] = self.energies_e
+        # h5file['eh/energies_h'] = self.energies_h
+        # h5file['eh/states_e'] = self.states_e
+        # h5file['eh/states_h'] = self.states_h
+        write_hdf5(h5file, 'eh', 'energies_e', self.energies_e)
+        write_hdf5(h5file, 'eh', 'energies_h', self.energies_h)
+        write_hdf5(h5file, 'eh', 'states_e', self.states_e)
+        write_hdf5(h5file, 'eh', 'states_h', self.states_h)
+
         h5file.close()
 
     def run(self, method: Optional[str] = None) -> None:

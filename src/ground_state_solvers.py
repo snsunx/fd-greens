@@ -12,7 +12,7 @@ from qiskit.utils import QuantumInstance
 from hamiltonians import MolecularHamiltonian
 from ansatze import AnsatzFunction, build_ansatz_gs
 from operators import transform_4q_pauli
-from utils import get_quantum_instance
+from utils import get_quantum_instance, write_hdf5
 
 class GroundStateSolver:
     """A class to solve the ground state energy and state."""
@@ -72,8 +72,10 @@ class GroundStateSolver:
         """Saves ground state energy and ground state ansatz to hdf5 file."""
         h5file = h5py.File(self.h5fname, 'r+')
 
-        h5file['gs/energy'] = self.energy
-        h5file['gs/ansatz'] = self.ansatz.qasm()
+        # h5file['gs/energy'] = self.energy
+        # h5file['gs/ansatz'] = self.ansatz.qasm()
+        write_hdf5(h5file, 'gs', 'energy', self.energy)
+        write_hdf5(h5file, 'gs', 'ansatz', self.ansatz.qasm())
         
         h5file.close()
 
