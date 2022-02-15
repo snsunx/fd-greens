@@ -1,5 +1,6 @@
 """Circuit construction module."""
 
+import os
 from typing import Tuple, Optional, Iterable, Union, Sequence, List
 from cmath import polar
 
@@ -382,6 +383,7 @@ def transpile_into_berkeley_gates(circ: QuantumCircuit,
         circ_new = circ
     elif circ_label == '01':
         if save_figs:
+            if not os.path.exists('figs'): os.makedirs('figs')
             fig = circ.draw('mpl')
             fig.savefig('figs/circ_untranspiled.png', bbox_inches='tight')
         # uni = get_unitary(circ)
