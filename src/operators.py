@@ -219,7 +219,6 @@ def transform_4q_pauli(
     THe symmetries are assumed to be ZIZI and IZIZ. The operations applied are 
     CNOT(2, 0), CNOT(3, 1) and SWAP(2, 3), followed by optionally tapering off 0 and 1.
 
-
     Args:
         pauli_op: A four-qubit Pauli operator to be transformed.
         init_state: The initial state on the first two qubits if tapered.

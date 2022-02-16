@@ -100,7 +100,7 @@ class CircuitConstructor:
         # Copy the ansatz circuit into the system qubit indices.
         inst_tups = self.ansatz.data.copy()
         for i, (inst, qargs, cargs) in enumerate(inst_tups):
-            qargs = [self.sys[q._index] for q in qargs]
+            qargs = [q._index + 1 for q in qargs]
             inst_tups[i] = (inst, qargs, cargs)
 
         # Add the first creation/annihilation operator.
@@ -125,27 +125,39 @@ class CircuitConstructor:
         circ = create_circuit_from_inst_tups(inst_tups)
         return circ
 
-    # TODO: Finish this function.
     def build_charge_diagonal(self, U_op: SparsePauliOp) -> QuantumCircuit:
-        """Constructs the circuit to calculate diagonal charge-charge transition amplitudes."""
-        '''
-        circ = self._copy_circuit_with_ancilla([0, 1])
+        """Constructs the circuit to calculate diagonal charge-charge transition amplitudes.
+        
+        Args:
+            The U operator. Usually a Z operator.
+            
+        Returns:
+            The quantum circuit for calculating diagonal charge-charge transition amplitude.
+        """
+        
+        inst_tups = self.ansatz.data.copy()
+        for i, (inst, qargs, cargs) in enumerate(inst_tups):
+            qargs = [self.sys[q._index] for q in qargs]
+            inst_tups[i] = (inst, qargs, cargs)
         
         # Apply the gates corresponding to a charge operator
-        if self.add_barriers: circ.barrier()
-        circ.h([0, 1])
-        if self.add_barriers: circ.barrier()
-        self._apply_controlled_gate(circ, -U_op, ctrl=(1, 0), n_anc=2) # iXY = -Z
-        if self.add_barriers: circ.barrier()
-        self._apply_controlled_gate(circ, U_op, ctrl=(0, 1), n_anc=2) # iYX = Z
-        if self.add_barriers: circ.barrier()
-        circ.cz(0, 1)
-        if self.add_barriers: circ.barrier()
-        circ.h([0, 1])
+        if self.add_barriers: inst_tups += [(Barrier(4), range(4), [])]
+        inst_tups += [(HGate(), [0], []), (HGate(), [1], [])]
 
+        if self.add_barriers: inst_tups += [(Barrier(4), range(4), [])]
+        inst_tups += self._get_controlled_gate_inst_tups(-U_op, ctrl_states=[1, 0]) # iXY = -Z
+        if self.add_barriers: inst_tups += [(Barrier(4), range(4), [])]
+        inst_tups += self._get_controlled_gate_inst_tups(U_op, ctrl_states=[0, 1]) # iYX = Z
+        
+        if self.add_barriers: inst_tups += [(Barrier(4), range(4), [])]
+        inst_tups += [(CZGate(), [0, 1], [])]
+        
+        if self.add_barriers: inst_tups += [(Barrier(4), range(4), [])]
+        inst_tups += [(HGate(), [0], []), (HGate(), [1], [])]
+
+        circ = create_circuit_from_inst_tups(inst_tups)
         return circ
-        '''
-
+        
     def _get_controlled_gate_inst_tups(
             self,
             sparse_pauli_op: SparsePauliOp,
@@ -414,6 +426,9 @@ def transpile_into_berkeley_gates(circ: QuantumCircuit,
         if save_figs:
             fig = circ_new.draw('mpl')
             fig.savefig('figs/circ_additional.png', bbox_inches='tight')
+
+    else:
+        circ_new = convert_ccz_to_cxc(circ)
     return circ_new
 
 def permute_qubits(circ: QuantumCircuit, 

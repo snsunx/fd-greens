@@ -13,15 +13,15 @@ class GreensFunction:
         """Initializes a GreensFunction object.
         
         Args:
-            h5fname: The h5py file name.
+            h5fname: The HDF5 file name.
             suffix: The suffix for a specific experimental run.
         """
         self.datfname = h5fname + suffix
 
         h5file = h5py.File(h5fname + '.h5', 'r')
         self.energy_gs = h5file['gs/energy']
-        self.energies_e = h5file['eh/energies_e']
-        self.energies_h = h5file['eh/energies_h']
+        self.energies_e = h5file['es/energies_e']
+        self.energies_h = h5file['es/energies_h']
         self.B_e = h5file[f'amp/B_e{suffix}']
         self.B_h = h5file[f'amp/B_h{suffix}']
         self.n_orb = self.B_e.shape[0]

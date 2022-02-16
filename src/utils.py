@@ -451,7 +451,7 @@ def initialize_hdf5(fname: str = 'lih') -> None:
         h5file = h5py.File(fname, 'r+')
     else: 
         h5file = h5py.File(fname, 'w')
-    for grpname in ['gs', 'eh', 'amp', 'circ0', 'circ1', 'circ01']:
+    for grpname in ['gs', 'es', 'amp', 'circ0', 'circ1', 'circ01']:
         if grpname not in h5file.keys():
             h5file.create_group(grpname)
     h5file.close()

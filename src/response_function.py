@@ -9,13 +9,12 @@ import params
 class ResponseFunction:
     """A class to calculate frequency-domain Green's function."""
     
-    def __init__(self, fname: str) -> None:
+    def __init__(self, h5fname: str, suffix: str = '') -> None:
         """Initializes a ResponseFunction object.
         
         Args:
-            gs_solver: The ground state solver.
-            es_solver: The excited states solver.
-            amp_solver: The transition amplitudes solver.
+            h5fname: The HDF5 file name.
+            suffix: The suffix for a specific experimental run.
         """
         # Ground state and excited states energies
         # self.energy_gs = gs_solver.energy
@@ -27,14 +26,14 @@ class ResponseFunction:
         # self.L = amp_solver.L
         # self.n_states = amp_solver.n_states
 
-        self.fname = fname
-        f = h5py.File(fname + '.h5py', 'r')
-        self.energy_gs = f['energy_gs']
-        self.energies_s = f['energies_s']
-        self.energies_t = f['energies_t']
-        self.energies_exc = np.hstack((self.energies_s, self.energies_t))
-        self.L = f['L']
-        self.n_states = f['n_states']
+        self.h5fname = h5fname
+        h5file = h5py.File(h5fname + '.h5', 'r')
+        self.energy_gs = h5file['gs/energy']
+        self.energies_s = h5file['es/energies_s']
+        # self.energies_t = h5file['es/energies_t']
+        # self.energies_exc = np.hstack((self.energies_s, self.energies_t))
+        self.L = h5file['L']
+        self.n_states = h5file['n_states']
 
     def response_function(self, omegas: Sequence[float], 
                           i: int,
@@ -58,8 +57,8 @@ class ResponseFunction:
         for omega in omegas:
             chi = 0
             for lam in [1, 2, 3]: # XXX: Hardcoded
-                chi += self.L[i, j, lam] / (omega + 1j * eta - (self.energies_exc[lam] - self.energy_gs))
-                chi += self.L[i, j, lam].conjugate() / (-omega - 1j * eta - (self.energies_exc[lam] - self.energy_gs))
+                chi += self.L[i, j, lam] / (omega + 1j * eta - (self.energies_s[lam] - self.energy_gs))
+                chi += self.L[i, j, lam].conjugate() / (-omega - 1j * eta - (self.energies_s[lam] - self.energy_gs))
             chis.append(chi)
         chis = np.array(chis)
 
