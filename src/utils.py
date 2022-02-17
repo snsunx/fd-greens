@@ -432,7 +432,7 @@ def split_counts_on_anc(counts: Union[Counts, np.ndarray], n_anc: int = 1) -> Co
         return counts00, counts01, counts10, counts11
 
 # HDF5 utility function
-def initialize_hdf5(fname: str = 'lih') -> None:
+def initialize_hdf5(fname: str = 'lih', calc: str = 'greens') -> None:
     """Creates the HDF5 file and group names if they do not exist.
     
     The group created in the HDF5 file are:
@@ -446,12 +446,19 @@ def initialize_hdf5(fname: str = 'lih') -> None:
     Args:
         fname: The HDF5 file name.
     """
+    assert calc in ['greens', 'resp']
+
     fname += '.h5'
     if os.path.exists(fname): 
         h5file = h5py.File(fname, 'r+')
     else: 
         h5file = h5py.File(fname, 'w')
-    for grpname in ['gs', 'es', 'amp', 'circ0', 'circ1', 'circ01']:
+    
+    if calc == 'greens':
+        grpnames = ['gs', 'es', 'amp', 'circ0', 'circ1', 'circ01']
+    else:
+        grpnames = ['gs', 'es', 'amp', 'circ0u', 'circ1u', 'circ0d', 'circ1d']
+    for grpname in grpnames:
         if grpname not in h5file.keys():
             h5file.create_group(grpname)
     h5file.close()

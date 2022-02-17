@@ -19,12 +19,14 @@ def main_gs_es():
 
 def main_amp(method='exact'):
     amp_solver = ExcitedAmplitudesSolver(h)
-    amp_solver.run()
+    amp_solver.build_diagonal()
+    amp_solver.run_diagonal()
+    amp_solver.process_diagonal()
 
 if __name__ == '__main__': 
     h = get_lih_hamiltonian(3.0)
     # suffix = '_sv'
 
-    initialize_hdf5()
+    initialize_hdf5(calc='resp')
     main_gs_es()
     main_amp()

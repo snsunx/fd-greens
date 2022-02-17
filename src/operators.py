@@ -211,31 +211,35 @@ def taper_pauli(pauli_op: PauliOperator,
 
 def transform_4q_pauli(
         pauli_op: PauliOperator,
-        init_state: Optional[Sequence[int]] = None,
-        tapered: bool = True
+        swap: bool = True,
+        taper: bool = True,
+        init_state: Optional[Sequence[int]] = None
     ) -> PauliOperator:
     """Converts a four-qubit Hamiltonian to a two-qubit Hamiltonian.
 
     THe symmetries are assumed to be ZIZI and IZIZ. The operations applied are 
-    CNOT(2, 0), CNOT(3, 1) and SWAP(2, 3), followed by optionally tapering off 0 and 1.
+    CNOT(2, 0), CNOT(3, 1) and SWAP(2, 3), followed by optionally tapering off q0 and q1.
 
     Args:
         pauli_op: A four-qubit Pauli operator to be transformed.
+        swap: Whether to swap q2 and q3.
+        taper: Whether to taper q0 and q1.
         init_state: The initial state on the first two qubits if tapered.
-        tapered: Whether qubit 0 and qubit 1 are tapered.
 
     Returns:
         A two-qubit Pauli operator after transformation if tapered, otherwise a four-qubit
         Pauli operator.
     """
-    if tapered: 
+    n_qubits = 4 # 4 is hardcoded
+    pauli_op_new = pauli_op.copy()
+    if taper: 
         assert init_state is not None and len(init_state) == 2
 
-    pauli_op_new = cnot_pauli(pauli_op, 2, 0)
-    pauli_op_new = cnot_pauli(pauli_op_new, 3, 1)
-    pauli_op_new = swap_pauli(pauli_op_new, 2, 3)
-
-    if tapered:
+    for i in range(n_qubits//2):
+        pauli_op_new = cnot_pauli(pauli_op_new, i + n_qubits//2, i)
+    if swap:
+        pauli_op_new = swap_pauli(pauli_op_new, 2, 3)
+    if taper:
         pauli_op_new = taper_pauli(pauli_op_new, [0, 1], init_state=init_state)
     
     if isinstance(pauli_op_new, PauliSumOp):
