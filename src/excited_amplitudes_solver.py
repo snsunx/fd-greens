@@ -184,7 +184,7 @@ class ExcitedAmplitudesSolver:
 
     def run_off_diagonal(self) -> None:
         h5file = h5py.File(self.h5fname, 'r+')
-        for m in range(self.n_orb): # 0, 1
+        for m in [0, 1]:
             for s, s_ in [('u', 'd'), ('d', 'u')]:
                 if self.method == 'exact':
                     dset = h5file[f'circ{m}{s}{m}{s_}/base']
@@ -233,6 +233,8 @@ class ExcitedAmplitudesSolver:
                 + np.exp(1j * np.pi/4) * (self.T[key+'p'][3, 2] - self.T[key+'m'][3, 2])
             print(f'N[{key}][0, 1] =', self.N[key][0, 1])
             print(f'N[{key}][2, 3] =', self.N[key][2, 3])
+
+            write_hdf5(h5file, 'amp', f'N{self.suffix}', self.N[key])
 
         h5file.close()
 
