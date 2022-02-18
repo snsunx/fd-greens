@@ -19,9 +19,8 @@ class SecondQuantizedOperators:
             factor: A multiplication factor for simpler gate implementation.
         """
         self.n_qubits = n_qubits
-        labels_x = ['I' * (n_qubits - i - 1) + 'X' + 'Z' * i for i in range(n_qubits)]
-        labels_y = ['I' * (n_qubits - i - 1) + 'Y' + 'Z' * i for i in range(n_qubits)]
-        labels = labels_x + labels_y
+        labels = ['I' * (n_qubits - i - 1) + 'X' + 'Z' * i for i in range(n_qubits)]
+        labels += ['I' * (n_qubits - i - 1) + 'Y' + 'Z' * i for i in range(n_qubits)]
         pauli_table = PauliTable.from_labels(labels)
         coeffs = [1.] * n_qubits + [1j] * n_qubits
         coeffs = factor * np.array(coeffs)
@@ -49,9 +48,11 @@ class ChargeOperators:
         """Initializes a ChargeOperators object."""
         self.n_qubits = n_qubits
 
-        labels = ['I' * (n_qubits - i - 1) + 'Z' + 'I' * i for i in range(n_qubits)]
+        labels = ['I' * n_qubits for _ in range(n_qubits)]
+        labels += ['I' * (n_qubits - i - 1) + 'Z' + 'I' * i for i in range(n_qubits)]
         pauli_table = PauliTable.from_labels(labels)
-        self.sparse_pauli_op = SparsePauliOp(pauli_table)
+        coeffs = [1.] * 2 * n_qubits
+        self.sparse_pauli_op = SparsePauliOp(pauli_table, coeffs=coeffs)
 
     def transform(self, transform_func: Callable[[PauliOperator], PauliOperator]) -> None:
         """Transforms the set of second quantized operators by Z2 symmetries."""
@@ -59,12 +60,18 @@ class ChargeOperators:
 
     def get_pauli_dict(self) -> Dict[int, SparsePauliOp]:
         """Returns a dictionary of the charge U operators."""
+        # for i in range(self.n_qubits):
+        #     if i % 2 == 0:
+        #         dic[(i // 2, 'u')] = self.sparse_pauli_op[i]
+        #     else:
+        #         dic[(i // 2, 'd')] = self.sparse_pauli_op[i]
+
         dic = {}
         for i in range(self.n_qubits):
             if i % 2 == 0:
-                dic[(i // 2, 'u')] = self.sparse_pauli_op[i]
+                dic[(i // 2, 'u')] = self.sparse_pauli_op[i] + self.sparse_pauli_op[i + self.n_qubits]
             else:
-                dic[(i // 2, 'd')] = self.sparse_pauli_op[i]
+                dic[(i // 2, 'd')] = self.sparse_pauli_op[i] + self.sparse_pauli_op[i + self.n_qubits]
         return dic
 
 def cnot_pauli(pauli_op: PauliOperator, ctrl: int, targ: int) -> PauliOperator:

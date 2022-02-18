@@ -457,7 +457,8 @@ def initialize_hdf5(fname: str = 'lih', calc: str = 'greens') -> None:
     if calc == 'greens':
         grpnames = ['gs', 'es', 'amp', 'circ0', 'circ1', 'circ01']
     else:
-        grpnames = ['gs', 'es', 'amp', 'circ0u', 'circ1u', 'circ0d', 'circ1d']
+        grpnames = ['gs', 'es', 'amp', 'circ0u', 'circ1u', 'circ0d', 'circ1d',
+                    'circ0u0d', 'circ0d0u', 'circ1u1d', 'circ1d1u']
     for grpname in grpnames:
         if grpname not in h5file.keys():
             h5file.create_group(grpname)

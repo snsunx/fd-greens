@@ -87,8 +87,8 @@ class EHAmplitudesSolver:
         for key, qind in zip(self.keys_off_diag, self.qinds_anc_off_diag):
             self.qinds_tot_off_diag[key] = self.qinds_sys[key[0]].insert_ancilla(qind, loc=self.anc)
 
-        # Transition amplitude arrays. The keys of B will be 'e' and 'h'. 
-        # The keys of D will be 'ep', 'em', 'hp', 'hm'.
+        # Transition amplitude arrays. The keys of B are 'e' and 'h'. 
+        # The keys of D are 'ep', 'em', 'hp', 'hm'.
         assert self.n_e == self.n_h # XXX: This is only for this special case
         self.B = defaultdict(lambda: np.zeros((self.n_orb, self.n_orb, self.n_e), dtype=complex))
         self.D = defaultdict(lambda: np.zeros((self.n_orb, self.n_orb, self.n_e), dtype=complex))

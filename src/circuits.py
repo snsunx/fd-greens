@@ -82,6 +82,8 @@ class CircuitConstructor:
         circ = create_circuit_from_inst_tups(inst_tups)
         return circ
 
+    build_diagonal = build_eh_diagonal
+
     def build_eh_off_diagonal(self,
                               a_op_m: SparsePauliOp,
                               a_op_n: SparsePauliOp
@@ -125,6 +127,8 @@ class CircuitConstructor:
         circ = create_circuit_from_inst_tups(inst_tups)
         return circ
 
+    build_off_diagonal = build_eh_off_diagonal
+
     def build_charge_diagonal(self, U_op: SparsePauliOp) -> QuantumCircuit:
         """Constructs the circuit to calculate diagonal charge-charge transition amplitudes.
         
@@ -157,44 +161,53 @@ class CircuitConstructor:
 
         circ = create_circuit_from_inst_tups(inst_tups)
         return circ
+
+    def build_charge_off_diagonal(self, U_op_1, U_op_2):
+        pass
         
     def _get_controlled_gate_inst_tups(
             self,
             sparse_pauli_op: SparsePauliOp,
             ctrl_states: Sequence[int] = [1]) -> Sequence[InstructionTuple]:
-        """Applies a controlled-U gate to a quantum circuit.
+        """Obtains the instruction tuple corresponding to a controlled-U gate.
 
         Args:
-            sparse_pauli_op: The operator from which the controlled gate is constructed.
+            sparse_pauli_op: The Pauli operator from which the controlled gate is constructed.
             ctrl_states: The qubit states on which the cU gate is controlled on.
         """
         assert len(sparse_pauli_op) == 1
         coeff = sparse_pauli_op.coeffs[0]
         label = sparse_pauli_op.table.to_labels()[0][::-1]
         _, angle = polar(coeff)
-
-        # Find the indices to apply X gates (for control on 0), H gates (for Pauli X) 
-        # and X(pi/2) gates (for Pauli Y) as well as the pivot (target qubit of the 
-        # multi-controlled gate). The pivot selection is hardcoded: for single-controlled
-        # gates, the pivot is the smallest index; for double-controlled gate, the pivot is
-        # the largest index. 
-        if len(ctrl_states) == 1: # Single-controlled gate, assume 0 is the control qubit
-            cnot_inds = [i + 1 for i in range(len(label)) if label[i] != 'I']
-            pivot = min(cnot_inds)
-            cnot_inds.remove(pivot)
-            x_inds = [0] if ctrl_states == [0] else []
-            h_inds = [i + 1 for i in range(len(label)) if label[i] == 'X']
-            rx_inds = [i + 1 for i in range(len(label)) if label[i] == 'Y']
-        else: # Double-controlled gate, get ancilla and system qubits from attributes
-            cnot_inds = [self.sys[i] for i in range(len(label)) if label[i] != 'I']
-            pivot = max(cnot_inds)
-            cnot_inds.remove(pivot)
-            x_inds = [self.anc[i] for i in range(len(ctrl_states)) if ctrl_states[i] == 0]
-            h_inds = [self.sys[i] for i in range(len(label)) if label[i] == 'X']
-            rx_inds = [self.sys[i] for i in range(len(label)) if label[i] == 'Y']
-
-        # Apply the controlled-Z gate.
         inst_tups = []
+
+        # Find the indices to apply X gates (for control on 0), H gates (for Pauli X)
+        # and X(pi/2) gates (for Pauli Y) as well as the pivot (target qubit of the 
+        # multi-controlled gate). The pivot selection is hardcoded: for single-controlled 
+        # gates, the pivot is the smallest index; for double-controlled gate, the pivot is
+        # the largest index.
+        if set(label) != {'I'}:
+            if len(ctrl_states) == 1: # Single-controlled gate, assume 0 is the control qubit
+                cnot_inds = [i + 1 for i in range(len(label)) if label[i] != 'I']
+                pivot = min(cnot_inds) # hardcoded
+                cnot_inds.remove(pivot)
+                x_inds = [0] if ctrl_states == [0] else []
+                h_inds = [i + 1 for i in range(len(label)) if label[i] == 'X']
+                rx_inds = [i + 1 for i in range(len(label)) if label[i] == 'Y']
+            else: # Double-controlled gate, get ancilla and system qubits from attributes
+                cnot_inds = [self.sys[i] for i in range(len(label)) if label[i] != 'I']
+                pivot = max(cnot_inds) # XXX: hardcoded, should be changed 
+                cnot_inds.remove(pivot)
+                x_inds = [self.anc[i] for i in range(len(ctrl_states)) if ctrl_states[i] == 0]
+                h_inds = [self.sys[i] for i in range(len(label)) if label[i] == 'X']
+                rx_inds = [self.sys[i] for i in range(len(label)) if label[i] == 'Y']
+        else:
+            cnot_inds = []
+            x_inds = []
+            h_inds = []
+            rx_inds = []
+
+        # Apply the phase gate and controlled-Z gate.
         if len(ctrl_states) == 1:
             if coeff != 1:
                 inst_tups += [(PhaseGate(angle), [0], [])]

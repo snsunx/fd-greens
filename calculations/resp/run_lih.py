@@ -22,6 +22,9 @@ def main_amp(method='exact'):
     amp_solver.build_diagonal()
     amp_solver.run_diagonal()
     amp_solver.process_diagonal()
+    amp_solver.build_off_diagonal()
+    amp_solver.run_off_diagonal()
+    amp_solver.process_off_diagonal()
 
 if __name__ == '__main__': 
     h = get_lih_hamiltonian(3.0)
