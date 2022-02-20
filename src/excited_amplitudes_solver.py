@@ -36,17 +36,17 @@ class ExcitedAmplitudesSolver:
             q_instance: The quantum instance for executing the circuits.
             method: The method for extracting the transition amplitudes.
             h5fname: The HDF5 file name.
-            anc: Location of the ancilla qubits.
+            suffix: The suffix for a specific experimental run.
         """
         assert method in ['exact', 'tomo']
 
-        # Basic variables
+        # Basic variables.
         self.h = h
         self.q_instance = q_instance
         self.method = method
         self.suffix = suffix
 
-        # Load data and initialize quantities
+        # Load data and initialize quantities.
         self.h5fname = h5fname + '.h5'
         self._initialize()
 
@@ -55,7 +55,7 @@ class ExcitedAmplitudesSolver:
         """Initializes physical quantity attributes."""
         h5file = h5py.File(self.h5fname, 'r+')
 
-        # Occupied and active orbital indices
+        # Occupied and active orbital indices.
         self.occ_inds = self.h.occ_inds
         self.act_inds = self.h.act_inds
 
@@ -77,7 +77,7 @@ class ExcitedAmplitudesSolver:
         for key, qind in zip(self.keys_off_diag, self.qinds_anc_off_diag):
             self.qinds_tot_off_diag[key] = self.qinds_sys.insert_ancilla(qind)
 
-        # Number of spatial orbitals and (N+/-1)-electron states
+        # Number of spatial orbitals and (N+/-1)-electron states.
         self.n_elec = self.h.molecule.n_electrons
         self.ansatz = QuantumCircuit.from_qasm_str(h5file['gs/ansatz'][()].decode())
         self.energies = h5file['es/energies_s']
@@ -105,7 +105,6 @@ class ExcitedAmplitudesSolver:
 
     def build_diagonal(self) -> None:
         """Calculates diagonal transition amplitudes."""
-        print("----- Calculating diagonal transition amplitudes -----")
         h5file = h5py.File(self.h5fname, 'r+')
         for m in range(self.n_orb): # 0, 1
             for s in ['u', 'd']:
@@ -122,8 +121,8 @@ class ExcitedAmplitudesSolver:
 
         h5file.close()
 
-    def run_diagonal(self) -> None:
-        """Executes the diagonal circuits circ0 and circ1."""
+    def execute_diagonal(self) -> None:
+        """Executes the diagonal circuits."""
         h5file = h5py.File(self.h5fname, 'r+')
         for m in range(self.n_orb): # 0, 1
             for s in ['u', 'd']:
@@ -135,7 +134,7 @@ class ExcitedAmplitudesSolver:
                     psi = result.get_statevector()
                     dset.attrs[f'psi{self.suffix}'] = psi
 
-                else: # tomography
+                else: # Tomography
                     for label in self.tomo_labels:
                         dset = h5file[f'circ{m}{s}/{label}']
                         circ = QuantumCircuit.from_qasm_str(dset[()].decode())
@@ -159,12 +158,29 @@ class ExcitedAmplitudesSolver:
                         self.N[key][ms, ms] = np.abs(self.states.conj().T @ psi_key)
                         print(f'N[{key}][{ms}, {ms}] = {self.N[key][ms, ms]}')
                 else: # Tomography
-                    pass
+                    for key, qind in zip(self.keys_diag, self.qinds_anc_diag):
+                        # Stack counts_arr over all tomography labels together.
+                        counts_arr_key = np.array([])
+                        for label in self.tomo_labels:
+                            counts_arr = h5file[f'circ{m}{s}/{label}'].attrs[f'counts{self.suffix}']
+                            start = int(''.join([str(i) for i in qind])[::-1], 2)
+                            counts_arr_label = counts_arr[start::2] # 2 is because 2 ** 1
+                            counts_arr_label = counts_arr_label / np.sum(counts_arr)
+                            counts_arr_key = np.hstack((counts_arr_key, counts_arr_label))
 
+                        # Obtain the density matrix from tomography.
+                        rho = np.linalg.lstsq(params.basis_matrix, counts_arr_key)[0]
+                        rho = rho.reshape(4, 4, order='F')
+                        rho = self.qinds_sys(rho)
+
+                        self.N[key][ms, ms] = [get_overlap(self.states[:, i], rho) for i in range(4)]
+                        # XXX: 4 is hardcoded
+                        print(f'N[{key}][{ms}, {ms}] = {self.N[key][ms, ms]}')
+                    
         h5file.close()
 
     def build_off_diagonal(self) -> None:
-        """Constructs off-diagonal transition amplitudes."""
+        """Constructs off-diagonal transition amplitude circuits."""
         h5file = h5py.File(self.h5fname, 'r+')
         for m in range(self.n_orb): # 0, 1
             for s, s_ in [('u', 'd'), ('d', 'u')]:
@@ -178,11 +194,12 @@ class ExcitedAmplitudesSolver:
                     for label in self.tomo_labels:
                         tomo_circ = append_tomography_gates(circ, [2, 3], label)
                         tomo_circ = append_measurement_gates(tomo_circ)
-                        write_hdf5(h5file, f'circ{m}{s}', label, tomo_circ.qasm())
+                        write_hdf5(h5file, f'circ{m}{s}{m}{s_}', label, tomo_circ.qasm())
         
         h5file.close()
 
-    def run_off_diagonal(self) -> None:
+    def execute_off_diagonal(self) -> None:
+        """Executes the off-diagonal transition amplitude circuits."""
         h5file = h5py.File(self.h5fname, 'r+')
         for m in [0, 1]:
             for s, s_ in [('u', 'd'), ('d', 'u')]:
@@ -207,7 +224,7 @@ class ExcitedAmplitudesSolver:
         h5file.close()
 
     def process_off_diagonal(self) -> None:
-        """Post-processes off-diagonal transition amplitudes circuits."""
+        """Post-processes off-diagonal transition amplitude circuits."""
         h5file = h5py.File(self.h5fname, 'r+')
 
         for m in [0, 1]:
@@ -221,30 +238,53 @@ class ExcitedAmplitudesSolver:
                         self.T[key][ms, ms_] = np.abs(self.states.conj().T @ psi_key)
                         print(f'T[{key}][{ms}, {ms_}] = {self.T[key][ms, ms_]}')
                 else: # Tomography
-                    pass
+                    for key, qind in zip(self.keys_off_diag, self.qinds_anc_off_diag):
+                        counts_arr_key = np.array([])
+                        for label in self.tomo_labels:
+                            counts_arr = h5file[f'circ{m}{s}{m}{s_}/{label}'].attrs[f'counts{self.suffix}']
+                            start = int(''.join([str(i) for i in qind])[::-1], 2)
+                            counts_arr_label = counts_arr[start::4] # 4 is because 2 ** 2
+                            counts_arr_label = counts_arr_label / np.sum(counts_arr)
+                            counts_arr_key = np.hstack([counts_arr_key, counts_arr_label])
+
+                        rho = np.linalg.lstsq(params.basis_matrix, counts_arr_key)[0]
+                        rho = rho.reshape(4, 4, order='F')
+                        rho = self.qinds_sys(rho)
+                        self.T[key][ms, ms_] = \
+                            [get_overlap(self.states[:, i], rho) for i in range(4)] # XXX: 2 is hardcoded
+                        print(f'T[{key}][{ms}, {ms_}] = {self.T[key][ms, ms_]}')
+
 
         # Unpack T values to N values.
         for key in self.keys_diag:
-            self.N[key][0, 1] = self.N[key][1, 0] = \
-                np.exp(-1j * np.pi/4) * (self.T[key+'p'][0, 1] - self.T[key+'m'][0, 1]) \
-                + np.exp(1j * np.pi/4) * (self.T[key+'p'][1, 0] - self.T[key+'m'][1, 0])
-            self.N[key][2, 3] = self.N[key][2, 3] = \
-                np.exp(-1j * np.pi/4) * (self.T[key+'p'][2, 3] - self.T[key+'m'][2, 3]) \
-                + np.exp(1j * np.pi/4) * (self.T[key+'p'][3, 2] - self.T[key+'m'][3, 2])
-            print(f'N[{key}][0, 1] =', self.N[key][0, 1])
-            print(f'N[{key}][2, 3] =', self.N[key][2, 3])
+            for ms, ms_ in [(0, 1), (2, 3)]:
+                self.N[key][ms, ms_] = self.N[key][ms_, ms] = \
+                    np.exp(-1j * np.pi/4) * (self.T[key+'p'][ms, ms_] - self.T[key+'m'][ms, ms_]) \
+                    + np.exp(1j * np.pi/4) * (self.T[key+'p'][ms_, ms] - self.T[key+'m'][ms_, ms])
+                print(f'N[{key}][{ms}, {ms_}] =', self.N[key][ms, ms_])
+                # self.N[key][2, 3] = self.N[key][2, 3] = \
+                #     np.exp(-1j * np.pi/4) * (self.T[key+'p'][2, 3] - self.T[key+'m'][2, 3]) \
+                #     + np.exp(1j * np.pi/4) * (self.T[key+'p'][3, 2] - self.T[key+'m'][3, 2])
+                # print(f'N[{key}][2, 3] =', self.N[key][2, 3])
 
             write_hdf5(h5file, 'amp', f'N{self.suffix}', self.N[key])
 
         h5file.close()
 
-    def run(self, method=None) -> None:
-        """Runs the functions to compute transition amplitudes."""
+    def run(self,
+            method: Optional[str] = None, 
+            build: bool = True,
+            execute: bool = True,
+            process: bool = True) -> None:
+        """Runs all the functions to compute transition amplitudes."""
         if method is not None:
             self.method = method
-        self.build_diagonal()
-        self.run_diagonal()
-        self.process_diagonal()
-        self.build_off_diagonal()
-        self.run_off_diagonal()
-        self.process_off_diagonal()
+        if build:
+            self.build_diagonal()
+            self.build_off_diagonal()
+        if execute:
+            self.execute_diagonal()
+            self.execute_off_diagonal()
+        if process:
+            self.process_diagonal()
+            self.process_off_diagonal()

@@ -35,10 +35,11 @@ class EHAmplitudesSolver:
 
         Args:
             h: The molecular Hamiltonian.
-            method: The method for extracting the transition amplitudes.
             q_instance: The quantum instance for executing the circuits.
+            method: The method for extracting the transition amplitudes.
             h5fname: The HDF5 file name.
             anc: Location of the ancilla qubits.
+            suffix: The suffix for a specific experimental run.
         """
         assert method in ['exact', 'tomo']
 
@@ -167,24 +168,20 @@ class EHAmplitudesSolver:
                     print(f'B[{key}][{m}, {m}] = {self.B[key][m, m]}')
 
             elif self.method == 'tomo':
-                basis_matrix = params.basis_matrix
-
+                # basis_matrix = params.basis_matrix
                 labels = [''.join(x) for x in itertools.product('xyz', repeat=2)]
                 for key, qind in zip(self.keys_diag, self.qinds_anc_diag):
                     # Stack counts_arr over all tomography labels together.
                     counts_arr_key = np.array([])
                     for label in labels:
                         counts_arr = h5file[f'circ{m}/{label}'].attrs[f'counts{self.suffix}']
-                        # print('np.sum(counts_arr) =', np.sum(counts_arr))
                         start = int(''.join([str(i) for i in qind])[::-1], 2)
                         counts_arr_label = counts_arr[start::2] # 2 is because 2 ** 1
                         counts_arr_label = counts_arr_label / np.sum(counts_arr)
                         counts_arr_key = np.hstack((counts_arr_key, counts_arr_label))
-                        # print('np.sum(counts_arr) =', np.sum(counts_arr))
-                        # print('np.sum(counts_arr_label) =', np.sum(counts_arr_label))
                     
                     # Obtain the density matrix from tomography.
-                    rho = np.linalg.lstsq(basis_matrix, counts_arr_key)[0].reshape(4, 4, order='F')
+                    rho = np.linalg.lstsq(params.basis_matrix, counts_arr_key)[0].reshape(4, 4, order='F')
                     rho = self.qinds_sys[key](rho)
 
                     self.B[key][m, m] = [get_overlap(self.states[key][:, i], rho) for i in range(2)]
@@ -257,13 +254,12 @@ class EHAmplitudesSolver:
                     start = int(''.join([str(i) for i in qind])[::-1], 2)
                     counts_arr_label = counts_arr[start::4] # 4 is because 2 ** 2
                     counts_arr_label = counts_arr_label / np.sum(counts_arr)
-                    # assert np.sum(counts_arr) == 10000
                     counts_arr_key = np.hstack((counts_arr_key, counts_arr_label))
 
                 rho = np.linalg.lstsq(basis_matrix, counts_arr_key)[0].reshape(4, 4, order='F')
                 rho = self.qinds_sys[key[0]](rho)
                 self.D[key][0, 1] = self.D[key][1, 0] = \
-                    [get_overlap(self.states[key[0]][:, i], rho) for i in range(2)]
+                    [get_overlap(self.states[key[0]][:, i], rho) for i in range(2)] # XXX: 2 is hardcoded
                 print(f'D[{key}][0, 1] =', self.D[key][0, 1])
 
 

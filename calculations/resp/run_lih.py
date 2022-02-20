@@ -13,21 +13,17 @@ from utils import get_lih_hamiltonian, get_quantum_instance, initialize_hdf5
 from params import HARTREE_TO_EV
 from response_function import ResponseFunction
 
-def main_gs_es():
+def main_gs():
     gs_solver = GroundStateSolver(h)
     gs_solver.run()
 
+def main_es():
     es_solver = ExcitedStatesSolver(h)
     es_solver.run()
 
-def main_amp(method='exact'):
-    amp_solver = ExcitedAmplitudesSolver(h)
-    amp_solver.build_diagonal()
-    amp_solver.run_diagonal()
-    amp_solver.process_diagonal()
-    amp_solver.build_off_diagonal()
-    amp_solver.run_off_diagonal()
-    amp_solver.process_off_diagonal()
+def main_amp(**kwargs):
+    amp_solver = ExcitedAmplitudesSolver(h, q_instance=q_instance)
+    amp_solver.run(**kwargs)
 
 def main_resp():
     resp_func = ResponseFunction()
@@ -35,10 +31,12 @@ def main_resp():
 
 if __name__ == '__main__': 
     h = get_lih_hamiltonian(3.0)
+    q_instance = get_quantum_instance('qasm')
     omegas = np.arange(-30, 30, 0.1)
     eta = 0.02 * HARTREE_TO_EV
     
     initialize_hdf5(calc='resp')
-    #main_gs_es()
-    #main_amp()
+    main_gs()
+    main_es()
+    main_amp(method='tomo')
     main_resp()

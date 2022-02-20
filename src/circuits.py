@@ -98,6 +98,7 @@ class CircuitConstructor:
             The new circuit with the two creation/annihilation operators appended.
         """
         assert len(a_op_m) == len(a_op_n) == 2
+        n_qubits = 4
 
         # Copy the ansatz circuit into the system qubit indices.
         inst_tups = self.ansatz.data.copy()
@@ -107,21 +108,21 @@ class CircuitConstructor:
 
         # Add the first creation/annihilation operator.
         inst_tups += [(HGate(), [self.anc[0]], []), (HGate(), [self.anc[1]], [])]
-        if self.add_barriers: inst_tups += [(Barrier(4), range(4), [])]
+        if self.add_barriers: inst_tups += [(Barrier(n_qubits), range(n_qubits), [])]
         inst_tups += self._get_controlled_gate_inst_tups(a_op_m[0], ctrl_states=[0, 0])
-        if self.add_barriers: inst_tups += [(Barrier(4), range(4), [])]
+        if self.add_barriers: inst_tups += [(Barrier(n_qubits), range(n_qubits), [])]
         inst_tups += self._get_controlled_gate_inst_tups(a_op_m[1], ctrl_states=[1, 0])
-        if self.add_barriers: inst_tups += [(Barrier(4), range(4), [])]
+        if self.add_barriers: inst_tups += [(Barrier(n_qubits), range(n_qubits), [])]
 
         # Add the phase gate in the middle.
         inst_tups += [(RZGate(np.pi/4), [self.anc[1]], [])]
-        if self.add_barriers: inst_tups += [(Barrier(4), range(4), [])]
+        if self.add_barriers: inst_tups += [(Barrier(n_qubits), range(n_qubits), [])]
 
         # Add the second creation/annihilation operator.
         inst_tups += self._get_controlled_gate_inst_tups(a_op_n[0], ctrl_states=[0, 1])
-        if self.add_barriers: inst_tups += [(Barrier(4), range(4), [])]
+        if self.add_barriers: inst_tups += [(Barrier(n_qubits), range(n_qubits), [])]
         inst_tups += self._get_controlled_gate_inst_tups(a_op_n[1], ctrl_states=[1, 1])
-        if self.add_barriers: inst_tups += [(Barrier(4), range(4), [])]
+        if self.add_barriers: inst_tups += [(Barrier(n_qubits), range(n_qubits), [])]
         inst_tups += [(HGate(), [self.anc[0]], []), (HGate(), [self.anc[1]], [])]
         
         circ = create_circuit_from_inst_tups(inst_tups)
@@ -129,6 +130,7 @@ class CircuitConstructor:
 
     build_off_diagonal = build_eh_off_diagonal
 
+    '''
     def build_charge_diagonal(self, U_op: SparsePauliOp) -> QuantumCircuit:
         """Constructs the circuit to calculate diagonal charge-charge transition amplitudes.
         
@@ -164,6 +166,7 @@ class CircuitConstructor:
 
     def build_charge_off_diagonal(self, U_op_1, U_op_2):
         pass
+    '''
         
     def _get_controlled_gate_inst_tups(
             self,
@@ -178,7 +181,7 @@ class CircuitConstructor:
         assert len(sparse_pauli_op) == 1
         coeff = sparse_pauli_op.coeffs[0]
         label = sparse_pauli_op.table.to_labels()[0][::-1]
-        _, angle = polar(coeff)
+        # _, angle = polar(coeff)
         inst_tups = []
 
         # Find the indices to apply X gates (for control on 0), H gates (for Pauli X)
@@ -210,11 +213,13 @@ class CircuitConstructor:
         # Apply the phase gate and controlled-Z gate.
         if len(ctrl_states) == 1:
             if coeff != 1:
+                angle = polar(coeff)[1]
                 inst_tups += [(PhaseGate(angle), [0], [])]
             if set(label) != {'I'}:
                 inst_tups += [(CZGate(), [0, pivot], [])]
         elif len(ctrl_states) == 2:
             if coeff != 1:
+                angle = polar(coeff)[1]
                 inst_tups += [(CPhaseGate(angle), [self.anc[0], self.anc[1]], [])]
             if set(label) == {'I'}:
                 if self.ccx_angle != 0:
