@@ -85,7 +85,7 @@ class GreensFunction:
                     omegas: Sequence[float],
                     eta: float = 0.0,
                     save: bool = True) -> Optional[np.ndarray]:
-        """Returns the self-energy at frequency omega.
+        """Returns the trace of self-energy at frequency omega.
 
         Args:
             omegas: The frequencies at which the spectral function is calculated.
@@ -107,7 +107,7 @@ class GreensFunction:
         TrSigmas = np.array(TrSigmas)
 
         if save:
-            np.savetxt('data/' + self.datfname + '_TrSigma.dat', 
+            np.savetxt('data/' + self.datfname + '_TrS.dat', 
                        np.vstack((omegas, TrSigmas.real, TrSigmas.imag)).T)
         else:
             return TrSigmas

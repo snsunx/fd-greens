@@ -255,7 +255,7 @@ class ExcitedAmplitudesSolver:
                         print(f'T[{key}][{ms}, {ms_}] = {self.T[key][ms, ms_]}')
 
 
-        # Unpack T values to N values.
+        # Unpack T values to N values based on Eq. (18) of Kosugi and Matsushita 2021.
         for key in self.keys_diag:
             for ms, ms_ in [(0, 1), (2, 3)]:
                 self.N[key][ms, ms_] = self.N[key][ms_, ms] = \
@@ -267,10 +267,17 @@ class ExcitedAmplitudesSolver:
                 #     + np.exp(1j * np.pi/4) * (self.T[key+'p'][3, 2] - self.T[key+'m'][3, 2])
                 # print(f'N[{key}][2, 3] =', self.N[key][2, 3])
 
-            write_hdf5(h5file, 'amp', f'N{self.suffix}', self.N[key])
+            # write_hdf5(h5file, 'amp', f'N{self.suffix}', self.N[key])
 
         h5file.close()
 
+    def save_data(self) -> None:
+        """Saves transition amplitudes data to HDF5 file."""
+        h5file = h5py.File(self.h5fname, 'r+')
+        for key in self.keys_diag:
+            write_hdf5(h5file, 'amp', f'N{self.suffix}', self.N[key])
+        h5file.close()
+    
     def run(self,
             method: Optional[str] = None, 
             build: bool = True,
@@ -288,3 +295,4 @@ class ExcitedAmplitudesSolver:
         if process:
             self.process_diagonal()
             self.process_off_diagonal()
+            self.save_data()

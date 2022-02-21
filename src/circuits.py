@@ -42,6 +42,8 @@ class CircuitConstructor:
         self.ccx_inst_tups = ccx_inst_tups
         self.anc = anc
         self.sys = [i for i in range(4) if i not in anc] # Total # of qubits = 4
+        print('self.anc =', self.anc)
+        print('self.sys =', self.sys)
 
         ccx_inst_tups_matrix = get_unitary(ccx_inst_tups)
         ccx_matrix = CCXGate().to_matrix()
@@ -63,6 +65,7 @@ class CircuitConstructor:
             The new circuit with the creation/annihilation operator added.
         """
         assert len(a_op) == 2
+        n_qubits = 3
 
         # Copy the ansatz circuit into the system qubit indices.
         inst_tups = self.ansatz.data.copy()
@@ -72,11 +75,11 @@ class CircuitConstructor:
         
         # Main part of the circuit to add the creation/annihilation operator.
         inst_tups += [(HGate(), [0], [])]
-        if self.add_barriers: inst_tups += [(Barrier(3), range(3), [])] # Total # of qubits = 3
+        if self.add_barriers: inst_tups += [(Barrier(n_qubits), range(n_qubits), [])] # Total # of qubits = 3
         inst_tups += self._get_controlled_gate_inst_tups(a_op[0], ctrl_states=[0])
-        if self.add_barriers: inst_tups += [(Barrier(3), range(3), [])]
+        if self.add_barriers: inst_tups += [(Barrier(n_qubits), range(n_qubits), [])]
         inst_tups += self._get_controlled_gate_inst_tups(a_op[1], ctrl_states=[1])
-        if self.add_barriers: inst_tups += [(Barrier(3), range(3), [])]
+        if self.add_barriers: inst_tups += [(Barrier(n_qubits), range(n_qubits), [])]
         inst_tups += [(HGate(), [0], [])]
 
         circ = create_circuit_from_inst_tups(inst_tups)
@@ -103,7 +106,7 @@ class CircuitConstructor:
         # Copy the ansatz circuit into the system qubit indices.
         inst_tups = self.ansatz.data.copy()
         for i, (inst, qargs, cargs) in enumerate(inst_tups):
-            qargs = [q._index + 1 for q in qargs]
+            qargs = [q._index + 2 for q in qargs]
             inst_tups[i] = (inst, qargs, cargs)
 
         # Add the first creation/annihilation operator.
@@ -129,44 +132,6 @@ class CircuitConstructor:
         return circ
 
     build_off_diagonal = build_eh_off_diagonal
-
-    '''
-    def build_charge_diagonal(self, U_op: SparsePauliOp) -> QuantumCircuit:
-        """Constructs the circuit to calculate diagonal charge-charge transition amplitudes.
-        
-        Args:
-            The U operator. Usually a Z operator.
-            
-        Returns:
-            The quantum circuit for calculating diagonal charge-charge transition amplitude.
-        """
-        
-        inst_tups = self.ansatz.data.copy()
-        for i, (inst, qargs, cargs) in enumerate(inst_tups):
-            qargs = [self.sys[q._index] for q in qargs]
-            inst_tups[i] = (inst, qargs, cargs)
-        
-        # Apply the gates corresponding to a charge operator
-        if self.add_barriers: inst_tups += [(Barrier(4), range(4), [])]
-        inst_tups += [(HGate(), [0], []), (HGate(), [1], [])]
-
-        if self.add_barriers: inst_tups += [(Barrier(4), range(4), [])]
-        inst_tups += self._get_controlled_gate_inst_tups(-U_op, ctrl_states=[1, 0]) # iXY = -Z
-        if self.add_barriers: inst_tups += [(Barrier(4), range(4), [])]
-        inst_tups += self._get_controlled_gate_inst_tups(U_op, ctrl_states=[0, 1]) # iYX = Z
-        
-        if self.add_barriers: inst_tups += [(Barrier(4), range(4), [])]
-        inst_tups += [(CZGate(), [0, 1], [])]
-        
-        if self.add_barriers: inst_tups += [(Barrier(4), range(4), [])]
-        inst_tups += [(HGate(), [0], []), (HGate(), [1], [])]
-
-        circ = create_circuit_from_inst_tups(inst_tups)
-        return circ
-
-    def build_charge_off_diagonal(self, U_op_1, U_op_2):
-        pass
-    '''
         
     def _get_controlled_gate_inst_tups(
             self,
@@ -178,10 +143,13 @@ class CircuitConstructor:
             sparse_pauli_op: The Pauli operator from which the controlled gate is constructed.
             ctrl_states: The qubit states on which the cU gate is controlled on.
         """
-        assert len(sparse_pauli_op) == 1
+        assert len(sparse_pauli_op) == 1 # Only a single Pauli string
+        assert set(ctrl_states).issubset({0, 1})
+        n_anc = len(ctrl_states)
+        assert n_anc in [1, 2] # Only single or double controlled gates
         coeff = sparse_pauli_op.coeffs[0]
         label = sparse_pauli_op.table.to_labels()[0][::-1]
-        # _, angle = polar(coeff)
+        n_sys = len(label)
         inst_tups = []
 
         # Find the indices to apply X gates (for control on 0), H gates (for Pauli X)
@@ -190,21 +158,33 @@ class CircuitConstructor:
         # gates, the pivot is the smallest index; for double-controlled gate, the pivot is
         # the largest index.
         if set(label) != {'I'}:
-            if len(ctrl_states) == 1: # Single-controlled gate, assume 0 is the control qubit
-                cnot_inds = [i + 1 for i in range(len(label)) if label[i] != 'I']
+            if n_anc == 1: # Single-controlled gate, assume 0 is the control qubit
+                cnot_inds = [i + n_anc for i in range(n_sys) if label[i] != 'I']
                 pivot = min(cnot_inds) # hardcoded
                 cnot_inds.remove(pivot)
+                # swap_inds = [pivot] if pivot != n_anc else []
                 x_inds = [0] if ctrl_states == [0] else []
-                h_inds = [i + 1 for i in range(len(label)) if label[i] == 'X']
-                rx_inds = [i + 1 for i in range(len(label)) if label[i] == 'Y']
+                h_inds = [i + n_anc for i in range(n_sys) if label[i] == 'X']
+                rx_inds = [i + n_anc for i in range(n_sys) if label[i] == 'Y']
             else: # Double-controlled gate, get ancilla and system qubits from attributes
-                cnot_inds = [self.sys[i] for i in range(len(label)) if label[i] != 'I']
-                pivot = max(cnot_inds) # XXX: hardcoded, should be changed 
+                cnot_inds = [i + n_anc for i in range(n_sys) if label[i] != 'I']
+                pivot = min(cnot_inds)
                 cnot_inds.remove(pivot)
-                x_inds = [self.anc[i] for i in range(len(ctrl_states)) if ctrl_states[i] == 0]
-                h_inds = [self.sys[i] for i in range(len(label)) if label[i] == 'X']
-                rx_inds = [self.sys[i] for i in range(len(label)) if label[i] == 'Y']
-        else:
+                # swap_inds = [pivot] if pivot != n_anc else []
+                # x_inds = [0] if ctrl_states == [0] else []
+                x_inds = [i for i in range(len(ctrl_states)) if ctrl_states[i] == 0]
+                h_inds = [i + n_anc for i in range(n_sys) if label[i] == 'X']
+                rx_inds = [i + n_anc for i in range(n_sys) if label[i] == 'Y']
+                # cnot_inds = [self.sys[i] for i in range(len(label)) if label[i] != 'I']
+                # pivot = max(cnot_inds) # XXX: hardcoded, should be changed
+                # cnot_inds.remove(pivot)
+                x_inds1 = [self.anc[i] for i in range(len(ctrl_states)) if ctrl_states[i] == 0]
+                h_inds1 = [self.sys[i] for i in range(len(label)) if label[i] == 'X']
+                rx_inds1 = [self.sys[i] for i in range(len(label)) if label[i] == 'Y']
+                assert x_inds == x_inds1
+                assert h_inds == h_inds1
+                assert rx_inds == rx_inds1
+        else: # Identity gate, only need to check the phase below.
             cnot_inds = []
             x_inds = []
             h_inds = []
@@ -226,6 +206,13 @@ class CircuitConstructor:
                     inst_tups += [(CPhaseGate(self.ccx_angle), [self.anc[0], self.anc[1]], [])]
             else:
                 inst_tups += [(CCZGate, [self.anc[0], self.anc[1], pivot], [])]
+
+
+        # Wrap SWAP gates around when the pivot is not the first system qubit.
+        # for ind in swap_inds:
+        #     swap_inst_tups = [(SwapGate(), [n_anc, pivot], [])]
+        #     inst_tups = swap_inst_tups + inst_tups
+        #     inst_tups = inst_tups + swap_inst_tups
 
         # Wrap CNOT gates around for multi-qubit Pauli string. Note that these CNOTs are applied
         # in the reverse direction because the controlled gate is Z.
@@ -406,7 +393,7 @@ def transpile_into_berkeley_gates(circ: QuantumCircuit,
     
     Returns:
         The circuit after transpilation.
-    """
+    """    
     if circ_label == '0':
         circ_new = permute_qubits(circ, [1, 2], end=12)
     elif circ_label == '1':
