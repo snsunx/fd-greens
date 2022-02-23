@@ -40,10 +40,9 @@ class CircuitConstructor:
         self.ansatz = ansatz.copy()
         self.add_barriers = add_barriers
         self.ccx_inst_tups = ccx_inst_tups
+        # TODO: anc is not necessary. Can possibly deprecate this variable.
         self.anc = anc
         self.sys = [i for i in range(4) if i not in anc] # Total # of qubits = 4
-        print('self.anc =', self.anc)
-        print('self.sys =', self.sys)
 
         ccx_inst_tups_matrix = get_unitary(ccx_inst_tups)
         ccx_matrix = CCXGate().to_matrix()
@@ -158,32 +157,12 @@ class CircuitConstructor:
         # gates, the pivot is the smallest index; for double-controlled gate, the pivot is
         # the largest index.
         if set(label) != {'I'}:
-            if n_anc == 1: # Single-controlled gate, assume 0 is the control qubit
-                cnot_inds = [i + n_anc for i in range(n_sys) if label[i] != 'I']
-                pivot = min(cnot_inds) # hardcoded
-                cnot_inds.remove(pivot)
-                # swap_inds = [pivot] if pivot != n_anc else []
-                x_inds = [0] if ctrl_states == [0] else []
-                h_inds = [i + n_anc for i in range(n_sys) if label[i] == 'X']
-                rx_inds = [i + n_anc for i in range(n_sys) if label[i] == 'Y']
-            else: # Double-controlled gate, get ancilla and system qubits from attributes
-                cnot_inds = [i + n_anc for i in range(n_sys) if label[i] != 'I']
-                pivot = min(cnot_inds)
-                cnot_inds.remove(pivot)
-                # swap_inds = [pivot] if pivot != n_anc else []
-                # x_inds = [0] if ctrl_states == [0] else []
-                x_inds = [i for i in range(len(ctrl_states)) if ctrl_states[i] == 0]
-                h_inds = [i + n_anc for i in range(n_sys) if label[i] == 'X']
-                rx_inds = [i + n_anc for i in range(n_sys) if label[i] == 'Y']
-                # cnot_inds = [self.sys[i] for i in range(len(label)) if label[i] != 'I']
-                # pivot = max(cnot_inds) # XXX: hardcoded, should be changed
-                # cnot_inds.remove(pivot)
-                x_inds1 = [self.anc[i] for i in range(len(ctrl_states)) if ctrl_states[i] == 0]
-                h_inds1 = [self.sys[i] for i in range(len(label)) if label[i] == 'X']
-                rx_inds1 = [self.sys[i] for i in range(len(label)) if label[i] == 'Y']
-                assert x_inds == x_inds1
-                assert h_inds == h_inds1
-                assert rx_inds == rx_inds1
+            cnot_inds = [i + n_anc for i in range(n_sys) if label[i] != 'I']
+            pivot = min(cnot_inds)
+            cnot_inds.remove(pivot)
+            x_inds = [i for i in range(n_anc) if ctrl_states[i] == 0]
+            h_inds = [i + n_anc for i in range(n_sys) if label[i] == 'X']
+            rx_inds = [i + n_anc for i in range(n_sys) if label[i] == 'Y']
         else: # Identity gate, only need to check the phase below.
             cnot_inds = []
             x_inds = []
@@ -206,13 +185,6 @@ class CircuitConstructor:
                     inst_tups += [(CPhaseGate(self.ccx_angle), [self.anc[0], self.anc[1]], [])]
             else:
                 inst_tups += [(CCZGate, [self.anc[0], self.anc[1], pivot], [])]
-
-
-        # Wrap SWAP gates around when the pivot is not the first system qubit.
-        # for ind in swap_inds:
-        #     swap_inst_tups = [(SwapGate(), [n_anc, pivot], [])]
-        #     inst_tups = swap_inst_tups + inst_tups
-        #     inst_tups = inst_tups + swap_inst_tups
 
         # Wrap CNOT gates around for multi-qubit Pauli string. Note that these CNOTs are applied
         # in the reverse direction because the controlled gate is Z.
@@ -380,11 +352,9 @@ def transpile_into_berkeley_gates(circ: QuantumCircuit,
                                   circ_label: str,
                                   save_figs: bool = True) -> QuantumCircuit:
     """Transpiles the circuit into the native gates on the Berkeley device.
-    The transpilation procedure depends on the circuit label.
-    
-    The basis gates are assumed to be X(pi/2), virtual Z, CS, CZ, and CXC (C-iX-C).
-    In the '0' and '1' circuits, the ancilla is 0 and system qubits are 1 and 2.
-    In the '01' circuit, the ancillae are 0 and 2 while the system qubits are 1 and 3.
+
+    The transpilation procedure depends on the circuit label. The basis gates are assumed
+    to be X(pi/2), virtual Z, CS, CZ, and CXC (C-iX-C).
     
     Args:
         circ: The quantum circuit to be transpiled.
@@ -394,6 +364,10 @@ def transpile_into_berkeley_gates(circ: QuantumCircuit,
     Returns:
         The circuit after transpilation.
     """    
+    if save_figs:
+        fig = circ.draw('mpl')
+        fig.savefig(f'figs/circ{circ_label}_untranspiled.png', bbox_inches='tight')
+
     if circ_label == '0':
         circ_new = permute_qubits(circ, [1, 2], end=12)
     elif circ_label == '1':
@@ -434,6 +408,11 @@ def transpile_into_berkeley_gates(circ: QuantumCircuit,
 
     else:
         circ_new = convert_ccz_to_cxc(circ)
+
+    if save_figs:
+        fig = circ_new.draw('mpl')
+        fig.savefig(f'figs/circ{circ_label}_transpiled.png', bbox_inches='tight')
+        
     return circ_new
 
 def permute_qubits(circ: QuantumCircuit, 
@@ -498,7 +477,8 @@ def convert_swap_to_cz(circ: QuantumCircuit) -> QuantumCircuit:
     inst_tups_new = []
 
     # Iterate from the end of the circuit, do not start converting SWAP gates to CZ gates
-    # unless after encountering a non-SWAP gate.
+    # unless after encountering a non-SWAP gate. This is because SWAP gates at the end can
+    # be kept track of classically.
     convert_swap = False
     for inst, qargs, cargs in inst_tups[::-1]:
         if inst.name == 'swap': # SWAP gate

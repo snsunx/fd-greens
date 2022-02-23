@@ -31,7 +31,8 @@ class EHAmplitudesSolver:
                  h5fname: str = 'lih',
                  anc: Sequence[int] = [0, 1],
                  spin: str = 'd',
-                 suffix: str = '') -> None:
+                 suffix: str = '',
+                 verbose: bool = True) -> None:
         """Initializes an EHAmplitudesSolver object.
 
         Args:
@@ -42,6 +43,7 @@ class EHAmplitudesSolver:
             anc: Location of the ancilla qubits.
             spin: The spin of the creation and annihilation operators.
             suffix: The suffix for a specific experimental run.
+            verbose: Whether to print out information about the calculation.
         """
         assert method in ['exact', 'tomo']
         assert spin in ['u', 'd']
@@ -51,11 +53,17 @@ class EHAmplitudesSolver:
         self.q_instance = q_instance
         self.method = method
         self.anc = anc
-        print('self.anc = ', self.anc)
         self.sys = [i for i in range(4) if i not in anc]
         self.spin = spin
         self.hspin = 'd' if self.spin == 'u' else 'u'
         self.suffix = suffix
+        self.verbose = verbose
+
+        # Hardcoded problem parameters.
+        self.n_anc_diag = 1
+        self.n_anc_off_diag = 2
+        self.n_qubits = 2
+        self.n_sys = 2
 
         # Load data and initialize quantities.
         self.h5fname = h5fname + '.h5'
@@ -70,6 +78,7 @@ class EHAmplitudesSolver:
         h5file.close()
 
         # Number of spatial orbitals and (N+/-1)-electron states.
+        self.n_states = {'e': self.states['e'].shape[1], 'h': self.states['h'].shape[1]}
         self.n_elec = self.h.molecule.n_electrons
         self.n_orb = len(self.h.act_inds)
         self.n_occ = self.n_elec // 2 - len(self.h.occ_inds)
@@ -96,15 +105,12 @@ class EHAmplitudesSolver:
         self.qinds_tot_off_diag = dict()
         for key, qind in zip(self.keys_off_diag, self.qinds_anc_off_diag):
             self.qinds_tot_off_diag[key] = self.qinds_sys[key[0]].insert_ancilla(qind)
-            print(f'qinds_tot_off_diag[{key}]', self.qinds_tot_off_diag[key])
 
         # Transition amplitude arrays. The keys of B are 'e' and 'h'. 
         # The keys of D are 'ep', 'em', 'hp', 'hm'.
         assert self.n_e == self.n_h # XXX: This is only for this special case
         self.B = {key: np.zeros((self.n_orb, self.n_orb, self.n_e), dtype=complex) for key in self.keys_diag}
         self.D = {key: np.zeros((self.n_orb, self.n_orb, self.n_e), dtype=complex) for key in self.keys_off_diag}
-        # self.B = defaultdict(lambda: np.zeros((self.n_orb, self.n_orb, self.n_e), dtype=complex))
-        # self.D = defaultdict(lambda: np.zeros((self.n_orb, self.n_orb, self.n_e), dtype=complex))
 
         # Create Pauli dictionaries for the creation/annihilation operators.
         second_q_ops = SecondQuantizedOperators(self.h.molecule.n_electrons)
@@ -113,7 +119,7 @@ class EHAmplitudesSolver:
 
         # The circuit constructor and tomography labels.
         self.constructor = CircuitConstructor(self.ansatz, anc=self.anc)
-        self.tomo_labels = [''.join(x) for x in itertools.product('xyz', repeat=2)] # 2 is hardcoded
+        self.tomo_labels = [''.join(x) for x in itertools.product('xyz', repeat=self.n_sys)] # 2 is hardcoded
 
         # print("----- Printing out physical quantities -----")
         # print(f"Number of electrons is {self.n_elec}")
@@ -133,7 +139,7 @@ class EHAmplitudesSolver:
             # and store the QASM string in the HDF5 file.
             a_op = self.pauli_dict[(m, self.spin)]
             circ = self.constructor.build_eh_diagonal(a_op)
-            circ = transpile_into_berkeley_gates(circ, 'something')
+            circ = transpile_into_berkeley_gates(circ, str(m) + self.spin)
             write_hdf5(h5file, f'circ{m}', 'base', circ.qasm())
 
             if self.method == 'tomo':
@@ -188,7 +194,7 @@ class EHAmplitudesSolver:
 
                     # Obtain the B matrix elements by computing the overlaps.
                     self.B[key][m, m] = np.abs(self.states[key].conj().T @ psi_key) ** 2
-                    print(f'B[{key}][{m}, {m}] = {self.B[key][m, m]}')
+                    if self.verbose: print(f'B[{key}][{m}, {m}] = {self.B[key][m, m]}')
 
             elif self.method == 'tomo':
                 for key, qind in zip(self.keys_diag, self.qinds_anc_diag):
@@ -199,20 +205,21 @@ class EHAmplitudesSolver:
                     for label in self.tomo_labels:
                         counts_arr = h5file[f'circ{m}/{label}'].attrs[f'counts{self.suffix}']
                         start = int(''.join([str(i) for i in qind])[::-1], 2)
-                        counts_arr_label = counts_arr[start::2] # 2 is because 2 ** 1
+                        counts_arr_label = counts_arr[start::2**self.n_anc_diag]
                         counts_arr_label = counts_arr_label / np.sum(counts_arr)
                         counts_arr_key = np.hstack((counts_arr_key, counts_arr_label))
                     
                     # Obtain the density matrix from tomography. Slice the density matrix 
                     # based on whether we are considering 'e' or 'h' on the system qubits.
                     rho = np.linalg.lstsq(params.basis_matrix, counts_arr_key)[0]
-                    rho = rho.reshape(4, 4, order='F') # XXX: 4 is hardcoded
+                    rho = rho.reshape(2**self.n_sys, 2**self.n_sys, order='F')
                     rho = self.qinds_sys[key](rho)
 
                     # Obtain the B matrix elements by computing the overlaps between 
                     # the density matrix and the states from EHStatesSolver.
-                    self.B[key][m, m] = [get_overlap(self.states[key][:, i], rho) for i in range(2)]
-                    print(f'B[{key}][{m}, {m}] = {self.B[key][m, m]}')
+                    self.B[key][m, m] = [get_overlap(self.states[key][:, i], rho) 
+                                         for i in range(self.n_states[key])]
+                    if self.verbose: print(f'B[{key}][{m}, {m}] = {self.B[key][m, m]}')
 
         h5file.close()
 
@@ -223,7 +230,7 @@ class EHAmplitudesSolver:
         a_op_0 = self.pauli_dict[(0, self.spin)]
         a_op_1 = self.pauli_dict[(1, self.spin)]
         circ = self.constructor.build_eh_off_diagonal(a_op_1, a_op_0)
-        circ = transpile_into_berkeley_gates(circ, 'something')
+        circ = transpile_into_berkeley_gates(circ, '01' + self.spin)
         write_hdf5(h5file, 'circ01', 'base', circ.qasm())
 
         if self.method == 'tomo':
@@ -272,7 +279,7 @@ class EHAmplitudesSolver:
 
                 # Obtain the D matrix elements by computing the overlaps.
                 self.D[key][0, 1] = self.D[key][1, 0] = abs(self.states[key[0]].conj().T @ psi_key) ** 2
-                print(f'D[{key}][0, 1] =', self.D[key][0, 1])
+                if self.verbose: print(f'D[{key}][0, 1] =', self.D[key][0, 1])
                     
         elif self.method == 'tomo':
             for key, qind in zip(self.keys_off_diag, self.qinds_anc_off_diag):
@@ -283,28 +290,29 @@ class EHAmplitudesSolver:
                 for label in self.tomo_labels:
                     counts_arr = h5file[f'circ01/{label}'].attrs[f'counts{self.suffix}']
                     start = int(''.join([str(i) for i in qind])[::-1], 2)
-                    counts_arr_label = counts_arr[start::4] # 4 is because 2 ** 2
+                    counts_arr_label = counts_arr[start::2**self.n_anc_off_diag] # 4 is because 2 ** 2
                     counts_arr_label = counts_arr_label / np.sum(counts_arr)
                     counts_arr_key = np.hstack((counts_arr_key, counts_arr_label))
 
                 # Obtain the density matrix from tomography. Slice the density matrix 
                 # based on whether we are considering 'e' or 'h' on the system qubits.
                 rho = np.linalg.lstsq(params.basis_matrix, counts_arr_key)[0]
-                rho = rho.reshape(4, 4, order='F') # XXX: 4 is hardcoded
+                rho = rho.reshape(2**self.n_sys, 2**self.n_sys, order='F')
                 rho = self.qinds_sys[key[0]](rho)
 
                 # Obtain the D matrix elements by computing the overlaps between 
                 # the density matrix and the states from EHStatesSolver.
                 self.D[key][0, 1] = self.D[key][1, 0] = \
-                    [get_overlap(self.states[key[0]][:, i], rho) for i in range(2)] # XXX: 2 is hardcoded
-                print(f'D[{key}][0, 1] =', self.D[key][0, 1])
+                    [get_overlap(self.states[key[0]][:, i], rho) 
+                    for i in range(self.n_states[key[0]])]
+                if self.verbose: print(f'D[{key}][0, 1] =', self.D[key][0, 1])
 
         # Unpack D values to B values based on Eq. (18) of Kosugi and Matsushita 2020.
         for key in self.keys_diag:
             self.B[key][0, 1] = self.B[key][1, 0] = \
                 np.exp(-1j * np.pi/4) * (self.D[key+'p'][0, 1] - self.D[key+'m'][0, 1]) \
                 + np.exp(1j * np.pi/4) * (self.D[key+'p'][1, 0] - self.D[key+'m'][1, 0])
-            print(f'B[{key}][0, 1] =', self.B[key][0, 1])
+            if self.verbose: print(f'B[{key}][0, 1] =', self.B[key][0, 1])
 
         h5file.close()
         
@@ -322,28 +330,6 @@ class EHAmplitudesSolver:
         write_hdf5(h5file, 'amp', f'e_orb{self.suffix}', e_orb[act_inds][:, act_inds])
 
         h5file.close()
-
-    # TODO: This function thsould be deprecated.
-    def build_all(self, method: Optional[str] = None) -> None:
-        """Constructs the diagonal and off-diagonal circuits."""
-        if method is not None: self.method = method
-        self.build_diagonal()
-        self.build_off_diagonal()
-
-    # TODO: This function should be deprecated.
-    def run_all(self, method: Optional[str] = None) -> None:
-        """Executes the diagonal and off-diagonal circuits."""
-        if method is not None: self.method = method
-        self.run_diagonal()
-        self.run_off_diagonal()
-
-    # TODO: This function should be deprecated.
-    def process_all(self, method: Optional[str] = None) -> None:
-        """Post-processes data obtained from the diagonal and off-diagonal circuits."""
-        if method is not None: self.method = method
-        self.process_diagonal()
-        self.process_off_diagonal()
-        self.save_data()
 
     def run(self,
             method: Optional[str] = None, 

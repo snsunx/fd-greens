@@ -1,6 +1,5 @@
 """Green's function module."""
 
-from collections import defaultdict
 from typing import Union, Sequence, Optional
 
 import h5py
