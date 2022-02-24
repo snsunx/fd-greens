@@ -17,7 +17,7 @@ def main_gs():
     gs_solver.run()
 
 def main_es():
-    es_solver = EHStatesSolver(h, q_instance=q_instance, method='exact', h5fname=h5fname)
+    es_solver = EHStatesSolver(h, q_instance=q_instance, method='exact', h5fname=h5fname, spin=spin)
     es_solver.run()
 
 def main_amp(**kwargs):
@@ -35,11 +35,11 @@ if __name__ == '__main__':
     h5fname = 'lih_3A1'
     spin = 'd'
     suffix = '_' + spin
-    omegas = np.arange(-20, 10, 0.1)
-    eta = 0.02 * HARTREE_TO_EV
+    omegas = np.arange(-20, 20, 0.01)
+    eta = 0.002 * HARTREE_TO_EV
 
     initialize_hdf5(h5fname)
     main_gs()
     main_es()
     main_amp()
-    main_greens()
+    # main_greens()

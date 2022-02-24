@@ -13,7 +13,7 @@ def build_ansatz_gs(params: Sequence[float]) -> QuantumCircuit:
     Returns:
         The ansatz quantum circuit.
     """
-    assert len(params) == 4
+    assert len(params) == 6
     qreg = QuantumRegister(2, name='q')
     ansatz = QuantumCircuit(qreg)
     ansatz.ry(params[0], 0)
@@ -21,6 +21,9 @@ def build_ansatz_gs(params: Sequence[float]) -> QuantumCircuit:
     ansatz.cz(0, 1)
     ansatz.ry(params[2], 0)
     ansatz.ry(params[3], 1)
+    ansatz.cz(0, 1)
+    ansatz.ry(params[4], 0)
+    ansatz.ry(params[5], 0)
     return ansatz
 
 def build_ansatz_e(params: Sequence[float]) -> QuantumCircuit:

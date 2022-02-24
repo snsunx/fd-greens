@@ -95,6 +95,7 @@ class EHAmplitudesSolver:
         self.qinds_tot_diag = dict()
         for key, qind in zip(self.keys_diag, self.qinds_anc_diag):
             self.qinds_tot_diag[key] = self.qinds_sys[key].insert_ancilla(qind)
+            # print('qinds_tot_diag', key, self.qinds_tot_diag[key])
         
         # Build qubit indices for off-diagonal circuits.
         self.keys_off_diag = ['ep', 'em', 'hp', 'hm']
@@ -113,6 +114,8 @@ class EHAmplitudesSolver:
         second_q_ops = SecondQuantizedOperators(self.h.molecule.n_electrons)
         second_q_ops.transform(partial(transform_4q_pauli, init_state=[1, 1]))
         self.pauli_dict = second_q_ops.get_pauli_dict()
+        # for key, val in self.pauli_dict.items():
+        #     print(key, val.coeffs, val.table.to_labels())
 
         # The circuit constructor and tomography labels.
         self.constructor = CircuitConstructor(self.ansatz, anc=self.anc)
@@ -136,7 +139,7 @@ class EHAmplitudesSolver:
             # and store the QASM string in the HDF5 file.
             a_op = self.pauli_dict[(m, self.spin)]
             circ = self.constructor.build_eh_diagonal(a_op)
-            circ = transpile_into_berkeley_gates(circ, str(m) + self.spin)
+            # circ = transpile_into_berkeley_gates(circ, str(m) + self.spin)
             write_hdf5(h5file, f'circ{m}', 'base', circ.qasm())
 
             if self.method == 'tomo':
@@ -187,7 +190,12 @@ class EHAmplitudesSolver:
             if self.method == 'exact':
                 psi = h5file[f'circ{m}/base'].attrs[f'psi{self.suffix}']
                 for key in self.keys_diag:
+                    # print('key =', key)
+                    psi[abs(psi) < 1e-8] = 0.
+                    # print('psi =', psi)
                     psi_key = self.qinds_tot_diag[key](psi)
+                    # print('psi_key =', psi_key)
+                    # print('states[key] =', self.states[key])
 
                     # Obtain the B matrix elements by computing the overlaps.
                     self.B[key][m, m] = np.abs(self.states[key].conj().T @ psi_key) ** 2

@@ -1,6 +1,5 @@
 """Number states solver module."""
 
-from asyncore import write
 from typing import Optional
 
 import h5py
@@ -47,6 +46,10 @@ class EHStatesSolver:
         self.inds = {'e': transform_4q_indices(params.e_inds[self.spin]),
                      'h': transform_4q_indices(params.h_inds[self.hspin])}
 
+        # print('spin =', self.spin)
+        # print('init_state =', init_state)
+        # print('inds =', self.inds['e'], self.inds['h'])
+
         self.ansatz_func_e = ansatz_func_e
         self.ansatz_func_h = ansatz_func_h
         self.q_instance = q_instance
@@ -61,14 +64,15 @@ class EHStatesSolver:
     def run_exact(self) -> None:
         """Calculates the exact (N+/-1)-electron energies and states of the Hamiltonian."""
         def eigensolve(arr, inds):
+            # print('arr =', arr)
             arr = arr[inds][:, inds]
             e, v = np.linalg.eigh(arr)
             return e, v
         h_arr = self.h_op.to_matrix()
-        self.energies_e, self.states_e = eigensolve(h_arr, inds=self.inds['e'].int_form)
-        self.energies_h, self.states_h = eigensolve(h_arr, inds=self.inds['h'].int_form)
-        self.states_e = self.states_e.T
-        self.states_h = self.states_h.T
+        self.energies_e, self.states_e = eigensolve(h_arr, inds=self.inds['e']._int)
+        self.energies_h, self.states_h = eigensolve(h_arr, inds=self.inds['h']._int)
+        # self.states_e = self.states_e
+        # self.states_h = self.states_h
         print(f"(N+1)-electron energies are {self.energies_e} eV")
         print(f"(N-1)-electron energies are {self.energies_h} eV")
 
@@ -78,17 +82,19 @@ class EHStatesSolver:
         minus_energy_max, circ_max = vqe_minimize(-self.h_op, self.ansatz_func_e, (0.,), self.q_instance)
         state_min = state_tomography(circ_min, q_instance=self.q_instance)
         state_max = state_tomography(circ_max, q_instance=self.q_instance)
-        inds_e = self.inds['e'].int_form
         self.energies_e = np.array([energy_min, -minus_energy_max])
-        self.states_e = [state_min[[inds_e][:, inds_e]], state_max[[inds_e][:, inds_e]]]
+        self.states_e = [self.inds['e'](state_min), self.inds['e'](state_max)]
+        # inds_e = self.inds['e'].int_form        
+        # self.states_e = [state_min[[inds_e][:, inds_e]], state_max[[inds_e][:, inds_e]]]
 
         energy_min, circ_min = vqe_minimize(self.h_op, self.ansatz_func_h, (0.,), self.q_instance)
         minus_energy_max, circ_max = vqe_minimize(-self.h_op, self.ansatz_func_h, (0.,), self.q_instance)
         state_min = state_tomography(circ_min, q_instance=self.q_instance)
         state_max = state_tomography(circ_max, q_instance=self.q_instance)
-        inds_h = self.inds['h'].int_form
         self.energies_h = np.array([energy_min, -minus_energy_max])
-        self.states_h = [state_min[[inds_h][:, inds_h]], state_max[[inds_h][:, inds_h]]]
+        self.states_h = [self.inds['h'](state_min), self.inds['h'](state_max)]
+        # inds_h = self.inds['h'].int_form
+        # self.states_h = [state_min[[inds_h][:, inds_h]], state_max[[inds_h][:, inds_h]]]
 
         print(f"(N+1)-electron energies are {self.energies_e} eV")
         print(f"(N-1)-electron energies are {self.energies_h} eV")
