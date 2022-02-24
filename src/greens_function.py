@@ -42,7 +42,6 @@ class GreensFunction:
         Returns:
             The Green's function numpy array.
         """
-
         # Green's function arrays
         G_e = np.zeros((self.n_orb, self.n_orb), dtype=complex)
         G_h = np.zeros((self.n_orb, self.n_orb), dtype=complex)

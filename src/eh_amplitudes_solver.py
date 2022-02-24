@@ -62,7 +62,6 @@ class EHAmplitudesSolver:
         # Hardcoded problem parameters.
         self.n_anc_diag = 1
         self.n_anc_off_diag = 2
-        self.n_qubits = 2
         self.n_sys = 2
 
         # Load data and initialize quantities.
@@ -89,8 +88,6 @@ class EHAmplitudesSolver:
         # Build qubit indices for system qubits.
         self.qinds_sys = {'e': transform_4q_indices(params.e_inds[self.spin]),
                           'h': transform_4q_indices(params.h_inds[self.hspin])}
-        # self.qinds_sys = {'e': transform_4q_indices(params.ed_inds),
-        #                   'h': transform_4q_indices(params.hu_inds)}
 
         # Build qubit indices for diagonal circuits.
         self.keys_diag = ['e', 'h']
@@ -119,7 +116,7 @@ class EHAmplitudesSolver:
 
         # The circuit constructor and tomography labels.
         self.constructor = CircuitConstructor(self.ansatz, anc=self.anc)
-        self.tomo_labels = [''.join(x) for x in itertools.product('xyz', repeat=self.n_sys)] # 2 is hardcoded
+        self.tomo_labels = [''.join(x) for x in itertools.product('xyz', repeat=self.n_sys)]
 
         # print("----- Printing out physical quantities -----")
         # print(f"Number of electrons is {self.n_elec}")
@@ -229,7 +226,10 @@ class EHAmplitudesSolver:
 
         a_op_0 = self.pauli_dict[(0, self.spin)]
         a_op_1 = self.pauli_dict[(1, self.spin)]
-        circ = self.constructor.build_eh_off_diagonal(a_op_1, a_op_0)
+        if self.spin == 'u':
+            circ = self.constructor.build_eh_off_diagonal(a_op_1, a_op_0)
+        else:
+            circ = self.constructor.build_eh_off_diagonal(a_op_0, a_op_1)
         circ = transpile_into_berkeley_gates(circ, '01' + self.spin)
         write_hdf5(h5file, 'circ01', 'base', circ.qasm())
 
@@ -340,12 +340,12 @@ class EHAmplitudesSolver:
         if method is not None: 
             self.method = method
         if build:
-            # self.build_diagonal()
+            self.build_diagonal()
             self.build_off_diagonal()
         if execute:
-            # self.execute_diagonal()
+            self.execute_diagonal()
             self.execute_off_diagonal()
         if process:
-            # self.process_diagonal()
+            self.process_diagonal()
             self.process_off_diagonal()
             self.save_data()

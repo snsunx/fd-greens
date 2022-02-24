@@ -25,6 +25,7 @@ class EHStatesSolver:
                  ansatz_func_e: AnsatzFunction = build_ansatz_e, 
                  ansatz_func_h: AnsatzFunction = build_ansatz_h,
                  q_instance: QuantumInstance = get_quantum_instance('sv'),
+                 spin: str = 'd',
                  method: str = 'exact',
                  h5fname: str = 'lih') -> None:
         """Initializes an EHStatesSolver object.
@@ -37,10 +38,14 @@ class EHStatesSolver:
             spin: A string indicating which spin states are included.
             h5fname: The hdf5 file name.
         """
+        assert spin in ['u', 'd']
         self.h = h
-        self.h_op = transform_4q_pauli(self.h.qiskit_op, init_state=[1, 0])
-        self.inds_e = transform_4q_indices(params.ed_inds)
-        self.inds_h = transform_4q_indices(params.hu_inds)
+        init_state = [1, 0] if spin == 'd' else [0, 1]
+        self.spin = spin
+        self.hspin = 'd' if self.spin == 'u' else 'u'
+        self.h_op = transform_4q_pauli(self.h.qiskit_op, init_state=init_state)
+        self.inds = {'e': transform_4q_indices(params.e_inds[self.spin]),
+                     'h': transform_4q_indices(params.h_inds[self.hspin])}
 
         self.ansatz_func_e = ansatz_func_e
         self.ansatz_func_h = ansatz_func_h
@@ -60,8 +65,8 @@ class EHStatesSolver:
             e, v = np.linalg.eigh(arr)
             return e, v
         h_arr = self.h_op.to_matrix()
-        self.energies_e, self.states_e = eigensolve(h_arr, inds=self.inds_e.int_form)
-        self.energies_h, self.states_h = eigensolve(h_arr, inds=self.inds_h.int_form)
+        self.energies_e, self.states_e = eigensolve(h_arr, inds=self.inds['e'].int_form)
+        self.energies_h, self.states_h = eigensolve(h_arr, inds=self.inds['h'].int_form)
         self.states_e = self.states_e.T
         self.states_h = self.states_h.T
         print(f"(N+1)-electron energies are {self.energies_e} eV")
@@ -73,7 +78,7 @@ class EHStatesSolver:
         minus_energy_max, circ_max = vqe_minimize(-self.h_op, self.ansatz_func_e, (0.,), self.q_instance)
         state_min = state_tomography(circ_min, q_instance=self.q_instance)
         state_max = state_tomography(circ_max, q_instance=self.q_instance)
-        inds_e = self.inds_e.int_form
+        inds_e = self.inds['e'].int_form
         self.energies_e = np.array([energy_min, -minus_energy_max])
         self.states_e = [state_min[[inds_e][:, inds_e]], state_max[[inds_e][:, inds_e]]]
 
@@ -81,7 +86,7 @@ class EHStatesSolver:
         minus_energy_max, circ_max = vqe_minimize(-self.h_op, self.ansatz_func_h, (0.,), self.q_instance)
         state_min = state_tomography(circ_min, q_instance=self.q_instance)
         state_max = state_tomography(circ_max, q_instance=self.q_instance)
-        inds_h = self.inds_h.int_form
+        inds_h = self.inds['h'].int_form
         self.energies_h = np.array([energy_min, -minus_energy_max])
         self.states_h = [state_min[[inds_h][:, inds_h]], state_max[[inds_h][:, inds_h]]]
 

@@ -15,7 +15,7 @@ from qiskit.quantum_info import SparsePauliOp
 
 from params import CCZGate
 from utils import (get_unitary, get_registers_in_inst_tups, create_circuit_from_inst_tups, 
-                   remove_instructions)
+                   remove_instructions, circuit_equal)
 
 QubitLike = Union[int, Qubit]
 ClbitLike = Union[int, Clbit]
@@ -75,7 +75,7 @@ class CircuitConstructor:
         
         # Main part of the circuit to add the creation/annihilation operator.
         inst_tups += [(HGate(), [0], [])]
-        if self.add_barriers: inst_tups += [(Barrier(n_qubits), range(n_qubits), [])] # Total # of qubits = 3
+        if self.add_barriers: inst_tups += [(Barrier(n_qubits), range(n_qubits), [])]
         inst_tups += self._get_controlled_gate_inst_tups(a_op[0], ctrl_states=[0])
         if self.add_barriers: inst_tups += [(Barrier(n_qubits), range(n_qubits), [])]
         inst_tups += self._get_controlled_gate_inst_tups(a_op[1], ctrl_states=[1])
@@ -354,8 +354,8 @@ def transpile_into_berkeley_gates(circ: QuantumCircuit,
                                   save_figs: bool = True) -> QuantumCircuit:
     """Transpiles the circuit into the native gates on the Berkeley device.
 
-    The transpilation procedure depends on the circuit label. The basis gates are assumed
-    to be X(pi/2), virtual Z, CS, CZ, and CXC (C-iX-C).
+    The transpilation procedure depends on the circuit label. The basis gates
+    are assumed to be X(pi/2), virtual Z, CS, CZ, and CXC (C-iX-C).
     
     Args:
         circ: The quantum circuit to be transpiled.
@@ -364,50 +364,10 @@ def transpile_into_berkeley_gates(circ: QuantumCircuit,
     
     Returns:
         The circuit after transpilation.
-    """    
+    """
     if save_figs:
         fig = circ.draw('mpl')
         fig.savefig(f'figs/circ{circ_label}_untranspiled.png', bbox_inches='tight')
-
-    '''
-    if circ_label == '0':
-        circ_new = permute_qubits(circ, [1, 2], end=12)
-    elif circ_label == '1':
-        circ_new = circ
-    elif circ_label == '01':
-        if save_figs:
-            if not os.path.exists('figs'): os.makedirs('figs')
-            fig = circ.draw('mpl')
-            fig.savefig('figs/circ_untranspiled.png', bbox_inches='tight')
-        # uni = get_unitary(circ)
-
-        circ_new = permute_qubits(circ, [0, 3])
-        circ_new = permute_qubits(circ_new, [0, 1], start=26)
-        if save_figs:
-            fig = circ_new.draw('mpl')
-            fig.savefig('figs/circ_permuted.png', bbox_inches='tight')
-        # uni1 = get_unitary(circ_new)
-
-        circ_new = convert_ccz_to_cxc(circ_new)
-        circ_new = convert_swap_to_cz(circ_new)
-        circ_new = remove_instructions(circ_new, ['barrier'])
-        circ_new = combine_1q_gates(circ_new)
-        circ_new = combine_1q_gates(circ_new)
-        circ_new = convert_1q_to_xpi2(circ_new)
-        circ_new = combine_1q_gates(circ_new)
-        
-        # Some temporary checking statement
-        # uni2 = get_unitary(circ_new)
-        # vec1 = uni1[:, 0]
-        # vec1n = vec1 / (vec1[0] / abs(vec1[0]))
-        # vec2 = uni2[:, 0]
-        # vec2n = vec2 / (vec2[0] / abs(vec2[0]))
-        # print(np.allclose(vec1, vec2))
-        # print(np.allclose(vec1n, vec2n))
-        if save_figs:
-            fig = circ_new.draw('mpl')
-            fig.savefig('figs/circ_additional.png', bbox_inches='tight')
-    '''
 
     circ_new = remove_instructions(circ, ['barrier'])
     if circ_label == '0u':
@@ -421,13 +381,14 @@ def transpile_into_berkeley_gates(circ: QuantumCircuit,
     elif circ_label == '01u':
         circ_new = permute_qubits(circ_new, [2, 3], start=-5)
     elif circ_label == '01d':
-        circ_new = permute_qubits(circ_new, [2, 3], start=21, end=25)
+        circ_new = permute_qubits(circ_new, [2, 3], end=12)
 
+    # Convert 2q and 3q gates to native gates.
     circ_new = convert_ccz_to_cxc(circ_new)
     circ_new = convert_swap_to_cz(circ_new)    
     circ_new = combine_1q_gates(circ_new)
     circ_new = combine_1q_gates(circ_new)
-    circ_new = combine_2q_gates(circ_new)
+    circ_new = combine_2q_gates(circ_new, [[0, 1]])
 
     if save_figs:
         # Saving the circuit figure in an intermediate stage before 
@@ -435,6 +396,7 @@ def transpile_into_berkeley_gates(circ: QuantumCircuit,
         fig = circ_new.draw('mpl')
         fig.savefig(f'figs/circ{circ_label}_intermediate.png', bbox_inches='tight')
     
+    # Convert 1q gates to native gates.
     circ_new = convert_1q_to_xpi2(circ_new)
     circ_new = combine_1q_gates(circ_new)
 
@@ -485,7 +447,7 @@ def permute_qubits(circ: QuantumCircuit,
     if start != 0:
         inst_tups_new.insert(start, (SwapGate(), swap_inds, []))
     circ_new = create_circuit_from_inst_tups(inst_tups_new)
-    assert unitary_equal(circ, circ_new)
+    assert circuit_equal(circ, circ_new)
     return circ_new
 
 def convert_ccz_to_cxc(circ: QuantumCircuit) -> QuantumCircuit:
@@ -509,7 +471,7 @@ def convert_ccz_to_cxc(circ: QuantumCircuit) -> QuantumCircuit:
             inst_tups_new.append((inst, qargs, cargs))
 
     circ_new = create_circuit_from_inst_tups(inst_tups_new)
-    assert unitary_equal(circ, circ_new)
+    assert circuit_equal(circ, circ_new)
     return circ_new
 
 def convert_swap_to_cz(circ: QuantumCircuit) -> QuantumCircuit:
@@ -534,7 +496,7 @@ def convert_swap_to_cz(circ: QuantumCircuit) -> QuantumCircuit:
             convert_swap = True
 
     circ_new = create_circuit_from_inst_tups(inst_tups_new)
-    assert unitary_equal(circ, circ_new)
+    assert circuit_equal(circ, circ_new)
     return circ_new
 
 def convert_1q_to_xpi2(circ: QuantumCircuit) -> QuantumCircuit:
@@ -558,7 +520,7 @@ def convert_1q_to_xpi2(circ: QuantumCircuit) -> QuantumCircuit:
         else:
             inst_tups_new.append((inst, qargs, cargs))
     circ_new = create_circuit_from_inst_tups(inst_tups_new)
-    assert unitary_equal(circ, circ_new)
+    assert circuit_equal(circ, circ_new)
     return circ_new
 
 def combine_1q_gates(circ: QuantumCircuit, 
@@ -606,7 +568,7 @@ def combine_1q_gates(circ: QuantumCircuit,
     # Include only the gates that are not in del_inds and create the new circuit.
     inst_tups_new = [inst_tups[i] for i in range(len(inst_tups)) if i not in del_inds]
     circ_new = create_circuit_from_inst_tups(inst_tups_new)
-    assert unitary_equal(circ, circ_new)
+    assert circuit_equal(circ, circ_new)
     return circ_new
 
 def combine_2q_gates(circ: QuantumCircuit, 
@@ -644,17 +606,5 @@ def combine_2q_gates(circ: QuantumCircuit,
     # at the insert_inds and create the new circuit.
     inst_tups_new = [inst_tups[i] for i in range(len(inst_tups)) if i not in del_inds]
     circ_new = create_circuit_from_inst_tups(inst_tups_new)
-    assert unitary_equal(circ, circ_new)
+    assert circuit_equal(circ, circ_new)
     return circ_new
-    
-
-def unitary_equal(uni1, uni2):
-    if isinstance(uni1, QuantumCircuit):
-        uni1 = get_unitary(uni1)
-    if isinstance(uni2, QuantumCircuit):
-        uni2 = get_unitary(uni2)
-    phase1 = uni1[0, 0] / abs(uni1[0, 0])
-    phase2 = uni2[0, 0] / abs(uni2[0, 0])
-    uni1 /= phase1
-    uni2 /= phase2
-    return np.allclose(uni1, uni2)

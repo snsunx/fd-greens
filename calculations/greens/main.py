@@ -33,7 +33,7 @@ if __name__ == '__main__':
     h = get_lih_hamiltonian(3.0)
     q_instance = get_quantum_instance('sv')
     h5fname = 'lih_3A1'
-    spin = 'u'
+    spin = 'd'
     suffix = '_' + spin
     omegas = np.arange(-20, 10, 0.1)
     eta = 0.02 * HARTREE_TO_EV

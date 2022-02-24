@@ -527,3 +527,24 @@ def get_quantum_instance(type_str: str) -> QuantumInstance:
             Aer.get_backend('qasm_simulator', shots=100000, noise_model_name='ibmq_jakarta'),
             shots=100000)
     return q_instance
+
+def circuit_equal(uni1: Union[QuantumCircuit, np.ndarray], 
+                  uni2: Union[QuantumCircuit, np.ndarray]) -> bool:
+    """Checks if two quantum circuits are equal on the state |0000>.
+    
+    Args:
+        uni1: The unitary of the first circuit.
+        uni2: The unitary of the second circuit.
+        
+    Returns:
+        Whether the two circuits are equivalent.
+    """
+    if isinstance(uni1, QuantumCircuit):
+        uni1 = get_unitary(uni1)
+    if isinstance(uni2, QuantumCircuit):
+        uni2 = get_unitary(uni2)
+    vec1 = uni1[:, 0]
+    vec2 = uni2[:, 0]
+    vec1 /= (vec1[0] / abs(vec1[0]))
+    vec2 /= (vec2[0] / abs(vec2[0]))
+    return np.allclose(vec1, vec2)
