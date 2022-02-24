@@ -139,7 +139,7 @@ class EHAmplitudesSolver:
             # and store the QASM string in the HDF5 file.
             a_op = self.pauli_dict[(m, self.spin)]
             circ = self.constructor.build_eh_diagonal(a_op)
-            # circ = transpile_into_berkeley_gates(circ, str(m) + self.spin)
+            circ = transpile_into_berkeley_gates(circ, str(m) + self.spin)
             write_hdf5(h5file, f'circ{m}', 'base', circ.qasm())
 
             if self.method == 'tomo':

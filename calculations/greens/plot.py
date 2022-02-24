@@ -24,12 +24,13 @@ def main_TrS():
     ax.set_ylabel("Tr$\Sigma$ (eV)")
     # ax.set_xlim([-20, 10])
     ax.legend()
-    fig.savefig('figs/TrSud.png', dpi=300)
+    fig.savefig(f'figs/{TrSfigname}.png', dpi=300)
 
 if __name__ == '__main__':
     h5fnames = ['lih_3A1'] * 2
     suffixes = ['_u', '_d']
     Afigname = 'Aud'
+    TrSfigname = 'TrSud'
 
     main_A()
     main_TrS()

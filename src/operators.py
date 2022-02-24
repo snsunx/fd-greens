@@ -11,7 +11,7 @@ PauliOperator = Union[PauliSumOp, SparsePauliOp]
 class SecondQuantizedOperators:
     """A class to store the X and Y parts of the creation and annihilation operators."""
 
-    def __init__(self, n_qubits: int, factor: Union[int, float] = 1) -> None:
+    def __init__(self, n_qubits: int, factor: Union[int, float] = -1) -> None:
         """Initializes a SecondQuantizedOperators object.
         
         Args:

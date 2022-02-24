@@ -373,7 +373,7 @@ def transpile_into_berkeley_gates(circ: QuantumCircuit,
     if circ_label == '0u':
         circ_new = permute_qubits(circ_new, [1, 2])
     elif circ_label == '0d':
-        circ_new = permute_qubits(circ_new, [1, 2], end=9)
+        circ_new = permute_qubits(circ_new, [1, 2], end=17)
     elif circ_label == '1u':
         pass
     elif circ_label == '1d':
@@ -381,14 +381,14 @@ def transpile_into_berkeley_gates(circ: QuantumCircuit,
     elif circ_label == '01u':
         circ_new = permute_qubits(circ_new, [2, 3], start=-5)
     elif circ_label == '01d':
-        circ_new = permute_qubits(circ_new, [2, 3], end=12)
+        circ_new = permute_qubits(circ_new, [2, 3], end=20)
 
     # Convert 2q and 3q gates to native gates.
     circ_new = convert_ccz_to_cxc(circ_new)
-    circ_new = convert_swap_to_cz(circ_new)    
+    circ_new = convert_swap_to_cz(circ_new)
     circ_new = combine_1q_gates(circ_new)
     circ_new = combine_1q_gates(circ_new)
-    circ_new = combine_2q_gates(circ_new, [[0, 1]])
+    circ_new = combine_2q_gates(circ_new, [[0, 1], [2, 3]])
 
     if save_figs:
         # Saving the circuit figure in an intermediate stage before 
@@ -517,6 +517,13 @@ def convert_1q_to_xpi2(circ: QuantumCircuit) -> QuantumCircuit:
                               (RXGate(np.pi/2), qargs, []), 
                               (RZGate((np.pi-theta) % (2*np.pi)), qargs, []),
                               (RXGate(np.pi/2), qargs, [])]
+        elif inst.name == 'u3':
+            theta, phi, lam = inst.params
+            inst_tups_new += [(RZGate(lam-np.pi), qargs, []),
+                              (RXGate(np.pi/2), qargs, []),
+                              (RZGate(np.pi-theta), qargs, []),
+                              (RXGate(np.pi/2), qargs, []),
+                              (RZGate(phi), qargs, [])]
         else:
             inst_tups_new.append((inst, qargs, cargs))
     circ_new = create_circuit_from_inst_tups(inst_tups_new)
@@ -589,7 +596,8 @@ def combine_2q_gates(circ: QuantumCircuit,
             qarg_inds = [x._index for x in qargs]
             if tuple(q_pair) == tuple(qarg_inds):
                 if (inst.name == inst_old.name == 'cp' and
-                    inst.params[0] == inst_old.params[0] == np.pi):
+                    inst.params[0] == inst_old.params[0] == np.pi) or \
+                    inst.name == inst_old.name == 'cz':
                     del_inds += [i_old, i]
                     i_old = None
                     inst_old = UGate(0, 0, 0)

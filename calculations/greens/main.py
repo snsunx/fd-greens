@@ -36,10 +36,10 @@ if __name__ == '__main__':
     spin = 'd'
     suffix = '_' + spin
     omegas = np.arange(-20, 20, 0.01)
-    eta = 0.002 * HARTREE_TO_EV
+    eta = 0.02 * HARTREE_TO_EV
 
-    initialize_hdf5(h5fname)
-    main_gs()
-    main_es()
-    main_amp()
-    # main_greens()
+    # initialize_hdf5(h5fname)
+    # main_gs()
+    # main_es()
+    # main_amp()
+    main_greens()
