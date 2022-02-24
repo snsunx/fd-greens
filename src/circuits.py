@@ -3,6 +3,7 @@
 import os
 from typing import Tuple, Optional, Iterable, Union, Sequence, List
 from cmath import polar
+from itertools import combinations
 
 import numpy as np
 from permutation import Permutation
@@ -368,6 +369,7 @@ def transpile_into_berkeley_gates(circ: QuantumCircuit,
         fig = circ.draw('mpl')
         fig.savefig(f'figs/circ{circ_label}_untranspiled.png', bbox_inches='tight')
 
+    '''
     if circ_label == '0':
         circ_new = permute_qubits(circ, [1, 2], end=12)
     elif circ_label == '1':
@@ -405,9 +407,36 @@ def transpile_into_berkeley_gates(circ: QuantumCircuit,
         if save_figs:
             fig = circ_new.draw('mpl')
             fig.savefig('figs/circ_additional.png', bbox_inches='tight')
+    '''
 
-    else:
-        circ_new = convert_ccz_to_cxc(circ)
+    circ_new = remove_instructions(circ, ['barrier'])
+    if circ_label == '0u':
+        circ_new = permute_qubits(circ_new, [1, 2])
+    elif circ_label == '0d':
+        circ_new = permute_qubits(circ_new, [1, 2], end=9)
+    elif circ_label == '1u':
+        pass
+    elif circ_label == '1d':
+        pass
+    elif circ_label == '01u':
+        circ_new = permute_qubits(circ_new, [2, 3], start=-5)
+    elif circ_label == '01d':
+        circ_new = permute_qubits(circ_new, [2, 3], start=21, end=25)
+
+    circ_new = convert_ccz_to_cxc(circ_new)
+    circ_new = convert_swap_to_cz(circ_new)    
+    circ_new = combine_1q_gates(circ_new)
+    circ_new = combine_1q_gates(circ_new)
+    circ_new = combine_2q_gates(circ_new)
+
+    if save_figs:
+        # Saving the circuit figure in an intermediate stage before 
+        # converting all 1q gates to X(pi/2) pulses.
+        fig = circ_new.draw('mpl')
+        fig.savefig(f'figs/circ{circ_label}_intermediate.png', bbox_inches='tight')
+    
+    circ_new = convert_1q_to_xpi2(circ_new)
+    circ_new = combine_1q_gates(circ_new)
 
     if save_figs:
         fig = circ_new.draw('mpl')
@@ -432,6 +461,8 @@ def permute_qubits(circ: QuantumCircuit,
     """
     if start is None: start = 0
     if end is None: end = len(circ)
+    if start < 0: start += len(circ)
+    if end < 0: end += len(circ)
     inst_tups = circ.data.copy()
 
     def conjugate(gate_inds, swap_inds):
@@ -447,18 +478,26 @@ def permute_qubits(circ: QuantumCircuit,
             qargs = sorted([q._index for q in qargs])
             qargs = conjugate(qargs, swap_inds)
         inst_tups_new.append((inst, qargs, cargs))
+    
+    # Insert SWAP gates at the start and end indices. The SWAP gate 
+    # at the start index is only inserted when it is not 0. 
     inst_tups_new.insert(end, (SwapGate(), swap_inds, []))
     if start != 0:
         inst_tups_new.insert(start, (SwapGate(), swap_inds, []))
     circ_new = create_circuit_from_inst_tups(inst_tups_new)
+    assert unitary_equal(circ, circ_new)
     return circ_new
 
 def convert_ccz_to_cxc(circ: QuantumCircuit) -> QuantumCircuit:
     """Converts CCZ gates to CXC gates with dressing H and X gates."""
     inst_tups = circ.data.copy()
     inst_tups_new = []
+
     for inst, qargs, cargs in inst_tups:
         if inst.name == 'c-unitary':
+            # The double controlled unitary is the original CCZ gate used in building the circuits.
+            # To make the decomposition, simply wrap X gates around q0 and q2 and wrap H gates
+            # around q1 in the CXC gate double controlled on |0>.
             inst_tups_new += [(XGate(), [qargs[0]], []), 
                               (HGate(), [qargs[1]], []),
                               (XGate(), [qargs[2]], []),
@@ -468,7 +507,9 @@ def convert_ccz_to_cxc(circ: QuantumCircuit) -> QuantumCircuit:
                               (XGate(), [qargs[2]], [])]
         else:
             inst_tups_new.append((inst, qargs, cargs))
+
     circ_new = create_circuit_from_inst_tups(inst_tups_new)
+    assert unitary_equal(circ, circ_new)
     return circ_new
 
 def convert_swap_to_cz(circ: QuantumCircuit) -> QuantumCircuit:
@@ -493,6 +534,7 @@ def convert_swap_to_cz(circ: QuantumCircuit) -> QuantumCircuit:
             convert_swap = True
 
     circ_new = create_circuit_from_inst_tups(inst_tups_new)
+    assert unitary_equal(circ, circ_new)
     return circ_new
 
 def convert_1q_to_xpi2(circ: QuantumCircuit) -> QuantumCircuit:
@@ -516,20 +558,27 @@ def convert_1q_to_xpi2(circ: QuantumCircuit) -> QuantumCircuit:
         else:
             inst_tups_new.append((inst, qargs, cargs))
     circ_new = create_circuit_from_inst_tups(inst_tups_new)
+    assert unitary_equal(circ, circ_new)
     return circ_new
 
-def combine_1q_gates(circ: QuantumCircuit, qubits: Optional[Iterable[int]] = None
-        ) -> QuantumCircuit:
-    """Combines single-qubit gates on certain qubits."""
+def combine_1q_gates(circ: QuantumCircuit, 
+                     qubits: Optional[Iterable[int]] = None
+                     ) -> QuantumCircuit:
+    """Combines single-qubit gates H, X and Rx to identities on given qubits."""
     inst_tups = circ.data.copy()
     if qubits is None:
         qreg, _ = get_registers_in_inst_tups(inst_tups)
         qubits = range(len(qreg))
 
-    i_old = None
-    inst_old = UGate(0, 0, 0) # Sentinel
+    # for i, (inst, qargs, cargs) in enumerate(inst_tups[:10]):
+    #     print(i, inst.name, qargs, cargs)
+        
     del_inds = []
     for q in qubits:
+        # Initialize i_old and inst_old. i_old is the previous index of the 1q gate we record, 
+        # and inst_old is a sentinel that does not appear in the circuit.
+        i_old = None
+        inst_old = UGate(0, 0, 0) # Sentinel
         for i, (inst, qargs, _) in enumerate(inst_tups):
             if q in [x._index for x in qargs]:
                 if len(qargs) == 1: # 1q gate
@@ -537,19 +586,75 @@ def combine_1q_gates(circ: QuantumCircuit, qubits: Optional[Iterable[int]] = Non
                     #     print(i, 'inst params', inst.params[0], len(qargs))
                     if inst.name == inst_old.name:
                         # if inst.name == 'rx': print(q, inst.params[0], inst_old.params[0])
+                        # Encountering a 1q gate the same as the previous gate. The two gates are
+                        # deleted when they are H gates, X gates, or Rx(\theta) and Rx(-\theta).
                         if inst.name in ['h', 'x'] or (inst.name == 'rx' and
                             abs(inst.params[0] + inst_old.params[0]) < 1e-8): 
-                        # update del_inds and start over
-                            del_inds += [i, i_old]
+                            del_inds += [i_old, i]
                             i_old = None
                             inst_old = UGate(0, 0, 0)
-                    else: # update old vars and continue
+                    else: 
+                        # Encountering a 1q gate not the same as the previous gate.
+                        # Update i_old and inst_old and continue the search.
                         i_old = i
                         inst_old = inst.copy()
-                else: # 2q gate, start over
+                else: 
+                    # Encountering a 2q gate. Start over the search by resetting i_old and inst_old.
                     i_old = None
                     inst_old = UGate(0, 0, 0)
-
+    
+    # Include only the gates that are not in del_inds and create the new circuit.
     inst_tups_new = [inst_tups[i] for i in range(len(inst_tups)) if i not in del_inds]
     circ_new = create_circuit_from_inst_tups(inst_tups_new)
+    assert unitary_equal(circ, circ_new)
     return circ_new
+
+def combine_2q_gates(circ: QuantumCircuit, 
+                     qubit_pairs: Optional[Iterable[Tuple[int, int]]] = None
+                     ) -> QuantumCircuit:    
+    """Combines two CS(pi) i.e. CZ gates into identity on given qubits."""
+    inst_tups = circ.data.copy()
+    if qubit_pairs is None:
+        qreg, _ = get_registers_in_inst_tups(inst_tups)
+        qubits = range(len(qreg))
+        qubit_pairs = list(combinations(qubits, 2))
+
+    del_inds = []
+    for q_pair in qubit_pairs:
+        i_old = None
+        inst_old = UGate(0, 0, 0)
+        for i, (inst, qargs, _) in enumerate(inst_tups):
+            qarg_inds = [x._index for x in qargs]
+            if tuple(q_pair) == tuple(qarg_inds):
+                if (inst.name == inst_old.name == 'cp' and
+                    inst.params[0] == inst_old.params[0] == np.pi):
+                    del_inds += [i_old, i]
+                    i_old = None
+                    inst_old = UGate(0, 0, 0)
+                else:
+                    i_old = i
+                    inst_old = inst.copy()
+            else:
+                # Encountering a gate that is not a CS gate. Start over the search by 
+                # resetting i_old and inst_old to the initial values.
+                i_old = None
+                inst_old = UGate(0, 0, 0)
+
+    # Include only the gates that are not in del_inds. Insert CZ gates 
+    # at the insert_inds and create the new circuit.
+    inst_tups_new = [inst_tups[i] for i in range(len(inst_tups)) if i not in del_inds]
+    circ_new = create_circuit_from_inst_tups(inst_tups_new)
+    assert unitary_equal(circ, circ_new)
+    return circ_new
+    
+
+def unitary_equal(uni1, uni2):
+    if isinstance(uni1, QuantumCircuit):
+        uni1 = get_unitary(uni1)
+    if isinstance(uni2, QuantumCircuit):
+        uni2 = get_unitary(uni2)
+    phase1 = uni1[0, 0] / abs(uni1[0, 0])
+    phase2 = uni2[0, 0] / abs(uni2[0, 0])
+    uni1 /= phase1
+    uni2 /= phase2
+    return np.allclose(uni1, uni2)

@@ -340,12 +340,12 @@ class EHAmplitudesSolver:
         if method is not None: 
             self.method = method
         if build:
-            self.build_diagonal()
+            # self.build_diagonal()
             self.build_off_diagonal()
         if execute:
-            self.execute_diagonal()
+            # self.execute_diagonal()
             self.execute_off_diagonal()
         if process:
-            self.process_diagonal()
+            # self.process_diagonal()
             self.process_off_diagonal()
             self.save_data()
