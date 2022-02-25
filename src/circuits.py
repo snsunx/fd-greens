@@ -243,7 +243,7 @@ def append_tomography_gates(circ: QuantumCircuit,
             inst_tups.append((inst, qargs, cargs))
             break
 
-    # Append rotation gates when tomographing on X or Y
+    # Append rotation gates when tomographing on X or Y.
     for q, s in zip(qubits, label):
         q_new = q + 1
         for perm in perms: q_new = perm(q_new)
@@ -305,10 +305,10 @@ def append_measurement_gates(circ: QuantumCircuit) -> QuantumCircuit:
     n_qubits = len(qreg)
     circ.add_register(ClassicalRegister(n_qubits))
     inst_tups = circ.data.copy()
-    if n_qubits == 4:
-        perms = [Permutation.cycle(2, 3)] # XXX
-    else:
-        perms = []
+    # if n_qubits == 4:
+    #     perms = [Permutation.cycle(2, 3)] # XXX
+    # else:
+    perms = []
 
     # Split off the last few SWAP gates.
     while True:

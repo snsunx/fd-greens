@@ -146,8 +146,8 @@ class EHAmplitudesSolver:
                 for label in self.tomo_labels:
                     # When using tomography, build circuits with tomography and measurement
                     # gates appended and store the QASM string in the HDF5 file.
-                    tomo_circ = append_tomography_gates1(circ, [1, 2], label)
-                    tomo_circ = append_measurement_gates1(tomo_circ)
+                    tomo_circ = append_tomography_gates(circ, [1, 2], label)
+                    tomo_circ = append_measurement_gates(tomo_circ)
                     write_hdf5(h5file, f'circ{m}', label, tomo_circ.qasm())
 
         h5file.close()
@@ -243,8 +243,8 @@ class EHAmplitudesSolver:
 
         if self.method == 'tomo':
             for label in self.tomo_labels:
-                tomo_circ = append_tomography_gates1(circ, self.sys, label)
-                tomo_circ = append_measurement_gates1(tomo_circ)
+                tomo_circ = append_tomography_gates(circ, self.sys, label)
+                tomo_circ = append_measurement_gates(tomo_circ)
                 write_hdf5(h5file, 'circ01', label, tomo_circ.qasm())
 
         h5file.close()

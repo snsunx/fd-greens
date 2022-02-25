@@ -21,7 +21,8 @@ def main_es():
     es_solver.run()
 
 def main_amp(**kwargs):
-    amp_solver = EHAmplitudesSolver(h, q_instance=q_instance, h5fname=h5fname, suffix=suffix, anc=[0, 1], spin=spin)
+    amp_solver = EHAmplitudesSolver(h, q_instance=q_instance, h5fname=h5fname, method=method, 
+                                    suffix=suffix, anc=[0, 1], spin=spin)
     amp_solver.run(**kwargs)
     
 def main_greens():
@@ -31,10 +32,11 @@ def main_greens():
 
 if __name__ == '__main__': 
     h = get_lih_hamiltonian(3.0)
-    q_instance = get_quantum_instance('sv')
+    q_instance = get_quantum_instance('qasm')
+    method = 'tomo'
     h5fname = 'lih_3A1'
     spin = 'd'
-    suffix = '_' + spin
+    suffix = '_' + spin + 'tomo'
     omegas = np.arange(-20, 20, 0.01)
     eta = 0.02 * HARTREE_TO_EV
 
