@@ -455,7 +455,8 @@ def initialize_hdf5(fname: str = 'lih', calc: str = 'greens') -> None:
         h5file = h5py.File(fname, 'w')
     
     if calc == 'greens':
-        grpnames = ['gs', 'es', 'amp', 'circ0', 'circ1', 'circ01']
+        grpnames = ['gs', 'es', 'amp', 'circ0u', 'circ1u',
+                    'circ01u', 'circ0d', 'circ1d', 'circ01d']
     else:
         grpnames = ['gs', 'es', 'amp', 'circ0u', 'circ1u', 'circ0d', 'circ1d',
                     'circ0u0d', 'circ0d0u', 'circ1u1d', 'circ1d1u']
@@ -464,7 +465,11 @@ def initialize_hdf5(fname: str = 'lih', calc: str = 'greens') -> None:
             h5file.create_group(grpname)
     h5file.close()
 
-def write_hdf5(h5file: h5py.File, grpname: str, dsetname: str, data: Any) -> None:
+def write_hdf5(h5file: h5py.File, 
+               grpname: str,
+               dsetname: str,
+               data: Any,
+               overwrite: bool = True) -> None:
     """Writes a data object to a dataset in an HDF5 file.
     
     Args:
@@ -472,10 +477,15 @@ def write_hdf5(h5file: h5py.File, grpname: str, dsetname: str, data: Any) -> Non
         grpname: The name of the group to save the data under.
         dsetname: The name of the dataset to save the data to.
         data: The data to be saved.
+        overwrite: Whether the dataset is overwritten.
     """
-    if dsetname in h5file[grpname].keys():
-        del h5file[f'{grpname}/{dsetname}']
-    h5file[f'{grpname}/{dsetname}'] = data
+    if overwrite:
+        if dsetname in h5file[grpname].keys():
+            del h5file[f'{grpname}/{dsetname}']
+    try:
+        h5file[f'{grpname}/{dsetname}'] = data
+    except:
+        pass
 
 '''
 def check_ccx_inst_tups(inst_tups):

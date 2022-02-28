@@ -32,7 +32,8 @@ class EHAmplitudesSolver:
                  anc: Sequence[int] = [0, 1],
                  spin: str = 'd',
                  suffix: str = '',
-                 verbose: bool = True) -> None:
+                 verbose: bool = True,
+                 overwrite: bool = False) -> None:
         """Initializes an EHAmplitudesSolver object.
 
         Args:
@@ -44,6 +45,7 @@ class EHAmplitudesSolver:
             spin: The spin of the creation and annihilation operators.
             suffix: The suffix for a specific experimental run.
             verbose: Whether to print out information about the calculation.
+            overwrite: Whether circuits are overwritten.
         """
         assert method in ['exact', 'tomo']
         assert spin in ['u', 'd']
@@ -140,7 +142,7 @@ class EHAmplitudesSolver:
             a_op = self.pauli_dict[(m, self.spin)]
             circ = self.constructor.build_eh_diagonal(a_op)
             circ = transpile_into_berkeley_gates(circ, str(m) + self.spin)
-            write_hdf5(h5file, f'circ{m}', 'base', circ.qasm())
+            write_hdf5(h5file, f'circ{m}{self.spin}', 'base', circ.qasm())
 
             if self.method == 'tomo':
                 for label in self.tomo_labels:
@@ -148,7 +150,7 @@ class EHAmplitudesSolver:
                     # gates appended and store the QASM string in the HDF5 file.
                     tomo_circ = append_tomography_gates(circ, [1, 2], label)
                     tomo_circ = append_measurement_gates(tomo_circ)
-                    write_hdf5(h5file, f'circ{m}', label, tomo_circ.qasm())
+                    write_hdf5(h5file, f'circ{m}{self.spin}', label, tomo_circ.qasm())
 
         h5file.close()
 
@@ -159,7 +161,7 @@ class EHAmplitudesSolver:
         for m in range(self.n_orb): # 0, 1
             if self.method == 'exact':
                 # Extract the quantum circuit from the HDF5 file.
-                dset = h5file[f'circ{m}/base']
+                dset = h5file[f'circ{m}{self.spin}/base']
                 circ = QuantumCircuit.from_qasm_str(dset[()].decode())
                 
                 # Execute the circuit and store the statevector in the HDF5 file.
@@ -169,7 +171,7 @@ class EHAmplitudesSolver:
             else: # Tomography
                 for label in self.tomo_labels:
                     # Extract the quantum circuit from the HDF5 file.
-                    dset = h5file[f'circ{m}/{label}']
+                    dset = h5file[f'circ{m}{self.spin}/{label}']
                     circ = QuantumCircuit.from_qasm_str(dset[()].decode())
 
                     # Execute the circuit and store the counts array in the HDF5 file.
@@ -188,7 +190,7 @@ class EHAmplitudesSolver:
 
         for m in range(self.n_orb): # 0, 1
             if self.method == 'exact':
-                psi = h5file[f'circ{m}/base'].attrs[f'psi{self.suffix}']
+                psi = h5file[f'circ{m}{self.spin}/base'].attrs[f'psi{self.suffix}']
                 for key in self.keys_diag:
                     # print('key =', key)
                     psi[abs(psi) < 1e-8] = 0.
@@ -208,7 +210,7 @@ class EHAmplitudesSolver:
                     # label, and then stack the counts_arr_label to counts_arr_key.
                     counts_arr_key = np.array([])
                     for label in self.tomo_labels:
-                        counts_arr = h5file[f'circ{m}/{label}'].attrs[f'counts{self.suffix}']
+                        counts_arr = h5file[f'circ{m}{self.spin}/{label}'].attrs[f'counts{self.suffix}']
                         start = int(''.join([str(i) for i in qind])[::-1], 2)
                         counts_arr_label = counts_arr[start::2**self.n_anc_diag]
                         counts_arr_label = counts_arr_label / np.sum(counts_arr)
@@ -239,13 +241,13 @@ class EHAmplitudesSolver:
         else:
             circ = self.constructor.build_eh_off_diagonal(a_op_0, a_op_1)
         circ = transpile_into_berkeley_gates(circ, '01' + self.spin)
-        write_hdf5(h5file, 'circ01', 'base', circ.qasm())
+        write_hdf5(h5file, f'circ01{self.spin}', 'base', circ.qasm())
 
         if self.method == 'tomo':
             for label in self.tomo_labels:
                 tomo_circ = append_tomography_gates(circ, self.sys, label)
                 tomo_circ = append_measurement_gates(tomo_circ)
-                write_hdf5(h5file, 'circ01', label, tomo_circ.qasm())
+                write_hdf5(h5file, f'circ01{self.spin}', label, tomo_circ.qasm())
 
         h5file.close()
 
@@ -255,7 +257,7 @@ class EHAmplitudesSolver:
 
         if self.method == 'exact':
             # Extract the quantum circuit from the HDF5 file.
-            dset = h5file[f'circ01/base']
+            dset = h5file[f'circ01{self.spin}/base']
             circ = QuantumCircuit.from_qasm_str(dset[()].decode())
 
             result = self.q_instance.execute(circ)
@@ -264,7 +266,7 @@ class EHAmplitudesSolver:
         else: # Tomography
             for label in self.tomo_labels:
                 # Extract the quantum circuit from the HDF5 file.
-                dset = h5file[f'circ01/{label}']
+                dset = h5file[f'circ01{self.spin}/{label}']
                 circ = QuantumCircuit.from_qasm_str(dset[()].decode())
 
                 result = self.q_instance.execute(circ)
@@ -281,7 +283,7 @@ class EHAmplitudesSolver:
         h5file = h5py.File(self.h5fname, 'r+')
 
         if self.method == 'exact':
-            psi = h5file[f'circ01/base'].attrs[f'psi{self.suffix}']
+            psi = h5file[f'circ01{self.spin}/base'].attrs[f'psi{self.suffix}']
             for key in self.keys_off_diag:
                 psi_key = self.qinds_tot_off_diag[key](psi)
 
@@ -296,7 +298,7 @@ class EHAmplitudesSolver:
                 # label, and then stack the counts_arr_label to counts_arr_key.
                 counts_arr_key = np.array([])
                 for label in self.tomo_labels:
-                    counts_arr = h5file[f'circ01/{label}'].attrs[f'counts{self.suffix}']
+                    counts_arr = h5file[f'circ01{self.spin}/{label}'].attrs[f'counts{self.suffix}']
                     start = int(''.join([str(i) for i in qind])[::-1], 2)
                     counts_arr_label = counts_arr[start::2**self.n_anc_off_diag] # 4 is because 2 ** 2
                     counts_arr_label = counts_arr_label / np.sum(counts_arr)

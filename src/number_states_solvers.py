@@ -35,7 +35,7 @@ class EHStatesSolver:
             ansatz_func_h: The ansatz function for (N-1)-electron states.
             q_instance: The quantum instance for (N+/-1)-electron state calculation.
             spin: A string indicating which spin states are included.
-            h5fname: The hdf5 file name.
+            h5fname: The HDF5 file name.
         """
         assert spin in ['u', 'd']
         self.h = h

@@ -32,16 +32,16 @@ def main_greens():
 
 if __name__ == '__main__': 
     h = get_lih_hamiltonian(3.0)
-    q_instance = get_quantum_instance('qasm')
-    method = 'tomo'
-    h5fname = 'lih_3A1'
+    q_instance = get_quantum_instance('sv')
+    method = 'exact'
+    h5fname = 'lih_3A'
     spin = 'd'
-    suffix = '_' + spin + 'tomo'
+    suffix = '_' + spin + method
     omegas = np.arange(-20, 20, 0.01)
     eta = 0.02 * HARTREE_TO_EV
 
-    # initialize_hdf5(h5fname)
-    # main_gs()
-    # main_es()
-    # main_amp()
-    main_greens()
+    initialize_hdf5(h5fname)
+    main_gs()
+    main_es()
+    main_amp()
+    # main_greens()
