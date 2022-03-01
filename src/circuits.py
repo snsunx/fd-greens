@@ -10,10 +10,10 @@ from permutation import Permutation
 
 from qiskit import QuantumCircuit, ClassicalRegister
 from qiskit.circuit import Instruction, Qubit, Clbit, Barrier, Measure
-from qiskit.extensions import CCXGate, XGate, HGate, RXGate, RZGate, CPhaseGate, CZGate, PhaseGate, SwapGate, UGate
+from qiskit.extensions import CCXGate, XGate, HGate, RXGate, RZGate, CPhaseGate, CZGate, PhaseGate, SwapGate, UGate, UnitaryGate
 from qiskit.quantum_info import SparsePauliOp
 
-from params import CCZGate
+from params import C0C0iXGate, CCZGate
 from utils import (get_unitary, get_registers_in_inst_tups, create_circuit_from_inst_tups, 
                    remove_instructions, circuit_equal)
 
@@ -372,6 +372,7 @@ def transpile_into_berkeley_gates(circ: QuantumCircuit,
     circ_new = remove_instructions(circ, ['barrier'])
     if circ_label == '0u':
         circ_new = permute_qubits(circ_new, [1, 2])
+        pass
     elif circ_label == '0d':
         circ_new = permute_qubits(circ_new, [1, 2], end=17)
     elif circ_label == '1u':
@@ -385,7 +386,7 @@ def transpile_into_berkeley_gates(circ: QuantumCircuit,
 
     # Convert 2q and 3q gates to native gates.
     circ_new = convert_ccz_to_cxc(circ_new)
-    circ_new = convert_swap_to_cz(circ_new)
+    # circ_new = convert_swap_to_cz(circ_new)
     circ_new = combine_1q_gates(circ_new)
     circ_new = combine_1q_gates(circ_new)
     circ_new = combine_2q_gates(circ_new, [[0, 1], [2, 3]])
@@ -403,6 +404,10 @@ def transpile_into_berkeley_gates(circ: QuantumCircuit,
     if save_figs:
         fig = circ_new.draw('mpl')
         fig.savefig(f'figs/circ{circ_label}_transpiled.png', bbox_inches='tight')
+
+    # if circ_label[:2] == '01':
+    #     for inst, qargs, cargs in circ_new.data.copy():
+    #         print(inst.name)
         
     return circ_new
 
@@ -455,18 +460,41 @@ def convert_ccz_to_cxc(circ: QuantumCircuit) -> QuantumCircuit:
     inst_tups = circ.data.copy()
     inst_tups_new = []
 
+    count = 0
     for inst, qargs, cargs in inst_tups:
         if inst.name == 'c-unitary':
             # The double controlled unitary is the original CCZ gate used in building the circuits.
             # To make the decomposition, simply wrap X gates around q0 and q2 and wrap H gates
             # around q1 in the CXC gate double controlled on |0>.
-            inst_tups_new += [(XGate(), [qargs[0]], []), 
+            # inst_tups_new += [(XGate(), [qargs[0]], []), 
+            #                   (HGate(), [qargs[1]], []),
+            #                   (XGate(), [qargs[2]], []),
+            #                   (CCXGate(ctrl_state='00'), [qargs[0], qargs[2], qargs[1]], []),
+            #                   (XGate(), [qargs[0]], []), 
+            #                   (HGate(), [qargs[1]], []), 
+            #                   (XGate(), [qargs[2]], [])]
+
+            cizc_inst_tups = [(XGate(), [qargs[0]], []), 
                               (HGate(), [qargs[1]], []),
                               (XGate(), [qargs[2]], []),
-                              (CCXGate(ctrl_state='00'), [qargs[0], qargs[2], qargs[1]], []),
+                              (C0C0iXGate, [qargs[0], qargs[2], qargs[1]], []),
                               (XGate(), [qargs[0]], []), 
                               (HGate(), [qargs[1]], []), 
                               (XGate(), [qargs[2]], [])]
+
+            csdag_inst_tups = [(SwapGate(), [qargs[0], qargs[1]], []),
+                               (CPhaseGate(-np.pi/2), [qargs[1], qargs[2]], []),
+                               (SwapGate(), [qargs[0], qargs[1]], [])]
+
+            if count % 2 == 0:
+                inst_tups_new += cizc_inst_tups
+                inst_tups_new += csdag_inst_tups
+            else:
+                inst_tups_new += csdag_inst_tups
+                inst_tups_new += cizc_inst_tups
+
+            count += 1
+
         else:
             inst_tups_new.append((inst, qargs, cargs))
 
@@ -576,6 +604,18 @@ def combine_1q_gates(circ: QuantumCircuit,
     inst_tups_new = [inst_tups[i] for i in range(len(inst_tups)) if i not in del_inds]
     circ_new = create_circuit_from_inst_tups(inst_tups_new)
     assert circuit_equal(circ, circ_new)
+    return circ_new
+
+def replace_with_cixc(circ: QuantumCircuit) -> QuantumCircuit:
+    inst_tups = []
+    for inst, qargs, cargs in circ.data.copy():
+        if inst.name == 'ccx_o0':
+            # inst_tups += [(CCXGate(ctrl_state='00'), qargs, [])]
+            inst_tups += [(UnitaryGate(np.array([[0, 1j], [1j, 0]])).control(2, ctrl_state='00'), qargs, [])]
+        else:
+            inst_tups += [(inst, qargs, cargs)]
+
+    circ_new = create_circuit_from_inst_tups(inst_tups)
     return circ_new
 
 def combine_2q_gates(circ: QuantumCircuit, 

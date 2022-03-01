@@ -558,3 +558,44 @@ def circuit_equal(uni1: Union[QuantumCircuit, np.ndarray],
     vec1 /= (vec1[0] / abs(vec1[0]))
     vec2 /= (vec2[0] / abs(vec2[0]))
     return np.allclose(vec1, vec2)
+
+def circuit_to_qasm_str(circ: QuantumCircuit) -> str:
+
+    print(set([x[0].name for x in circ.data]))
+    qasm_str = 'OPENQASM 2.0;\ninclude "qelib1.inc";\n'
+    qasm_str += 'gate ccix p0,p1,p2 {x p0; x p1; ccx p0,p1,p2; cp(pi/2) p0, p1; x p0; x p1;}\n'
+    # qasm_str += 'gate ccix p0,p1,p2 {x p0; x p1; ccx p0,p1,p2; x p0; x p1;}\n'
+    if len(circ.qregs) > 0:
+        n_qubits = len(circ.qregs[0])
+        qasm_str += f'qreg q[{n_qubits}];\n'
+    if len(circ.cregs) > 0:
+        n_clbits = len(circ.cregs[0])
+        qasm_str += f'creg q[{n_clbits}];\n'
+        
+    for inst, qargs, cargs in circ.data:
+        if inst.name == 'rz':
+            qasm_str += f'{inst.name}({inst.params[0]}) q[{qargs[0]._index}];\n'
+        elif inst.name == 'rx':
+            qasm_str += f'{inst.name}({inst.params[0]}) q[{qargs[0]._index}];\n'
+        elif inst.name == 'p':
+            qasm_str += f'{inst.name}({inst.params[0]}) q[{qargs[0]._index}];\n'
+        elif inst.name == 'cz':
+            qasm_str += f'{inst.name} q[{qargs[0]._index}],q[{qargs[1]._index}];\n'
+        elif inst.name == 'cp':
+            qasm_str += f'{inst.name}({inst.params[0]}) q[{qargs[0]._index}],q[{qargs[1]._index}];\n'
+        elif inst.name == 'unitary':
+            assert [q._index for q in qargs] == [0, 2, 1]
+            qasm_str += f'ccix q[0],q[2],q[1];\n'
+        elif inst.name == 'swap':
+            qasm_str += f'swap q[{qargs[0]._index}],q[{qargs[1]._index}];\n'
+        elif inst.name == 'measure':
+            qasm_str += f'{inst.name} q[{qargs[0]._index}],c[{cargs[0]._index}];\n'
+
+    
+    # Temporary check statement.
+    uni = get_unitary(circ)
+    circ_new = QuantumCircuit.from_qasm_str(qasm_str)
+    uni_new = get_unitary(circ_new)
+    assert np.allclose(uni, uni_new)
+
+    return qasm_str

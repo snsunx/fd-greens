@@ -34,7 +34,7 @@ if __name__ == '__main__':
     h = get_lih_hamiltonian(3.0)
     q_instance = get_quantum_instance('sv')
     method = 'exact'
-    h5fname = 'lih_3A'
+    h5fname = 'lih_3A1'
     spin = 'd'
     suffix = '_' + spin + method
     omegas = np.arange(-20, 20, 0.01)
@@ -43,5 +43,5 @@ if __name__ == '__main__':
     initialize_hdf5(h5fname)
     main_gs()
     main_es()
-    main_amp()
+    main_amp(execute=False, process=False)
     # main_greens()

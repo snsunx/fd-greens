@@ -52,6 +52,16 @@ cxc_inst_tups = [(XGate(), [0], []),
                  (XGate(), [2], [])]
 
 CCZGate = UnitaryGate(np.array([[1, 0], [0, -1]])).control(2, ctrl_state='11')
+# CCiXGate = UnitaryGate(1j*np.array([[0, 1], [1, 0]])).control(2, ctrl_state='11')
+# C0C0iXGate = UnitaryGate(1j*np.array([[0, 1], [1, 0]])).control(2, ctrl_state='00')
+C0C0iXGate = UnitaryGate([[ 0, 0, 0, 0, 1j, 0, 0, 0],
+                          [ 0, 1, 0, 0,  0, 0, 0, 0],
+                          [ 0, 0, 1, 0,  0, 0, 0, 0],
+                          [ 0, 0, 0, 1,  0, 0, 0, 0],
+                          [1j, 0, 0, 0,  0, 0, 0, 0],
+                          [ 0, 0, 0, 0,  0, 1, 0, 0],
+                          [ 0, 0, 0, 0,  0, 0, 1, 0],
+                          [ 0, 0, 0, 0,  0, 0, 0, 1]])
 
 def get_ccz_inst_tups(ctrl1, ctrl2, targ):
     inst_tups = [(XGate(), [ctrl1], []), 
