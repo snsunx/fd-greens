@@ -10,7 +10,8 @@ from permutation import Permutation
 
 from qiskit import QuantumCircuit, ClassicalRegister
 from qiskit.circuit import Instruction, Qubit, Clbit, Barrier, Measure
-from qiskit.extensions import CCXGate, XGate, HGate, RXGate, RZGate, CPhaseGate, CZGate, PhaseGate, SwapGate, UGate, UnitaryGate
+from qiskit.extensions import (CCXGate, XGate, HGate, RXGate, RZGate, CPhaseGate, 
+                               CZGate, PhaseGate, SwapGate, UGate, UnitaryGate, iSwapGate)
 from qiskit.quantum_info import SparsePauliOp
 
 from params import C0C0iXGate, CCZGate
@@ -367,9 +368,10 @@ def transpile_into_berkeley_gates(circ: QuantumCircuit,
     """
     if save_figs:
         fig = circ.draw('mpl')
-        fig.savefig(f'figs/circ{circ_label}_untranspiled.png', bbox_inches='tight')
+        fig.savefig(f'figs/circ{circ_label}_stage0.png', bbox_inches='tight')
 
     circ_new = remove_instructions(circ, ['barrier'])
+        
     if circ_label == '0u':
         circ_new = permute_qubits(circ_new, [1, 2])
         pass
@@ -383,31 +385,47 @@ def transpile_into_berkeley_gates(circ: QuantumCircuit,
         circ_new = permute_qubits(circ_new, [2, 3], start=-5)
     elif circ_label == '01d':
         circ_new = permute_qubits(circ_new, [2, 3], end=20)
-
+        circ_new = convert_ccz_to_cxc(circ_new)
+        circ_new = combine_1q_gates(circ_new)
+        for i, (inst, qargs, cargs) in enumerate(circ_new.data):
+            if inst.name == 'swap' and [q._index for q in qargs] == [0, 1]:
+                print(i)
+        if save_figs:
+            fig = circ_new.draw('mpl')
+            fig.savefig(f'figs/circ{circ_label}_stage1.png', bbox_inches='tight')
+        circ_new = permute_qubits(circ_new, [0, 1], start=30, end=36)
+        circ_new = permute_qubits(circ_new, [0, 1], start=79, end=83)
+        circ_new = combine_2q_gates(circ_new)
+        if save_figs:
+            fig = circ_new.draw('mpl')
+            fig.savefig(f'figs/circ{circ_label}_stage2.png', bbox_inches='tight')
+        circ_new = special_transpilation(circ_new)
+                
     # Convert 2q and 3q gates to native gates.
-    circ_new = convert_ccz_to_cxc(circ_new)
-    # circ_new = convert_swap_to_cz(circ_new)
-    circ_new = combine_1q_gates(circ_new)
     circ_new = combine_1q_gates(circ_new)
     circ_new = combine_2q_gates(circ_new, [[0, 1], [2, 3]])
 
     if save_figs:
+        fig = circ_new.draw('mpl')
+        fig.savefig(f'figs/circ{circ_label}_stage2.png', bbox_inches='tight')
+    
+    # Convert 1q gates to native gates.
+    circ_new = convert_swap_to_cz(circ_new, [(2, 3)])
+    circ_new = combine_2q_gates(circ_new, [[2, 3]])
+    if save_figs:
         # Saving the circuit figure in an intermediate stage before 
         # converting all 1q gates to X(pi/2) pulses.
         fig = circ_new.draw('mpl')
-        fig.savefig(f'figs/circ{circ_label}_intermediate.png', bbox_inches='tight')
-    
-    # Convert 1q gates to native gates.
+        fig.savefig(f'figs/circ{circ_label}_stage3.png', bbox_inches='tight')
+
+    # if circ_label[:2] == '01': 
+    #     circ_new = replace_swap_with_iswap(circ_new, [(0, 1)])
     circ_new = convert_1q_to_xpi2(circ_new)
     circ_new = combine_1q_gates(circ_new)
 
     if save_figs:
         fig = circ_new.draw('mpl')
         fig.savefig(f'figs/circ{circ_label}_transpiled.png', bbox_inches='tight')
-
-    # if circ_label[:2] == '01':
-    #     for inst, qargs, cargs in circ_new.data.copy():
-    #         print(inst.name)
         
     return circ_new
 
@@ -482,15 +500,35 @@ def convert_ccz_to_cxc(circ: QuantumCircuit) -> QuantumCircuit:
                               (HGate(), [qargs[1]], []), 
                               (XGate(), [qargs[2]], [])]
 
-            csdag_inst_tups = [(SwapGate(), [qargs[0], qargs[1]], []),
+            csdag_inst_tups_after = [(RXGate(np.pi/2), [qargs[0]], []),
+                               (RXGate(np.pi/2), [qargs[1]], []),
+                               (CZGate(), [qargs[0], qargs[1]], []),
+                               (RXGate(np.pi/2), [qargs[0]], []),
+                               (RXGate(np.pi/2), [qargs[1]], []),
+                               (CZGate(), [qargs[0], qargs[1]], []),
+                               (RXGate(np.pi/2), [qargs[0]], []),
+                               (RXGate(np.pi/2), [qargs[1]], []),
                                (CPhaseGate(-np.pi/2), [qargs[1], qargs[2]], []),
+                               (CZGate(), [qargs[0], qargs[1]], []),
                                (SwapGate(), [qargs[0], qargs[1]], [])]
+
+            csdag_inst_tups_before = [(SwapGate(), [qargs[0], qargs[1]], []),
+                                      (CZGate(), [qargs[0], qargs[1]], []),
+                                      (CPhaseGate(-np.pi/2), [qargs[1], qargs[2]], []),
+                                      (RXGate(np.pi/2), [qargs[0]], []),
+                                      (RXGate(np.pi/2), [qargs[1]], []),
+                                      (CZGate(), [qargs[0], qargs[1]], []),
+                                      (RXGate(np.pi/2), [qargs[0]], []),
+                                      (RXGate(np.pi/2), [qargs[1]], []),
+                                      (CZGate(), [qargs[0], qargs[1]], []),
+                                      (RXGate(np.pi/2), [qargs[0]], []),
+                                      (RXGate(np.pi/2), [qargs[1]], [])]
 
             if count % 2 == 0:
                 inst_tups_new += cizc_inst_tups
-                inst_tups_new += csdag_inst_tups
+                inst_tups_new += csdag_inst_tups_after
             else:
-                inst_tups_new += csdag_inst_tups
+                inst_tups_new += csdag_inst_tups_before
                 inst_tups_new += cizc_inst_tups
 
             count += 1
@@ -502,7 +540,7 @@ def convert_ccz_to_cxc(circ: QuantumCircuit) -> QuantumCircuit:
     assert circuit_equal(circ, circ_new)
     return circ_new
 
-def convert_swap_to_cz(circ: QuantumCircuit) -> QuantumCircuit:
+def convert_swap_to_cz(circ: QuantumCircuit, q_pairs: Sequence[Tuple[int, int]] = None) -> QuantumCircuit:
     """Converts SWAP gates to CZ and X(pi/2) gates except for the ones at the end."""
     inst_tups = circ.data.copy()
     inst_tups_new = []
@@ -513,7 +551,10 @@ def convert_swap_to_cz(circ: QuantumCircuit) -> QuantumCircuit:
     convert_swap = False
     for inst, qargs, cargs in inst_tups[::-1]:
         if inst.name == 'swap': # SWAP gate
-            if convert_swap: # SWAP gate not at the end, convert
+            q_pair = tuple([x._index for x in qargs])
+            q_pair_in = True
+            if q_pairs is not None: q_pair_in = q_pair in q_pairs
+            if convert_swap and q_pair_in: # SWAP gate not at the end, convert
                 inst_tups_new = [(RXGate(np.pi/2), [qargs[0]], []), 
                                  (RXGate(np.pi/2), [qargs[1]], []), 
                                  (CZGate(), [qargs[0], qargs[1]], [])] * 3 + inst_tups_new
@@ -606,6 +647,64 @@ def combine_1q_gates(circ: QuantumCircuit,
     assert circuit_equal(circ, circ_new)
     return circ_new
 
+def special_transpilation(circ: QuantumCircuit) -> QuantumCircuit:
+    count_x = 0
+    count_cz = 0
+
+    process_counts_x = [1, 3]
+    del_counts_cz = [2, 3, 8, 9]
+
+    insert_inds_z = []
+    del_inds_cz = []
+
+    inst_tups = circ.data.copy()
+    for i, (inst, qargs, cargs) in enumerate(inst_tups):
+        if inst.name == 'x' and qargs[0]._index == 1:
+            if count_x in process_counts_x:
+                insert_inds_z.append(i)
+            count_x += 1
+        elif inst.name == 'cz' and [q._index for q in qargs] == [0, 1]:
+            if count_cz in del_counts_cz:
+                del_inds_cz.append(i)
+            count_cz += 1
+
+    inst_tups_new = [inst_tups[i] for i in range(len(inst_tups)) if i not in del_inds_cz]
+    for i in insert_inds_z:
+        inst_tups_new.insert(i, (RZGate(np.pi), [0], []))
+    circ_new = create_circuit_from_inst_tups(inst_tups_new)
+    fig = circ_new.draw('mpl')
+    fig.savefig(f'figs/circ01d_stage3.png', bbox_inches='tight')
+    assert circuit_equal(circ, circ_new)
+    return circ_new
+
+def replace_swap_with_iswap(circ: QuantumCircuit, qubit_pairs: Sequence[Tuple[int, int]] = None) -> QuantumCircuit:
+    inst_tups = circ.data.copy()
+    inst_tups_new = []
+
+    for inst, qargs, cargs in inst_tups:
+        if inst.name == 'swap':
+            q_pair = [x._index for x in qargs]
+            q_pair_in = True
+            if qubit_pairs is not None: q_pair_in = q_pair in qubit_pairs
+            if q_pair_in:
+                inst_tups_new.append((iSwapGate(), qargs, cargs))
+                # inst_tups_new = [(RXGate(np.pi/2), [qargs[0]], []), 
+                #                  (RXGate(np.pi/2), [qargs[1]], []), 
+                #                  (CZGate(), [qargs[0], qargs[1]], [])] * 2 + \
+                #                 [(RXGate(np.pi/2), [qargs[0]], []),
+                #                  (RXGate(np.pi/2), [qargs[1]], []),
+                #                  (RZGate(np.pi/2), [qargs[0]], []),
+                #                  (RZGate(np.pi/2), [qargs[1]], [])] + \
+                #                 inst_tups_new
+        else:
+            inst_tups_new.append((inst, qargs, cargs))
+    
+    circ_new = create_circuit_from_inst_tups(inst_tups_new)
+   #  assert circuit_equal(circ, circ_new)
+    return circ_new 
+
+
+
 def replace_with_cixc(circ: QuantumCircuit) -> QuantumCircuit:
     inst_tups = []
     for inst, qargs, cargs in circ.data.copy():
@@ -629,6 +728,7 @@ def combine_2q_gates(circ: QuantumCircuit,
         qubit_pairs = list(combinations(qubits, 2))
 
     del_inds = []
+    count = 0
     for q_pair in qubit_pairs:
         i_old = None
         inst_old = UGate(0, 0, 0)
@@ -637,7 +737,8 @@ def combine_2q_gates(circ: QuantumCircuit,
             if tuple(q_pair) == tuple(qarg_inds):
                 if (inst.name == inst_old.name == 'cp' and
                     inst.params[0] == inst_old.params[0] == np.pi) or \
-                    inst.name == inst_old.name == 'cz':
+                    inst.name == inst_old.name == 'cz' or \
+                    inst.name == inst_old.name == 'swap':
                     del_inds += [i_old, i]
                     i_old = None
                     inst_old = UGate(0, 0, 0)
