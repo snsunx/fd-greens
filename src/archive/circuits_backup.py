@@ -639,3 +639,35 @@ def replace_with_cixc(circ: QuantumCircuit) -> QuantumCircuit:
 
     circ_new = create_circuit_from_inst_tups(inst_tups)
     return circ_new
+
+def special_transpilation(circ: QuantumCircuit) -> QuantumCircuit:
+    """A special transpilation function for the 01d circuit. Should be deprecated."""
+    count_x = 0
+    count_cz = 0
+
+    process_counts_x = [1, 3]
+    del_counts_cz = [2, 3, 8, 9]
+
+    insert_inds_z = []
+    del_inds_cz = []
+
+    inst_tups = circ.data.copy()
+    for i, (inst, qargs, cargs) in enumerate(inst_tups):
+        if inst.name == 'x' and qargs[0]._index == 1:
+            if count_x in process_counts_x:
+                insert_inds_z.append(i)
+            count_x += 1
+        elif inst.name == 'cz' and [q._index for q in qargs] == [0, 1]:
+            if count_cz in del_counts_cz:
+                del_inds_cz.append(i)
+            count_cz += 1
+
+    inst_tups_new = [inst_tups[i] for i in range(len(inst_tups)) if i not in del_inds_cz]
+    for i in insert_inds_z:
+        inst_tups_new.insert(i, (RZGate(np.pi), [0], []))
+    circ_new = create_circuit_from_inst_tups(inst_tups_new)
+    fig = circ_new.draw('mpl')
+    fig.savefig(f'figs/circ01d_stage3.png', bbox_inches='tight')
+    assert circuit_equal(circ, circ_new)
+    return circ_new
+

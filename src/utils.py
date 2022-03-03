@@ -558,6 +558,8 @@ def circuit_equal(circ1: Union[QuantumCircuit, np.ndarray],
     uni1 = get_unitary(circ1)
     uni2 = get_unitary(circ2)
     assert uni1.shape == uni2.shape
+    # print('uni1\n', uni1)
+    # print('uni2\n', uni2)
     return unitary_equal(uni1, uni2, init_state_0=init_state_0)
 
 def unitary_equal(uni1: np.ndarray, 
@@ -595,7 +597,7 @@ def circuit_to_qasm_str(circ: QuantumCircuit) -> str:
         qasm_str += f'qreg q[{n_qubits}];\n'
     if len(circ.cregs) > 0:
         n_clbits = len(circ.cregs[0])
-        qasm_str += f'creg q[{n_clbits}];\n'
+        qasm_str += f'creg c[{n_clbits}];\n'
         
     for inst, qargs, cargs in circ.data:
         if inst.name == 'rz':
@@ -614,7 +616,7 @@ def circuit_to_qasm_str(circ: QuantumCircuit) -> str:
         elif inst.name == 'swap':
             qasm_str += f'swap q[{qargs[0]._index}],q[{qargs[1]._index}];\n'
         elif inst.name == 'measure':
-            qasm_str += f'{inst.name} q[{qargs[0]._index}],c[{cargs[0]._index}];\n'
+            qasm_str += f'{inst.name} q[{qargs[0]._index}] -> c[{cargs[0]._index}];\n'
 
     
     # Temporary check statement.
@@ -624,3 +626,7 @@ def circuit_to_qasm_str(circ: QuantumCircuit) -> str:
     assert np.allclose(uni, uni_new)
 
     return qasm_str
+
+def save_circuit_figure(circ: QuantumCircuit, suffix: str) -> None:
+    fig = circ.draw('mpl')
+    fig.savefig(f'figs/circ{suffix}.png', bbox_inches='tight')
