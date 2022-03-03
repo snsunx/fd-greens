@@ -539,12 +539,14 @@ def get_quantum_instance(type_str: str) -> QuantumInstance:
     return q_instance
 
 def circuit_equal(uni1: Union[QuantumCircuit, np.ndarray], 
-                  uni2: Union[QuantumCircuit, np.ndarray]) -> bool:
-    """Checks if two quantum circuits are equal on the state |0000>.
+                  uni2: Union[QuantumCircuit, np.ndarray],
+                  init_state_0: bool = True) -> bool:
+    """Checks if two quantum circuits are equivalent.
     
     Args:
         uni1: The unitary of the first circuit.
         uni2: The unitary of the second circuit.
+        init_state_0: Whether to assume the initial state is all 0.
         
     Returns:
         Whether the two circuits are equivalent.
@@ -553,11 +555,26 @@ def circuit_equal(uni1: Union[QuantumCircuit, np.ndarray],
         uni1 = get_unitary(uni1)
     if isinstance(uni2, QuantumCircuit):
         uni2 = get_unitary(uni2)
-    vec1 = uni1[:, 0]
-    vec2 = uni2[:, 0]
-    vec1 /= (vec1[0] / abs(vec1[0]))
-    vec2 /= (vec2[0] / abs(vec2[0]))
-    return np.allclose(vec1, vec2)
+    assert uni1.shape == uni2.shape
+
+    if init_state_0:
+        vec1 = uni1[:, 0]
+        vec2 = uni2[:, 0]
+        ind = np.argmax(np.abs(vec1))
+        if abs(vec2[ind]) == 0: return False
+        phase1 = vec1[ind] / abs(vec1[ind])
+        phase2 = vec2[ind] / abs(vec2[ind])
+        vec1 /= phase1
+        vec2 /= phase2
+        return np.allclose(vec1, vec2)
+    else:
+        ind = np.argmax(np.abs(uni1[0]))
+        if abs(uni2[0, ind]) == 0: return False
+        phase1 = uni1[0, ind] / abs(uni1[0, ind])
+        phase2 = uni2[0, ind] / abs(uni2[0, ind])
+        uni1 /= phase1
+        uni2 /= phase2
+        return np.allclose(uni1, uni2)
 
 def circuit_to_qasm_str(circ: QuantumCircuit) -> str:
 

@@ -1,7 +1,7 @@
 """Circuit construction module."""
 
 import os
-from typing import Tuple, Optional, Iterable, Union, Sequence, List
+from typing import Mapping, Tuple, Optional, Iterable, Union, Sequence, List
 from cmath import polar
 from itertools import combinations
 
@@ -21,6 +21,7 @@ from utils import (get_unitary, get_registers_in_inst_tups, create_circuit_from_
 QubitLike = Union[int, Qubit]
 ClbitLike = Union[int, Clbit]
 InstructionTuple = Tuple[Instruction, List[QubitLike], Optional[List[ClbitLike]]]
+InstructionTuples = List[InstructionTuple]
 
 class CircuitConstructor:
     """A class to construct circuits for calculating transition amplitudes in Green's functions."""
@@ -758,28 +759,102 @@ def combine_2q_gates(circ: QuantumCircuit,
     return circ_new
 
 
-def take_subcircuit(circ: QuantumCircuit, qubits_subcirc: Sequence[int]) -> QuantumCircuit:
-    """Takes a subcircuit from a quantum circuit."""
-    n_qubits = len(qubits_subcirc)
-
+def transpile1(circ: QuantumCircuit,
+               qubits_trans: Mapping[Sequence[int], Sequence[str]]
+               ) -> QuantumCircuit:
+    # print('circ\n', circ)
     inst_tups = circ.data.copy()
-    loc_gates = []
-    inst_tups_new = []
+    for qubits, trans_strs in qubits_trans.items():
+        # Split the inst_tups of the main circuit into a subcircuit and a main circuit.
+        # Also record the barrier locations which will be used in reconstructing the circuit.
+        inst_tups_sub, inst_tups_main, barr_loc = split_subcircuit(inst_tups, qubits)
+        print(create_circuit_from_inst_tups(inst_tups_sub))
+        # print(inst_tups_main)
+        # inst_tups_main = [inst_tup for inst_tup in inst_tups_main if inst_tup[0] is not None]
+        print(create_circuit_from_inst_tups([inst_tup for inst_tup in inst_tups_main if inst_tup[0] is not None]))
+
+        # for trans_str in trans_strs:
+        #     trans_func = transpilation_dict[trans_str]
+        #     inst_tups_sub = trans_func(inst_tups_sub)
+        inst_tups = merge_subcircuit(inst_tups_sub, inst_tups_main, barr_loc, qubits)
+        print(create_circuit_from_inst_tups(inst_tups.copy()))
+    
+    # print('circ\n', circ)
+    circ_new = create_circuit_from_inst_tups(inst_tups)
+    # print('circ_new\n', circ_new)
+    assert circuit_equal(circ, circ_new)
+    return circ, circ_new
+
+def split_subcircuit(inst_tups: Sequence[InstructionTuple], qubits_subcirc: Sequence[int]
+                    ) -> Tuple[List[InstructionTuple], List[InstructionTuple], List[int]]:
+    """Split a subcircuit from a quantum circuit."""
+    n_qubits = len(qubits_subcirc)
+    map_qubits = lambda qubits_gate: [qubits_subcirc.index(q) for q in qubits_gate]
+
+    # inst_tups = circ.data.copy()
+    barr_loc = []
+    inst_tups_sub = []
+    inst_tups_main = []
+
     for i, (inst, qargs, cargs) in enumerate(inst_tups):
         qubits_gate = [q._index for q in qargs]
+
         # if qargs_ind == qubits:
         if set(qubits_gate).issubset(set(qubits_subcirc)): 
-            # Gate qubits are a subset of subcircuit qubits
-            loc_gates.append(i)
-            qubits_mapped = [qubits_subcirc.index(q) for q in qubits_gate]
-            inst_tups_new.append((inst, qubits_mapped, cargs))
+            # Gate qubits are a subset of subcircuit qubits. Append the instruction tuple to the
+            # subcircuit. Append (None, None, None) to the main circuit, which will be handled
+            # in the merge function.
+            inst_tups_sub.append((inst, map_qubits(qubits_gate), cargs))
+            inst_tups_main.append((None, None, None))
         elif set(qubits_gate).intersection(set(qubits_subcirc)):
-            # Gate qubits intersect subcircuit qubits
-            loc_gates.append(i)
-            inst_tups_new.append((Barrier(n_qubits), range(n_qubits), []))
+            # Gate qubits intersect subcircuit qubits. Insert a barrier in the circuit and 
+            # record the barrier location. Append the instruction tuple to the main circuit.
+            barr_loc.append(i)
+            inst_tups_sub.append((Barrier(n_qubits), range(n_qubits), []))
+            inst_tups_main.append((inst, qargs, cargs))
+        else:
+            # Gate qubits do not overlap with subcircuit qubits. Only append the instruction tuple
+            # to the main circuit.
+            inst_tups_main.append((inst, qargs, cargs))
     
-    subcirc = create_circuit_from_inst_tups(inst_tups_new)
-    return subcirc, loc_gates
+    return inst_tups_sub, inst_tups_main, barr_loc
+
+def merge_subcircuit(inst_tups_sub: Sequence[InstructionTuple],
+                     inst_tups_main: Sequence[InstructionTuple],
+                     barr_loc: Sequence[int],
+                     qubits: Sequence[int]) -> QuantumCircuit:
+    print('barr_loc =', barr_loc)
+    map_qubits = lambda x: [qubits[i] for i in x]
+    inst_tups = []
+
+    barr_inds = []
+    inst_tups_sub_new = []
+    barr_ind = -1
+    for inst, qargs, cargs in inst_tups_sub:
+        if inst.name != 'barrier':
+            inst_tups_sub_new.append((inst, qargs, cargs))
+            barr_inds.append(barr_ind)
+        else:
+            barr_ind = barr_loc.pop(0)
+
+    print('barr_inds =', barr_inds)
+
+    for i, (inst, qargs, cargs) in enumerate(inst_tups_main):
+        if inst is not None:
+            # If the instruction is not one of the subcircuit instructions, 
+            # just append it to inst_tups.
+            inst_tups.append((inst, qargs, cargs))
+        else:
+            # Look for instruction in inst_tups_sub.
+            inst_, qargs_, cargs_ = inst_tups_sub_new[0]
+            barr_ind = barr_inds[0]
+            if i > barr_ind:
+                inst_tups.append((inst_, map_qubits(qargs_), cargs_))
+                inst_tups_sub_new = inst_tups_sub_new[1:]
+                barr_inds = barr_inds[1:]
+
+    # circ = create_circuit_from_inst_tups(inst_tups)
+    return inst_tups
 
 def convert_xzxpi2_to_zxzpi2(circ: QuantumCircuit) -> QuantumCircuit:
     """Converts X(pi/2)Z(pi/2)X(pi/2) to Z(pi/2)X(pi/2)Z(pi/2) recursively on a single-qubit circuit."""
@@ -790,8 +865,8 @@ def convert_xzxpi2_to_zxzpi2(circ: QuantumCircuit) -> QuantumCircuit:
 
     converted = False
     for inst, qargs, cargs in inst_tups:
-        # Always append the instruction tuple to inst_tups_new. If transpilation is carried out,
-        # inst_tups_new is modified at the end.
+        # Always append the instruction tuple to inst_tups_new. 
+        # If transpilation is carried out, inst_tups_new is modified at the end.
         inst_tups_new.append((inst, qargs, cargs))
 
         if inst == RXGate(np.pi/2):
@@ -826,7 +901,7 @@ def convert_xzxpi2_to_zxzpi2(circ: QuantumCircuit) -> QuantumCircuit:
             converted = True
             inst_tups_running = []
 
-    # Create the new circuit and check if two circuits are equivalent.
+    # Create the new circuit and check if the two circuits are equivalent.
     circ_new = create_circuit_from_inst_tups(inst_tups_new)
     assert circuit_equal(circ, circ_new)
 
@@ -834,3 +909,35 @@ def convert_xzxpi2_to_zxzpi2(circ: QuantumCircuit) -> QuantumCircuit:
     if converted:
         circ_new = convert_xzxpi2_to_zxzpi2(circ_new)
     return circ_new
+
+convert_xzx_to_zxz = convert_xzxpi2_to_zxzpi2
+
+def combine_z_gates(circ: QuantumCircuit) -> QuantumCircuit:
+    """Combines Z gates recursively on a single-qubit circuit."""
+    assert len(circ.qregs[0]) == 1
+    inst_tups = circ.data.copy()
+    inst_tups_new = []
+    z_angles = []
+
+    # combined = False
+    inst_tups += [(Barrier(1), [0], [])] # Append setinel
+    for inst, qargs, cargs in inst_tups:
+        if inst.name == 'rz':
+            z_angles.append(inst.params[0])
+        else:
+            if len(z_angles) > 0:
+                inst_tups_new.append((RZGate(sum(z_angles)), [0], []))
+                z_angles = []
+            inst_tups_new.append((inst, qargs, cargs))
+    inst_tups_new = inst_tups_new[:-1] # Remove setinel
+
+    # Create the new circuit and check if the two circuits are equivalent.
+    circ_new = create_circuit_from_inst_tups(inst_tups_new)
+    assert circuit_equal(circ, circ_new, init_state_0=False)
+
+    # If combined is True, call the function again recursively. Otherwise return the circuit.
+    # if combined:
+    #     circ_new = combine_z_gates(circ_new)
+    return circ_new
+
+transpilation_dict = {'xzx2zxz': convert_xzx_to_zxz, 'combz': combine_z_gates}
