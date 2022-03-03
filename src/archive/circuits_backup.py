@@ -601,3 +601,41 @@ class CircuitTranspiler:
             qargs = [inds_new[q._index] for q in qargs]
             circ_new.append(inst, qargs, cargs)
         return circ_new
+
+def replace_swap_with_iswap(circ: QuantumCircuit, qubit_pairs: Sequence[Tuple[int, int]] = None) -> QuantumCircuit:
+    inst_tups = circ.data.copy()
+    inst_tups_new = []
+
+    for inst, qargs, cargs in inst_tups:
+        if inst.name == 'swap':
+            q_pair = [x._index for x in qargs]
+            q_pair_in = True
+            if qubit_pairs is not None: q_pair_in = q_pair in qubit_pairs
+            if q_pair_in:
+                inst_tups_new.append((iSwapGate(), qargs, cargs))
+                # inst_tups_new = [(RXGate(np.pi/2), [qargs[0]], []), 
+                #                  (RXGate(np.pi/2), [qargs[1]], []), 
+                #                  (CZGate(), [qargs[0], qargs[1]], [])] * 2 + \
+                #                 [(RXGate(np.pi/2), [qargs[0]], []),
+                #                  (RXGate(np.pi/2), [qargs[1]], []),
+                #                  (RZGate(np.pi/2), [qargs[0]], []),
+                #                  (RZGate(np.pi/2), [qargs[1]], [])] + \
+                #                 inst_tups_new
+        else:
+            inst_tups_new.append((inst, qargs, cargs))
+    
+    circ_new = create_circuit_from_inst_tups(inst_tups_new)
+   #  assert circuit_equal(circ, circ_new)
+    return circ_new 
+
+def replace_with_cixc(circ: QuantumCircuit) -> QuantumCircuit:
+    inst_tups = []
+    for inst, qargs, cargs in circ.data.copy():
+        if inst.name == 'ccx_o0':
+            # inst_tups += [(CCXGate(ctrl_state='00'), qargs, [])]
+            inst_tups += [(UnitaryGate(np.array([[0, 1j], [1j, 0]])).control(2, ctrl_state='00'), qargs, [])]
+        else:
+            inst_tups += [(inst, qargs, cargs)]
+
+    circ_new = create_circuit_from_inst_tups(inst_tups)
+    return circ_new
