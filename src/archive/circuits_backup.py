@@ -671,3 +671,81 @@ def special_transpilation(circ: QuantumCircuit) -> QuantumCircuit:
     assert circuit_equal(circ, circ_new)
     return circ_new
 
+def convert_swap_to_cz1(circ: Union[QuantumCircuit, Sequence[InstructionTuple]]
+                        ) -> Union[QuantumCircuit, Sequence[InstructionTuple]]:
+    if isinstance(circ, QuantumCircuit):
+        inst_tups = circ.data.copy()
+    else:
+        inst_tups = circ.copy()
+    inst_tups_new = []
+
+    print('circ in swap_to_cz1\n', create_circuit_from_inst_tups(inst_tups))
+
+    convert = False
+    for inst, qargs, cargs in inst_tups[::-1]:
+        if inst.name == 'swap' and convert:
+            inst_tups_new = [(RXGate(np.pi/2), [qargs[0]], []), 
+                             (RXGate(np.pi/2), [qargs[1]], []), 
+                             (CZGate(), [qargs[0], qargs[1]], [])] * 3 \
+                             + inst_tups_new
+        else:
+            inst_tups_new.insert(0, (inst, qargs, cargs))
+            convert = True
+
+    print('circ_new in swap_to_cz1\n', create_circuit_from_inst_tups(inst_tups_new))
+
+    assert circuit_equal(inst_tups, inst_tups_new, init_state_0=False)
+    if isinstance(circ, QuantumCircuit):
+        circ_new = create_circuit_from_inst_tups(inst_tups_new)
+    else:
+        circ_new = inst_tups_new
+    return circ_new
+
+# TODO: Deprecate this function.
+def append_tomography_gates1(circ: QuantumCircuit, 
+                            qubits: Iterable[QubitLike],
+                            label: Tuple[str],
+                            use_u3: bool = True) -> QuantumCircuit:
+    """Appends tomography gates to a circuit.
+    Args:
+        circ: The circuit to which tomography gates are to be appended.
+        qubits: The qubits to be tomographed.
+        label: The tomography states label.
+        use_u3: Whether to use U3 rather than Clifford gates for basis change.
+    
+    Returns:
+        A new circuit with tomography gates appended.
+    """
+    assert len(qubits) == len(label)
+    tomo_circ = circ.copy()
+
+    for q, s in zip(qubits, label):
+        if s == 'x':
+            if use_u3:
+                tomo_circ.u3(np.pi/2, 0, np.pi, q)
+            else:
+                tomo_circ.h(q)
+        elif s == 'y':
+            if use_u3:
+                tomo_circ.u3(np.pi/2, 0, np.pi/2, q)
+            else:
+                tomo_circ.sdg(q)
+                tomo_circ.h(q)
+    return tomo_circ
+
+
+# TODO: Deprecate this function.
+def append_measurement_gates1(circ: QuantumCircuit) -> QuantumCircuit:
+    """Appends measurement gates to a circuit.
+    
+    Args:
+        The circuit to which measurement gates are to be appended.
+        
+    Returns:
+        A new circuit with measurement gates appended.
+    """
+    n_qubits = len(circ.qregs[0])
+    circ.barrier()
+    circ.add_register(ClassicalRegister(n_qubits))
+    circ.measure(range(n_qubits), range(n_qubits))
+    return circ

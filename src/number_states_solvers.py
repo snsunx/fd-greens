@@ -177,7 +177,6 @@ class ExcitedStatesSolver:
 
         h5file.close()
 
-
     def run(self, method='exact'):
         """Runs the excited states calculation."""
         if method == 'exact':

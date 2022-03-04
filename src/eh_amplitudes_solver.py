@@ -15,8 +15,8 @@ import params
 from hamiltonians import MolecularHamiltonian
 from operators import SecondQuantizedOperators, transform_4q_pauli
 from qubit_indices import transform_4q_indices
-from circuits import (CircuitConstructor, append_tomography_gates, append_tomography_gates1,
-                      append_measurement_gates, append_measurement_gates1, transpile_into_berkeley_gates)
+from circuits import CircuitConstructor, append_tomography_gates, append_measurement_gates
+from transpilation import transpile_into_berkeley_gates
 from utils import get_overlap, get_quantum_instance, counts_dict_to_arr, write_hdf5, circuit_to_qasm_str
 
 np.set_printoptions(precision=6)
