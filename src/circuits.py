@@ -104,8 +104,9 @@ class CircuitConstructor:
         if self.add_barriers: inst_tups += [(Barrier(n_qubits), range(n_qubits), [])]
 
         # Add the phase gate in the middle.
-        inst_tups += [(RZGate(np.pi/4), [self.anc[1]], [])]
-        if self.add_barriers: inst_tups += [(Barrier(n_qubits), range(n_qubits), [])]
+        if not set(''.join(a_op_n.table.to_labels())).issubset({'I', 'Z'}):
+            inst_tups += [(RZGate(np.pi/4), [self.anc[1]], [])]
+            if self.add_barriers: inst_tups += [(Barrier(n_qubits), range(n_qubits), [])]
 
         # Add the second creation/annihilation operator.
         inst_tups += self._get_controlled_gate_inst_tups(a_op_n[0], ctrl_states=[0, 1])
@@ -113,6 +114,10 @@ class CircuitConstructor:
         inst_tups += self._get_controlled_gate_inst_tups(a_op_n[1], ctrl_states=[1, 1])
         if self.add_barriers: inst_tups += [(Barrier(n_qubits), range(n_qubits), [])]
         inst_tups += [(HGate(), [self.anc[0]], []), (HGate(), [self.anc[1]], [])]
+
+        if set(''.join(a_op_n.table.to_labels())).issubset({'I', 'Z'}):
+            inst_tups += [(RZGate(np.pi/4), [self.anc[1]], [])]
+            if self.add_barriers: inst_tups += [(Barrier(n_qubits), range(n_qubits), [])]
         
         circ = create_circuit_from_inst_tups(inst_tups)
         return circ
@@ -166,7 +171,11 @@ class CircuitConstructor:
         elif len(ctrl_states) == 2:
             if coeff != 1:
                 angle = polar(coeff)[1]
-                inst_tups += [(CPhaseGate(angle), [self.anc[0], self.anc[1]], [])]
+                assert angle in [np.pi/2, np.pi, -np.pi/2]
+                if abs(angle) == np.pi/2:
+                    inst_tups += [(CPhaseGate(angle), [self.anc[0], self.anc[1]], [])]
+                else:
+                    inst_tups += [(CZGate(), [self.anc[0], self.anc[1]], [])]
             if set(label) != {'I'}:
                 inst_tups += [(CCZGate, [self.anc[0], self.anc[1], pivot], [])]
 

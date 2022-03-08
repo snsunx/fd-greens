@@ -31,12 +31,12 @@ def main_resp():
 
 if __name__ == '__main__': 
     h = get_lih_hamiltonian(3.0)
-    q_instance = get_quantum_instance('qasm')
+    q_instance = get_quantum_instance('sv')
     omegas = np.arange(-30, 30, 0.1)
     eta = 0.02 * HARTREE_TO_EV
     
     initialize_hdf5(calc='resp')
-    main_gs()
-    main_es()
-    main_amp(method='tomo')
+    # main_gs()
+    # main_es()
+    # main_amp(method='exact', build=False, execute=False, process=True)
     main_resp()

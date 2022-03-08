@@ -24,8 +24,13 @@ def transpile_into_berkeley_gates(circ: QuantumCircuit,
                                   savefig: bool = True) -> QuantumCircuit:
     """Transpiles the circuit into the native gates on the Berkeley device.
 
-    The transpilation procedure depends on the circuit label. The basis gates
-    are assumed to be X(pi/2), virtual Z, CS, CZ, and C-iX-C.
+    The basis gates are assumed to be X(pi/2), virtual Z, CS, CZ, and C-iX-C.
+    The transpilation procedure depends on the circuit label. There are four stages
+    in the transpilation:
+    1. Permute and add SWAP gates (transpile_permute)
+    2. Transpile 3q gates (transpile_3q)
+    3. Transpile 2q gates (transpile_2q)
+    4. Transpile 1q gates (transpile_1q)
     
     Args:
         circ: The quantum circuit to be transpiled.
@@ -37,9 +42,12 @@ def transpile_into_berkeley_gates(circ: QuantumCircuit,
     """
     if savefig: save_circuit_figure(circ, circ_label + '_untranspiled')
     circ_new = remove_instructions(circ, ['barrier'])
+    print('circ_label =', circ_label)
     circ_new = transpile_permute(circ_new, circ_label, savefig=savefig)
-    circ_new = transpile_3q(circ_new, circ_label, savefig=savefig)
+    if len(circ.qregs[0]) == 4:
+        circ_new = transpile_3q(circ_new, circ_label, savefig=savefig)
     circ_new = transpile_2q(circ_new, circ_label, savefig=savefig)
+    # if circ_label[0] != 'r':
     circ_new = transpile_1q(circ_new, circ_label, savefig=savefig)
 
     if savefig: save_circuit_figure(circ_new, circ_label + '_transpiled')
@@ -47,6 +55,9 @@ def transpile_into_berkeley_gates(circ: QuantumCircuit,
 
 def transpile_permute(circ: QuantumCircuit, circ_label: str, savefig: bool = False) -> QuantumCircuit:
     """Performs permutation transpilation based on the circuit label.
+
+    The transpilation procedure depends on the circuit label, which determines the start
+    and end positions of the SWAP gates to be inserted. These positions are hardcoded.
     
     Args:
         circ: The quantum circuit to be transpiled.
@@ -56,12 +67,21 @@ def transpile_permute(circ: QuantumCircuit, circ_label: str, savefig: bool = Fal
     Returns:
         The quantum circuit after transpilation.
     """
-
-    if circ_label == '0u':
+    if circ_label in ['0u', 'r0u', 'r1u']:
         circ = permute_qubits(circ, [1, 2])
-    elif circ_label == '0d':
+    elif circ_label in ['0d']:
         circ = permute_qubits(circ, [1, 2], end=17)
-    elif circ_label == '01u':
+    elif circ_label in ['r0u0d']:
+        circ = permute_qubits(circ, [2, 3], end=18)
+    elif circ_label in ['r0u1d']:
+        circ = permute_qubits(circ, [2, 3], end=-4)
+    elif circ_label in ['r0u1u']:
+        circ = permute_qubits(circ, [2, 3])
+    elif circ_label in ['r0d1u']:
+        circ = permute_qubits(circ, [2, 3], start=-4)
+    elif circ_label in ['r1u1d']:
+        circ = permute_qubits(circ, [2, 3], end=16)
+    elif circ_label in ['01u']:
         # TODO: Finish this part.
         '''
         circ_new = combine_1q_gates(circ_new)
@@ -70,7 +90,7 @@ def transpile_permute(circ: QuantumCircuit, circ_label: str, savefig: bool = Fal
         circ_new = convert_1q_to_xpi2(circ_new)
         circ_new = combine_1q_gates(circ_new)
         '''
-    elif circ_label == '01d':
+    elif circ_label in ['01d']:
         circ = permute_qubits(circ, [2, 3], end=20)
 
     if savefig:
@@ -89,11 +109,10 @@ def transpile_3q(circ: QuantumCircuit, circ_label: str, savefig: bool = False) -
         The quantum circuit after transpilation.
     
     """
-    assert len(circ.qregs[0]) in [3, 4]
-    if len(circ.qregs[0]) == 4:
-        circ = convert_ccz_to_cixc(circ)
-        circ = combine_1q_gates(circ)
-        circ = combine_2q_gates(circ)
+    assert len(circ.qregs[0]) == 4
+    circ = convert_ccz_to_cixc(circ)
+    circ = combine_1q_gates(circ)
+    circ = combine_2q_gates(circ)
     if savefig: 
         save_circuit_figure(circ, circ_label + '_after3q')
     return circ
@@ -110,7 +129,9 @@ def transpile_2q(circ: QuantumCircuit, circ_label: str, savefig: bool = False) -
         The quantum circuit after transpilation.
     """
     reverse = True if circ_label == '0d' else False
-    if len(circ.qregs[0]) == 4:
+    if circ_label in ['01']:
+        circ = transpile_subcircuit(circ, {(0, 1): ['swap', 'czxcz']})
+    if circ_label in [ 'r0u0d', 'r0d1d', 'r0u1u', 'r0u1d', 'r0d1u', 'r1u1d']:
         circ = transpile_subcircuit(circ, {(0, 1): ['swap', 'czxcz']})
     circ = convert_swap_to_cz(circ, reverse=reverse)
     circ = combine_1q_gates(circ)
@@ -185,7 +206,7 @@ def permute_qubits(circ: QuantumCircuit,
     return circ_new
 
 def convert_ccz_to_cixc(circ: QuantumCircuit) -> QuantumCircuit:
-    """Converts CCZ gates to CXC gates with dressing H and X gates."""
+    """Converts CCZ gates to C-iX-C gates with dressing H and X gates."""
     inst_tups = circ.data.copy()
     inst_tups_new = []
 
@@ -251,7 +272,10 @@ def convert_ccz_to_cixc(circ: QuantumCircuit) -> QuantumCircuit:
     assert circuit_equal(circ, circ_new)
     return circ_new
 
-def convert_swap_to_cz(circ: QuantumCircuit, q_pairs: Sequence[Tuple[int, int]] = None, reverse: bool = False) -> QuantumCircuit:
+def convert_swap_to_cz(circ: QuantumCircuit, 
+                       q_pairs: Sequence[Tuple[int, int]] = None,
+                       reverse: bool = False
+                       ) -> QuantumCircuit:
     """Converts SWAP gates to CZ and X(pi/2) gates except for the ones at the end."""
     inst_tups = circ.data.copy()
     inst_tups_new = []
@@ -404,8 +428,18 @@ def combine_2q_gates(circ: QuantumCircuit,
     return circ_new
 
 def transpile_subcircuit(circ: QuantumCircuit,
-               qubits_trans: Mapping[Sequence[int], Sequence[str]]
-               ) -> QuantumCircuit:
+                         qubits_trans: Mapping[Sequence[int], Sequence[str]]
+                        ) -> QuantumCircuit:
+    """Performs transpilation of a circuit by first splitting it into subcircuits and then merging.
+    
+    Args:
+        circ: The circuit to be transpiled.
+        qubits_trans: A dictionary with qubit indices as the keys and transpilation
+            function strings as the values.
+
+    Returns:
+        The circuit after transpilation.
+    """
     # print('circ\n', circ)
     inst_tups = circ.data.copy()
     for qubits, trans_strs in qubits_trans.items():
@@ -429,9 +463,20 @@ def transpile_subcircuit(circ: QuantumCircuit,
     assert circuit_equal(circ, circ_new)
     return circ_new
 
-def split_subcircuit(inst_tups: Sequence[InstructionTuple], qubits_subcirc: Sequence[int]
+def split_subcircuit(inst_tups: Sequence[InstructionTuple], 
+                     qubits_subcirc: Sequence[int]
                     ) -> Tuple[List[InstructionTuple], List[InstructionTuple], List[int]]:
-    """Split a subcircuit from a quantum circuit."""
+    """Split a subcircuit from a quantum circuit.
+    
+    Args:
+        inst_tups: The circuit that need to be split in instruction tuple form.
+        qubits_subcirc: The qubit indices of the subcircuit.
+
+    Returns:
+        inst_tups_sub: The subcircuit instruction tuples.
+        inst_tups_main: The main circuit instruction tuples.
+        barr_loc: The main-circuit locations of the barriers in the subcircuits.
+    """
     n_qubits = len(qubits_subcirc)
     map_qubits = lambda qubits_gate: [qubits_subcirc.index(q) for q in qubits_gate]
 
@@ -471,7 +516,7 @@ def merge_subcircuit(inst_tups_sub: Sequence[InstructionTuple],
                      inst_tups_main: Sequence[InstructionTuple],
                      barr_loc: Sequence[int],
                      qubits: Sequence[int]) -> QuantumCircuit:
-    print('barr_loc =', barr_loc)
+    # print('barr_loc =', barr_loc)
     map_qubits = lambda x: [qubits[i] for i in x]
     inst_tups = []
 
@@ -485,7 +530,7 @@ def merge_subcircuit(inst_tups_sub: Sequence[InstructionTuple],
         else:
             barr_ind = barr_loc.pop(0)
 
-    print('barr_inds =', barr_inds)
+    # print('barr_inds =', barr_inds)
 
     for i, (inst, qargs, cargs) in enumerate(inst_tups_main):
         if inst is not None:
@@ -506,7 +551,14 @@ def merge_subcircuit(inst_tups_sub: Sequence[InstructionTuple],
 
 def convert_xzpi2x(circ: Union[QuantumCircuit, Sequence[InstructionTuple]]
                    ) -> Union[QuantumCircuit, Sequence[InstructionTuple]]:
-    """Converts X(pi/2)Z(pi/2)X(pi/2) to Z(pi/2)X(pi/2)Z(pi/2) recursively on a single-qubit circuit."""
+    """Converts X(pi/2)Z(pi/2)X(pi/2) to Z(pi/2)X(pi/2)Z(pi/2) on a single-qubit circuit.
+    
+    Args:
+        A circuit that need to be converted.
+    
+    Returns:
+        The new circuit after the conversion.
+    """
     # assert len(circ.qregs[0]) == 1
     if isinstance(circ, QuantumCircuit):
         inst_tups = circ.data.copy()
@@ -553,10 +605,8 @@ def convert_xzpi2x(circ: Union[QuantumCircuit, Sequence[InstructionTuple]]
             # Reset inst_tups_running to [] so that the chain of gates will be built up again.
             converted = True
             inst_tups_running = []
-
     
-    print('converted =', converted)
-
+    # print('converted =', converted)
     assert circuit_equal(inst_tups, inst_tups_new, init_state_0=False)
     if isinstance(circ, QuantumCircuit):
         circ_new = create_circuit_from_inst_tups(inst_tups_new)
@@ -570,7 +620,14 @@ def convert_xzpi2x(circ: Union[QuantumCircuit, Sequence[InstructionTuple]]
 
 def convert_xzpix(circ: Union[QuantumCircuit, Sequence[InstructionTuple]]
                   ) -> Union[QuantumCircuit, Sequence[InstructionTuple]]:
-    """Converts X(pi/2)Z(pi)X(pi/2) to Z(pi) recursively on a single-qubit circuit."""
+    """Converts X(pi/2)Z(pi)X(pi/2) to Z(pi) recursively on a single-qubit circuit.
+    
+    Args:
+        A circuit that need to be converted.
+    
+    Returns:
+        The new circuit after the conversion.
+    """
     # assert len(circ.qregs[0]) == 1
     if isinstance(circ, QuantumCircuit):
         inst_tups = circ.data.copy()
@@ -619,7 +676,7 @@ def convert_xzpix(circ: Union[QuantumCircuit, Sequence[InstructionTuple]]
             inst_tups_running = []
 
     
-    print('converted =', converted)
+    # print('converted =', converted)
 
     assert circuit_equal(inst_tups, inst_tups_new, init_state_0=False)
     if isinstance(circ, QuantumCircuit):
@@ -634,7 +691,14 @@ def convert_xzpix(circ: Union[QuantumCircuit, Sequence[InstructionTuple]]
 
 def convert_3xpi2(circ: Union[QuantumCircuit, Sequence[InstructionTuple]]
                  ) -> Union[QuantumCircuit, Sequence[InstructionTuple]]:
-    """Converts X(pi/2)X(pi/2)X(pi/2) to Z(pi)X(pi/2)Z(pi) recursively on a single-qubit circuit."""
+    """Converts X(pi/2)X(pi/2)X(pi/2) to Z(pi)X(pi/2)Z(pi) on a single-qubit circuit.
+    
+    Args:
+        A circuit that need to be converted.
+        
+    Returns:
+        The new circuit after conversion.
+    """
     # assert len(circ.qregs[0]) == 1
     if isinstance(circ, QuantumCircuit):
         inst_tups = circ.data.copy()
@@ -671,7 +735,7 @@ def convert_3xpi2(circ: Union[QuantumCircuit, Sequence[InstructionTuple]]
             inst_tups_running = []
 
     
-    print('converted =', converted)
+    # print('converted =', converted)
 
     assert circuit_equal(inst_tups, inst_tups_new, init_state_0=False)
     if isinstance(circ, QuantumCircuit):
@@ -686,7 +750,14 @@ def convert_3xpi2(circ: Union[QuantumCircuit, Sequence[InstructionTuple]]
 
 def combine_z_gates(circ: Union[QuantumCircuit, Sequence[InstructionTuple]]
                     ) -> Union[QuantumCircuit, Sequence[InstructionTuple]]:
-    """Combines Z gates recursively on a single-qubit circuit."""
+    """Combines a chain of Z gates on a single-qubit circuit.
+    
+    Args:
+        A circuit on which the Z gates need to be combined.
+        
+    Returns:
+        The new circuit after Z gates are combined.
+    """
     # assert len(circ.qregs[0]) == 1
     if isinstance(circ, QuantumCircuit):
         inst_tups = circ.data.copy()
@@ -722,7 +793,14 @@ def combine_z_gates(circ: Union[QuantumCircuit, Sequence[InstructionTuple]]
 
 def wrap_swap_gates(circ: Union[QuantumCircuit, Sequence[InstructionTuple]]
                     ) -> Union[QuantumCircuit, Sequence[InstructionTuple]]:
-
+    """Exchanges the qubits between two SWAP gates and removes the SWAP gates.
+    
+    Args:
+        A circuit on which the qubits need to be exchanged.
+        
+    Returns:
+        The new circuit after qubits are exchanged and SWAP gates are removed.
+    """
     # assert len(circ.qregs[0]) == 2
     if isinstance(circ, QuantumCircuit):
         inst_tups = circ.data.copy()
@@ -776,6 +854,14 @@ def wrap_swap_gates(circ: Union[QuantumCircuit, Sequence[InstructionTuple]]
 
 def convert_czxcz(circ: Union[QuantumCircuit, Sequence[InstructionTuple]]
                  ) -> Union[QuantumCircuit, Sequence[InstructionTuple]]:
+    """Converts CZ IX CZ into ZX on a 2q circuit.
+    
+    Args:
+        A circuit that need to be converted.
+        
+    Returns:
+        The new circuit after conversion.
+    """
     if isinstance(circ, QuantumCircuit):
         inst_tups = circ.data.copy()
     else: # Already instruction tuples
@@ -815,7 +901,6 @@ def convert_czxcz(circ: Union[QuantumCircuit, Sequence[InstructionTuple]]
         circ_new = create_circuit_from_inst_tups(inst_tups_new)
     else:
         circ_new = inst_tups_new
-
     return circ_new
 
 transpilation_dict = {

@@ -32,8 +32,7 @@ class EHAmplitudesSolver:
                  anc: Sequence[int] = [0, 1],
                  spin: str = 'd',
                  suffix: str = '',
-                 verbose: bool = True,
-                 overwrite: bool = False) -> None:
+                 verbose: bool = True) -> None:
         """Initializes an EHAmplitudesSolver object.
 
         Args:
@@ -45,7 +44,6 @@ class EHAmplitudesSolver:
             spin: The spin of the creation and annihilation operators.
             suffix: The suffix for a specific experimental run.
             verbose: Whether to print out information about the calculation.
-            overwrite: Whether circuits are overwritten.
         """
         assert method in ['exact', 'tomo']
         assert spin in ['u', 'd']
@@ -183,7 +181,7 @@ class EHAmplitudesSolver:
 
         h5file.close()
 
-    run_diagonal = execute_diagonal
+    # run_diagonal = execute_diagonal
 
     def process_diagonal(self) -> None:
         """Post-processes diagonal transition amplitude results."""
@@ -278,7 +276,7 @@ class EHAmplitudesSolver:
 
         h5file.close()
 
-    run_off_diagonal = execute_off_diagonal
+    # run_off_diagonal = execute_off_diagonal
 
     def process_off_diagonal(self) -> None:
         """Post-processes off-diagonal transition amplitude results."""

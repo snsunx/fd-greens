@@ -44,8 +44,12 @@ class SecondQuantizedOperators:
 class ChargeOperators:
     """A class to store U01 and U10 for calculating charge-charge response functions."""
 
-    def __init__(self, n_qubits) -> None:
-        """Initializes a ChargeOperators object."""
+    def __init__(self, n_qubits: int) -> None:
+        """Initializes a ChargeOperators object.
+        
+        Args:
+            The number of qubits in the charge operators.
+        """
         self.n_qubits = n_qubits
 
         labels = ['I' * n_qubits for _ in range(n_qubits)]
@@ -252,3 +256,6 @@ def transform_4q_pauli(
     if isinstance(pauli_op_new, PauliSumOp):
         pauli_op_new = pauli_op_new.reduce()
     return pauli_op_new
+
+
+transform_dict = {'cnot': cnot_pauli, 'swap': swap_pauli, 'taper': taper_pauli}

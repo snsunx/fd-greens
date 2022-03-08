@@ -459,7 +459,7 @@ def initialize_hdf5(fname: str = 'lih', calc: str = 'greens') -> None:
                     'circ01u', 'circ0d', 'circ1d', 'circ01d']
     else:
         grpnames = ['gs', 'es', 'amp', 'circ0u', 'circ1u', 'circ0d', 'circ1d',
-                    'circ0u0d', 'circ0d0u', 'circ1u1d', 'circ1d1u']
+                    'circ0u0d', 'circ0u1u', 'circ0u1d', 'circ0d1u', 'circ0d1d', 'circ1u1d']
     for grpname in grpnames:
         if grpname not in h5file.keys():
             h5file.create_group(grpname)
@@ -630,3 +630,12 @@ def circuit_to_qasm_str(circ: QuantumCircuit) -> str:
 def save_circuit_figure(circ: QuantumCircuit, suffix: str) -> None:
     fig = circ.draw('mpl')
     fig.savefig(f'figs/circ{suffix}.png', bbox_inches='tight')
+
+def block_sum(arr, n_fold=2):
+    dim = arr.shape[0]
+    dim_new = dim // n_fold
+    arr_new = np.zeros((dim_new, dim_new))
+    for i in range(dim_new):
+        for j in range(dim_new):
+            arr_new[i, j] = np.sum(arr[n_fold*i:n_fold*(i+1), n_fold*j:n_fold*(j+1)])
+    return arr_new
