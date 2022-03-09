@@ -45,6 +45,23 @@ class ResponseFunction:
         chi01s = []
         chi10s = []
 
+        for label in ['00', '11', '01', '10']:
+            i = int(label[0])
+            j = int(label[1])
+            chis = []
+            for omega in omegas:
+                for lam in [1, 2, 3]:
+                    chi = np.sum(self.N[2*i:2*(i+1), 2*j:2*(j+1), lam]) \
+                        / (omega + 1j*eta - (self.energies_s[lam] - self.energy_gs))
+                    chi += np.sum(self.N[2*i:2*(i+1), 2*j:2*(j+1), lam]).conjugate() \
+                        / (-omega - 1j*eta - (self.energies_s[lam] - self.energy_gs))
+                chis.append(chi)
+            chis = np.array(chis)
+            if save:
+                np.savetxt(f'data/{self.datfname}_chi{label}.dat', np.vstack((omegas, chis.real, chis.imag)).T)
+
+
+        '''
         for omega in omegas:
             for lam in [1, 2, 3]: # XXX: Hardcoded
                 chi = np.sum(self.N[:2,:2,lam]) / (omega + 1j*eta - (self.energies_s[lam] - self.energy_gs))
@@ -78,32 +95,4 @@ class ResponseFunction:
             np.savetxt('data/' + self.datfname + '_chi10.dat', np.vstack((omegas, chi10s.real, chi10s.imag)).T)
         else:
             return chi0s, chi1s, chi01s, chi10s
-
-    def cross_section(self, 
-                      omegas: Sequence[float], 
-                      eta: float = 0.0, 
-                      save: bool = True) -> complex:
-        """Returns the photo-absorption cross section.
-        
-        Args:
-            omegas: The frequencies at which the response function is calculated.
-            eta: The imaginary part, i.e. broadening factor.
-            save: Whether to save the photo-absorption cross section to file.
-
-        Returns:
-            (Optional) The photo-absorption cross section.
-        """
-        sigmas = []
-        for omega in omegas:
-            alpha = 0
-            for i in range(2): # XXX: Hardcoded.
-                alpha += -self.response_function([omega + 1j * eta], i, i, save=False)
-
-            sigma = 4 * np.pi / params.c * omega * alpha.imag
-            sigmas.append(sigma)
-        sigmas = np.array(sigmas)
-
-        if save:
-            np.savetxt('data/' + self.fname + '_sigma.dat', np.vstack((omegas, sigmas.real, sigmas.imag)).T)
-        else:
-            return sigma
+        '''

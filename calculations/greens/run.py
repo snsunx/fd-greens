@@ -36,7 +36,7 @@ if __name__ == '__main__':
     method = 'exact'
     h5fname = 'lih_3A'
     spin = 'd'
-    suffix = '_' + spin + method
+    suffix = '_' + spin
     omegas = np.arange(-20, 20, 0.01)
     eta = 0.02 * HARTREE_TO_EV
 
@@ -44,4 +44,4 @@ if __name__ == '__main__':
     main_gs()
     main_es()
     main_amp()
-    # main_greens()
+    main_greens()

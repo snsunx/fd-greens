@@ -5,6 +5,7 @@ from functools import partial
 from collections import defaultdict
 
 import itertools
+
 import h5py
 import numpy as np
 from scipy.special import binom
@@ -138,9 +139,14 @@ class EHAmplitudesSolver:
             # Build the circuit based on the creation/annihilation operator 
             # and store the QASM string in the HDF5 file.
             a_op = self.pauli_dict[(m, self.spin)]
-            circ = self.constructor.build_eh_diagonal(a_op)
+
+            # Build the diagonal circuit and save to HDF5 file.
+            circ = self.constructor.build_diagonal(a_op)
+            # write_hdf5(h5file, f'circ{m}{self.spin}', 'untranspiled', circuit_to_qasm_str(circ))
+
+            # Transpile the circuit and save to HDF5 file.
             circ = transpile_into_berkeley_gates(circ, str(m) + self.spin)
-            write_hdf5(h5file, f'circ{m}{self.spin}', 'base', circuit_to_qasm_str(circ))
+            write_hdf5(h5file, f'circ{m}{self.spin}', 'transpiled', circuit_to_qasm_str(circ))
 
             if self.method == 'tomo':
                 for label in self.tomo_labels:
@@ -159,7 +165,7 @@ class EHAmplitudesSolver:
         for m in range(self.n_orb): # 0, 1
             if self.method == 'exact':
                 # Extract the quantum circuit from the HDF5 file.
-                dset = h5file[f'circ{m}{self.spin}/base']
+                dset = h5file[f'circ{m}{self.spin}/transpiled']
                 circ = QuantumCircuit.from_qasm_str(dset[()].decode())
                 # circ = replace_with_cixc(circ)
                 
@@ -181,15 +187,13 @@ class EHAmplitudesSolver:
 
         h5file.close()
 
-    # run_diagonal = execute_diagonal
-
     def process_diagonal(self) -> None:
         """Post-processes diagonal transition amplitude results."""
         h5file = h5py.File(self.h5fname, 'r+')
 
         for m in range(self.n_orb): # 0, 1
             if self.method == 'exact':
-                psi = h5file[f'circ{m}{self.spin}/base'].attrs[f'psi{self.suffix}']
+                psi = h5file[f'circ{m}{self.spin}/transpiled'].attrs[f'psi{self.suffix}']
                 for key in self.keys_diag:
                     # print('key =', key)
                     psi[abs(psi) < 1e-8] = 0.
@@ -235,12 +239,17 @@ class EHAmplitudesSolver:
 
         a_op_0 = self.pauli_dict[(0, self.spin)]
         a_op_1 = self.pauli_dict[(1, self.spin)]
+
+        # Build the diagonal circuit and save to HDF5 file.
         if self.spin == 'u':
-            circ = self.constructor.build_eh_off_diagonal(a_op_1, a_op_0)
+            circ = self.constructor.build_off_diagonal(a_op_1, a_op_0)
         else:
-            circ = self.constructor.build_eh_off_diagonal(a_op_0, a_op_1)
+            circ = self.constructor.build_off_diagonal(a_op_0, a_op_1)
+        # write_hdf5(h5file, f'circ01{self.spin}', 'untranspiled', circuit_to_qasm_str(circ))
+
+        # Transpile the circuit and save to HDF5 file.
         circ = transpile_into_berkeley_gates(circ, '01' + self.spin)
-        write_hdf5(h5file, f'circ01{self.spin}', 'base', circuit_to_qasm_str(circ))
+        write_hdf5(h5file, f'circ01{self.spin}', 'transpiled', circuit_to_qasm_str(circ))
 
         if self.method == 'tomo':
             for label in self.tomo_labels:
@@ -256,9 +265,8 @@ class EHAmplitudesSolver:
 
         if self.method == 'exact':
             # Extract the quantum circuit from the HDF5 file.
-            dset = h5file[f'circ01{self.spin}/base']
+            dset = h5file[f'circ01{self.spin}/transpiled']
             circ = QuantumCircuit.from_qasm_str(dset[()].decode())
-            # circ = replace_with_cixc(circ)
 
             result = self.q_instance.execute(circ)
             psi = result.get_statevector()
@@ -276,14 +284,12 @@ class EHAmplitudesSolver:
 
         h5file.close()
 
-    # run_off_diagonal = execute_off_diagonal
-
     def process_off_diagonal(self) -> None:
         """Post-processes off-diagonal transition amplitude results."""
         h5file = h5py.File(self.h5fname, 'r+')
 
         if self.method == 'exact':
-            psi = h5file[f'circ01{self.spin}/base'].attrs[f'psi{self.suffix}']
+            psi = h5file[f'circ01{self.spin}/transpiled'].attrs[f'psi{self.suffix}']
             for key in self.keys_off_diag:
                 psi_key = self.qinds_tot_off_diag[key](psi)
 

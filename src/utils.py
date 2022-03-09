@@ -2,19 +2,19 @@
 
 import os
 import h5py
-from itertools import product
 import math
 from typing import Optional, Union, Iterable, List, Tuple, Sequence, Mapping, Any
 import numpy as np
 from collections import defaultdict
 from hamiltonians import MolecularHamiltonian
 
-from qiskit import QuantumCircuit, QuantumRegister, ClassicalRegister, Aer, execute
+from qiskit import QuantumCircuit, QuantumRegister, ClassicalRegister, Aer, execute, IBMQ
 from qiskit.utils import QuantumInstance
 from qiskit.ignis.verification.tomography import state_tomography_circuits, StateTomographyFitter
 from qiskit.circuit import Instruction, Qubit, Clbit
 from qiskit.opflow import PauliSumOp
 from qiskit.result import Result, Counts
+from qiskit.providers.aer.noise import NoiseModel
 
 QubitLike = Union[int, Qubit]
 ClbitLike = Union[int, Clbit]
@@ -533,9 +533,22 @@ def get_quantum_instance(type_str: str) -> QuantumInstance:
             Aer.get_backend('qasm_simulator', shots=10000),
             shots=10000)
     elif type_str == 'noisy':
+        # q_instance = QuantumInstance(
+        #     Aer.get_backend('qasm_simulator', shots=100, noise_model_name='ibmq_jakarta'),
+        #     shots=100)
+        IBMQ.load_account()
+        provider = IBMQ.get_provider(hub='ibm-q-research', group='caltech-1', project='main')
+        backend_sim = Aer.get_backend('qasm_simulator')
+        backend = provider.get_backend('ibmq_jakarta')
+        noise_model = NoiseModel.from_backend(backend)
+        coupling_map = backend.configuration().coupling_map
+        basis_gates = noise_model.basis_gates
         q_instance = QuantumInstance(
-            Aer.get_backend('qasm_simulator', shots=100000, noise_model_name='ibmq_jakarta'),
-            shots=100000)
+            backend_sim,
+            noise_model=noise_model,
+            coupling_map=coupling_map,
+            basis_gates=basis_gates,
+            shots=10000)
     return q_instance
 
 def circuit_equal(circ1: Union[QuantumCircuit, np.ndarray], 

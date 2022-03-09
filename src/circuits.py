@@ -41,7 +41,7 @@ class CircuitConstructor:
         self.anc = anc
         self.sys = [i for i in range(4) if i not in anc] # Total # of qubits = 4
 
-    def build_eh_diagonal(self, a_op: SparsePauliOp) -> QuantumCircuit:
+    def build_diagonal(self, a_op: SparsePauliOp) -> QuantumCircuit:
         """Constructs the circuit to calculate a diagonal transition amplitude.
 
         Args:
@@ -51,7 +51,7 @@ class CircuitConstructor:
             The new circuit with the creation/annihilation operator added.
         """
         assert len(a_op) == 2
-        n_qubits = 3
+        n_qubits = 3 # Hardcoded
 
         # Copy the ansatz circuit into the system qubit indices.
         inst_tups = self.ansatz.data.copy()
@@ -59,35 +59,39 @@ class CircuitConstructor:
             qargs = [q._index + 1 for q in qargs]
             inst_tups[i] = (inst, qargs, cargs)
         
-        # Main part of the circuit to add the creation/annihilation operator.
+        # Add Hadamard gate on the ancilla at the beginning.
         inst_tups += [(HGate(), [0], [])]
         if self.add_barriers: inst_tups += [(Barrier(n_qubits), range(n_qubits), [])]
+
+        # Add C-gate of the first operator.
         inst_tups += self._get_controlled_gate_inst_tups(a_op[0], ctrl_states=[0])
         if self.add_barriers: inst_tups += [(Barrier(n_qubits), range(n_qubits), [])]
+        
+        # Add C-gate of the second operator.
         inst_tups += self._get_controlled_gate_inst_tups(a_op[1], ctrl_states=[1])
         if self.add_barriers: inst_tups += [(Barrier(n_qubits), range(n_qubits), [])]
+        
+        # Add Hadamard gate on the ancilla at the end.
         inst_tups += [(HGate(), [0], [])]
 
         circ = create_circuit_from_inst_tups(inst_tups)
         return circ
 
-    build_diagonal = build_eh_diagonal
-
-    def build_eh_off_diagonal(self,
+    def build_off_diagonal(self,
                               a_op_m: SparsePauliOp,
                               a_op_n: SparsePauliOp
                               ) -> QuantumCircuit:
         """Constructs the circuit to calculate off-diagonal transition amplitudes.
 
         Args:
-            a_op_m: The first creation/annihilation operator of the circuit.
-            a_op_n: The second creation/annihilation operator of the circuit.
+            a_op_m: The first operator in the circuit.
+            a_op_n: The second operator in the circuit.
 
         Returns:
-            The new circuit with the two creation/annihilation operators appended.
+            The new circuit with the two operators appended.
         """
         assert len(a_op_m) == len(a_op_n) == 2
-        n_qubits = 4
+        n_qubits = 4 # Hardcoded
 
         # Copy the ansatz circuit into the system qubit indices.
         inst_tups = self.ansatz.data.copy()
@@ -95,34 +99,36 @@ class CircuitConstructor:
             qargs = [q._index + 2 for q in qargs]
             inst_tups[i] = (inst, qargs, cargs)
 
-        # Add the first creation/annihilation operator.
+        # Add Hadamard gates on the ancillas at the beginning.
         inst_tups += [(HGate(), [self.anc[0]], []), (HGate(), [self.anc[1]], [])]
         if self.add_barriers: inst_tups += [(Barrier(n_qubits), range(n_qubits), [])]
+
+        # Add the CC-gate of the first operator.
         inst_tups += self._get_controlled_gate_inst_tups(a_op_m[0], ctrl_states=[0, 0])
         if self.add_barriers: inst_tups += [(Barrier(n_qubits), range(n_qubits), [])]
         inst_tups += self._get_controlled_gate_inst_tups(a_op_m[1], ctrl_states=[1, 0])
         if self.add_barriers: inst_tups += [(Barrier(n_qubits), range(n_qubits), [])]
 
-        # Add the phase gate in the middle.
+        # Add the phase gate in the middle if the second operator is not all I or all Z.
         if not set(''.join(a_op_n.table.to_labels())).issubset({'I', 'Z'}):
             inst_tups += [(RZGate(np.pi/4), [self.anc[1]], [])]
             if self.add_barriers: inst_tups += [(Barrier(n_qubits), range(n_qubits), [])]
 
-        # Add the second creation/annihilation operator.
+        # Add the CC-gate of the second operator.
         inst_tups += self._get_controlled_gate_inst_tups(a_op_n[0], ctrl_states=[0, 1])
         if self.add_barriers: inst_tups += [(Barrier(n_qubits), range(n_qubits), [])]
         inst_tups += self._get_controlled_gate_inst_tups(a_op_n[1], ctrl_states=[1, 1])
         if self.add_barriers: inst_tups += [(Barrier(n_qubits), range(n_qubits), [])]
-        inst_tups += [(HGate(), [self.anc[0]], []), (HGate(), [self.anc[1]], [])]
 
+        # Add the phase gate after the second operator if it is all I or all Z.
         if set(''.join(a_op_n.table.to_labels())).issubset({'I', 'Z'}):
             inst_tups += [(RZGate(np.pi/4), [self.anc[1]], [])]
             if self.add_barriers: inst_tups += [(Barrier(n_qubits), range(n_qubits), [])]
         
+        # Add Hadamard gates on the ancillas at the end.
+        inst_tups += [(HGate(), [self.anc[0]], []), (HGate(), [self.anc[1]], [])]
         circ = create_circuit_from_inst_tups(inst_tups)
         return circ
-
-    build_off_diagonal = build_eh_off_diagonal
         
     def _get_controlled_gate_inst_tups(
             self,

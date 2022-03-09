@@ -129,7 +129,7 @@ def transpile_2q(circ: QuantumCircuit, circ_label: str, savefig: bool = False) -
         The quantum circuit after transpilation.
     """
     reverse = True if circ_label == '0d' else False
-    if circ_label in ['01']:
+    if circ_label in ['01d']:
         circ = transpile_subcircuit(circ, {(0, 1): ['swap', 'czxcz']})
     if circ_label in [ 'r0u0d', 'r0d1d', 'r0u1u', 'r0u1d', 'r0d1u', 'r1u1d']:
         circ = transpile_subcircuit(circ, {(0, 1): ['swap', 'czxcz']})

@@ -113,13 +113,19 @@ class ExcitedAmplitudesSolver:
         for _ in [1]:
             for i in range(4): # 4 is hardcoded
                 m, s = self.orb_labels[i]
+
+                # Build the diagonal circuit and save to HDF5 file.
                 U_op = self.pauli_dict[(m, s)]
                 circ = self.constructor.build_diagonal(U_op)
+                # write_hdf5(h5file, f'circ{m}{s}', 'untranspiled', circuit_to_qasm_str(circ))
+
+                # Transpile the circuit and save to HDF5 file.
                 circ = transpile_into_berkeley_gates(circ, f'r{m}{s}')
-                write_hdf5(h5file, f'circ{m}{s}', 'base', circuit_to_qasm_str(circ))
+                write_hdf5(h5file, f'circ{m}{s}', 'transpiled', circuit_to_qasm_str(circ))
 
                 if self.method == 'tomo':
                     for label in self.tomo_labels:
+                        # Append tomography and measurement gates and save to HDF5 file.
                         tomo_circ = append_tomography_gates(circ, [1, 2], label)
                         tomo_circ = append_measurement_gates(tomo_circ)
                         write_hdf5(h5file, f'circ{m}{s}', label, circuit_to_qasm_str(tomo_circ))
@@ -135,7 +141,7 @@ class ExcitedAmplitudesSolver:
             for i in range(4): # 4 is hardcoded
                 m, s = self.orb_labels[i]
                 if self.method == 'exact':
-                    dset = h5file[f'circ{m}{s}/base']
+                    dset = h5file[f'circ{m}{s}/transpiled']
                     circ = QuantumCircuit.from_qasm_str(dset[()].decode())
 
                     result = self.q_instance.execute(circ)
@@ -164,7 +170,7 @@ class ExcitedAmplitudesSolver:
                 # ms = 2 * m + (s == 'd')
                 m, s = self.orb_labels[i]   
                 if self.method == 'exact':
-                    psi = h5file[f'circ{m}{s}/base'].attrs[f'psi{self.suffix}']
+                    psi = h5file[f'circ{m}{s}/transpiled'].attrs[f'psi{self.suffix}']
                     for key in self.keys_diag:
                         psi_key = self.qinds_tot_diag[key](psi)
                         self.N[key][i, i] = np.abs(self.states.conj().T @ psi_key)
@@ -200,15 +206,21 @@ class ExcitedAmplitudesSolver:
             m, s = self.orb_labels[i]
             for j in range(i + 1, 4):
                 m_, s_ = self.orb_labels[j]
-                print('in build_off_diagonal', m, s, m_, s_)
+                # print('in build_off_diagonal', m, s, m_, s_)
+
+                # Build the off-diagonal circuit and save to HDF5 file.
                 U_op = self.pauli_dict[(m, s)]
                 U_op_ = self.pauli_dict[(m_, s_)]
                 circ = self.constructor.build_off_diagonal(U_op, U_op_)
+                # write_hdf5(h5file, f'circ{m}{s}{m_}{s_}', 'untranspiled', circuit_to_qasm_str(circ))
+
+                # Transpile the circuit and save to HDF5 file.
                 circ = transpile_into_berkeley_gates(circ, f'r{m}{s}{m_}{s_}')
-                write_hdf5(h5file, f'circ{m}{s}{m_}{s_}', 'base', circuit_to_qasm_str(circ))
+                write_hdf5(h5file, f'circ{m}{s}{m_}{s_}', 'transpiled', circuit_to_qasm_str(circ))
 
                 if self.method == 'tomo':
                     for label in self.tomo_labels:
+                        # Append tomography and measurement gates and save to HDF5 file.
                         tomo_circ = append_tomography_gates(circ, [2, 3], label)
                         tomo_circ = append_measurement_gates(tomo_circ)
                         write_hdf5(h5file, f'circ{m}{s}{m_}{s_}', label, circuit_to_qasm_str(tomo_circ))
@@ -226,7 +238,7 @@ class ExcitedAmplitudesSolver:
                 m_, s_ = self.orb_labels[j]
                 if self.method == 'exact':
                     print(m, s, m_, s_)
-                    dset = h5file[f'circ{m}{s}{m_}{s_}/base']
+                    dset = h5file[f'circ{m}{s}{m_}{s_}/transpiled']
                     circ = QuantumCircuit.from_qasm_str(dset[()].decode())
 
                     result = self.q_instance.execute(circ)
@@ -258,7 +270,7 @@ class ExcitedAmplitudesSolver:
             for j in range(i + 1, 4):
                 m_, s_ = self.orb_labels[j]
                 if self.method == 'exact':
-                    psi = h5file[f'circ{m}{s}{m_}{s_}/base'].attrs[f'psi{self.suffix}']
+                    psi = h5file[f'circ{m}{s}{m_}{s_}/transpiled'].attrs[f'psi{self.suffix}']
                     for key in self.keys_off_diag:
                         psi_key = self.qinds_tot_off_diag[key](psi)
                         self.T[key][i, j] = np.abs(self.states.conj().T @ psi_key)
