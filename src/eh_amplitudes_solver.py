@@ -73,6 +73,8 @@ class EHAmplitudesSolver:
         """Loads ground state and (N+/-1)-electron states data from hdf5 file."""
         # Attributes from ground and (N+/-1)-electron state solver.
         h5file = h5py.File(self.h5fname, 'r+')
+        print(h5file['es'].keys())
+        
         self.ansatz = QuantumCircuit.from_qasm_str(h5file['gs/ansatz'][()].decode())
         self.states = {'e': h5file['es/states_e'][:], 'h': h5file['es/states_h'][:]}
         h5file.close()
