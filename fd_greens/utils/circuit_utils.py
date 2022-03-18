@@ -113,7 +113,9 @@ def create_circuit_from_inst_tups(
     """Creates a circuit from instruction tuples.
 
     The arguments in qargs and cargs should be specified as integers. If specified as Qubit/Clbits 
-    bound to specific QuantumRegister/ClassicalRegisters, they will be converted to integers. 
+    bound to specific QuantumRegister/ClassicalRegisters, either both qreg and creg are specified, 
+    or the new qargs and cargs are bound to new QuantumRegister/ClassicalRegisters with names 'q'
+    and 'c'.
     
     Args:
         inst_tups: Instruction tuples from which the circuit is to be constructed.

@@ -2,7 +2,7 @@
 
 import os
 import h5py
-from typing import Optional, Union, Iterable, List, Tuple, Sequence, Mapping, Any
+from typing import Optional, Union, Iterable, List, Tuple, Sequence, Mapping, Any, Callable
 import numpy as np
 
 from qiskit import QuantumCircuit, QuantumRegister, ClassicalRegister, Aer, execute, IBMQ
@@ -17,6 +17,7 @@ QubitLike = Union[int, Qubit]
 ClbitLike = Union[int, Clbit]
 InstructionTuple = Tuple[Instruction, List[QubitLike], Optional[List[ClbitLike]]]
 QuantumCircuitLike = Union[QuantumCircuit, Iterable[InstructionTuple]]
+AnsatzFunction = Callable[[Sequence[float]], QuantumCircuit]
 
 def get_statevector(circ_like: QuantumCircuitLike, reverse: bool = False) -> np.ndarray:
     """Returns the statevector of a quantum circuit.
@@ -155,10 +156,13 @@ def counts_dict_to_arr(counts: Union[Counts, dict],
         arr[key] = val
     return arr
 
-def circuit_equal(circ1: Union[QuantumCircuit, np.ndarray], 
-                  circ2: Union[QuantumCircuit, np.ndarray],
+def circuit_equal(circ1: QuantumCircuitLike, 
+                  circ2: QuantumCircuitLike,
                   init_state_0: bool = True) -> bool:
     """Checks if two quantum circuits are equivalent.
+
+    The two circuits are equivalent either when the unitaries are equal up to a phase or 
+    when the statevectors with initial state all 0 are equal up to a phase.
     
     Args:
         circ1: The first quantum cicuit.
@@ -212,3 +216,123 @@ def unitary_equal(uni1: np.ndarray,
         uni1 /= phase1
         uni2 /= phase2
         return np.allclose(uni1, uni2)
+
+def vqe_minimize(h_op: PauliSumOp,
+                 ansatz_func: AnsatzFunction,
+                 init_params: Sequence[float],
+                 q_instance: QuantumInstance
+                 ) -> Tuple[float, QuantumCircuit]:
+    """Minimizes the energy of a Hamiltonian using VQE.
+    
+    Args:
+        h_op: The Hamiltonian operator.
+        ansatz_func: The ansatz function for VQE.
+        init_params: Initial guess parameters.
+        q_instance: The quantum instance for executing the circuits.
+    
+    Returns:
+        energy: The VQE ground state energy.
+        ansatz: The VQE ground state ansatz.
+    """
+
+    def obj_func_sv(params):
+        """VQE objective function for statevector simulator."""
+        ansatz = ansatz_func(params).copy()
+        result = q_instance.execute(ansatz)
+        psi = result.get_statevector()
+        energy = psi.conj().T @ h_op.to_matrix() @ psi
+        return energy.real
+
+    def obj_func_qasm(params):
+        """VQE objective function for QASM simulator and hardware."""
+        # This function assumes the Hamiltonian only has the terms 
+        # II, IZ, ZI, ZZ, IX, ZX, XI, XZ, YY.
+        shots = q_instance.run_config.shots
+
+        label_coeff_list = h_op.primitive.to_list()
+        label_coeff_dict = dict(label_coeff_list)
+        for key in ['II', 'IZ', 'ZI', 'ZZ', 'IX', 'ZX', 'XI', 'XZ', 'YY']:
+            if key not in label_coeff_dict.keys():
+                label_coeff_dict[key] = 0.
+
+        energy = label_coeff_dict['II']
+
+        # Measure in ZZ basis
+        ansatz = ansatz_func(params).copy()
+        ansatz.measure_all()
+        result = q_instance.execute(ansatz)
+        counts = result.get_counts()
+        for key in ['00', '01', '10', '11']:
+            if key not in counts.keys():
+                counts[key] = 0
+        energy += label_coeff_dict['IZ'] * (counts['00'] + counts['10'] - counts['01'] - counts['11']) / shots
+        energy += label_coeff_dict['ZI'] * (counts['00'] + counts['01'] - counts['10'] - counts['11']) / shots
+        energy += label_coeff_dict['ZZ'] * (counts['00'] - counts['01'] - counts['10'] + counts['11']) / shots
+
+        # Measure in ZX basis
+        ansatz = ansatz_func(params).copy()
+        ansatz.h(0)
+        ansatz.measure_all()
+        result = q_instance.execute(ansatz)
+        counts = result.get_counts()
+        for key in ['00', '01', '10', '11']:
+            if key not in counts.keys():
+                counts[key] = 0
+        energy += label_coeff_dict['IX'] * (counts['00'] + counts['10'] - counts['01'] - counts['11']) / shots
+        energy += label_coeff_dict['ZX'] * (counts['00'] - counts['01'] - counts['10'] + counts['11']) / shots
+
+        # Measure in XZ basis
+        ansatz = ansatz_func(params).copy()
+        ansatz.h(1)
+        ansatz.measure_all()
+        result = q_instance.execute(ansatz)
+        counts = result.get_counts()
+        for key in ['00', '01', '10', '11']:
+            if key not in counts.keys():
+                counts[key] = 0
+        energy += label_coeff_dict['XI'] * (counts['00'] + counts['01'] - counts['10'] - counts['11']) / shots
+        energy += label_coeff_dict['XZ'] * (counts['00'] - counts['01'] - counts['10'] + counts['11']) / shots
+
+        # Measure in YY basis
+        ansatz = ansatz_func(params).copy()
+        ansatz.rx(np.pi / 2, 0)
+        ansatz.rx(np.pi / 2, 1)
+        ansatz.measure_all()
+        result = q_instance.execute(ansatz)
+        counts = result.get_counts()
+        for key in ['00', '01', '10', '11']:
+            if key not in counts.keys():
+                counts[key] = 0
+        energy += label_coeff_dict['YY'] * (counts['00'] - counts['01'] - counts['10'] + counts['11']) / shots
+
+        energy = energy.real
+        return energy
+
+    if q_instance.backend.name() == 'statevector_simulator':
+        print("STATEVECTOR")
+        obj_func = obj_func_sv
+    else:
+        obj_func = obj_func_qasm
+    res = minimize(obj_func, x0=init_params, method='L-BFGS-B')
+    energy = res.fun
+    ansatz = ansatz_func(res.x)
+    print('-' * 80)
+    print('in vqe_minimize')
+    print('energy =', energy)
+    print('ansatz =', ansatz)
+    for inst, qargs, cargs in ansatz.data:
+        print(inst.name, inst.params, qargs)
+    with np.printoptions(precision=15):
+        psi = get_statevector(ansatz)
+        print(psi)
+
+    h = get_lih_hamiltonian(5.0)
+    h_arr = transform_4q_pauli(h.qiskit_op, init_state=[1, 1]).to_matrix()
+    print(psi.conj().T @ h_arr @ psi)
+
+    e, v = np.linalg.eigh(h_arr)
+    print(e[0])
+    print(v[:, 0])
+    print('-' * 80)
+
+    return energy, ansatz

@@ -39,9 +39,7 @@ def get_quantum_instance(type_str: str) -> QuantumInstance:
     if type_str == 'sv':
         q_instance = QuantumInstance(Aer.get_backend('statevector_simulator'))
     elif type_str == 'qasm':
-        q_instance = QuantumInstance(
-            Aer.get_backend('qasm_simulator', shots=10000),
-            shots=10000)
+        q_instance = QuantumInstance(Aer.get_backend('qasm_simulator'), shots=10000)
     elif type_str == 'noisy':
         # q_instance = QuantumInstance(
         #     Aer.get_backend('qasm_simulator', shots=100, noise_model_name='ibmq_jakarta'),

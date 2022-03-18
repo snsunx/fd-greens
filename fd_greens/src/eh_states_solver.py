@@ -9,13 +9,11 @@ from qiskit import *
 from qiskit.utils import QuantumInstance
 
 from .hamiltonians import MolecularHamiltonian
-from .operators import transform_4q_pauli
+from .z2symmetries import transform_4q_pauli, transform_4q_indices
 from .params import e_inds, h_inds
-from .ground_state_solver import vqe_minimize
 from .ansatze import AnsatzFunction, build_ansatz_e, build_ansatz_h
 from .helpers import get_quantum_instance
-from .qubit_indices import transform_4q_indices
-from ..utils import state_tomography, write_hdf5
+from ..utils import state_tomography, write_hdf5, vqe_minimize
 
 
 class EHStatesSolver:

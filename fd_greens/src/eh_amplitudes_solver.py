@@ -2,7 +2,6 @@
 
 from typing import Optional, Sequence
 from functools import partial
-from collections import defaultdict
 
 import itertools
 
@@ -15,12 +14,12 @@ from qiskit.utils import QuantumInstance
 
 from .params import e_inds, h_inds
 from .hamiltonians import MolecularHamiltonian
-from .operators import SecondQuantizedOperators, transform_4q_pauli
-from .qubit_indices import transform_4q_indices
-from .circuits import CircuitConstructor, append_tomography_gates, append_measurement_gates
+from .operators import SecondQuantizedOperators
+from .z2symmetries import transform_4q_pauli, transform_4q_indices
+from .circuit_constructor import CircuitConstructor
 from .transpilation import transpile_into_berkeley_gates
 from .helpers import get_quantum_instance
-from ..utils import get_overlap, counts_dict_to_arr, circuit_to_qasm_str, write_hdf5, basis_matrix
+from ..utils import get_overlap, counts_dict_to_arr, circuit_to_qasm_str, write_hdf5, basis_matrix, append_tomography_gates, append_measurement_gates
 
 np.set_printoptions(precision=6)
 

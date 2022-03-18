@@ -13,13 +13,14 @@ from qiskit.utils import QuantumInstance
 
 from .params import singlet_inds
 from .hamiltonians import MolecularHamiltonian
-from .operators import ChargeOperators, transform_4q_pauli
-from .qubit_indices import QubitIndices, transform_4q_indices
-from .circuits import (CircuitConstructor, InstructionTuple, append_tomography_gates,
-                      append_measurement_gates)
+from .operators import ChargeOperators
+from .qubit_indices import QubitIndices
+from .circuit_constructor  import (CircuitConstructor, InstructionTuple)
 from .transpilation import transpile_into_berkeley_gates
+from .z2symmetries import transform_4q_indices, transform_4q_pauli
 from .helpers import get_quantum_instance
-from ..utils import get_overlap, counts_dict_to_arr, circuit_to_qasm_str, write_hdf5, basis_matrix
+from ..utils import (get_overlap, counts_dict_to_arr, circuit_to_qasm_str, write_hdf5, basis_matrix, append_tomography_gates,
+                      append_measurement_gates)
 
 
 class ExcitedAmplitudesSolver:
