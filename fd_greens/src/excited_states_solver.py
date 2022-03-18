@@ -8,13 +8,13 @@ import numpy as np
 from qiskit import *
 from qiskit.utils import QuantumInstance
 
-from hamiltonians import MolecularHamiltonian
-from operators import transform_4q_pauli
-import params
-from ground_state_solvers import vqe_minimize
-from ansatze import AnsatzFunction, build_ansatz_e, build_ansatz_h
-from utils import state_tomography, get_quantum_instance, write_hdf5
-from qubit_indices import transform_4q_indices
+from .hamiltonians import MolecularHamiltonian
+from .operators import transform_4q_pauli
+from .params import singlet_inds, triplet_inds
+from .ground_state_solver import vqe_minimize
+from .ansatze import AnsatzFunction, build_ansatz_e, build_ansatz_h
+from .qubit_indices import transform_4q_indices
+from ..utils import write_hdf5
 
 class ExcitedStatesSolver:
     """A class to calculate and store information of excited states."""
@@ -43,8 +43,8 @@ class ExcitedStatesSolver:
         self.h_mat_s = self.h_op_s.to_matrix()
         self.h_mat_t = self.h_op_t.to_matrix()
 
-        self.inds_s = transform_4q_indices(params.singlet_inds)
-        self.inds_t = transform_4q_indices(params.triplet_inds)
+        self.inds_s = transform_4q_indices(singlet_inds)
+        self.inds_t = transform_4q_indices(triplet_inds)
 
         self.h5fname = h5fname + '.h5'
 

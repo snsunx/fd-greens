@@ -12,13 +12,15 @@ from scipy.special import binom
 
 from qiskit import QuantumCircuit
 from qiskit.utils import QuantumInstance
-import params
-from hamiltonians import MolecularHamiltonian
-from operators import SecondQuantizedOperators, transform_4q_pauli
-from qubit_indices import transform_4q_indices
-from circuits import CircuitConstructor, append_tomography_gates, append_measurement_gates
-from transpilation import transpile_into_berkeley_gates
-from utils import get_overlap, get_quantum_instance, counts_dict_to_arr, write_hdf5, circuit_to_qasm_str
+
+from .params import e_inds, h_inds
+from .hamiltonians import MolecularHamiltonian
+from .operators import SecondQuantizedOperators, transform_4q_pauli
+from .qubit_indices import transform_4q_indices
+from .circuits import CircuitConstructor, append_tomography_gates, append_measurement_gates
+from .transpilation import transpile_into_berkeley_gates
+from .helpers import get_quantum_instance
+from ..utils import get_overlap, counts_dict_to_arr, circuit_to_qasm_str, write_hdf5, basis_matrix
 
 np.set_printoptions(precision=6)
 
@@ -89,8 +91,8 @@ class EHAmplitudesSolver:
         self.n_h = int(binom(2 * self.n_orb, 2 * self.n_occ - 1)) // 2
 
         # Build qubit indices for system qubits.
-        self.qinds_sys = {'e': transform_4q_indices(params.e_inds[self.spin]),
-                          'h': transform_4q_indices(params.h_inds[self.hspin])}
+        self.qinds_sys = {'e': transform_4q_indices(e_inds[self.spin]),
+                          'h': transform_4q_indices(h_inds[self.hspin])}
 
         # Build qubit indices for diagonal circuits.
         self.keys_diag = ['e', 'h']
@@ -223,7 +225,7 @@ class EHAmplitudesSolver:
                     
                     # Obtain the density matrix from tomography. Slice the density matrix 
                     # based on whether we are considering 'e' or 'h' on the system qubits.
-                    rho = np.linalg.lstsq(params.basis_matrix, counts_arr_key)[0]
+                    rho = np.linalg.lstsq(basis_matrix, counts_arr_key)[0]
                     rho = rho.reshape(2**self.n_sys, 2**self.n_sys, order='F')
                     rho = self.qinds_sys[key](rho)
 
@@ -314,7 +316,7 @@ class EHAmplitudesSolver:
 
                 # Obtain the density matrix from tomography. Slice the density matrix 
                 # based on whether we are considering 'e' or 'h' on the system qubits.
-                rho = np.linalg.lstsq(params.basis_matrix, counts_arr_key)[0]
+                rho = np.linalg.lstsq(basis_matrix, counts_arr_key)[0]
                 rho = rho.reshape(2**self.n_sys, 2**self.n_sys, order='F')
                 rho = self.qinds_sys[key[0]](rho)
 

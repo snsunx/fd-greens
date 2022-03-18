@@ -1,16 +1,14 @@
 import sys
-sys.path.append('../../src/')
+sys.path.append('../../')
 import warnings
 warnings.filterwarnings('ignore')
-import numpy as np
 
-from ground_state_solvers import GroundStateSolver
-from number_states_solvers import EHStatesSolver
-from eh_amplitudes_solver import EHAmplitudesSolver
-from greens_function import GreensFunction
-from ansatze import build_ansatz_gs, build_ansatz_e, build_ansatz_h
-from utils import get_lih_hamiltonian, get_quantum_instance, initialize_hdf5
-from params import HARTREE_TO_EV
+import numpy as np
+from fd_greens.src import GroundStateSolver, EHStatesSolver, EHAmplitudesSolver, GreensFunction
+from fd_greens.src.ansatze import build_ansatz_gs, build_ansatz_e, build_ansatz_h
+from fd_greens.src.helpers import get_lih_hamiltonian, get_quantum_instance
+from fd_greens.src.params import HARTREE_TO_EV
+from fd_greens.utils import initialize_hdf5
 
 def main_gs():
     gs_solver = GroundStateSolver(h, q_instance=q_instance, method='exact', h5fname=h5fname)
@@ -34,10 +32,10 @@ if __name__ == '__main__':
     h = get_lih_hamiltonian(3.0)
     q_instance = get_quantum_instance('sv')
     method = 'exact'
-    h5fname = 'lih_3A'
+    h5fname = 'lih_3A1'
     spin = 'd'
     suffix = '_' + spin
-    omegas = np.arange(-20, 20, 0.01)
+    omegas = np.arange(-20, 20, 0.1)
     eta = 0.02 * HARTREE_TO_EV
 
     initialize_hdf5(h5fname)

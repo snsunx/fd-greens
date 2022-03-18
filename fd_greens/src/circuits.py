@@ -11,8 +11,8 @@ from qiskit.circuit import Instruction, Qubit, Clbit, Barrier, Measure
 from qiskit.extensions import XGate, HGate, RXGate, RZGate, CPhaseGate, CZGate
 from qiskit.quantum_info import SparsePauliOp
 
-from params import CCZGate
-from utils import get_unitary, create_circuit_from_inst_tups
+from .params import CCZGate
+from ..utils import create_circuit_from_inst_tups
 
 QubitLike = Union[int, Qubit]
 ClbitLike = Union[int, Clbit]

@@ -8,13 +8,15 @@ import numpy as np
 from qiskit import *
 from qiskit.utils import QuantumInstance
 
-from hamiltonians import MolecularHamiltonian
-from operators import transform_4q_pauli
-import params
-from ground_state_solvers import vqe_minimize
-from ansatze import AnsatzFunction, build_ansatz_e, build_ansatz_h
-from utils import state_tomography, get_quantum_instance, write_hdf5
-from qubit_indices import transform_4q_indices
+from .hamiltonians import MolecularHamiltonian
+from .operators import transform_4q_pauli
+from .params import e_inds, h_inds
+from .ground_state_solver import vqe_minimize
+from .ansatze import AnsatzFunction, build_ansatz_e, build_ansatz_h
+from .helpers import get_quantum_instance
+from .qubit_indices import transform_4q_indices
+from ..utils import state_tomography, write_hdf5
+
 
 class EHStatesSolver:
     """A class to calculate and store information of (N+/-1)-electron states."""
@@ -43,8 +45,8 @@ class EHStatesSolver:
         self.spin = spin
         self.hspin = 'd' if self.spin == 'u' else 'u'
         self.h_op = transform_4q_pauli(self.h.qiskit_op, init_state=init_state)
-        self.inds = {'e': transform_4q_indices(params.e_inds[self.spin]),
-                     'h': transform_4q_indices(params.h_inds[self.hspin])}
+        self.inds = {'e': transform_4q_indices(e_inds[self.spin]),
+                     'h': transform_4q_indices(h_inds[self.hspin])}
 
         # print('spin =', self.spin)
         # print('init_state =', init_state)

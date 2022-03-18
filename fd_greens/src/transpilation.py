@@ -11,9 +11,8 @@ from qiskit.circuit import Instruction, Qubit, Clbit, Barrier
 from qiskit.extensions import (XGate, HGate, RXGate, RZGate, CPhaseGate, 
                                CZGate, SwapGate, UGate)
 
-from params import C0C0iXGate
-from utils import (get_registers_in_inst_tups, create_circuit_from_inst_tups, 
-                   remove_instructions, circuit_equal, save_circuit_figure)
+from .params import C0C0iXGate
+from ..utils import (save_circuit_figure, create_circuit_from_inst_tups, remove_instructions, get_registers_in_inst_tups, circuit_equal)
 
 QubitLike = Union[int, Qubit]
 ClbitLike = Union[int, Clbit]

@@ -4,8 +4,6 @@ from typing import Sequence, Union
 
 import h5py
 import numpy as np
-import params
-from utils import block_sum
 
 class ResponseFunction:
     """A class to calculate frequency-domain charge-charge response function."""

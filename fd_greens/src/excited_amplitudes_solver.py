@@ -11,14 +11,15 @@ import numpy as np
 from qiskit import QuantumCircuit
 from qiskit.utils import QuantumInstance
 
-import params
-from hamiltonians import MolecularHamiltonian
-from operators import ChargeOperators, transform_4q_pauli
-from qubit_indices import QubitIndices, transform_4q_indices
-from circuits import (CircuitConstructor, InstructionTuple, append_tomography_gates,
+from .params import singlet_inds
+from .hamiltonians import MolecularHamiltonian
+from .operators import ChargeOperators, transform_4q_pauli
+from .qubit_indices import QubitIndices, transform_4q_indices
+from .circuits import (CircuitConstructor, InstructionTuple, append_tomography_gates,
                       append_measurement_gates)
-from transpilation import transpile_into_berkeley_gates
-from utils import circuit_to_qasm_str, get_overlap, get_quantum_instance, counts_dict_to_arr, write_hdf5
+from .transpilation import transpile_into_berkeley_gates
+from .helpers import get_quantum_instance
+from ..utils import get_overlap, counts_dict_to_arr, circuit_to_qasm_str, write_hdf5, basis_matrix
 
 
 class ExcitedAmplitudesSolver:
@@ -61,7 +62,7 @@ class ExcitedAmplitudesSolver:
         self.occ_inds = self.h.occ_inds
         self.act_inds = self.h.act_inds
 
-        self.qinds_sys = transform_4q_indices(params.singlet_inds)
+        self.qinds_sys = transform_4q_indices(singlet_inds)
 
         # self.keys_diag = ['n', 'n_']
         # self.qinds_anc_diag = [[1], [0]]
@@ -187,7 +188,7 @@ class ExcitedAmplitudesSolver:
                             counts_arr_key = np.hstack((counts_arr_key, counts_arr_label))
 
                         # Obtain the density matrix from tomography.
-                        rho = np.linalg.lstsq(params.basis_matrix, counts_arr_key)[0]
+                        rho = np.linalg.lstsq(basis_matrix, counts_arr_key)[0]
                         rho = rho.reshape(4, 4, order='F')
                         rho = self.qinds_sys(rho)
 
@@ -285,7 +286,7 @@ class ExcitedAmplitudesSolver:
                             counts_arr_label = counts_arr_label / np.sum(counts_arr)
                             counts_arr_key = np.hstack([counts_arr_key, counts_arr_label])
 
-                        rho = np.linalg.lstsq(params.basis_matrix, counts_arr_key)[0]
+                        rho = np.linalg.lstsq(basis_matrix, counts_arr_key)[0]
                         rho = rho.reshape(4, 4, order='F')
                         rho = self.qinds_sys(rho)
                         self.T[key][i, j] = \
