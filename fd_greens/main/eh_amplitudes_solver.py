@@ -9,7 +9,7 @@ import h5py
 import numpy as np
 from scipy.special import binom
 
-from qiskit import QuantumCircuit
+from qiskit import QuantumCircuit, Aer
 from qiskit.utils import QuantumInstance
 
 from .params import e_inds, h_inds
@@ -18,7 +18,6 @@ from .operators import SecondQuantizedOperators
 from .z2symmetries import transform_4q_pauli, transform_4q_indices
 from .circuit_constructor import CircuitConstructor
 from .transpilation import transpile_into_berkeley_gates
-from .helpers import get_quantum_instance
 from ..utils import get_overlap, counts_dict_to_arr, circuit_to_qasm_str, write_hdf5, basis_matrix, append_tomography_gates, append_measurement_gates
 
 np.set_printoptions(precision=6)
@@ -28,7 +27,7 @@ class EHAmplitudesSolver:
 
     def __init__(self,
                  h: MolecularHamiltonian,
-                 q_instance: QuantumInstance = get_quantum_instance('sv'),
+                 q_instance: Optional[QuantumInstance] = None,
                  method: str = 'exact',
                  h5fname: str = 'lih',
                  anc: Sequence[int] = [0, 1],
@@ -52,7 +51,10 @@ class EHAmplitudesSolver:
 
         # Basic variables.
         self.h = h
-        self.q_instance = q_instance
+        if q_instance is None:
+            self.q_instance = QuantumInstance(Aer.get_backend('statevector_simulator'))
+        else:
+            self.q_instance = q_instance
         self.method = method
         self.anc = anc
         self.sys = [i for i in range(4) if i not in anc]

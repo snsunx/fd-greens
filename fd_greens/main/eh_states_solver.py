@@ -12,7 +12,6 @@ from .hamiltonians import MolecularHamiltonian
 from .z2symmetries import transform_4q_pauli, transform_4q_indices
 from .params import e_inds, h_inds
 from .ansatze import AnsatzFunction, build_ansatz_e, build_ansatz_h
-from .helpers import get_quantum_instance
 from ..utils import state_tomography, write_hdf5, vqe_minimize
 
 
@@ -23,7 +22,7 @@ class EHStatesSolver:
                  h: MolecularHamiltonian,
                  ansatz_func_e: AnsatzFunction = build_ansatz_e, 
                  ansatz_func_h: AnsatzFunction = build_ansatz_h,
-                 q_instance: QuantumInstance = get_quantum_instance('sv'),
+                 q_instance: Optional[QuantumInstance] = None,
                  spin: str = 'd',
                  method: str = 'exact',
                  h5fname: str = 'lih') -> None:
@@ -52,7 +51,10 @@ class EHStatesSolver:
 
         self.ansatz_func_e = ansatz_func_e
         self.ansatz_func_h = ansatz_func_h
-        self.q_instance = q_instance
+        if q_instance is None:
+            self.q_instance = QuantumInstance(Aer.get_backend('statevector_simulator'))
+        else:
+            self.q_instance = q_instance
         self.method = method
         self.h5fname = h5fname + '.h5'
 

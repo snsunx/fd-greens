@@ -1,6 +1,9 @@
+import h5py
 from typing import Sequence, Optional
 import matplotlib.pyplot as plt
 import numpy as np
+from itertools import product
+
 
 def plot_A(h5fnames: Sequence[str], 
            suffixes: Sequence[str],
@@ -19,6 +22,7 @@ def plot_A(h5fnames: Sequence[str],
     if linestyles is None:
         linestyles = [None] * n_curves
     
+    plt.clf()
     fig, ax = plt.subplots()
     # for h5fname, suffix, label, linestyle in zip(h5fnames, suffixes, labels, linestyles):
     for i in range(n_curves):
@@ -51,6 +55,7 @@ def plot_TrS(h5fnames: Sequence[str],
     if linestyles is None:
         linestyles = [None] * n_curves
     
+    plt.clf()
     fig, ax = plt.subplots()
     # for h5fname, suffix, label, linestyle in zip(h5fnames, suffixes, labels, linestyles):
     for i in range(n_curves//2):
@@ -83,6 +88,7 @@ def plot_chi(h5fnames: Sequence[str],
     if linestyles is None:
         linestyles = [None] * n_curves
 
+    plt.clf()
     fig, ax = plt.subplots()
     # for h5fname, suffix, label, linestyle in zip(h5fnames, suffixes, labels, linestyles):
     for i in range(n_curves//2):
@@ -98,3 +104,38 @@ def plot_chi(h5fnames: Sequence[str],
         for i in range(n_curves):
             ax.text(**annotations[i], transform=ax.transAxes)
     fig.savefig(f'figs/{figname}{circ_label}.png', dpi=300, bbox_inches='tight')
+
+def plot_counts(h5fname: str,
+                counts_name: str,
+                circ_label: str,
+                tomo_label: str,
+                width: float = 0.5):
+    """Plots the QASM and experimental bitstring counts."""
+    h5file = h5py.File(h5fname + '.h5', 'r')
+    # print(circ_label, tomo_label)
+    dset = h5file[f'circ{circ_label}/{tomo_label}']
+    counts = dset.attrs[counts_name]
+    counts_norm = counts / np.sum(counts)
+    counts_exp = dset.attrs[counts_name + '_exp_proc']
+    counts_exp_norm = counts_exp / np.sum(counts_exp)
+    tvd = np.sum(np.abs(counts_norm - counts_exp_norm)) / 2
+
+    n_qubits = int(np.log2(len(counts)))
+    x = np.arange(2 ** n_qubits)
+    tick_labels = [''.join(x) for x in product('01', repeat=n_qubits)]
+    
+    plt.clf()
+    if n_qubits == 3:
+        fig, ax = plt.subplots(figsize=(6, 4))
+    else:
+        fig, ax = plt.subplots(figsize=(10, 4))
+    ax.bar(x-width/3, counts_norm, width/1.5, label='QASM')
+    ax.bar(x+width/3, counts_exp_norm, width/1.5, label='Expt')
+    ax.set_xticks(x)
+    ax.set_xticklabels(tick_labels)
+    ax.set_xlabel('Bitstring')
+    ax.set_ylabel('Ratio')
+    ax.set_title(f'Total Variational Distance: {tvd:.4f}')
+    ax.legend()
+    fig.savefig(f'figs/counts_{h5fname}_{circ_label}{tomo_label}.png',
+                dpi=300, bbox_inches='tight')

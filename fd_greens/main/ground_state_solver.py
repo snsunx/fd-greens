@@ -5,15 +5,14 @@ import h5py
 import numpy as np
 from scipy.optimize import minimize
 
-from qiskit import QuantumCircuit
+from qiskit import QuantumCircuit, Aer
 from qiskit.opflow import PauliSumOp
 from qiskit.utils import QuantumInstance
 
 from .hamiltonians import MolecularHamiltonian
 from .ansatze import AnsatzFunction, build_ansatz_gs
 from .z2symmetries import transform_4q_pauli
-from .helpers import get_lih_hamiltonian, get_quantum_instance
-from ..utils import get_statevector, write_hdf5
+from ..utils import get_statevector, write_hdf5, vqe_minimize
 
 class GroundStateSolver:
     """A class to solve the ground state energy and state."""
@@ -22,7 +21,7 @@ class GroundStateSolver:
                  h: MolecularHamiltonian, 
                  ansatz_func: AnsatzFunction = build_ansatz_gs,
                  init_params: Sequence[float] = [1, 2, 3, 4],
-                 q_instance: QuantumInstance = get_quantum_instance('sv'),
+                 q_instance: Optional[QuantumInstance] = None,
                  method: str = 'exact',
                  h5fname: str = 'lih') -> None:
         """Initializes a GroudStateSolver object.
@@ -39,7 +38,10 @@ class GroundStateSolver:
         self.h_op = transform_4q_pauli(self.h.qiskit_op, init_state=[1, 1])  
         self.ansatz_func = ansatz_func
         self.init_params = init_params
-        self.q_instance = q_instance
+        if q_instance is None:
+            self.q_instance = QuantumInstance(Aer.get_backend('statevector_simulator'))
+        else:
+            self.q_instance = q_instance
         self.method = method
         self.h5fname = h5fname + '.h5'
 
@@ -47,10 +49,8 @@ class GroundStateSolver:
         self.ansatz = None
 
     def run_exact(self) -> None:
-        """Calculates the exact ground state of the Hamiltonian using exact 2q gate decomposition."""
-        # self.q_instance = get_quantum_instance('sv')
-        # self.run_vqe()
-
+        """Calculates the exact ground state of the Hamiltonian using 
+        exact 2q gate decomposition."""
         from qiskit.quantum_info import TwoQubitBasisDecomposer
         from qiskit.extensions import CZGate
 

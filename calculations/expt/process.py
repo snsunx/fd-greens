@@ -1,4 +1,5 @@
 import h5py
+from typing import Optional
 from itertools import product
 import numpy as np
 import sys
@@ -7,7 +8,10 @@ from utils import reverse_qubit_order
 
 bitstrings = [''.join(x) for x in product('012', repeat=3)]
 
-def take_01(arr, circ_label=None):
+def take_01(arr: np.ndarray, circ_label: Optional[str] = None) -> np.ndarray:
+    """Takes the bitstrings with 0 and 1 in a bitstring counts and reverse the qubit order."""
+    # Extract the number of qubits and construct the bitstrings. For certain circuit labels, 
+    # permute the bitstring elements according to the SWAP gates at the end.
     n_qubits = int(np.log(arr.shape[0]) / np.log(3))
     bitstrings = [''.join(x) for x in product('012', repeat=n_qubits)]
     if circ_label in ['0u', '1u']:
@@ -17,6 +21,7 @@ def take_01(arr, circ_label=None):
         print('bitstring swapped')
         bitstrings = [''.join([x[i] for i in [0, 1, 3, 2]]) for x in bitstrings]
 
+    # Construct the new array by taking only the bitstrings that don't contain 2.
     arr_new = []
     for i, x in enumerate(bitstrings):
         if '2' not in x:
@@ -25,7 +30,16 @@ def take_01(arr, circ_label=None):
     arr_new = reverse_qubit_order(arr_new)
     return arr_new
 
-def main_process(h5fname, circ_label, tomo_label, counts_name):
+def main_process(h5fname: str, circ_label: str, tomo_label: str, counts_name: str) -> None:
+    """Processes the Berkeley hardware results and saves the processed bitstring counts 
+    in the HDF5 file.
+    
+    Args:
+        h5fname: Name of the HDF5 file.
+        circ_label: Label of the quantum circuit, e.g. '0u', '0d', '01d'.
+        tomo_label: The tomography label, e.g. 'xx', 'xy', 'xz'.
+        counts_name: Name of the bitstring counts.
+    """
     h5file = h5py.File(h5fname + '.h5', 'r+')
     dset = h5file[f'circ{circ_label}/{tomo_label}'].attrs
     counts_d = np.array(dset[counts_name], dtype=int)

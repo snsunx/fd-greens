@@ -21,8 +21,10 @@ def main_1p6A():
                   {'ls': '--', 'marker': 'x', 'markevery': 100, 'color': 'xkcd:azure'}]
 
 
-    plot_A(h5fnames, suffixes, labels=labels, annotations=annotations_A, linestyles=linestyles_A, figname='A1p6ex', text='annotation', n_curves=1)
-    plot_TrS(h5fnames, suffixes, labels=labels, annotations=annotations_TrS, linestyles=linestyles_TrS, figname='TrS1p6ex', text='annotation', n_curves=2)
+    plot_A(h5fnames, suffixes, labels=labels, annotations=annotations_A, 
+           linestyles=linestyles_A, figname='A1p6ex', text='annotation', n_curves=1)
+    plot_TrS(h5fnames, suffixes, labels=labels, annotations=annotations_TrS,
+             linestyles=linestyles_TrS, figname='TrS1p6ex', text='annotation', n_curves=2)
 
 def main_3A():
     h5fnames = ['lih_3A', 'lih_3A_run2']
@@ -38,8 +40,10 @@ def main_3A():
                       {'ls': '--', 'marker': 'x', 'markevery': 100, 'color': 'xkcd:rose pink'}, 
                       {'ls': '--', 'marker': 'x', 'markevery': 100, 'color': 'xkcd:azure'}]
 
-    plot_A(h5fnames, suffixes, labels=labels, annotations=annotations_A, linestyles=linestyles_A, figname='A3ex', text='annotation', n_curves=1)
-    plot_TrS(h5fnames, suffixes, labels=labels, annotations=annotations_TrS, linestyles=linestyles_TrS, figname='TrS3ex', text='annotation', n_curves=2)
+    plot_A(h5fnames, suffixes, labels=labels, annotations=annotations_A, 
+           linestyles=linestyles_A, figname='A3ex', text='annotation', n_curves=1)
+    plot_TrS(h5fnames, suffixes, labels=labels, annotations=annotations_TrS, 
+             linestyles=linestyles_TrS, figname='TrS3ex', text='annotation', n_curves=2)
 
 def main_chi():
     h5fnames = ['lih', 'lih_run2']
@@ -53,7 +57,8 @@ def main_chi():
                   {'ls': '--', 'marker': 'x', 'markevery': 30, 'color': 'xkcd:rose pink'}, 
                   {'ls': '--', 'marker': 'x', 'markevery': 30, 'color': 'xkcd:azure'}]
 
-    plot_chi(h5fnames, suffixes, labels=labels, annotations=annotations, circ_label='00', linestyles=linestyles, text='annotation', n_curves=2, figname='chiex')
+    plot_chi(h5fnames, suffixes, labels=labels, annotations=annotations, circ_label='00',
+             linestyles=linestyles, text='annotation', n_curves=2, figname='chiex')
     # plot_chi(h5fnames, suffixes, labels=labels, circ_label='01', linestyles=linestyles, text='annotation')
 
 if __name__ == '__main__':

@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 from qiskit import Aer, IBMQ
 from qiskit.utils import QuantumInstance
 from qiskit.providers.aer.noise import NoiseModel
-from .hamiltonians import MolecularHamiltonian
+from ..main.hamiltonians import MolecularHamiltonian
 
 def get_lih_hamiltonian(r: float) -> MolecularHamiltonian:
     """Returns the HOMO-LUMO LiH Hamiltonian with bond length r.
@@ -16,7 +16,7 @@ def get_lih_hamiltonian(r: float) -> MolecularHamiltonian:
         The bond length of the molecule in Angstrom.
     
     Returns:
-        The Hamiltonian object.
+        The molecular Hamiltonian.
     """
     hamiltonian = MolecularHamiltonian(
         [['Li', (0, 0, 0)], ['H', (0, 0, r)]], 'sto3g', 
@@ -26,8 +26,9 @@ def get_lih_hamiltonian(r: float) -> MolecularHamiltonian:
 def get_quantum_instance(type_str: str) -> QuantumInstance:
     """Returns the QuantumInstance based on the input string.
     
-    These three types of quantum instances are returned from this function: 
-    sv (statevector simulator), qasm (QASM simulator), noisy (noisy simulator).
+    Three types of quantum instances are returned from this function: the
+    statevector simulator ('sv'), the QASM simulator ('qasm'), and the noisy
+    simulator ('noisy').
 
     Args:
         A string indicating the type of the quantum instance.
@@ -35,15 +36,11 @@ def get_quantum_instance(type_str: str) -> QuantumInstance:
     Returns:
         The pre-defined quantum instance based on the input string.
     """
-    # TODO: Figure out where to specify shots. Shouldn't need to specify it twice.
     if type_str == 'sv':
         q_instance = QuantumInstance(Aer.get_backend('statevector_simulator'))
     elif type_str == 'qasm':
         q_instance = QuantumInstance(Aer.get_backend('qasm_simulator'), shots=10000)
     elif type_str == 'noisy':
-        # q_instance = QuantumInstance(
-        #     Aer.get_backend('qasm_simulator', shots=100, noise_model_name='ibmq_jakarta'),
-        #     shots=100)
         IBMQ.load_account()
         provider = IBMQ.get_provider(hub='ibm-q-research', group='caltech-1', project='main')
         backend_sim = Aer.get_backend('qasm_simulator')

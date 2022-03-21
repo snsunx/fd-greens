@@ -5,7 +5,7 @@ AnsatzFunction = Callable[[Sequence[float]], QuantumCircuit]
 
 def build_ansatz_gs(params: Sequence[float]) -> QuantumCircuit:
     """Constructs an N-electron ansatz of the encoded Hamiltonian. The ansatz is of
-    the form (Ry(theta2)\otimes Ry(theta3))CZ(Ry(theta0)\otimes Ry(theta1))|00>.
+    the form (Ry(theta2)\otimes Ry(theta3)) CZ (Ry(theta0)\otimes Ry(theta1))|00>.
 
     Args:
         A sequence of the parameters.

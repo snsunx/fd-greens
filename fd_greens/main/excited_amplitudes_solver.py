@@ -18,7 +18,6 @@ from .qubit_indices import QubitIndices
 from .circuit_constructor  import (CircuitConstructor, InstructionTuple)
 from .transpilation import transpile_into_berkeley_gates
 from .z2symmetries import transform_4q_indices, transform_4q_pauli
-from .helpers import get_quantum_instance
 from ..utils import (get_overlap, counts_dict_to_arr, circuit_to_qasm_str, write_hdf5, basis_matrix, append_tomography_gates,
                       append_measurement_gates)
 
@@ -28,7 +27,7 @@ class ExcitedAmplitudesSolver:
 
     def __init__(self,
                  h: MolecularHamiltonian,
-                 q_instance: QuantumInstance = get_quantum_instance('sv'),
+                 q_instance: Optional[QuantumInstance] = None,
                  method: str = 'exact',
                  h5fname: str = 'lih',
                  suffix: str = '') -> None:
