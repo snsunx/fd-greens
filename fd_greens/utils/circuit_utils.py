@@ -1,8 +1,8 @@
-
 """Circuit utility module."""
 
 from typing import Tuple, Iterable, Union, List, Optional, Sequence
 import numpy as np
+import h5py
 
 from qiskit import QuantumCircuit, QuantumRegister, ClassicalRegister
 from qiskit.utils import QuantumInstance
@@ -15,9 +15,10 @@ ClbitLike = Union[int, Clbit]
 InstructionTuple = Tuple[Instruction, List[QubitLike], Optional[List[ClbitLike]]]
 QuantumCircuitLike = Union[QuantumCircuit, Iterable[InstructionTuple]]
 
-def remove_instructions_in_circuit(circ_like: QuantumCircuitLike,
-                        instructions: Iterable[str]
-                        ) -> QuantumCircuitLike:
+
+def remove_instructions_in_circuit(
+    circ_like: QuantumCircuitLike, instructions: Iterable[str]
+) -> QuantumCircuitLike:
     """Removes certain instructions in a circuit.
     
     Args:
@@ -45,10 +46,14 @@ def remove_instructions_in_circuit(circ_like: QuantumCircuitLike,
         return circ_new
     else:
         return inst_tups_new
+
+
 remove_instructions = remove_instructions_in_circuit
 
-def get_registers_in_circuit(circ_like: QuantumCircuitLike
-                            ) -> Tuple[Optional[QuantumRegister], Optional[ClassicalRegister]]:
+
+def get_registers_in_circuit(
+    circ_like: QuantumCircuitLike,
+) -> Tuple[Optional[QuantumRegister], Optional[ClassicalRegister]]:
     """Returns the quantum and classical registers from a quantum circuit. 
     
     Qubits and classical bits can be specified either as Qubit/Clbit instances or as 
@@ -76,18 +81,18 @@ def get_registers_in_circuit(circ_like: QuantumCircuitLike
         _, qargs, cargs = inst_tup
         if qargs != []:
             # Take the largest index in the qargs.
-            if isinstance(qargs[0], int): # int
+            if isinstance(qargs[0], int):  # int
                 max_q = max(qargs)
-            else: # Qubit
+            else:  # Qubit
                 max_q = max([q._index for q in qargs])
             # If max qubit index is larger than n_qubits, update n_qubits.
             if max_q + 1 > n_qubits:
                 n_qubits = max_q + 1
         if cargs != []:
             # Take the largest index in the cargs.
-            if isinstance(cargs[0], int): # int
+            if isinstance(cargs[0], int):  # int
                 max_c = max(cargs)
-            else: # Qubit
+            else:  # Qubit
                 max_c = max([c._index for c in cargs])
             # If max classical bit index is larger than n_clbits, update n_clbits.
             if max_c + 1 > n_clbits:
@@ -96,20 +101,24 @@ def get_registers_in_circuit(circ_like: QuantumCircuitLike
     # Create new qreg with number of qubits and creg with number of classical bits
     # as in the original circuit.
     if n_qubits > 0:
-        qreg = QuantumRegister(n_qubits, name='q')
+        qreg = QuantumRegister(n_qubits, name="q")
     else:
         qreg = None
     if n_clbits > 0:
-        creg = ClassicalRegister(n_clbits, name='c')
+        creg = ClassicalRegister(n_clbits, name="c")
     else:
         creg = None
     return qreg, creg
+
+
 get_registers_in_inst_tups = get_registers_in_circuit
 
+
 def create_circuit_from_inst_tups(
-        inst_tups: Iterable[InstructionTuple],
-        qreg: Optional[QuantumRegister] = None,
-        creg: Optional[ClassicalRegister] = None) -> QuantumCircuit:
+    inst_tups: Iterable[InstructionTuple],
+    qreg: Optional[QuantumRegister] = None,
+    creg: Optional[ClassicalRegister] = None,
+) -> QuantumCircuit:
     """Creates a circuit from instruction tuples.
 
     The arguments in qargs and cargs should be specified as integers. If specified as Qubit/Clbits 
@@ -135,8 +144,8 @@ def create_circuit_from_inst_tups(
     circ = QuantumCircuit(*regs)
 
     for inst, qargs, cargs in inst_tups:
-        # If arguments of qargs and cargs are specified as Qubit/Clbits, 
-        # convert them to integers since they are not neccesarily the same 
+        # If arguments of qargs and cargs are specified as Qubit/Clbits,
+        # convert them to integers since they are not neccesarily the same
         # as the qreg and creg extracted using get_registers_in_inst_tups.
         try:
             qargs = [q._index for q in qargs]
@@ -145,30 +154,34 @@ def create_circuit_from_inst_tups(
         circ.append(inst, qargs, cargs)
     return circ
 
+
 def split_circuit_across_barriers(circ: QuantumCircuit) -> List[List[InstructionTuple]]:
     """Splits a circuit into instruction tuples across barriers."""
     inst_tups = circ.data.copy()
-    inst_tups_all = [] # all inst_tups_single
-    inst_tups_single = [] # temporary variable to hold inst_tups_all components
+    inst_tups_all = []  # all inst_tups_single
+    inst_tups_single = []  # temporary variable to hold inst_tups_all components
 
     # Split when encoutering a barrier
     for i, inst_tup in enumerate(inst_tups):
-        if inst_tup[0].name == 'barrier': # append and start a new inst_tups_single
+        if inst_tup[0].name == "barrier":  # append and start a new inst_tups_single
             inst_tups_all.append(inst_tups_single)
             inst_tups_single = []
-        elif i == len(inst_tups) - 1: # append and stop
+        elif i == len(inst_tups) - 1:  # append and stop
             inst_tups_single.append(inst_tup)
             inst_tups_all.append(inst_tups_single)
-        else: # just append
+        else:  # just append
             inst_tups_single.append(inst_tup)
 
     return inst_tups_all
 
-def measure_operator(circ: QuantumCircuit,
-                     op: PauliSumOp,
-                     q_instance: QuantumInstance,
-                     anc_state: Sequence[int] = [],
-                     qreg: Optional[QuantumRegister] = None) -> float:
+
+def measure_operator(
+    circ: QuantumCircuit,
+    op: PauliSumOp,
+    q_instance: QuantumInstance,
+    anc_state: Sequence[int] = [],
+    qreg: Optional[QuantumRegister] = None,
+) -> float:
     """Measures an operator on a circuit.
 
     Args:
@@ -190,7 +203,7 @@ def measure_operator(circ: QuantumCircuit,
     circ_list = []
     for term in op:
         label = term.primitive.table.to_labels()[0]
-        
+
         # Create circuit for measuring this Pauli string
         circ_meas = circ.copy()
         creg = ClassicalRegister(n_qubits)
@@ -198,19 +211,19 @@ def measure_operator(circ: QuantumCircuit,
 
         for i in range(n_anc):
             circ_meas.measure(i, i)
-        
+
         for i in range(n_sys):
-            if label[n_sys - 1 - i] == 'X':
+            if label[n_sys - 1 - i] == "X":
                 circ_meas.h(qreg[i + n_anc])
                 circ_meas.measure(qreg[i + n_anc], creg[i + n_anc])
-            elif label[n_sys - 1 - i] == 'Y':
+            elif label[n_sys - 1 - i] == "Y":
                 circ_meas.rx(np.pi / 2, qreg[i + n_anc])
                 circ_meas.measure(qreg[i + n_anc], creg[i + n_anc])
-            elif label[n_sys - 1 - i] == 'Z':
+            elif label[n_sys - 1 - i] == "Z":
                 circ_meas.measure(qreg[i + n_anc], creg[i + n_anc])
 
         circ_list.append(circ_meas)
-    
+
     result = q_instance.execute(circ_list)
     counts_list = result.get_counts()
 
@@ -226,7 +239,7 @@ def measure_operator(circ: QuantumCircuit,
             key_sys = key_list[n_anc:]
             if key_anc != anc_state:
                 del counts_new[key]
-        
+
         shots = sum(counts_new.values())
         for key, val in counts_new.items():
             key_list = [int(c) for c in list(reversed(key))]
@@ -237,3 +250,38 @@ def measure_operator(circ: QuantumCircuit,
             else:
                 value -= coeff * val / shots
     return value
+
+
+def get_circuit_depth(h5fname: str, circ_label: str) -> int:
+    """Returns the circuit depth of a circuit saved in an HDF5 file."""
+    h5file = h5py.File(h5fname + ".h5", "r")
+    dset = h5file[f"circ{circ_label}/transpiled"]
+    circ = QuantumCircuit.from_qasm_str(dset[()].decode())
+    depth = len(circ)
+    return depth
+
+
+def get_n_2q_gates(h5fname: str, circ_label: str) -> int:
+    """Returns the number of 2q gates in a circuit saved in an HDF5 file."""
+    h5file = h5py.File(h5fname + ".h5", "r")
+    dset = h5file[f"circ{circ_label}/transpiled"]
+    qasm_str = dset[()].decode()
+    circ = QuantumCircuit.from_qasm_str(qasm_str)
+    count = 0
+    for _, qargs, _ in circ.data:
+        if len(qargs) == 2:
+            count += 1
+    return count
+
+
+def get_n_3q_gates(h5fname: str, circ_label: str) -> int:
+    """Returns the number of 3q gates in a circuit saved in an HDF5 file."""
+    h5file = h5py.File(h5fname + ".h5", "r")
+    dset = h5file[f"circ{circ_label}/transpiled"]
+    qasm_str = dset[()].decode()
+    circ = QuantumCircuit.from_qasm_str(qasm_str)
+    count = 0
+    for _, qargs, _ in circ.data:
+        if len(qargs) == 3:
+            count += 1
+    return count

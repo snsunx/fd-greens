@@ -9,21 +9,24 @@ from qiskit import QuantumCircuit, Aer
 from qiskit.opflow import PauliSumOp
 from qiskit.utils import QuantumInstance
 
-from .hamiltonians import MolecularHamiltonian
+from .molecular_hamiltonian import MolecularHamiltonian
 from .ansatze import AnsatzFunction, build_ansatz_gs
 from .z2symmetries import transform_4q_pauli
 from ..utils import get_statevector, write_hdf5, vqe_minimize
 
+
 class GroundStateSolver:
     """A class to solve the ground state energy and state."""
 
-    def __init__(self,
-                 h: MolecularHamiltonian, 
-                 ansatz_func: AnsatzFunction = build_ansatz_gs,
-                 init_params: Sequence[float] = [1, 2, 3, 4],
-                 q_instance: Optional[QuantumInstance] = None,
-                 method: str = 'exact',
-                 h5fname: str = 'lih') -> None:
+    def __init__(
+        self,
+        h: MolecularHamiltonian,
+        ansatz_func: AnsatzFunction = build_ansatz_gs,
+        init_params: Sequence[float] = [1, 2, 3, 4],
+        q_instance: Optional[QuantumInstance] = None,
+        method: str = "exact",
+        h5fname: str = "lih",
+    ) -> None:
         """Initializes a GroudStateSolver object.
         
         Args:
@@ -35,15 +38,15 @@ class GroundStateSolver:
             dsetname: The dataset name in the hdf5 file.
         """
         self.h = h
-        self.h_op = transform_4q_pauli(self.h.qiskit_op, init_state=[1, 1])  
+        self.h_op = transform_4q_pauli(self.h.qiskit_op, init_state=[1, 1])
         self.ansatz_func = ansatz_func
         self.init_params = init_params
         if q_instance is None:
-            self.q_instance = QuantumInstance(Aer.get_backend('statevector_simulator'))
+            self.q_instance = QuantumInstance(Aer.get_backend("statevector_simulator"))
         else:
             self.q_instance = q_instance
         self.method = method
-        self.h5fname = h5fname + '.h5'
+        self.h5fname = h5fname + ".h5"
 
         self.energy = None
         self.ansatz = None
@@ -61,14 +64,14 @@ class GroundStateSolver:
         e, v = np.linalg.eigh(self.h_op.to_matrix())
         self.energy = e[0]
         # v0 = [ 0.6877791696238387+0j, 0.07105690514886635+0j, 0.07105690514886635+0j, -0.7189309050895454+0j]
-        v0 = v[:, 0][abs(v[:, 0])>1e-8]
+        v0 = v[:, 0][abs(v[:, 0]) > 1e-8]
         U = np.array([v0, [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]]).T
         U = np.linalg.qr(U)[0]
         decomp = TwoQubitBasisDecomposer(CZGate())
         self.ansatz = decomp(U)
 
-        print(f'Ground state energy is {self.energy:.3f} eV')
-    
+        print(f"Ground state energy is {self.energy:.3f} eV")
+
     def run_vqe(self) -> None:
         """Calculates the ground state of the Hamiltonian using VQE."""
         assert self.ansatz_func is not None
@@ -76,7 +79,7 @@ class GroundStateSolver:
 
         # if self.load_params:
         #     print("Load VQE circuit from file")
-        #     with open('data/vqe_energy.txt', 'r') as f: 
+        #     with open('data/vqe_energy.txt', 'r') as f:
         #         self.energy = float(f.read())
         #     with open('circuits/vqe_circuit.txt') as f:
         #         self.ansatz = QuantumCircuit.from_qasm_str(f.read())
@@ -88,8 +91,9 @@ class GroundStateSolver:
         # from utils import create_circuit_from_inst_tups
 
         self.energy, self.ansatz = vqe_minimize(
-            self.h_op, self.ansatz_func, self.init_params, self.q_instance)
-        
+            self.h_op, self.ansatz_func, self.init_params, self.q_instance
+        )
+
         # v0 = [ 0.68777917+0.j,  0.07105691+0.j, -0.07105691+0.j, -0.71893091+0.j]
         # U = np.array([v0, [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]]).T
         # U = np.linalg.qr(U)[0]
@@ -98,22 +102,24 @@ class GroundStateSolver:
 
         # from utils import get_statevector
         # print('psi in gs solver =', get_statevector(self.ansatz))
-        
 
-        print(f'Ground state energy is {self.energy:.3f} eV')
+        print(f"Ground state energy is {self.energy:.3f} eV")
 
     def save_data(self) -> None:
         """Saves ground state energy and ground state ansatz to hdf5 file."""
-        h5file = h5py.File(self.h5fname, 'r+')
+        h5file = h5py.File(self.h5fname, "r+")
 
-        write_hdf5(h5file, 'gs', 'energy', self.energy)
-        write_hdf5(h5file, 'gs', 'ansatz', self.ansatz.qasm())
-        
+        write_hdf5(h5file, "gs", "energy", self.energy)
+        write_hdf5(h5file, "gs", "ansatz", self.ansatz.qasm())
+
         h5file.close()
 
     def run(self, method: Optional[str] = None) -> None:
         """Runs the ground state calculation."""
-        if method is not None: self.method = method
-        if self.method == 'exact': self.run_exact()
-        elif self.method == 'vqe': self.run_vqe()
+        if method is not None:
+            self.method = method
+        if self.method == "exact":
+            self.run_exact()
+        elif self.method == "vqe":
+            self.run_vqe()
         self.save_data()

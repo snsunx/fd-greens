@@ -1,14 +1,15 @@
-"""Green's function module."""
+"""Green's function and related observables."""
 
 from typing import Union, Sequence, Optional
 
 import h5py
 import numpy as np
 
+
 class GreensFunction:
     """A class to calculate frequency-domain Green's function."""
-    
-    def __init__(self, h5fname: str = 'lih', suffix: str = '') -> None:
+
+    def __init__(self, h5fname: str = "lih", suffix: str = "") -> None:
         """Initializes a GreensFunction object.
         
         Args:
@@ -17,14 +18,14 @@ class GreensFunction:
         """
         self.datfname = h5fname + suffix
 
-        h5file = h5py.File(h5fname + '.h5', 'r')
-        self.energy_gs = h5file['gs/energy']
-        self.energies_e = h5file['es/energies_e']
-        self.energies_h = h5file['es/energies_h']
-        self.B_e = h5file[f'amp/B_e{suffix}']
-        self.B_h = h5file[f'amp/B_h{suffix}']
+        h5file = h5py.File(h5fname + ".h5", "r")
+        self.energy_gs = h5file["gs/energy"]
+        self.energies_e = h5file["es/energies_e"]
+        self.energies_h = h5file["es/energies_h"]
+        self.B_e = h5file[f"amp/B_e{suffix}"]
+        self.B_h = h5file[f"amp/B_h{suffix}"]
         self.n_orb = self.B_e.shape[0]
-        self.e_orb = h5file[f'amp/e_orb{suffix}']
+        self.e_orb = h5file[f"amp/e_orb{suffix}"]
 
     @property
     def density_matrix(self) -> np.ndarray:
@@ -48,16 +49,21 @@ class GreensFunction:
 
         for m in range(self.n_orb):
             for n in range(self.n_orb):
-                G_e[m, n] = 2 * np.sum(self.B_e[m, n] / (omega + 1j * eta + self.energy_gs - self.energies_e))
-                G_h[m, n] = 2 * np.sum(self.B_h[m, n] / (omega + 1j * eta - self.energy_gs + self.energies_h))
+                G_e[m, n] = 2 * np.sum(
+                    self.B_e[m, n]
+                    / (omega + 1j * eta + self.energy_gs - self.energies_e)
+                )
+                G_h[m, n] = 2 * np.sum(
+                    self.B_h[m, n]
+                    / (omega + 1j * eta - self.energy_gs + self.energies_h)
+                )
         G = G_e + G_h
         return G
 
-    def spectral_function(self,
-                          omegas: Sequence[float], 
-                          eta: float = 0.0,
-                          save: bool = True) -> Optional[np.ndarray]:
-        """Returns the spectral function at frequency omega.
+    def spectral_function(
+        self, omegas: Sequence[float], eta: float = 0.0, save: bool = True
+    ) -> Optional[np.ndarray]:
+        """Returns the spectral function at certain frequencies.
 
         Args:
             omegas: The frequencies at which the spectral function is calculated.
@@ -73,16 +79,15 @@ class GreensFunction:
             A = -1 / np.pi * np.imag(np.trace(G))
             As.append(A)
         As = np.array(As)
-        
+
         if save:
-            np.savetxt('data/' + self.datfname + '_A.dat', np.vstack((omegas, As)).T)
+            np.savetxt("data/" + self.datfname + "_A.dat", np.vstack((omegas, As)).T)
         else:
             return As
 
-    def self_energy(self, 
-                    omegas: Sequence[float],
-                    eta: float = 0.0,
-                    save: bool = True) -> Optional[np.ndarray]:
+    def self_energy(
+        self, omegas: Sequence[float], eta: float = 0.0, save: bool = True
+    ) -> Optional[np.ndarray]:
         """Returns the trace of self-energy at frequency omega.
 
         Args:
@@ -105,7 +110,9 @@ class GreensFunction:
         TrSigmas = np.array(TrSigmas)
 
         if save:
-            np.savetxt('data/' + self.datfname + '_TrS.dat', 
-                       np.vstack((omegas, TrSigmas.real, TrSigmas.imag)).T)
+            np.savetxt(
+                "data/" + self.datfname + "_TrS.dat",
+                np.vstack((omegas, TrSigmas.real, TrSigmas.imag)).T,
+            )
         else:
             return TrSigmas

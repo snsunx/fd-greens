@@ -6,7 +6,8 @@ import numpy as np
 from qiskit import QuantumCircuit
 from .general_utils import get_unitary
 
-def initialize_hdf5(fname: str = 'lih', calc: str = 'greens') -> None:
+
+def initialize_hdf5(fname: str = "lih", calc: str = "greens") -> None:
     """Creates the HDF5 file and group names if they do not exist.
     
     The group created in the HDF5 file are:
@@ -21,30 +22,51 @@ def initialize_hdf5(fname: str = 'lih', calc: str = 'greens') -> None:
         fname: The HDF5 file name.
         calc: Calculation mode. Either 'greens' or 'resp'.
     """
-    assert calc in ['greens', 'resp']
+    assert calc in ["greens", "resp"]
 
-    fname += '.h5'
-    if os.path.exists(fname): 
-        h5file = h5py.File(fname, 'r+')
-    else: 
-        h5file = h5py.File(fname, 'w')
-    
-    if calc == 'greens':
-        grpnames = ['gs', 'es', 'amp', 'circ0u', 'circ1u',
-                    'circ01u', 'circ0d', 'circ1d', 'circ01d']
+    fname += ".h5"
+    if os.path.exists(fname):
+        h5file = h5py.File(fname, "r+")
     else:
-        grpnames = ['gs', 'es', 'amp', 'circ0u', 'circ1u', 'circ0d', 'circ1d',
-                    'circ0u0d', 'circ0u1u', 'circ0u1d', 'circ0d1u', 'circ0d1d', 'circ1u1d']
+        h5file = h5py.File(fname, "w")
+
+    if calc == "greens":
+        grpnames = [
+            "gs",
+            "es",
+            "amp",
+            "circ0u",
+            "circ1u",
+            "circ01u",
+            "circ0d",
+            "circ1d",
+            "circ01d",
+        ]
+    else:
+        grpnames = [
+            "gs",
+            "es",
+            "amp",
+            "circ0u",
+            "circ1u",
+            "circ0d",
+            "circ1d",
+            "circ0u0d",
+            "circ0u1u",
+            "circ0u1d",
+            "circ0d1u",
+            "circ0d1d",
+            "circ1u1d",
+        ]
     for grpname in grpnames:
         if grpname not in h5file.keys():
             h5file.create_group(grpname)
     h5file.close()
 
-def write_hdf5(h5file: h5py.File, 
-               grpname: str,
-               dsetname: str,
-               data: Any,
-               overwrite: bool = True) -> None:
+
+def write_hdf5(
+    h5file: h5py.File, grpname: str, dsetname: str, data: Any, overwrite: bool = True
+) -> None:
     """Writes a data object to a dataset in an HDF5 file.
     
     Args:
@@ -56,11 +78,12 @@ def write_hdf5(h5file: h5py.File,
     """
     if overwrite:
         if dsetname in h5file[grpname].keys():
-            del h5file[f'{grpname}/{dsetname}']
+            del h5file[f"{grpname}/{dsetname}"]
     try:
-        h5file[f'{grpname}/{dsetname}'] = data
+        h5file[f"{grpname}/{dsetname}"] = data
     except:
         pass
+
 
 def circuit_to_qasm_str(circ: QuantumCircuit) -> str:
     """Converts a quantum circuit to QASM string.
@@ -77,33 +100,35 @@ def circuit_to_qasm_str(circ: QuantumCircuit) -> str:
     # print(set([x[0].name for x in circ.data]))
     # The header of the QASM string.
     qasm_str = 'OPENQASM 2.0;\ninclude "qelib1.inc";\n'
-    qasm_str += 'gate ccix p0,p1,p2 {x p0; x p1; ccx p0,p1,p2; cp(pi/2) p0, p1; x p0; x p1;}\n'
+    qasm_str += (
+        "gate ccix p0,p1,p2 {x p0; x p1; ccx p0,p1,p2; cp(pi/2) p0, p1; x p0; x p1;}\n"
+    )
     # qasm_str += 'gate ccix p0,p1,p2 {x p0; x p1; ccx p0,p1,p2; x p0; x p1;}\n'
     if len(circ.qregs) > 0:
         n_qubits = len(circ.qregs[0])
-        qasm_str += f'qreg q[{n_qubits}];\n'
+        qasm_str += f"qreg q[{n_qubits}];\n"
     if len(circ.cregs) > 0:
         n_clbits = len(circ.cregs[0])
-        qasm_str += f'creg c[{n_clbits}];\n'
-        
+        qasm_str += f"creg c[{n_clbits}];\n"
+
     for inst, qargs, cargs in circ.data:
-        if inst.name == 'rz':
-            qasm_str += f'{inst.name}({inst.params[0]}) q[{qargs[0]._index}];\n'
-        elif inst.name == 'rx':
-            qasm_str += f'{inst.name}({inst.params[0]}) q[{qargs[0]._index}];\n'
-        elif inst.name == 'p':
-            qasm_str += f'{inst.name}({inst.params[0]}) q[{qargs[0]._index}];\n'
-        elif inst.name == 'cz':
-            qasm_str += f'{inst.name} q[{qargs[0]._index}],q[{qargs[1]._index}];\n'
-        elif inst.name == 'cp':
-            qasm_str += f'{inst.name}({inst.params[0]}) q[{qargs[0]._index}],q[{qargs[1]._index}];\n'
-        elif inst.name == 'unitary':
+        if inst.name == "rz":
+            qasm_str += f"{inst.name}({inst.params[0]}) q[{qargs[0]._index}];\n"
+        elif inst.name == "rx":
+            qasm_str += f"{inst.name}({inst.params[0]}) q[{qargs[0]._index}];\n"
+        elif inst.name == "p":
+            qasm_str += f"{inst.name}({inst.params[0]}) q[{qargs[0]._index}];\n"
+        elif inst.name == "cz":
+            qasm_str += f"{inst.name} q[{qargs[0]._index}],q[{qargs[1]._index}];\n"
+        elif inst.name == "cp":
+            qasm_str += f"{inst.name}({inst.params[0]}) q[{qargs[0]._index}],q[{qargs[1]._index}];\n"
+        elif inst.name == "unitary":
             assert [q._index for q in qargs] == [0, 2, 1]
-            qasm_str += f'ccix q[0],q[2],q[1];\n'
-        elif inst.name == 'swap':
-            qasm_str += f'swap q[{qargs[0]._index}],q[{qargs[1]._index}];\n'
-        elif inst.name == 'measure':
-            qasm_str += f'{inst.name} q[{qargs[0]._index}] -> c[{cargs[0]._index}];\n'
+            qasm_str += f"ccix q[0],q[2],q[1];\n"
+        elif inst.name == "swap":
+            qasm_str += f"swap q[{qargs[0]._index}],q[{qargs[1]._index}];\n"
+        elif inst.name == "measure":
+            qasm_str += f"{inst.name} q[{qargs[0]._index}] -> c[{cargs[0]._index}];\n"
 
     # Temporary check statement.
     uni = get_unitary(circ)
@@ -112,6 +137,7 @@ def circuit_to_qasm_str(circ: QuantumCircuit) -> str:
     assert np.allclose(uni, uni_new)
     return qasm_str
 
+
 def save_circuit_figure(circ: QuantumCircuit, suffix: str) -> None:
     """Saves the circuit figure under the directory figs.
     
@@ -119,5 +145,5 @@ def save_circuit_figure(circ: QuantumCircuit, suffix: str) -> None:
         circ: The quantum circuit to be saved.
         suffix: The suffix associated with the quantum circuit.
     """
-    fig = circ.draw('mpl')
-    fig.savefig(f'figs/circ{suffix}.png', bbox_inches='tight')
+    fig = circ.draw("mpl")
+    fig.savefig(f"figs/circ{suffix}.png", bbox_inches="tight")

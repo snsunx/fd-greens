@@ -1,13 +1,16 @@
+"""Z2 symmetry transform functions."""
 
 from typing import Union, Sequence, Optional
 import numpy as np
-from qiskit import *
-from qiskit.quantum_info import SparsePauliOp
+
+# from qiskit import *
+from qiskit.quantum_info import PauliTable, SparsePauliOp
 from qiskit.opflow import PauliSumOp
 
 from .qubit_indices import QubitIndices
 
 PauliOperator = Union[PauliSumOp, SparsePauliOp]
+
 
 def cnot_pauli(pauli_op: PauliOperator, ctrl: int, targ: int) -> PauliOperator:
     """Applies a CNOT operation to the Z2 representation of a Pauli operator.
@@ -44,15 +47,17 @@ def cnot_pauli(pauli_op: PauliOperator, ctrl: int, targ: int) -> PauliOperator:
         if z[targ] == x[ctrl] == True and z[ctrl] == x[targ]:
             coeffs[i] *= -1
 
-    # Apply binary addition forward on the X part, backward on the Z part
+    # Apply binary addition forward on the X part, backward on the Z part.
     x_arr[:, targ] ^= x_arr[:, ctrl]
     z_arr[:, ctrl] ^= z_arr[:, targ]
 
-    # Stack the new X and Z arrays and create the new operator
-    pauli_op_new = SparsePauliOp(np.hstack((x_arr, z_arr)), coeffs=coeffs)
+    # Stack the new X and Z arrays and create the new operator.
+    pauli_table = PauliTable(np.hstack((x_arr, z_arr)))
+    pauli_op_new = SparsePauliOp(pauli_table, coeffs=coeffs)
     if isinstance(pauli_op, PauliSumOp):
         pauli_op_new = PauliSumOp(pauli_op_new)
     return pauli_op_new
+
 
 def swap_pauli(pauli_op: PauliOperator, q1: int, q2: int) -> PauliOperator:
     """Applies a SWAP operation to the Z2 representation of a Pauli operator.
@@ -90,15 +95,18 @@ def swap_pauli(pauli_op: PauliOperator, q1: int, q2: int) -> PauliOperator:
     z_arr[:, q2] = z_tmp
 
     # Stack the new X and Z arrays and create the new operator.
-    pauli_op_new = SparsePauliOp(np.hstack((x_arr, z_arr)), coeffs=coeffs)
+    pauli_table = PauliTable(np.hstack((x_arr, z_arr)))
+    pauli_op_new = SparsePauliOp(pauli_table, coeffs=coeffs)
     if isinstance(pauli_op, PauliSumOp):
         pauli_op_new = PauliSumOp(pauli_op_new)
     return pauli_op_new
 
-def taper_pauli(pauli_op: PauliOperator,
-                inds_tapered: Sequence[int],
-                init_state: Optional[Sequence[int]] = None
-                ) -> PauliOperator:
+
+def taper_pauli(
+    pauli_op: PauliOperator,
+    inds_tapered: Sequence[int],
+    init_state: Optional[Sequence[int]] = None,
+) -> PauliOperator:
     """Tapers certain qubits off a Pauli operator.
 
     Note that the operator in string form follows Qiskit qubit order,
@@ -149,18 +157,20 @@ def taper_pauli(pauli_op: PauliOperator,
     x_arr = x_arr[:, inds_kept]
     z_arr = z_arr[:, inds_kept]
 
-    pauli_op_new = SparsePauliOp(np.hstack((x_arr, z_arr)), coeffs=coeffs)
+    pauli_table = PauliTable(np.hstack((x_arr, z_arr)))
+    pauli_op_new = SparsePauliOp(pauli_table, coeffs=coeffs)
     if isinstance(pauli_op, PauliSumOp):
         pauli_op_new = PauliSumOp(pauli_op_new)
     return pauli_op_new
 
+
 def transform_4q_pauli(
-        pauli_op: PauliOperator,
-        swap: bool = True,
-        taper: bool = True,
-        init_state: Optional[Sequence[int]] = None
-    ) -> PauliOperator:
-    """Converts a 4q Hamiltonian to a 2q Hamiltonian.
+    pauli_op: PauliOperator,
+    swap: bool = True,
+    taper: bool = True,
+    init_state: Optional[Sequence[int]] = None,
+) -> PauliOperator:
+    """Transforms a 4q pauli operator (or sum of them) to a 2q pauli operators (or sum of them).
 
     THe symmetries are assumed to be ZIZI and IZIZ. The operations applied are 
     CNOT(2, 0), CNOT(3, 1) and SWAP(2, 3), followed by optionally tapering off q0 and q1.
@@ -175,25 +185,27 @@ def transform_4q_pauli(
         A two-qubit Pauli operator after transformation if tapered, otherwise a four-qubit
         Pauli operator.
     """
-    n_qubits = 4 # 4 is hardcoded
+    n_qubits = 4  # 4 is hardcoded
     pauli_op_new = pauli_op.copy()
-    if taper: 
+    if taper:
         assert init_state is not None and len(init_state) == 2
 
-    for i in range(n_qubits//2):
-        pauli_op_new = cnot_pauli(pauli_op_new, i + n_qubits//2, i)
+    for i in range(n_qubits // 2):
+        pauli_op_new = cnot_pauli(pauli_op_new, i + n_qubits // 2, i)
     if swap:
         pauli_op_new = swap_pauli(pauli_op_new, 2, 3)
     if taper:
         pauli_op_new = taper_pauli(pauli_op_new, [0, 1], init_state=init_state)
-    
+
     if isinstance(pauli_op_new, PauliSumOp):
         pauli_op_new = pauli_op_new.reduce()
     return pauli_op_new
 
-transform_dict = {'cnot': cnot_pauli, 'swap': swap_pauli, 'taper': taper_pauli}
 
-def cnot_indices(qubit_inds: 'QubitIndices', ctrl: int, targ: int) -> 'QubitIndices':
+transform_dict = {"cnot": cnot_pauli, "swap": swap_pauli, "taper": taper_pauli}
+
+
+def cnot_indices(qubit_inds: QubitIndices, ctrl: int, targ: int) -> QubitIndices:
     """Applies a CNOT operation to qubit indices.
     
     Args:
@@ -213,7 +225,8 @@ def cnot_indices(qubit_inds: 'QubitIndices', ctrl: int, targ: int) -> 'QubitIndi
     qubit_inds_new = QubitIndices(data_list_new)
     return qubit_inds_new
 
-def swap_indices(qubit_inds: 'QubitIndices', q1: int, q2: int) -> 'QubitIndices':
+
+def swap_indices(qubit_inds: QubitIndices, q1: int, q2: int) -> QubitIndices:
     """Applies a SWAP operation to qubit indices.
     
     Args:
@@ -234,7 +247,10 @@ def swap_indices(qubit_inds: 'QubitIndices', q1: int, q2: int) -> 'QubitIndices'
     qubit_inds_new = QubitIndices(data_list_new)
     return qubit_inds_new
 
-def taper_indices(qubit_inds: 'QubitIndices', inds_tapered: Sequence[int]) -> 'QubitIndices':
+
+def taper_indices(
+    qubit_inds: QubitIndices, inds_tapered: Sequence[int]
+) -> QubitIndices:
     """Tapers certain qubits off in a QubitIndices object.
     
     Args:
@@ -249,15 +265,24 @@ def taper_indices(qubit_inds: 'QubitIndices', inds_tapered: Sequence[int]) -> 'Q
     for q_ind in qubit_inds_list:
         q_ind_new = [q for i, q in enumerate(q_ind) if i not in inds_tapered]
         qubit_inds_list_new.append(q_ind_new)
-    
+
     qubit_inds_new = QubitIndices(qubit_inds_list_new)
     return qubit_inds_new
 
+
 def transform_4q_indices(
-        qubit_inds: 'QubitIndices',
-        swap: bool = True,
-        tapered: bool = True
-    ) -> 'QubitIndices':
+    qubit_inds: QubitIndices, swap: bool = True, tapered: bool = True
+) -> QubitIndices:
+    """Transforms 4q qubit indices to 2q qubit indices.
+    
+    Args:
+        qubit_inds: The qubit indices.
+        swap: Whether to swap the last two qubits.
+        tapered: Whether to taper off the first two qubits.
+
+    Returns:
+        The qubit indices after the transformation.
+    """
     qubit_inds_new = cnot_indices(qubit_inds, 2, 0)
     qubit_inds_new = cnot_indices(qubit_inds_new, 3, 1)
     if swap:
