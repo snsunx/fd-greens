@@ -7,8 +7,9 @@ AnsatzFunction = Callable[[Sequence[float]], QuantumCircuit]
 
 
 def build_ansatz_gs(params: Sequence[float]) -> QuantumCircuit:
-    """Constructs an N-electron ansatz of the encoded Hamiltonian. The ansatz is of
-    the form (Ry(theta2)\otimes Ry(theta3)) CZ (Ry(theta0)\otimes Ry(theta1))|00>.
+    r"""Constructs an N-electron ansatz of the encoded Hamiltonian. The ansatz is of
+    the form :math:`(R_y(\theta_2)\otimes R_y(\theta_3)) CZ (R_y(\theta_0)\otimes Ry(\theta_1))
+    |00\rangle`.
 
     Args:
         A sequence of the parameters.
@@ -31,8 +32,8 @@ def build_ansatz_gs(params: Sequence[float]) -> QuantumCircuit:
 
 
 def build_ansatz_e(params: Sequence[float]) -> QuantumCircuit:
-    """Constructs the ansatz for (N+1)-electron states of the encoded Hamiltonian.
-    The ansatz is of the form (I \otimes Ry(theta))|10>.
+    r"""Constructs the ansatz for (N+1)-electron states of the encoded Hamiltonian.
+    The ansatz is of the form :math:`(I \otimes R_y(\theta))|10\rangle`.
 
     Args:
         A sequence of the parameters.
@@ -49,8 +50,8 @@ def build_ansatz_e(params: Sequence[float]) -> QuantumCircuit:
 
 
 def build_ansatz_h(params: Sequence[float]) -> QuantumCircuit:
-    """Constructs the ansatz for (N-1)-electron states of the encoded Hamiltonian. 
-    The ansatz is of the form (I \otimes Ry(theta))|00>.
+    r"""Constructs the ansatz for (N-1)-electron states of the encoded Hamiltonian. 
+    The ansatz is of the form :math:`(I \otimes R_y(\theta))|00\rangle`.
     
     Args:
         A sequence of the parameters.

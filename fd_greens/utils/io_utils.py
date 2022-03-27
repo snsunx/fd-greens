@@ -139,7 +139,7 @@ def circuit_to_qasm_str(circ: QuantumCircuit) -> str:
 
 
 def save_circuit_figure(circ: QuantumCircuit, suffix: str) -> None:
-    """Saves the circuit figure under the directory figs.
+    """Saves the circuit figure under the directory `figs`.
     
     Args:
         circ: The quantum circuit to be saved.
