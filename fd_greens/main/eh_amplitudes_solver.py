@@ -11,7 +11,6 @@ from scipy.special import binom
 from qiskit import QuantumCircuit, Aer
 from qiskit.utils import QuantumInstance
 
-# pylint: disable=relative-beyond-top-level
 from .params import e_inds, h_inds
 from .molecular_hamiltonian import MolecularHamiltonian
 from .operators import SecondQuantizedOperators

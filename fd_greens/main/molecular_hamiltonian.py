@@ -12,7 +12,6 @@ from openfermion.transforms import jordan_wigner, get_fermion_operator
 from openfermion.linalg import get_sparse_operator
 from openfermionpyscf import run_pyscf
 
-# pylint: disable=relative-beyond-top-level
 from .params import HARTREE_TO_EV
 
 GeometryType = List[Tuple[str, Sequence[Union[int, float]]]]

@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>fd_greens.utils.circuit_utils module &mdash; fd-greens 0.0.1 documentation</title>
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="fd_greens.utils.general_utils module" href="fd_greens.utils.general_utils.html" />
+    <link rel="prev" title="fd_greens.utils package" href="fd_greens.utils.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="index.html" class="icon icon-home"> fd-greens
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">greens-function</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="fd_greens.html">fd_greens package</a><ul class="current">
+<li class="toctree-l3 current"><a class="reference internal" href="fd_greens.html#subpackages">Subpackages</a><ul class="current">
+<li class="toctree-l4"><a class="reference internal" href="fd_greens.main.html">fd_greens.main package</a></li>
+<li class="toctree-l4 current"><a class="reference internal" href="fd_greens.utils.html">fd_greens.utils package</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="fd_greens.html#module-fd_greens">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">fd-greens</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="modules.html">greens-function</a> &raquo;</li>
+          <li><a href="fd_greens.html">fd_greens package</a> &raquo;</li>
+          <li><a href="fd_greens.utils.html">fd_greens.utils package</a> &raquo;</li>
+      <li>fd_greens.utils.circuit_utils module</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/fd_greens.utils.circuit_utils.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="module-fd_greens.utils.circuit_utils">
+<span id="fd-greens-utils-circuit-utils-module"></span><h1>fd_greens.utils.circuit_utils module<a class="headerlink" href="#module-fd_greens.utils.circuit_utils" title="Permalink to this headline"></a></h1>
+<p>Circuit utility module.</p>
+<dl class="py function">
+<dt class="sig sig-object py" id="fd_greens.utils.circuit_utils.remove_instructions_in_circuit">
+<span class="sig-prename descclassname"><span class="pre">fd_greens.utils.circuit_utils.</span></span><span class="sig-name descname"><span class="pre">remove_instructions_in_circuit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">circ_like</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">qiskit.circuit.quantumcircuit.QuantumCircuit</span><span class="p"><span class="pre">,</span> </span><span class="pre">Iterable</span><span class="p"><span class="pre">[</span></span><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">qiskit.circuit.instruction.Instruction</span><span class="p"><span class="pre">,</span> </span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span> </span><span class="pre">qiskit.circuit.quantumregister.Qubit</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span> </span><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span> </span><span class="pre">qiskit.circuit.classicalregister.Clbit</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">instructions</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Iterable</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">qiskit.circuit.quantumcircuit.QuantumCircuit</span><span class="p"><span class="pre">,</span> </span><span class="pre">Iterable</span><span class="p"><span class="pre">[</span></span><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">qiskit.circuit.instruction.Instruction</span><span class="p"><span class="pre">,</span> </span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span> </span><span class="pre">qiskit.circuit.quantumregister.Qubit</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span> </span><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span> </span><span class="pre">qiskit.circuit.classicalregister.Clbit</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#fd_greens.utils.circuit_utils.remove_instructions_in_circuit" title="Permalink to this definition"></a></dt>
+<dd><p>Removes certain instructions in a circuit.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>circ_like</strong> – The circuit or instruction tuples on which certain instructions are removed.</p></li>
+<li><p><strong>instructions</strong> – An iterable of strings representing instruction names.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>A new quantum circuit on which certain instructions are removed.</strong></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="fd_greens.utils.circuit_utils.remove_instructions">
+<span class="sig-prename descclassname"><span class="pre">fd_greens.utils.circuit_utils.</span></span><span class="sig-name descname"><span class="pre">remove_instructions</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">circ_like</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">qiskit.circuit.quantumcircuit.QuantumCircuit</span><span class="p"><span class="pre">,</span> </span><span class="pre">Iterable</span><span class="p"><span class="pre">[</span></span><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">qiskit.circuit.instruction.Instruction</span><span class="p"><span class="pre">,</span> </span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span> </span><span class="pre">qiskit.circuit.quantumregister.Qubit</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span> </span><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span> </span><span class="pre">qiskit.circuit.classicalregister.Clbit</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">instructions</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Iterable</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">qiskit.circuit.quantumcircuit.QuantumCircuit</span><span class="p"><span class="pre">,</span> </span><span class="pre">Iterable</span><span class="p"><span class="pre">[</span></span><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">qiskit.circuit.instruction.Instruction</span><span class="p"><span class="pre">,</span> </span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span> </span><span class="pre">qiskit.circuit.quantumregister.Qubit</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span> </span><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span> </span><span class="pre">qiskit.circuit.classicalregister.Clbit</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#fd_greens.utils.circuit_utils.remove_instructions" title="Permalink to this definition"></a></dt>
+<dd><p>Removes certain instructions in a circuit.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>circ_like</strong> – The circuit or instruction tuples on which certain instructions are removed.</p></li>
+<li><p><strong>instructions</strong> – An iterable of strings representing instruction names.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>A new quantum circuit on which certain instructions are removed.</strong></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="fd_greens.utils.circuit_utils.get_registers_in_circuit">
+<span class="sig-prename descclassname"><span class="pre">fd_greens.utils.circuit_utils.</span></span><span class="sig-name descname"><span class="pre">get_registers_in_circuit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">circ_like</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">qiskit.circuit.quantumcircuit.QuantumCircuit</span><span class="p"><span class="pre">,</span> </span><span class="pre">Iterable</span><span class="p"><span class="pre">[</span></span><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">qiskit.circuit.instruction.Instruction</span><span class="p"><span class="pre">,</span> </span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span> </span><span class="pre">qiskit.circuit.quantumregister.Qubit</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span> </span><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span> </span><span class="pre">qiskit.circuit.classicalregister.Clbit</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">qiskit.circuit.quantumregister.QuantumRegister</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span> </span><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">qiskit.circuit.classicalregister.ClassicalRegister</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#fd_greens.utils.circuit_utils.get_registers_in_circuit" title="Permalink to this definition"></a></dt>
+<dd><p>Returns the quantum and classical registers from a quantum circuit.</p>
+<p>Qubits and classical bits can be specified either as Qubit/Clbit instances or as
+integers in the circuit. New instances of QuantumRegister and ClassicalRegister will
+be created with name ‘q’ and ‘c’. If the quantum or classical register is found, it is
+returned as None.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>extracted.</strong> (<em>The instruction tuples from which qreg and creg are</em>) – </p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>qreg</strong> – The quantum register in the instruction tuples.</p></li>
+<li><p><strong>creg</strong> – The classical register in the instruction tuples.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="fd_greens.utils.circuit_utils.get_registers_in_inst_tups">
+<span class="sig-prename descclassname"><span class="pre">fd_greens.utils.circuit_utils.</span></span><span class="sig-name descname"><span class="pre">get_registers_in_inst_tups</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">circ_like</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">qiskit.circuit.quantumcircuit.QuantumCircuit</span><span class="p"><span class="pre">,</span> </span><span class="pre">Iterable</span><span class="p"><span class="pre">[</span></span><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">qiskit.circuit.instruction.Instruction</span><span class="p"><span class="pre">,</span> </span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span> </span><span class="pre">qiskit.circuit.quantumregister.Qubit</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span> </span><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span> </span><span class="pre">qiskit.circuit.classicalregister.Clbit</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">qiskit.circuit.quantumregister.QuantumRegister</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span> </span><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">qiskit.circuit.classicalregister.ClassicalRegister</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#fd_greens.utils.circuit_utils.get_registers_in_inst_tups" title="Permalink to this definition"></a></dt>
+<dd><p>Returns the quantum and classical registers from a quantum circuit.</p>
+<p>Qubits and classical bits can be specified either as Qubit/Clbit instances or as
+integers in the circuit. New instances of QuantumRegister and ClassicalRegister will
+be created with name ‘q’ and ‘c’. If the quantum or classical register is found, it is
+returned as None.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>extracted.</strong> (<em>The instruction tuples from which qreg and creg are</em>) – </p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>qreg</strong> – The quantum register in the instruction tuples.</p></li>
+<li><p><strong>creg</strong> – The classical register in the instruction tuples.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="fd_greens.utils.circuit_utils.create_circuit_from_inst_tups">
+<span class="sig-prename descclassname"><span class="pre">fd_greens.utils.circuit_utils.</span></span><span class="sig-name descname"><span class="pre">create_circuit_from_inst_tups</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">inst_tups</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Iterable</span><span class="p"><span class="pre">[</span></span><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">qiskit.circuit.instruction.Instruction</span><span class="p"><span class="pre">,</span> </span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span> </span><span class="pre">qiskit.circuit.quantumregister.Qubit</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span> </span><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span> </span><span class="pre">qiskit.circuit.classicalregister.Clbit</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">qreg</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">qiskit.circuit.quantumregister.QuantumRegister</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">creg</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">qiskit.circuit.classicalregister.ClassicalRegister</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">qiskit.circuit.quantumcircuit.QuantumCircuit</span></span></span><a class="headerlink" href="#fd_greens.utils.circuit_utils.create_circuit_from_inst_tups" title="Permalink to this definition"></a></dt>
+<dd><p>Creates a circuit from instruction tuples.</p>
+<p>The arguments in qargs and cargs should be specified as integers. If specified as Qubit/Clbits
+bound to specific QuantumRegister/ClassicalRegisters, either both qreg and creg are specified,
+or the new qargs and cargs are bound to new QuantumRegister/ClassicalRegisters with names ‘q’
+and ‘c’.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>inst_tups</strong> – Instruction tuples from which the circuit is to be constructed.</p></li>
+<li><p><strong>qreg</strong> – The quantum register in the circuit. If not passed in,
+will be a new QuantumRegister with name ‘q’.</p></li>
+<li><p><strong>creg</strong> – The classical register in the circuit. If not passed in,
+will be a new ClassicalRegister with name ‘c’.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>A quantum circuit constructed from the instruction tuples.</strong></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="fd_greens.utils.circuit_utils.split_circuit_across_barriers">
+<span class="sig-prename descclassname"><span class="pre">fd_greens.utils.circuit_utils.</span></span><span class="sig-name descname"><span class="pre">split_circuit_across_barriers</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">circ</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">qiskit.circuit.quantumcircuit.QuantumCircuit</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">qiskit.circuit.instruction.Instruction</span><span class="p"><span class="pre">,</span> </span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span> </span><span class="pre">qiskit.circuit.quantumregister.Qubit</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span> </span><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span> </span><span class="pre">qiskit.circuit.classicalregister.Clbit</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#fd_greens.utils.circuit_utils.split_circuit_across_barriers" title="Permalink to this definition"></a></dt>
+<dd><p>Splits a circuit into instruction tuples across barriers.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="fd_greens.utils.circuit_utils.measure_operator">
+<span class="sig-prename descclassname"><span class="pre">fd_greens.utils.circuit_utils.</span></span><span class="sig-name descname"><span class="pre">measure_operator</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">circ</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">qiskit.circuit.quantumcircuit.QuantumCircuit</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">op</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">qiskit.opflow.primitive_ops.pauli_sum_op.PauliSumOp</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">q_instance</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">qiskit.utils.quantum_instance.QuantumInstance</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">anc_state</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">[]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">qreg</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">qiskit.circuit.quantumregister.QuantumRegister</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">float</span></span></span><a class="headerlink" href="#fd_greens.utils.circuit_utils.measure_operator" title="Permalink to this definition"></a></dt>
+<dd><p>Measures an operator on a circuit.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>circ</strong> – The quantum circuit to be measured.</p></li>
+<li><p><strong>op</strong> – The operator to be measured.</p></li>
+<li><p><strong>q_instance</strong> – The QuantumInstance on which to execute the circuit.</p></li>
+<li><p><strong>anc_state</strong> – A sequence of integers indicating the ancilla states.</p></li>
+<li><p><strong>qreg</strong> – The quantum register on which the operator is measured.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>The value of the operator on the circuit.</strong></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="fd_greens.utils.circuit_utils.get_circuit_depth">
+<span class="sig-prename descclassname"><span class="pre">fd_greens.utils.circuit_utils.</span></span><span class="sig-name descname"><span class="pre">get_circuit_depth</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">h5fname</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">circ_label</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">int</span></span></span><a class="headerlink" href="#fd_greens.utils.circuit_utils.get_circuit_depth" title="Permalink to this definition"></a></dt>
+<dd><p>Returns the circuit depth of a circuit saved in an HDF5 file.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="fd_greens.utils.circuit_utils.get_n_2q_gates">
+<span class="sig-prename descclassname"><span class="pre">fd_greens.utils.circuit_utils.</span></span><span class="sig-name descname"><span class="pre">get_n_2q_gates</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">h5fname</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">circ_label</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">int</span></span></span><a class="headerlink" href="#fd_greens.utils.circuit_utils.get_n_2q_gates" title="Permalink to this definition"></a></dt>
+<dd><p>Returns the number of 2q gates in a circuit saved in an HDF5 file.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="fd_greens.utils.circuit_utils.get_n_3q_gates">
+<span class="sig-prename descclassname"><span class="pre">fd_greens.utils.circuit_utils.</span></span><span class="sig-name descname"><span class="pre">get_n_3q_gates</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">h5fname</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">circ_label</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">int</span></span></span><a class="headerlink" href="#fd_greens.utils.circuit_utils.get_n_3q_gates" title="Permalink to this definition"></a></dt>
+<dd><p>Returns the number of 3q gates in a circuit saved in an HDF5 file.</p>
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="fd_greens.utils.html" class="btn btn-neutral float-left" title="fd_greens.utils package" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="fd_greens.utils.general_utils.html" class="btn btn-neutral float-right" title="fd_greens.utils.general_utils module" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Shi-Ning Sun.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
