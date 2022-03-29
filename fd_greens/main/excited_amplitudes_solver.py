@@ -1,4 +1,8 @@
-"""Solver for transition amplitudes between ground state and excited states."""
+"""
+=========================================================================================
+N-Electron Transition Amplitudes Solver (:mod:`fd_greens.main.excited_amplitudes_solver`)
+=========================================================================================
+"""
 
 import itertools
 from typing import Iterable, Optional, Sequence

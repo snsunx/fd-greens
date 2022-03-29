@@ -11,7 +11,6 @@ Welcome to fd-greens's documentation!
    :caption: Contents:
 
    modules
-   readme
 
 Indices and tables
 ==================

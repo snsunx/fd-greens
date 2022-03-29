@@ -1,4 +1,8 @@
-"""Circuit utility module."""
+"""
+========================================================
+Circuit Utilities (:mod:`fd_greens.utils.circuit_utils`)
+========================================================
+"""
 
 from typing import Tuple, Iterable, Union, List, Optional, Sequence
 import numpy as np

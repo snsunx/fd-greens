@@ -1,4 +1,8 @@
-"""Circuit transpilation functions."""
+"""
+===========================================================
+Circuit Transpilation (:mod:`fd_greens.main.transpilation`)
+===========================================================
+"""
 
 from typing import Mapping, Tuple, Optional, Iterable, Union, Sequence, List
 from itertools import combinations

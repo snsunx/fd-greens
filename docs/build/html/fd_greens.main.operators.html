@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>fd_greens.main.operators module &mdash; fd-greens 0.0.1 documentation</title>
+  <title>Operators (fd_greens.main.operators) &mdash; fd-greens 0.0.1 documentation</title>
       <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
   <!--[if lt IE 9]>
@@ -18,8 +18,8 @@
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="fd_greens.main.params module" href="fd_greens.main.params.html" />
-    <link rel="prev" title="fd_greens.main.molecular_hamiltonian module" href="fd_greens.main.molecular_hamiltonian.html" /> 
+    <link rel="next" title="&lt;no title&gt;" href="fd_greens.main.params.html" />
+    <link rel="prev" title="Molecular Hamiltonian (fd_greens.main.molecular_hamiltonian)" href="fd_greens.main.molecular_hamiltonian.html" /> 
 </head>
 
 <body class="wy-body-for-nav"> 
@@ -39,14 +39,14 @@
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
               <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
 <ul class="current">
-<li class="toctree-l1 current"><a class="reference internal" href="modules.html">greens-function</a><ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">fd-greens</a><ul class="current">
 <li class="toctree-l2 current"><a class="reference internal" href="fd_greens.html">fd_greens package</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="fd_greens.html#utils-fd-greens-utils">Utils (<code class="xref py py-mod docutils literal notranslate"><span class="pre">fd_greens.utils</span></code>)</a></li>
 <li class="toctree-l3 current"><a class="reference internal" href="fd_greens.html#subpackages">Subpackages</a><ul class="current">
 <li class="toctree-l4 current"><a class="reference internal" href="fd_greens.main.html">fd_greens.main package</a></li>
 <li class="toctree-l4"><a class="reference internal" href="fd_greens.utils.html">fd_greens.utils package</a></li>
 </ul>
 </li>
-<li class="toctree-l3"><a class="reference internal" href="fd_greens.html#module-fd_greens">Module contents</a></li>
 </ul>
 </li>
 </ul>
@@ -67,10 +67,10 @@
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
       <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
-          <li><a href="modules.html">greens-function</a> &raquo;</li>
+          <li><a href="modules.html">fd-greens</a> &raquo;</li>
           <li><a href="fd_greens.html">fd_greens package</a> &raquo;</li>
           <li><a href="fd_greens.main.html">fd_greens.main package</a> &raquo;</li>
-      <li>fd_greens.main.operators module</li>
+      <li>Operators (<code class="xref py py-mod docutils literal notranslate"><span class="pre">fd_greens.main.operators</span></code>)</li>
       <li class="wy-breadcrumbs-aside">
             <a href="_sources/fd_greens.main.operators.rst.txt" rel="nofollow"> View page source</a>
       </li>
@@ -80,23 +80,22 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <section id="module-fd_greens.main.operators">
-<span id="fd-greens-main-operators-module"></span><h1>fd_greens.main.operators module<a class="headerlink" href="#module-fd_greens.main.operators" title="Permalink to this headline"></a></h1>
-<p>Operators.</p>
+  <span class="target" id="module-fd_greens.main.operators"></span><section id="operators-fd-greens-main-operators">
+<h1>Operators (<a class="reference internal" href="#module-fd_greens.main.operators" title="fd_greens.main.operators"><code class="xref py py-mod docutils literal notranslate"><span class="pre">fd_greens.main.operators</span></code></a>)<a class="headerlink" href="#operators-fd-greens-main-operators" title="Permalink to this headline"></a></h1>
 <dl class="py class">
 <dt class="sig sig-object py" id="fd_greens.main.operators.SecondQuantizedOperators">
-<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">fd_greens.main.operators.</span></span><span class="sig-name descname"><span class="pre">SecondQuantizedOperators</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n_qubits</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">factor</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span> </span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">-</span> <span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#fd_greens.main.operators.SecondQuantizedOperators" title="Permalink to this definition"></a></dt>
+<em class="property"><span class="pre">class</span> </em><span class="sig-name descname"><span class="pre">SecondQuantizedOperators</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n_qubits</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">factor</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span> </span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">-</span> <span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/fd_greens/main/operators.html#SecondQuantizedOperators"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#fd_greens.main.operators.SecondQuantizedOperators" title="Permalink to this definition"></a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <p>A class to store the X and Y parts of the creation and annihilation operators.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="fd_greens.main.operators.SecondQuantizedOperators.transform">
-<span class="sig-name descname"><span class="pre">transform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">transform_func</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Callable</span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">[</span></span><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">qiskit.opflow.primitive_ops.pauli_sum_op.PauliSumOp</span><span class="p"><span class="pre">,</span> </span><span class="pre">qiskit.quantum_info.operators.symplectic.sparse_pauli_op.SparsePauliOp</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span> </span><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">qiskit.opflow.primitive_ops.pauli_sum_op.PauliSumOp</span><span class="p"><span class="pre">,</span> </span><span class="pre">qiskit.quantum_info.operators.symplectic.sparse_pauli_op.SparsePauliOp</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#fd_greens.main.operators.SecondQuantizedOperators.transform" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">transform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">transform_func</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Callable</span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">[</span></span><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">qiskit.opflow.primitive_ops.pauli_sum_op.PauliSumOp</span><span class="p"><span class="pre">,</span> </span><span class="pre">qiskit.quantum_info.operators.symplectic.sparse_pauli_op.SparsePauliOp</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span> </span><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">qiskit.opflow.primitive_ops.pauli_sum_op.PauliSumOp</span><span class="p"><span class="pre">,</span> </span><span class="pre">qiskit.quantum_info.operators.symplectic.sparse_pauli_op.SparsePauliOp</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/fd_greens/main/operators.html#SecondQuantizedOperators.transform"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#fd_greens.main.operators.SecondQuantizedOperators.transform" title="Permalink to this definition"></a></dt>
 <dd><p>Transforms the set of second quantized operators by Z2 symmetries.</p>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="fd_greens.main.operators.SecondQuantizedOperators.get_pauli_dict">
-<span class="sig-name descname"><span class="pre">get_pauli_dict</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span> </span><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">qiskit.quantum_info.operators.symplectic.sparse_pauli_op.SparsePauliOp</span><span class="p"><span class="pre">,</span> </span><span class="pre">qiskit.quantum_info.operators.symplectic.sparse_pauli_op.SparsePauliOp</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#fd_greens.main.operators.SecondQuantizedOperators.get_pauli_dict" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">get_pauli_dict</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span> </span><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">qiskit.quantum_info.operators.symplectic.sparse_pauli_op.SparsePauliOp</span><span class="p"><span class="pre">,</span> </span><span class="pre">qiskit.quantum_info.operators.symplectic.sparse_pauli_op.SparsePauliOp</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/fd_greens/main/operators.html#SecondQuantizedOperators.get_pauli_dict"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#fd_greens.main.operators.SecondQuantizedOperators.get_pauli_dict" title="Permalink to this definition"></a></dt>
 <dd><p>Returns a dictionary of the second quantized operators.</p>
 </dd></dl>
 
@@ -104,18 +103,18 @@
 
 <dl class="py class">
 <dt class="sig sig-object py" id="fd_greens.main.operators.ChargeOperators">
-<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">fd_greens.main.operators.</span></span><span class="sig-name descname"><span class="pre">ChargeOperators</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n_qubits</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#fd_greens.main.operators.ChargeOperators" title="Permalink to this definition"></a></dt>
+<em class="property"><span class="pre">class</span> </em><span class="sig-name descname"><span class="pre">ChargeOperators</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n_qubits</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/fd_greens/main/operators.html#ChargeOperators"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#fd_greens.main.operators.ChargeOperators" title="Permalink to this definition"></a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <p>A class to store U01 and U10 for calculating charge-charge response functions.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="fd_greens.main.operators.ChargeOperators.transform">
-<span class="sig-name descname"><span class="pre">transform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">transform_func</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Callable</span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">[</span></span><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">qiskit.opflow.primitive_ops.pauli_sum_op.PauliSumOp</span><span class="p"><span class="pre">,</span> </span><span class="pre">qiskit.quantum_info.operators.symplectic.sparse_pauli_op.SparsePauliOp</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span> </span><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">qiskit.opflow.primitive_ops.pauli_sum_op.PauliSumOp</span><span class="p"><span class="pre">,</span> </span><span class="pre">qiskit.quantum_info.operators.symplectic.sparse_pauli_op.SparsePauliOp</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#fd_greens.main.operators.ChargeOperators.transform" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">transform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">transform_func</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Callable</span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">[</span></span><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">qiskit.opflow.primitive_ops.pauli_sum_op.PauliSumOp</span><span class="p"><span class="pre">,</span> </span><span class="pre">qiskit.quantum_info.operators.symplectic.sparse_pauli_op.SparsePauliOp</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span> </span><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">qiskit.opflow.primitive_ops.pauli_sum_op.PauliSumOp</span><span class="p"><span class="pre">,</span> </span><span class="pre">qiskit.quantum_info.operators.symplectic.sparse_pauli_op.SparsePauliOp</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/fd_greens/main/operators.html#ChargeOperators.transform"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#fd_greens.main.operators.ChargeOperators.transform" title="Permalink to this definition"></a></dt>
 <dd><p>Transforms the set of second quantized operators by Z2 symmetries.</p>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="fd_greens.main.operators.ChargeOperators.get_pauli_dict">
-<span class="sig-name descname"><span class="pre">get_pauli_dict</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span> </span><span class="pre">qiskit.quantum_info.operators.symplectic.sparse_pauli_op.SparsePauliOp</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#fd_greens.main.operators.ChargeOperators.get_pauli_dict" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">get_pauli_dict</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span> </span><span class="pre">qiskit.quantum_info.operators.symplectic.sparse_pauli_op.SparsePauliOp</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/fd_greens/main/operators.html#ChargeOperators.get_pauli_dict"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#fd_greens.main.operators.ChargeOperators.get_pauli_dict" title="Permalink to this definition"></a></dt>
 <dd><p>Returns a dictionary of the charge U operators.</p>
 </dd></dl>
 
@@ -127,8 +126,8 @@
            </div>
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
-        <a href="fd_greens.main.molecular_hamiltonian.html" class="btn btn-neutral float-left" title="fd_greens.main.molecular_hamiltonian module" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
-        <a href="fd_greens.main.params.html" class="btn btn-neutral float-right" title="fd_greens.main.params module" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="fd_greens.main.molecular_hamiltonian.html" class="btn btn-neutral float-left" title="Molecular Hamiltonian (fd_greens.main.molecular_hamiltonian)" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="fd_greens.main.params.html" class="btn btn-neutral float-right" title="&lt;no title&gt;" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 
   <hr/>

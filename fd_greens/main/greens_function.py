@@ -1,4 +1,8 @@
-"""Green's function and related observables."""
+"""
+========================================================
+Green's Function (:mod:`fd_greens.main.greens_function`)
+========================================================
+"""
 
 from typing import Union, Sequence, Optional
 

@@ -1,3 +1,10 @@
+"""
+==================================================
+Plot Utilities (:mod:`fd_greens.utils.plot_utils`)
+==================================================
+"""
+
+
 import h5py
 from typing import Sequence, Optional
 import matplotlib.pyplot as plt

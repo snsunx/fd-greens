@@ -1,4 +1,8 @@
-"""Qubit indices."""
+"""
+===================================================
+Qubit Indices (:mod:`fd_greens.main.qubit_indices`)
+===================================================
+"""
 
 import copy
 import numpy as np

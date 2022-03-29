@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>fd_greens.main.eh_amplitudes_solver module &mdash; fd-greens 0.0.1 documentation</title>
+  <title>(N±1)-Electron Transition Amplitudes Solver (fd_greens.main.eh_amplitudes_solver) &mdash; fd-greens 0.0.1 documentation</title>
       <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
   <!--[if lt IE 9]>
@@ -18,8 +18,8 @@
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="fd_greens.main.eh_states_solver module" href="fd_greens.main.eh_states_solver.html" />
-    <link rel="prev" title="fd_greens.main.circuit_constructor module" href="fd_greens.main.circuit_constructor.html" /> 
+    <link rel="next" title="(N±1)-Electron States Solver (fd_greens.main.eh_states_solver)" href="fd_greens.main.eh_states_solver.html" />
+    <link rel="prev" title="Circuit Constructor (fd_greens.main.circuit_constructor)" href="fd_greens.main.circuit_constructor.html" /> 
 </head>
 
 <body class="wy-body-for-nav"> 
@@ -39,14 +39,14 @@
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
               <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
 <ul class="current">
-<li class="toctree-l1 current"><a class="reference internal" href="modules.html">greens-function</a><ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">fd-greens</a><ul class="current">
 <li class="toctree-l2 current"><a class="reference internal" href="fd_greens.html">fd_greens package</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="fd_greens.html#utils-fd-greens-utils">Utils (<code class="xref py py-mod docutils literal notranslate"><span class="pre">fd_greens.utils</span></code>)</a></li>
 <li class="toctree-l3 current"><a class="reference internal" href="fd_greens.html#subpackages">Subpackages</a><ul class="current">
 <li class="toctree-l4 current"><a class="reference internal" href="fd_greens.main.html">fd_greens.main package</a></li>
 <li class="toctree-l4"><a class="reference internal" href="fd_greens.utils.html">fd_greens.utils package</a></li>
 </ul>
 </li>
-<li class="toctree-l3"><a class="reference internal" href="fd_greens.html#module-fd_greens">Module contents</a></li>
 </ul>
 </li>
 </ul>
@@ -67,10 +67,10 @@
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
       <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
-          <li><a href="modules.html">greens-function</a> &raquo;</li>
+          <li><a href="modules.html">fd-greens</a> &raquo;</li>
           <li><a href="fd_greens.html">fd_greens package</a> &raquo;</li>
           <li><a href="fd_greens.main.html">fd_greens.main package</a> &raquo;</li>
-      <li>fd_greens.main.eh_amplitudes_solver module</li>
+      <li>(N±1)-Electron Transition Amplitudes Solver (<code class="xref py py-mod docutils literal notranslate"><span class="pre">fd_greens.main.eh_amplitudes_solver</span></code>)</li>
       <li class="wy-breadcrumbs-aside">
             <a href="_sources/fd_greens.main.eh_amplitudes_solver.rst.txt" rel="nofollow"> View page source</a>
       </li>
@@ -80,59 +80,58 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <section id="module-fd_greens.main.eh_amplitudes_solver">
-<span id="fd-greens-main-eh-amplitudes-solver-module"></span><h1>fd_greens.main.eh_amplitudes_solver module<a class="headerlink" href="#module-fd_greens.main.eh_amplitudes_solver" title="Permalink to this headline"></a></h1>
-<p>Solver for transition amplitudes between ground and (N+/-1)-electron states.</p>
+  <span class="target" id="module-fd_greens.main.eh_amplitudes_solver"></span><section id="n1-electron-transition-amplitudes-solver-fd-greens-main-eh-amplitudes-solver">
+<h1>(N±1)-Electron Transition Amplitudes Solver (<a class="reference internal" href="#module-fd_greens.main.eh_amplitudes_solver" title="fd_greens.main.eh_amplitudes_solver"><code class="xref py py-mod docutils literal notranslate"><span class="pre">fd_greens.main.eh_amplitudes_solver</span></code></a>)<a class="headerlink" href="#n1-electron-transition-amplitudes-solver-fd-greens-main-eh-amplitudes-solver" title="Permalink to this headline"></a></h1>
 <dl class="py class">
 <dt class="sig sig-object py" id="fd_greens.main.eh_amplitudes_solver.EHAmplitudesSolver">
-<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">fd_greens.main.eh_amplitudes_solver.</span></span><span class="sig-name descname"><span class="pre">EHAmplitudesSolver</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">h</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><a class="reference internal" href="fd_greens.main.molecular_hamiltonian.html#fd_greens.main.molecular_hamiltonian.MolecularHamiltonian" title="fd_greens.main.molecular_hamiltonian.MolecularHamiltonian"><span class="pre">fd_greens.main.molecular_hamiltonian.MolecularHamiltonian</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">q_instance</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">qiskit.utils.quantum_instance.QuantumInstance</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">method</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">'exact'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">h5fname</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">'lih'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">anc</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">[0,</span> <span class="pre">1]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">spin</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">'d'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">suffix</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">bool</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#fd_greens.main.eh_amplitudes_solver.EHAmplitudesSolver" title="Permalink to this definition"></a></dt>
+<em class="property"><span class="pre">class</span> </em><span class="sig-name descname"><span class="pre">EHAmplitudesSolver</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">h</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><a class="reference internal" href="fd_greens.main.molecular_hamiltonian.html#fd_greens.main.molecular_hamiltonian.MolecularHamiltonian" title="fd_greens.main.molecular_hamiltonian.MolecularHamiltonian"><span class="pre">fd_greens.main.molecular_hamiltonian.MolecularHamiltonian</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">q_instance</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">qiskit.utils.quantum_instance.QuantumInstance</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">method</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">'exact'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">h5fname</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">'lih'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">anc</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">[0,</span> <span class="pre">1]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">spin</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">'d'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">suffix</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">bool</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/fd_greens/main/eh_amplitudes_solver.html#EHAmplitudesSolver"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#fd_greens.main.eh_amplitudes_solver.EHAmplitudesSolver" title="Permalink to this definition"></a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <p>A class to calculate transition amplitudes.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="fd_greens.main.eh_amplitudes_solver.EHAmplitudesSolver.build_diagonal">
-<span class="sig-name descname"><span class="pre">build_diagonal</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#fd_greens.main.eh_amplitudes_solver.EHAmplitudesSolver.build_diagonal" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">build_diagonal</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/fd_greens/main/eh_amplitudes_solver.html#EHAmplitudesSolver.build_diagonal"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#fd_greens.main.eh_amplitudes_solver.EHAmplitudesSolver.build_diagonal" title="Permalink to this definition"></a></dt>
 <dd><p>Constructs diagonal transition amplitude circuits.</p>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="fd_greens.main.eh_amplitudes_solver.EHAmplitudesSolver.execute_diagonal">
-<span class="sig-name descname"><span class="pre">execute_diagonal</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#fd_greens.main.eh_amplitudes_solver.EHAmplitudesSolver.execute_diagonal" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">execute_diagonal</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/fd_greens/main/eh_amplitudes_solver.html#EHAmplitudesSolver.execute_diagonal"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#fd_greens.main.eh_amplitudes_solver.EHAmplitudesSolver.execute_diagonal" title="Permalink to this definition"></a></dt>
 <dd><p>Executes the diagonal circuits circ0 and circ1.</p>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="fd_greens.main.eh_amplitudes_solver.EHAmplitudesSolver.process_diagonal">
-<span class="sig-name descname"><span class="pre">process_diagonal</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#fd_greens.main.eh_amplitudes_solver.EHAmplitudesSolver.process_diagonal" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">process_diagonal</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/fd_greens/main/eh_amplitudes_solver.html#EHAmplitudesSolver.process_diagonal"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#fd_greens.main.eh_amplitudes_solver.EHAmplitudesSolver.process_diagonal" title="Permalink to this definition"></a></dt>
 <dd><p>Post-processes diagonal transition amplitude results.</p>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="fd_greens.main.eh_amplitudes_solver.EHAmplitudesSolver.build_off_diagonal">
-<span class="sig-name descname"><span class="pre">build_off_diagonal</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#fd_greens.main.eh_amplitudes_solver.EHAmplitudesSolver.build_off_diagonal" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">build_off_diagonal</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/fd_greens/main/eh_amplitudes_solver.html#EHAmplitudesSolver.build_off_diagonal"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#fd_greens.main.eh_amplitudes_solver.EHAmplitudesSolver.build_off_diagonal" title="Permalink to this definition"></a></dt>
 <dd><p>Constructs off-diagonal transition amplitude circuits.</p>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="fd_greens.main.eh_amplitudes_solver.EHAmplitudesSolver.execute_off_diagonal">
-<span class="sig-name descname"><span class="pre">execute_off_diagonal</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#fd_greens.main.eh_amplitudes_solver.EHAmplitudesSolver.execute_off_diagonal" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">execute_off_diagonal</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/fd_greens/main/eh_amplitudes_solver.html#EHAmplitudesSolver.execute_off_diagonal"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#fd_greens.main.eh_amplitudes_solver.EHAmplitudesSolver.execute_off_diagonal" title="Permalink to this definition"></a></dt>
 <dd><p>Executes the off-diagonal transition amplitude circuit circ01.</p>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="fd_greens.main.eh_amplitudes_solver.EHAmplitudesSolver.process_off_diagonal">
-<span class="sig-name descname"><span class="pre">process_off_diagonal</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#fd_greens.main.eh_amplitudes_solver.EHAmplitudesSolver.process_off_diagonal" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">process_off_diagonal</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/fd_greens/main/eh_amplitudes_solver.html#EHAmplitudesSolver.process_off_diagonal"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#fd_greens.main.eh_amplitudes_solver.EHAmplitudesSolver.process_off_diagonal" title="Permalink to this definition"></a></dt>
 <dd><p>Post-processes off-diagonal transition amplitude results.</p>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="fd_greens.main.eh_amplitudes_solver.EHAmplitudesSolver.save_data">
-<span class="sig-name descname"><span class="pre">save_data</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#fd_greens.main.eh_amplitudes_solver.EHAmplitudesSolver.save_data" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">save_data</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/fd_greens/main/eh_amplitudes_solver.html#EHAmplitudesSolver.save_data"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#fd_greens.main.eh_amplitudes_solver.EHAmplitudesSolver.save_data" title="Permalink to this definition"></a></dt>
 <dd><p>Saves transition amplitudes data to HDF5 file.</p>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="fd_greens.main.eh_amplitudes_solver.EHAmplitudesSolver.run">
-<span class="sig-name descname"><span class="pre">run</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">method</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">build</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">bool</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">execute</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">bool</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">process</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">bool</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#fd_greens.main.eh_amplitudes_solver.EHAmplitudesSolver.run" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">run</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">method</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">build</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">bool</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">execute</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">bool</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">process</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">bool</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/fd_greens/main/eh_amplitudes_solver.html#EHAmplitudesSolver.run"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#fd_greens.main.eh_amplitudes_solver.EHAmplitudesSolver.run" title="Permalink to this definition"></a></dt>
 <dd><p>Executes all functions to calculate transition amplitudes.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -155,8 +154,8 @@ or tomography (‘tomo’).</p></li>
            </div>
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
-        <a href="fd_greens.main.circuit_constructor.html" class="btn btn-neutral float-left" title="fd_greens.main.circuit_constructor module" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
-        <a href="fd_greens.main.eh_states_solver.html" class="btn btn-neutral float-right" title="fd_greens.main.eh_states_solver module" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="fd_greens.main.circuit_constructor.html" class="btn btn-neutral float-left" title="Circuit Constructor (fd_greens.main.circuit_constructor)" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="fd_greens.main.eh_states_solver.html" class="btn btn-neutral float-right" title="(N±1)-Electron States Solver (fd_greens.main.eh_states_solver)" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 
   <hr/>

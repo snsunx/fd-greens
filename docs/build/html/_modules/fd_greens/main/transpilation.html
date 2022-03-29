@@ -1,0 +1,1224 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>fd_greens.main.transpilation &mdash; fd-greens 0.0.1 documentation</title>
+      <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../../../index.html" class="icon icon-home"> fd-greens
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules.html">fd-greens</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">fd-greens</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+      <li>fd_greens.main.transpilation</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for fd_greens.main.transpilation</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">===========================================================</span>
+<span class="sd">Circuit Transpilation (:mod:`fd_greens.main.transpilation`)</span>
+<span class="sd">===========================================================</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Mapping</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Iterable</span><span class="p">,</span> <span class="n">Union</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">,</span> <span class="n">List</span>
+<span class="kn">from</span> <span class="nn">itertools</span> <span class="kn">import</span> <span class="n">combinations</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">permutation</span> <span class="kn">import</span> <span class="n">Permutation</span>
+
+<span class="kn">from</span> <span class="nn">qiskit</span> <span class="kn">import</span> <span class="n">QuantumCircuit</span>
+<span class="kn">from</span> <span class="nn">qiskit.circuit</span> <span class="kn">import</span> <span class="n">Instruction</span><span class="p">,</span> <span class="n">Qubit</span><span class="p">,</span> <span class="n">Clbit</span><span class="p">,</span> <span class="n">Barrier</span>
+<span class="kn">from</span> <span class="nn">qiskit.extensions</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">XGate</span><span class="p">,</span>
+    <span class="n">HGate</span><span class="p">,</span>
+    <span class="n">RXGate</span><span class="p">,</span>
+    <span class="n">RZGate</span><span class="p">,</span>
+    <span class="n">CPhaseGate</span><span class="p">,</span>
+    <span class="n">CZGate</span><span class="p">,</span>
+    <span class="n">SwapGate</span><span class="p">,</span>
+    <span class="n">UGate</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="kn">from</span> <span class="nn">.params</span> <span class="kn">import</span> <span class="n">C0C0iXGate</span>
+<span class="kn">from</span> <span class="nn">..utils</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">save_circuit_figure</span><span class="p">,</span>
+    <span class="n">create_circuit_from_inst_tups</span><span class="p">,</span>
+    <span class="n">remove_instructions</span><span class="p">,</span>
+    <span class="n">get_registers_in_inst_tups</span><span class="p">,</span>
+    <span class="n">circuit_equal</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">QubitLike</span> <span class="o">=</span> <span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">Qubit</span><span class="p">]</span>
+<span class="n">ClbitLike</span> <span class="o">=</span> <span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">Clbit</span><span class="p">]</span>
+<span class="n">InstructionTuple</span> <span class="o">=</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">Instruction</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="n">QubitLike</span><span class="p">],</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="n">ClbitLike</span><span class="p">]]]</span>
+
+
+<div class="viewcode-block" id="transpile_into_berkeley_gates"><a class="viewcode-back" href="../../../fd_greens.main.transpilation.html#fd_greens.main.transpilation.transpile_into_berkeley_gates">[docs]</a><span class="k">def</span> <span class="nf">transpile_into_berkeley_gates</span><span class="p">(</span>
+    <span class="n">circ</span><span class="p">:</span> <span class="n">QuantumCircuit</span><span class="p">,</span> <span class="n">circ_label</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">savefig</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">QuantumCircuit</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Transpiles the circuit into native gates on the Berkeley device.</span>
+
+<span class="sd">    This is the main function in this module and calls the other functions as subroutines.</span>
+<span class="sd">    The basis gates are assumed to be :math:`X_{\pi/2}`, virtual Z, CS, CZ, and C0iXC0.</span>
+<span class="sd">    The transpilation procedure depends on the circuit label. This function consists of</span>
+<span class="sd">    the following steps:</span>
+
+<span class="sd">    1. Permute and add SWAP gates (``transpile_by_permutation``)</span>
+<span class="sd">    </span>
+<span class="sd">    2. Transpile three-qubit gates (``transpile_3q_gates``)</span>
+<span class="sd">    </span>
+<span class="sd">    3. Transpile two-qubit gates (``transpile_2q_gates``)</span>
+<span class="sd">    </span>
+<span class="sd">    4. Transpile single-qubit gates (``transpile_1q_gates``)</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        circ: The circuit to be transpiled to native gates on the Berkeley device.</span>
+<span class="sd">        circ_label: The circuit label, e.g. ``&#39;0u&#39;``, ``&#39;0d&#39;`` etc.</span>
+<span class="sd">        savefig: Whether to save the circuit figures.</span>
+<span class="sd">    </span>
+<span class="sd">    Returns:</span>
+<span class="sd">        circ_new: The circuit after transpilation to the native gates on the Berkeley device.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Transpiling circ</span><span class="si">{</span><span class="n">circ_label</span><span class="si">}</span><span class="s2"> into native gates on Berkeley device&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">savefig</span><span class="p">:</span>
+        <span class="n">save_circuit_figure</span><span class="p">(</span><span class="n">circ</span><span class="p">,</span> <span class="n">circ_label</span> <span class="o">+</span> <span class="s2">&quot;_untranspiled&quot;</span><span class="p">)</span>
+
+    <span class="n">circ_new</span> <span class="o">=</span> <span class="n">remove_instructions</span><span class="p">(</span><span class="n">circ</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;barrier&quot;</span><span class="p">])</span>
+    <span class="n">circ_new</span> <span class="o">=</span> <span class="n">transpile_by_permutation</span><span class="p">(</span><span class="n">circ_new</span><span class="p">,</span> <span class="n">circ_label</span><span class="p">,</span> <span class="n">savefig</span><span class="o">=</span><span class="n">savefig</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">circ</span><span class="o">.</span><span class="n">qregs</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">==</span> <span class="mi">4</span><span class="p">:</span>
+        <span class="n">circ_new</span> <span class="o">=</span> <span class="n">transpile_3q_gates</span><span class="p">(</span><span class="n">circ_new</span><span class="p">,</span> <span class="n">circ_label</span><span class="p">,</span> <span class="n">savefig</span><span class="o">=</span><span class="n">savefig</span><span class="p">)</span>
+    <span class="n">circ_new</span> <span class="o">=</span> <span class="n">transpile_2q_gates</span><span class="p">(</span><span class="n">circ_new</span><span class="p">,</span> <span class="n">circ_label</span><span class="p">,</span> <span class="n">savefig</span><span class="o">=</span><span class="n">savefig</span><span class="p">)</span>
+    <span class="c1"># if circ_label[0] != &#39;r&#39;:</span>
+    <span class="n">circ_new</span> <span class="o">=</span> <span class="n">transpile_1q_gates</span><span class="p">(</span><span class="n">circ_new</span><span class="p">,</span> <span class="n">circ_label</span><span class="p">,</span> <span class="n">savefig</span><span class="o">=</span><span class="n">savefig</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">savefig</span><span class="p">:</span>
+        <span class="n">save_circuit_figure</span><span class="p">(</span><span class="n">circ_new</span><span class="p">,</span> <span class="n">circ_label</span> <span class="o">+</span> <span class="s2">&quot;_transpiled&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">circ_new</span></div>
+
+
+<div class="viewcode-block" id="transpile_by_permutation"><a class="viewcode-back" href="../../../fd_greens.main.transpilation.html#fd_greens.main.transpilation.transpile_by_permutation">[docs]</a><span class="k">def</span> <span class="nf">transpile_by_permutation</span><span class="p">(</span>
+    <span class="n">circ</span><span class="p">:</span> <span class="n">QuantumCircuit</span><span class="p">,</span> <span class="n">circ_label</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">savefig</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">QuantumCircuit</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Performs transpilation by permutation based on the circuit label.</span>
+
+<span class="sd">    This function is a wrapper of ``permute_qubits``, which inserts SWAP gates at specific </span>
+<span class="sd">    start and end positions, which are predetermined based on the circuit label. The goal</span>
+<span class="sd">    is to permute qubits so that all multi-qubit gates act on adjacent qubits.</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        circ: The circuit to be transpiled by permutation.</span>
+<span class="sd">        circ_label: The circuit label.</span>
+<span class="sd">        savefig: Whether to save the circuit figure after transpilation.</span>
+<span class="sd">    </span>
+<span class="sd">    Returns:</span>
+<span class="sd">        circ_new: The new circuit after transpilation by permutation.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">circ_label</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;0u&quot;</span><span class="p">,</span> <span class="s2">&quot;r0u&quot;</span><span class="p">,</span> <span class="s2">&quot;r1u&quot;</span><span class="p">]:</span>
+        <span class="n">circ</span> <span class="o">=</span> <span class="n">permute_qubits</span><span class="p">(</span><span class="n">circ</span><span class="p">,</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">])</span>
+    <span class="k">elif</span> <span class="n">circ_label</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;0d&quot;</span><span class="p">]:</span>
+        <span class="n">circ</span> <span class="o">=</span> <span class="n">permute_qubits</span><span class="p">(</span><span class="n">circ</span><span class="p">,</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">],</span> <span class="n">end</span><span class="o">=</span><span class="mi">17</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">circ_label</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;r0u0d&quot;</span><span class="p">]:</span>
+        <span class="n">circ</span> <span class="o">=</span> <span class="n">permute_qubits</span><span class="p">(</span><span class="n">circ</span><span class="p">,</span> <span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">],</span> <span class="n">end</span><span class="o">=</span><span class="mi">18</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">circ_label</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;r0u1d&quot;</span><span class="p">]:</span>
+        <span class="n">circ</span> <span class="o">=</span> <span class="n">permute_qubits</span><span class="p">(</span><span class="n">circ</span><span class="p">,</span> <span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">],</span> <span class="n">end</span><span class="o">=-</span><span class="mi">4</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">circ_label</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;r0u1u&quot;</span><span class="p">]:</span>
+        <span class="n">circ</span> <span class="o">=</span> <span class="n">permute_qubits</span><span class="p">(</span><span class="n">circ</span><span class="p">,</span> <span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">])</span>
+    <span class="k">elif</span> <span class="n">circ_label</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;r0d1u&quot;</span><span class="p">]:</span>
+        <span class="n">circ</span> <span class="o">=</span> <span class="n">permute_qubits</span><span class="p">(</span><span class="n">circ</span><span class="p">,</span> <span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">],</span> <span class="n">start</span><span class="o">=-</span><span class="mi">4</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">circ_label</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;r1u1d&quot;</span><span class="p">]:</span>
+        <span class="n">circ</span> <span class="o">=</span> <span class="n">permute_qubits</span><span class="p">(</span><span class="n">circ</span><span class="p">,</span> <span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">],</span> <span class="n">end</span><span class="o">=</span><span class="mi">16</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">circ_label</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;01u&quot;</span><span class="p">]:</span>
+        <span class="c1"># TODO: Finish this part.</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        circ_new = combine_1q_gates(circ_new)</span>
+<span class="sd">        circ_new = combine_2q_gates(circ_new)</span>
+<span class="sd">        circ_new = permute_qubits(circ_new, [2, 3], start=-5)</span>
+<span class="sd">        circ_new = convert_1q_to_xpi2(circ_new)</span>
+<span class="sd">        circ_new = combine_1q_gates(circ_new)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+    <span class="k">elif</span> <span class="n">circ_label</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;01d&quot;</span><span class="p">]:</span>
+        <span class="n">circ</span> <span class="o">=</span> <span class="n">permute_qubits</span><span class="p">(</span><span class="n">circ</span><span class="p">,</span> <span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">],</span> <span class="n">end</span><span class="o">=</span><span class="mi">20</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">savefig</span><span class="p">:</span>
+        <span class="n">save_circuit_figure</span><span class="p">(</span><span class="n">circ</span><span class="p">,</span> <span class="n">circ_label</span> <span class="o">+</span> <span class="s2">&quot;_permuted&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">circ</span></div>
+
+
+<div class="viewcode-block" id="transpile_3q_gates"><a class="viewcode-back" href="../../../fd_greens.main.transpilation.html#fd_greens.main.transpilation.transpile_3q_gates">[docs]</a><span class="k">def</span> <span class="nf">transpile_3q_gates</span><span class="p">(</span>
+    <span class="n">circ</span><span class="p">:</span> <span class="n">QuantumCircuit</span><span class="p">,</span> <span class="n">circ_label</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">savefig</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">QuantumCircuit</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Performs three-qubit gate transpilation based on the circuit label.</span>
+
+<span class="sd">    This function is a wrapper of ``convert_ccz_to_cixc``, which transpiles the CCZ gates</span>
+<span class="sd">    in four-qubit circuits into C0iXC0 along with additional single- and two-qubit gates.</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        circ: The circuit on which CCZ gates need to be transpiled.</span>
+<span class="sd">        circ_label: The circuit label.</span>
+<span class="sd">        savefig: Whether to save the circuit figure after transpilation.</span>
+<span class="sd">    </span>
+<span class="sd">    Returns:</span>
+<span class="sd">        circ_new: The new circuit after transpiling the CCZ gates.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">circ</span><span class="o">.</span><span class="n">qregs</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">==</span> <span class="mi">4</span>
+    <span class="n">circ</span> <span class="o">=</span> <span class="n">convert_ccz_to_cixc</span><span class="p">(</span><span class="n">circ</span><span class="p">)</span>
+    <span class="n">circ</span> <span class="o">=</span> <span class="n">combine_1q_gates</span><span class="p">(</span><span class="n">circ</span><span class="p">)</span>
+    <span class="n">circ</span> <span class="o">=</span> <span class="n">combine_2q_gates</span><span class="p">(</span><span class="n">circ</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">savefig</span><span class="p">:</span>
+        <span class="n">save_circuit_figure</span><span class="p">(</span><span class="n">circ</span><span class="p">,</span> <span class="n">circ_label</span> <span class="o">+</span> <span class="s2">&quot;_after3q&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">circ</span></div>
+
+
+<div class="viewcode-block" id="transpile_2q_gates"><a class="viewcode-back" href="../../../fd_greens.main.transpilation.html#fd_greens.main.transpilation.transpile_2q_gates">[docs]</a><span class="k">def</span> <span class="nf">transpile_2q_gates</span><span class="p">(</span>
+    <span class="n">circ</span><span class="p">:</span> <span class="n">QuantumCircuit</span><span class="p">,</span> <span class="n">circ_label</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">savefig</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">QuantumCircuit</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Performs two-qubit gate transpilation based on the circuit label.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        circ: The circuit on which two-qubit gates need to be transpiled.</span>
+<span class="sd">        circ_label: The circuit label.</span>
+<span class="sd">        savefig: Whether to save the circuit figure after transpilation.</span>
+<span class="sd">    </span>
+<span class="sd">    Returns:</span>
+<span class="sd">        circ_new: The new circuit after transpiling the two-qubit gates.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">reverse</span> <span class="o">=</span> <span class="kc">True</span> <span class="k">if</span> <span class="n">circ_label</span> <span class="o">==</span> <span class="s2">&quot;0d&quot;</span> <span class="k">else</span> <span class="kc">False</span>
+    <span class="k">if</span> <span class="n">circ_label</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;01d&quot;</span><span class="p">]:</span>
+        <span class="n">circ</span> <span class="o">=</span> <span class="n">transpile_subcircuit</span><span class="p">(</span><span class="n">circ</span><span class="p">,</span> <span class="p">{(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">):</span> <span class="p">[</span><span class="s2">&quot;swap&quot;</span><span class="p">,</span> <span class="s2">&quot;czxcz&quot;</span><span class="p">]})</span>
+    <span class="k">if</span> <span class="n">circ_label</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;r0u0d&quot;</span><span class="p">,</span> <span class="s2">&quot;r0d1d&quot;</span><span class="p">,</span> <span class="s2">&quot;r0u1u&quot;</span><span class="p">,</span> <span class="s2">&quot;r0u1d&quot;</span><span class="p">,</span> <span class="s2">&quot;r0d1u&quot;</span><span class="p">,</span> <span class="s2">&quot;r1u1d&quot;</span><span class="p">]:</span>
+        <span class="n">circ</span> <span class="o">=</span> <span class="n">transpile_subcircuit</span><span class="p">(</span><span class="n">circ</span><span class="p">,</span> <span class="p">{(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">):</span> <span class="p">[</span><span class="s2">&quot;swap&quot;</span><span class="p">,</span> <span class="s2">&quot;czxcz&quot;</span><span class="p">]})</span>
+    <span class="n">circ</span> <span class="o">=</span> <span class="n">convert_swap_to_cz</span><span class="p">(</span><span class="n">circ</span><span class="p">,</span> <span class="n">reverse</span><span class="o">=</span><span class="n">reverse</span><span class="p">)</span>
+    <span class="n">circ</span> <span class="o">=</span> <span class="n">combine_1q_gates</span><span class="p">(</span><span class="n">circ</span><span class="p">)</span>
+    <span class="n">circ</span> <span class="o">=</span> <span class="n">combine_2q_gates</span><span class="p">(</span><span class="n">circ</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">savefig</span><span class="p">:</span>
+        <span class="n">save_circuit_figure</span><span class="p">(</span><span class="n">circ</span><span class="p">,</span> <span class="n">circ_label</span> <span class="o">+</span> <span class="s2">&quot;_after2q&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">circ</span></div>
+
+
+<div class="viewcode-block" id="transpile_1q_gates"><a class="viewcode-back" href="../../../fd_greens.main.transpilation.html#fd_greens.main.transpilation.transpile_1q_gates">[docs]</a><span class="k">def</span> <span class="nf">transpile_1q_gates</span><span class="p">(</span>
+    <span class="n">circ</span><span class="p">:</span> <span class="n">QuantumCircuit</span><span class="p">,</span> <span class="n">circ_label</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">savefig</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">QuantumCircuit</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Performs single-qubit gate transpilation based on the circuit label.</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        circ: The circuit on which single-qubit gates need to be transpiled.</span>
+<span class="sd">        circ_label: The circuit label.</span>
+<span class="sd">        savefig: Whether to save the circuit figure after transpilation.</span>
+<span class="sd">    </span>
+<span class="sd">    Returns:</span>
+<span class="sd">        circ_new: The new circuit after transpiling the single-qubit gates.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">circ</span> <span class="o">=</span> <span class="n">convert_1q_to_xpi2</span><span class="p">(</span><span class="n">circ</span><span class="p">)</span>
+    <span class="n">qubit_trans</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">circ</span><span class="o">.</span><span class="n">qregs</span><span class="p">[</span><span class="mi">0</span><span class="p">])):</span>
+        <span class="n">qubit_trans</span><span class="p">[(</span><span class="n">i</span><span class="p">,)]</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="s2">&quot;xzpi2x&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;combz&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;xzpix&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;combz&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;3xpi2&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;combz&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;xzpi2x&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;combz&quot;</span><span class="p">,</span>
+        <span class="p">]</span>
+    <span class="n">circ</span> <span class="o">=</span> <span class="n">transpile_subcircuit</span><span class="p">(</span><span class="n">circ</span><span class="p">,</span> <span class="n">qubit_trans</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">savefig</span><span class="p">:</span>
+        <span class="n">save_circuit_figure</span><span class="p">(</span><span class="n">circ</span><span class="p">,</span> <span class="n">circ_label</span> <span class="o">+</span> <span class="s2">&quot;_after1q&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">circ</span></div>
+
+
+<div class="viewcode-block" id="permute_qubits"><a class="viewcode-back" href="../../../fd_greens.main.transpilation.html#fd_greens.main.transpilation.permute_qubits">[docs]</a><span class="k">def</span> <span class="nf">permute_qubits</span><span class="p">(</span>
+    <span class="n">circ</span><span class="p">:</span> <span class="n">QuantumCircuit</span><span class="p">,</span>
+    <span class="n">swap_inds</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span>
+    <span class="n">start</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">end</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">QuantumCircuit</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Permutes qubits in a circuit and inserts SWAP gates.</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        circ: The circuit to be transpiled.</span>
+<span class="sd">        swap_inds: The qubit indices to permute.</span>
+<span class="sd">        start: The start index of qubit permutation.</span>
+<span class="sd">        end: The end index of qubit permutation.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        circ_new: The new circuit after transpilation.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Initialize the start and end indices. If not given, initialize them to 0</span>
+    <span class="c1"># and length of the circuit. If either index is passed in as an integer -n,</span>
+    <span class="c1"># it corresponds to length of the circuit - n.</span>
+    <span class="k">if</span> <span class="n">start</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">start</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">if</span> <span class="n">end</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">end</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">circ</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">start</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">start</span> <span class="o">+=</span> <span class="nb">len</span><span class="p">(</span><span class="n">circ</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">end</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">end</span> <span class="o">+=</span> <span class="nb">len</span><span class="p">(</span><span class="n">circ</span><span class="p">)</span>
+    <span class="n">inst_tups</span> <span class="o">=</span> <span class="n">circ</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">conjugate</span><span class="p">(</span><span class="n">gate_inds</span><span class="p">,</span> <span class="n">swap_inds</span><span class="p">):</span>
+        <span class="c1"># Conjugates gate indices as for elements in a symmetric group.</span>
+        <span class="c1"># Note that indices in the permutation package starts from 1, so we</span>
+        <span class="c1"># need to add 1, permute, and subtract by 1 in the gate indices.</span>
+        <span class="n">perm</span> <span class="o">=</span> <span class="n">Permutation</span><span class="o">.</span><span class="n">cycle</span><span class="p">(</span><span class="o">*</span><span class="p">[</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">swap_inds</span><span class="p">])</span>
+        <span class="n">gate_inds</span> <span class="o">=</span> <span class="p">[</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">gate_inds</span><span class="p">]</span>
+        <span class="n">gate_inds_new</span> <span class="o">=</span> <span class="p">[</span><span class="n">perm</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">gate_inds</span><span class="p">]</span>
+        <span class="n">gate_inds_new</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">([</span><span class="n">i</span> <span class="o">-</span> <span class="mi">1</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">gate_inds_new</span><span class="p">])</span>
+        <span class="k">return</span> <span class="n">gate_inds_new</span>
+
+    <span class="c1"># Permute the qubit indices based on a permutation cycle constructed from `swap_inds`.</span>
+    <span class="n">inst_tups_new</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="p">(</span><span class="n">inst</span><span class="p">,</span> <span class="n">qargs</span><span class="p">,</span> <span class="n">cargs</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">inst_tups</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">i</span> <span class="o">&gt;=</span> <span class="n">start</span> <span class="ow">and</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">end</span><span class="p">:</span>
+            <span class="n">qargs</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">([</span><span class="n">q</span><span class="o">.</span><span class="n">_index</span> <span class="k">for</span> <span class="n">q</span> <span class="ow">in</span> <span class="n">qargs</span><span class="p">])</span>
+            <span class="n">qargs</span> <span class="o">=</span> <span class="n">conjugate</span><span class="p">(</span><span class="n">qargs</span><span class="p">,</span> <span class="n">swap_inds</span><span class="p">)</span>
+        <span class="n">inst_tups_new</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">inst</span><span class="p">,</span> <span class="n">qargs</span><span class="p">,</span> <span class="n">cargs</span><span class="p">))</span>
+
+    <span class="c1"># Insert SWAP gates at the start and end indices. The SWAP gate at the start index</span>
+    <span class="c1"># is only inserted when it is not 0, since otherwise it acts on the initial all 0</span>
+    <span class="c1"># state and has no effect.</span>
+    <span class="n">inst_tups_new</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="n">end</span><span class="p">,</span> <span class="p">(</span><span class="n">SwapGate</span><span class="p">(),</span> <span class="n">swap_inds</span><span class="p">,</span> <span class="p">[]))</span>
+    <span class="k">if</span> <span class="n">start</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">inst_tups_new</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="n">start</span><span class="p">,</span> <span class="p">(</span><span class="n">SwapGate</span><span class="p">(),</span> <span class="n">swap_inds</span><span class="p">,</span> <span class="p">[]))</span>
+
+    <span class="c1"># Create the new circuit and check it is equivalent to the original circuit.</span>
+    <span class="n">circ_new</span> <span class="o">=</span> <span class="n">create_circuit_from_inst_tups</span><span class="p">(</span><span class="n">inst_tups_new</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="n">circuit_equal</span><span class="p">(</span><span class="n">circ</span><span class="p">,</span> <span class="n">circ_new</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">circ_new</span></div>
+
+
+<div class="viewcode-block" id="convert_ccz_to_cixc"><a class="viewcode-back" href="../../../fd_greens.main.transpilation.html#fd_greens.main.transpilation.convert_ccz_to_cixc">[docs]</a><span class="k">def</span> <span class="nf">convert_ccz_to_cixc</span><span class="p">(</span><span class="n">circ</span><span class="p">:</span> <span class="n">QuantumCircuit</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">QuantumCircuit</span><span class="p">:</span>
+    <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Converts CCZ gates to C0iXC0 gates along with other gates.</span>
+
+<span class="sd">    Each CCZ gate in the original circuit is decomposed into :math:`\text{CiZC}\ \text{CS}^\dagger(q_0,q_2)`.</span>
+<span class="sd">    The :math:`\text{CS}^\dagger(q_0,q_2)` gate is then decomposed into :math:`\text{SWAP}(q_0,q_1)</span>
+<span class="sd">    \text{CS}^\dagger(q_1,q_2) \text{SWAP}(q_0,q_1)`, and only one of the SWAP gates is further decomposed into</span>
+<span class="sd">    the form in arXiv:2111.04572 depending on whether it is an even (the one after is decomposed) or odd occurrence</span>
+<span class="sd">    (the one in front is decomposed). The latter decomposition is for further simplification of the gates</span>
+<span class="sd">    by ``simplify_swap_gates`` and ``simplify_czxcz``.</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        circ: The circuit on which CCZ gates are to be called to C0iXC0 gates.</span>
+<span class="sd">    </span>
+<span class="sd">    Returns:</span>
+<span class="sd">        circ_new: The circuit after CCZ gates are called to C0iXC0 gates.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">inst_tups</span> <span class="o">=</span> <span class="n">circ</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    <span class="n">inst_tups_new</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="n">count</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">for</span> <span class="n">inst</span><span class="p">,</span> <span class="n">qargs</span><span class="p">,</span> <span class="n">cargs</span> <span class="ow">in</span> <span class="n">inst_tups</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">inst</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="s2">&quot;c-unitary&quot;</span><span class="p">:</span>
+            <span class="c1"># CiZC instruction tuples.</span>
+            <span class="n">cizc_inst_tups</span> <span class="o">=</span> <span class="p">[</span>
+                <span class="p">(</span><span class="n">XGate</span><span class="p">(),</span> <span class="p">[</span><span class="n">qargs</span><span class="p">[</span><span class="mi">0</span><span class="p">]],</span> <span class="p">[]),</span>
+                <span class="p">(</span><span class="n">HGate</span><span class="p">(),</span> <span class="p">[</span><span class="n">qargs</span><span class="p">[</span><span class="mi">1</span><span class="p">]],</span> <span class="p">[]),</span>
+                <span class="p">(</span><span class="n">XGate</span><span class="p">(),</span> <span class="p">[</span><span class="n">qargs</span><span class="p">[</span><span class="mi">2</span><span class="p">]],</span> <span class="p">[]),</span>
+                <span class="p">(</span><span class="n">C0C0iXGate</span><span class="p">,</span> <span class="p">[</span><span class="n">qargs</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">qargs</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="n">qargs</span><span class="p">[</span><span class="mi">1</span><span class="p">]],</span> <span class="p">[]),</span>
+                <span class="p">(</span><span class="n">XGate</span><span class="p">(),</span> <span class="p">[</span><span class="n">qargs</span><span class="p">[</span><span class="mi">0</span><span class="p">]],</span> <span class="p">[]),</span>
+                <span class="p">(</span><span class="n">HGate</span><span class="p">(),</span> <span class="p">[</span><span class="n">qargs</span><span class="p">[</span><span class="mi">1</span><span class="p">]],</span> <span class="p">[]),</span>
+                <span class="p">(</span><span class="n">XGate</span><span class="p">(),</span> <span class="p">[</span><span class="n">qargs</span><span class="p">[</span><span class="mi">2</span><span class="p">]],</span> <span class="p">[]),</span>
+            <span class="p">]</span>
+
+            <span class="c1"># Instruction tuples for a SWAP gate absent a CZ.</span>
+            <span class="n">swapmcz_inst_tups</span> <span class="o">=</span> <span class="p">[</span>
+                <span class="p">(</span><span class="n">RXGate</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">/</span> <span class="mi">2</span><span class="p">),</span> <span class="p">[</span><span class="n">qargs</span><span class="p">[</span><span class="mi">0</span><span class="p">]],</span> <span class="p">[]),</span>
+                <span class="p">(</span><span class="n">RXGate</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">/</span> <span class="mi">2</span><span class="p">),</span> <span class="p">[</span><span class="n">qargs</span><span class="p">[</span><span class="mi">1</span><span class="p">]],</span> <span class="p">[]),</span>
+                <span class="p">(</span><span class="n">CZGate</span><span class="p">(),</span> <span class="p">[</span><span class="n">qargs</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">qargs</span><span class="p">[</span><span class="mi">1</span><span class="p">]],</span> <span class="p">[]),</span>
+                <span class="p">(</span><span class="n">RXGate</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">/</span> <span class="mi">2</span><span class="p">),</span> <span class="p">[</span><span class="n">qargs</span><span class="p">[</span><span class="mi">0</span><span class="p">]],</span> <span class="p">[]),</span>
+                <span class="p">(</span><span class="n">RXGate</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">/</span> <span class="mi">2</span><span class="p">),</span> <span class="p">[</span><span class="n">qargs</span><span class="p">[</span><span class="mi">1</span><span class="p">]],</span> <span class="p">[]),</span>
+                <span class="p">(</span><span class="n">CZGate</span><span class="p">(),</span> <span class="p">[</span><span class="n">qargs</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">qargs</span><span class="p">[</span><span class="mi">1</span><span class="p">]],</span> <span class="p">[]),</span>
+                <span class="p">(</span><span class="n">RXGate</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">/</span> <span class="mi">2</span><span class="p">),</span> <span class="p">[</span><span class="n">qargs</span><span class="p">[</span><span class="mi">0</span><span class="p">]],</span> <span class="p">[]),</span>
+                <span class="p">(</span><span class="n">RXGate</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">/</span> <span class="mi">2</span><span class="p">),</span> <span class="p">[</span><span class="n">qargs</span><span class="p">[</span><span class="mi">1</span><span class="p">]],</span> <span class="p">[]),</span>
+            <span class="p">]</span>
+
+            <span class="c1"># CSdag(q1,q2) CZ(q0,q1) SWAP(q0,q1) instruction tuples.</span>
+            <span class="n">csdagczswap_inst_tups</span> <span class="o">=</span> <span class="p">[</span>
+                <span class="p">(</span><span class="n">CPhaseGate</span><span class="p">(</span><span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">/</span> <span class="mi">2</span><span class="p">),</span> <span class="p">[</span><span class="n">qargs</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">qargs</span><span class="p">[</span><span class="mi">2</span><span class="p">]],</span> <span class="p">[]),</span>
+                <span class="p">(</span><span class="n">CZGate</span><span class="p">(),</span> <span class="p">[</span><span class="n">qargs</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">qargs</span><span class="p">[</span><span class="mi">1</span><span class="p">]],</span> <span class="p">[]),</span>
+                <span class="p">(</span><span class="n">SwapGate</span><span class="p">(),</span> <span class="p">[</span><span class="n">qargs</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">qargs</span><span class="p">[</span><span class="mi">1</span><span class="p">]],</span> <span class="p">[]),</span>
+            <span class="p">]</span>
+
+            <span class="c1"># For even occurrences of the 3q gate, decompose the first SWAP gate</span>
+            <span class="c1"># and move CZ gate after CSdag.</span>
+            <span class="k">if</span> <span class="n">count</span> <span class="o">%</span> <span class="mi">2</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">inst_tups_new</span> <span class="o">+=</span> <span class="n">cizc_inst_tups</span>
+                <span class="n">inst_tups_new</span> <span class="o">+=</span> <span class="n">swapmcz_inst_tups</span>
+                <span class="n">inst_tups_new</span> <span class="o">+=</span> <span class="n">csdagczswap_inst_tups</span>
+            <span class="c1"># For odd occurrences of the 3q gate, decompose the second SWAP gate</span>
+            <span class="c1"># and move CZ gate in front of CSdag.</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">inst_tups_new</span> <span class="o">+=</span> <span class="n">csdagczswap_inst_tups</span><span class="p">[::</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+                <span class="n">inst_tups_new</span> <span class="o">+=</span> <span class="n">swapmcz_inst_tups</span>
+                <span class="n">inst_tups_new</span> <span class="o">+=</span> <span class="n">cizc_inst_tups</span>
+
+            <span class="n">count</span> <span class="o">+=</span> <span class="mi">1</span>
+
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">inst_tups_new</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">inst</span><span class="p">,</span> <span class="n">qargs</span><span class="p">,</span> <span class="n">cargs</span><span class="p">))</span>
+
+    <span class="c1"># Check the transpiled circuit is equivalent to the original circuit.</span>
+    <span class="n">circ_new</span> <span class="o">=</span> <span class="n">create_circuit_from_inst_tups</span><span class="p">(</span><span class="n">inst_tups_new</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="n">circuit_equal</span><span class="p">(</span><span class="n">circ</span><span class="p">,</span> <span class="n">circ_new</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">circ_new</span></div>
+
+
+<div class="viewcode-block" id="convert_swap_to_cz"><a class="viewcode-back" href="../../../fd_greens.main.transpilation.html#fd_greens.main.transpilation.convert_swap_to_cz">[docs]</a><span class="k">def</span> <span class="nf">convert_swap_to_cz</span><span class="p">(</span>
+    <span class="n">circ</span><span class="p">:</span> <span class="n">QuantumCircuit</span><span class="p">,</span>
+    <span class="n">q_pairs</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">reverse</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">QuantumCircuit</span><span class="p">:</span>
+    <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Converts SWAP gates to CZ and :math:`X_{\pi/2}` gates except for the ones at the end.</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        circ: The circuit on which the SWAP gates need to be transpiled</span>
+<span class="sd">        q_pairs: The qubit pairs on which the SWAP gates are converted.</span>
+<span class="sd">        reverse: Whether the :math:`X_{\pi/2}(q_0)X_{\pi/2}(q_1) \text{CZ}` sequence</span>
+<span class="sd">            is applied in the reversed way.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        circ_new: The new circuit after converting the SWAP gates.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">inst_tups</span> <span class="o">=</span> <span class="n">circ</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    <span class="n">inst_tups_new</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="c1"># Iterate from the end of the circuit, do not start converting SWAP gates to CZ gates</span>
+    <span class="c1"># unless after encountering a non-SWAP gate. This is because SWAP gates at the end can</span>
+    <span class="c1"># be kept track of classically.</span>
+    <span class="n">convert_swap</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="k">for</span> <span class="n">inst</span><span class="p">,</span> <span class="n">qargs</span><span class="p">,</span> <span class="n">cargs</span> <span class="ow">in</span> <span class="n">inst_tups</span><span class="p">[::</span><span class="o">-</span><span class="mi">1</span><span class="p">]:</span>
+        <span class="k">if</span> <span class="n">inst</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="s2">&quot;swap&quot;</span><span class="p">:</span>  <span class="c1"># SWAP gate</span>
+            <span class="n">q_pair</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">([</span><span class="n">x</span><span class="o">.</span><span class="n">_index</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">qargs</span><span class="p">])</span>
+            <span class="n">q_pair_in</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="k">if</span> <span class="n">q_pairs</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">q_pair_in</span> <span class="o">=</span> <span class="n">q_pair</span> <span class="ow">in</span> <span class="n">q_pairs</span>
+            <span class="k">if</span> <span class="n">convert_swap</span> <span class="ow">and</span> <span class="n">q_pair_in</span><span class="p">:</span>  <span class="c1"># SWAP gate not at the end, convert</span>
+                <span class="n">swap_inst_tups</span> <span class="o">=</span> <span class="p">[</span>
+                    <span class="p">(</span><span class="n">RXGate</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">/</span> <span class="mi">2</span><span class="p">),</span> <span class="p">[</span><span class="n">qargs</span><span class="p">[</span><span class="mi">0</span><span class="p">]],</span> <span class="p">[]),</span>
+                    <span class="p">(</span><span class="n">RXGate</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">/</span> <span class="mi">2</span><span class="p">),</span> <span class="p">[</span><span class="n">qargs</span><span class="p">[</span><span class="mi">1</span><span class="p">]],</span> <span class="p">[]),</span>
+                    <span class="p">(</span><span class="n">CZGate</span><span class="p">(),</span> <span class="p">[</span><span class="n">qargs</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">qargs</span><span class="p">[</span><span class="mi">1</span><span class="p">]],</span> <span class="p">[]),</span>
+                <span class="p">]</span> <span class="o">*</span> <span class="mi">3</span>
+                <span class="k">if</span> <span class="n">reverse</span><span class="p">:</span>
+                    <span class="n">inst_tups_new</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">reversed</span><span class="p">(</span><span class="n">swap_inst_tups</span><span class="p">))</span> <span class="o">+</span> <span class="n">inst_tups_new</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">inst_tups_new</span> <span class="o">=</span> <span class="n">swap_inst_tups</span> <span class="o">+</span> <span class="n">inst_tups_new</span>
+            <span class="k">else</span><span class="p">:</span>  <span class="c1"># SWAP gate at the end, do not convert</span>
+                <span class="n">inst_tups_new</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="p">(</span><span class="n">inst</span><span class="p">,</span> <span class="n">qargs</span><span class="p">,</span> <span class="n">cargs</span><span class="p">))</span>
+        <span class="k">else</span><span class="p">:</span>  <span class="c1"># Non-SWAP gate, set convert_swap to True</span>
+            <span class="n">inst_tups_new</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="p">(</span><span class="n">inst</span><span class="p">,</span> <span class="n">qargs</span><span class="p">,</span> <span class="n">cargs</span><span class="p">))</span>
+            <span class="n">convert_swap</span> <span class="o">=</span> <span class="kc">True</span>
+
+    <span class="c1"># Create the transpiled circuit and check it is equivalent to the original circuit.</span>
+    <span class="n">circ_new</span> <span class="o">=</span> <span class="n">create_circuit_from_inst_tups</span><span class="p">(</span><span class="n">inst_tups_new</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="n">circuit_equal</span><span class="p">(</span><span class="n">circ</span><span class="p">,</span> <span class="n">circ_new</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">circ_new</span></div>
+
+
+<div class="viewcode-block" id="convert_1q_to_xpi2"><a class="viewcode-back" href="../../../fd_greens.main.transpilation.html#fd_greens.main.transpilation.convert_1q_to_xpi2">[docs]</a><span class="k">def</span> <span class="nf">convert_1q_to_xpi2</span><span class="p">(</span><span class="n">circ</span><span class="p">:</span> <span class="n">QuantumCircuit</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">QuantumCircuit</span><span class="p">:</span>
+    <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Converts single-qubit gates :math:`H`, :math:`X` and :math:`Y_{\theta}` to :math:`X_{\pi/2}`</span>
+<span class="sd">    and virtual :math:`Z` gates.</span>
+
+<span class="sd">    The conversion rules used in this function are:</span>
+<span class="sd">    </span>
+<span class="sd">    .. math::</span>
+
+<span class="sd">        H &amp;\to Z_{\pi/2} X_{\pi/2} Z_{\pi/2}</span>
+<span class="sd">        </span>
+<span class="sd">        X &amp;\to X_{\pi/2} X_{\pi/2}</span>
+
+<span class="sd">        Y_\theta &amp;\to X_{\pi/2} Z_{\pi-\theta} X_{\pi/2} Z_{-\pi}</span>
+
+<span class="sd">        U_3(\theta, \phi, \lambda) &amp;\to Z_\phi X_{\pi/2} Z_{\pi-\theta} X_{\pi/2} Z_{\lambda-\pi}</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        circ: The circuit on which single-qubit gates need to be transpiled.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        circ_new: The new circuit after transpiling hte single-qubit gates.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">inst_tups</span> <span class="o">=</span> <span class="n">circ</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    <span class="n">inst_tups_new</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">inst</span><span class="p">,</span> <span class="n">qargs</span><span class="p">,</span> <span class="n">cargs</span> <span class="ow">in</span> <span class="n">inst_tups</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">inst</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="s2">&quot;h&quot;</span><span class="p">:</span>
+            <span class="n">inst_tups_new</span> <span class="o">+=</span> <span class="p">[</span>
+                <span class="p">(</span><span class="n">RZGate</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">/</span> <span class="mi">2</span><span class="p">),</span> <span class="n">qargs</span><span class="p">,</span> <span class="p">[]),</span>
+                <span class="p">(</span><span class="n">RXGate</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">/</span> <span class="mi">2</span><span class="p">),</span> <span class="n">qargs</span><span class="p">,</span> <span class="p">[]),</span>
+                <span class="p">(</span><span class="n">RZGate</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">/</span> <span class="mi">2</span><span class="p">),</span> <span class="n">qargs</span><span class="p">,</span> <span class="p">[]),</span>
+            <span class="p">]</span>
+        <span class="k">elif</span> <span class="n">inst</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="s2">&quot;x&quot;</span><span class="p">:</span>
+            <span class="n">inst_tups_new</span> <span class="o">+=</span> <span class="p">[</span>
+                <span class="p">(</span><span class="n">RXGate</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">/</span> <span class="mi">2</span><span class="p">),</span> <span class="n">qargs</span><span class="p">,</span> <span class="p">[]),</span>
+                <span class="p">(</span><span class="n">RXGate</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">/</span> <span class="mi">2</span><span class="p">),</span> <span class="n">qargs</span><span class="p">,</span> <span class="p">[]),</span>
+            <span class="p">]</span>
+        <span class="k">elif</span> <span class="n">inst</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="s2">&quot;ry&quot;</span><span class="p">:</span>
+            <span class="n">theta</span> <span class="o">=</span> <span class="n">inst</span><span class="o">.</span><span class="n">params</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">inst_tups_new</span> <span class="o">+=</span> <span class="p">[</span>
+                <span class="p">(</span><span class="n">RZGate</span><span class="p">(</span><span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">),</span> <span class="n">qargs</span><span class="p">,</span> <span class="p">[]),</span>
+                <span class="p">(</span><span class="n">RXGate</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">/</span> <span class="mi">2</span><span class="p">),</span> <span class="n">qargs</span><span class="p">,</span> <span class="p">[]),</span>
+                <span class="p">(</span><span class="n">RZGate</span><span class="p">((</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">-</span> <span class="n">theta</span><span class="p">)</span> <span class="o">%</span> <span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">)),</span> <span class="n">qargs</span><span class="p">,</span> <span class="p">[]),</span>
+                <span class="p">(</span><span class="n">RXGate</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">/</span> <span class="mi">2</span><span class="p">),</span> <span class="n">qargs</span><span class="p">,</span> <span class="p">[]),</span>
+            <span class="p">]</span>
+        <span class="k">elif</span> <span class="n">inst</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="s2">&quot;u3&quot;</span><span class="p">:</span>
+            <span class="n">theta</span><span class="p">,</span> <span class="n">phi</span><span class="p">,</span> <span class="n">lam</span> <span class="o">=</span> <span class="n">inst</span><span class="o">.</span><span class="n">params</span>
+            <span class="n">inst_tups_new</span> <span class="o">+=</span> <span class="p">[</span>
+                <span class="p">(</span><span class="n">RZGate</span><span class="p">(</span><span class="n">lam</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">),</span> <span class="n">qargs</span><span class="p">,</span> <span class="p">[]),</span>
+                <span class="p">(</span><span class="n">RXGate</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">/</span> <span class="mi">2</span><span class="p">),</span> <span class="n">qargs</span><span class="p">,</span> <span class="p">[]),</span>
+                <span class="p">(</span><span class="n">RZGate</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">-</span> <span class="n">theta</span><span class="p">),</span> <span class="n">qargs</span><span class="p">,</span> <span class="p">[]),</span>
+                <span class="p">(</span><span class="n">RXGate</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">/</span> <span class="mi">2</span><span class="p">),</span> <span class="n">qargs</span><span class="p">,</span> <span class="p">[]),</span>
+                <span class="p">(</span><span class="n">RZGate</span><span class="p">(</span><span class="n">phi</span><span class="p">),</span> <span class="n">qargs</span><span class="p">,</span> <span class="p">[]),</span>
+            <span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">inst_tups_new</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">inst</span><span class="p">,</span> <span class="n">qargs</span><span class="p">,</span> <span class="n">cargs</span><span class="p">))</span>
+
+    <span class="c1"># Create the transpiled circuit and check it is equivalent to the original circuit.</span>
+    <span class="n">circ_new</span> <span class="o">=</span> <span class="n">create_circuit_from_inst_tups</span><span class="p">(</span><span class="n">inst_tups_new</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="n">circuit_equal</span><span class="p">(</span><span class="n">circ</span><span class="p">,</span> <span class="n">circ_new</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">circ_new</span></div>
+
+
+<div class="viewcode-block" id="combine_1q_gates"><a class="viewcode-back" href="../../../fd_greens.main.transpilation.html#fd_greens.main.transpilation.combine_1q_gates">[docs]</a><span class="k">def</span> <span class="nf">combine_1q_gates</span><span class="p">(</span>
+    <span class="n">circ</span><span class="p">:</span> <span class="n">QuantumCircuit</span><span class="p">,</span> <span class="n">qubits</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Iterable</span><span class="p">[</span><span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">QuantumCircuit</span><span class="p">:</span>
+    <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Combines certain single-qubit gates to identities on given qubits.</span>
+
+<span class="sd">    The combination rules used in this function are:</span>
+
+<span class="sd">    .. math:: </span>
+
+<span class="sd">        H\ H &amp;\to I</span>
+<span class="sd">    </span>
+<span class="sd">        X\ X &amp;\to I</span>
+<span class="sd">    </span>
+<span class="sd">        X_{\theta} X_{-\theta} &amp;\to I</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        circ: The circuit on which 1q gates are to be combined.</span>
+<span class="sd">        qubits: Qubit indices on which 1q gates are to be combined.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        circ_new: The circuit after certain 1q gates are combined.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">inst_tups</span> <span class="o">=</span> <span class="n">circ</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">qubits</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">qreg</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">get_registers_in_inst_tups</span><span class="p">(</span><span class="n">inst_tups</span><span class="p">)</span>
+        <span class="n">qubits</span> <span class="o">=</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">qreg</span><span class="p">))</span>
+
+    <span class="c1"># for i, (inst, qargs, cargs) in enumerate(inst_tups[:10]):</span>
+    <span class="c1">#     print(i, inst.name, qargs, cargs)</span>
+
+    <span class="n">del_inds</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">q</span> <span class="ow">in</span> <span class="n">qubits</span><span class="p">:</span>
+        <span class="c1"># Initialize i_old and inst_old. i_old is the index of the previous 1q gate,</span>
+        <span class="c1"># and inst_old, which is set to UGate(0, 0, 0), is a sentinel that should not appear</span>
+        <span class="c1"># in the circuit.</span>
+        <span class="n">i_old</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="n">inst_old</span> <span class="o">=</span> <span class="n">UGate</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="p">(</span><span class="n">inst</span><span class="p">,</span> <span class="n">qargs</span><span class="p">,</span> <span class="n">_</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">inst_tups</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">q</span> <span class="ow">in</span> <span class="p">[</span><span class="n">x</span><span class="o">.</span><span class="n">_index</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">qargs</span><span class="p">]:</span>
+                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">qargs</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>  <span class="c1"># 1q gate</span>
+                    <span class="c1"># if verbose and inst.name == &#39;rx&#39; and qargs[0]._index == 1:</span>
+                    <span class="c1">#     print(i, &#39;inst params&#39;, inst.params[0], len(qargs))</span>
+                    <span class="k">if</span> <span class="n">inst</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="n">inst_old</span><span class="o">.</span><span class="n">name</span><span class="p">:</span>
+                        <span class="c1"># if inst.name == &#39;rx&#39;: print(q, inst.params[0], inst_old.params[0])</span>
+                        <span class="c1"># Encountering a 1q gate the same as the previous gate. The two gates are</span>
+                        <span class="c1"># deleted when they are H gates, X gates, or Rx(\theta) and Rx(-\theta).</span>
+                        <span class="k">if</span> <span class="n">inst</span><span class="o">.</span><span class="n">name</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;h&quot;</span><span class="p">,</span> <span class="s2">&quot;x&quot;</span><span class="p">]</span> <span class="ow">or</span> <span class="p">(</span>
+                            <span class="n">inst</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="s2">&quot;rx&quot;</span>
+                            <span class="ow">and</span> <span class="nb">abs</span><span class="p">(</span><span class="n">inst</span><span class="o">.</span><span class="n">params</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="n">inst_old</span><span class="o">.</span><span class="n">params</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">&lt;</span> <span class="mf">1e-8</span>
+                        <span class="p">):</span>
+                            <span class="n">del_inds</span> <span class="o">+=</span> <span class="p">[</span><span class="n">i_old</span><span class="p">,</span> <span class="n">i</span><span class="p">]</span>
+                            <span class="n">i_old</span> <span class="o">=</span> <span class="kc">None</span>
+                            <span class="n">inst_old</span> <span class="o">=</span> <span class="n">UGate</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="c1"># Encountering a 1q gate not the same as the previous gate.</span>
+                        <span class="c1"># Update i_old and inst_old and continue the search.</span>
+                        <span class="n">i_old</span> <span class="o">=</span> <span class="n">i</span>
+                        <span class="n">inst_old</span> <span class="o">=</span> <span class="n">inst</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="c1"># Encountering a 2q gate. Start over the search by resetting i_old and inst_old.</span>
+                    <span class="n">i_old</span> <span class="o">=</span> <span class="kc">None</span>
+                    <span class="n">inst_old</span> <span class="o">=</span> <span class="n">UGate</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+
+    <span class="c1"># Create the new instruction tuples, which do not contain gates with indices in del_inds.</span>
+    <span class="n">inst_tups_new</span> <span class="o">=</span> <span class="p">[</span><span class="n">inst_tups</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">inst_tups</span><span class="p">))</span> <span class="k">if</span> <span class="n">i</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">del_inds</span><span class="p">]</span>
+
+    <span class="c1"># Create the transpiled circuit and check it is equivalent to the original circuit.</span>
+    <span class="n">circ_new</span> <span class="o">=</span> <span class="n">create_circuit_from_inst_tups</span><span class="p">(</span><span class="n">inst_tups_new</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="n">circuit_equal</span><span class="p">(</span><span class="n">circ</span><span class="p">,</span> <span class="n">circ_new</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">circ_new</span></div>
+
+
+<div class="viewcode-block" id="combine_2q_gates"><a class="viewcode-back" href="../../../fd_greens.main.transpilation.html#fd_greens.main.transpilation.combine_2q_gates">[docs]</a><span class="k">def</span> <span class="nf">combine_2q_gates</span><span class="p">(</span>
+    <span class="n">circ</span><span class="p">:</span> <span class="n">QuantumCircuit</span><span class="p">,</span> <span class="n">qubit_pairs</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Iterable</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">QuantumCircuit</span><span class="p">:</span>
+    <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Combines certain two-qubit gates into identities on given qubit pairs.</span>
+
+<span class="sd">    The combination rules used in this function are:</span>
+
+<span class="sd">    .. math::</span>
+
+<span class="sd">        \text{CZ}\ \text{CZ} &amp;\to I</span>
+
+<span class="sd">        \text{SWAP}\ \text{SWAP} &amp;\to I</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        circ: The circuit on which certain two-qubit gates need to be combined.</span>
+<span class="sd">        qubit_pairs: An iterable of the qubit pairs on which two-qubit gates are combined.</span>
+<span class="sd">    </span>
+<span class="sd">    Returns:</span>
+<span class="sd">        circ_new: The new circuit after certain two-qubit gates are combined.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">inst_tups</span> <span class="o">=</span> <span class="n">circ</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">qubit_pairs</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">qreg</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">get_registers_in_inst_tups</span><span class="p">(</span><span class="n">inst_tups</span><span class="p">)</span>
+        <span class="n">qubits</span> <span class="o">=</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">qreg</span><span class="p">))</span>
+        <span class="n">qubit_pairs</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">combinations</span><span class="p">(</span><span class="n">qubits</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span>
+
+    <span class="n">del_inds</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">count</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">for</span> <span class="n">q_pair</span> <span class="ow">in</span> <span class="n">qubit_pairs</span><span class="p">:</span>
+        <span class="n">i_old</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="n">inst_old</span> <span class="o">=</span> <span class="n">UGate</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="p">(</span><span class="n">inst</span><span class="p">,</span> <span class="n">qargs</span><span class="p">,</span> <span class="n">_</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">inst_tups</span><span class="p">):</span>
+            <span class="n">qarg_inds</span> <span class="o">=</span> <span class="p">[</span><span class="n">x</span><span class="o">.</span><span class="n">_index</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">qargs</span><span class="p">]</span>
+            <span class="k">if</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">q_pair</span><span class="p">)</span> <span class="o">==</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">qarg_inds</span><span class="p">):</span>
+                <span class="k">if</span> <span class="p">(</span>
+                    <span class="p">(</span>
+                        <span class="n">inst</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="n">inst_old</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="s2">&quot;cp&quot;</span>
+                        <span class="ow">and</span> <span class="n">inst</span><span class="o">.</span><span class="n">params</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="n">inst_old</span><span class="o">.</span><span class="n">params</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span>
+                    <span class="p">)</span>
+                    <span class="ow">or</span> <span class="n">inst</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="n">inst_old</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="s2">&quot;cz&quot;</span>
+                    <span class="ow">or</span> <span class="n">inst</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="n">inst_old</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="s2">&quot;swap&quot;</span>
+                <span class="p">):</span>
+                    <span class="n">del_inds</span> <span class="o">+=</span> <span class="p">[</span><span class="n">i_old</span><span class="p">,</span> <span class="n">i</span><span class="p">]</span>
+                    <span class="n">i_old</span> <span class="o">=</span> <span class="kc">None</span>
+                    <span class="n">inst_old</span> <span class="o">=</span> <span class="n">UGate</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">i_old</span> <span class="o">=</span> <span class="n">i</span>
+                    <span class="n">inst_old</span> <span class="o">=</span> <span class="n">inst</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="c1"># Encountering a gate that is not a CS gate. Start over the search by</span>
+                <span class="c1"># resetting i_old and inst_old to the initial values.</span>
+                <span class="n">i_old</span> <span class="o">=</span> <span class="kc">None</span>
+                <span class="n">inst_old</span> <span class="o">=</span> <span class="n">UGate</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+
+    <span class="c1"># Include only the gates that are not in del_inds. Insert CZ gates</span>
+    <span class="c1"># at the insert_inds and create the new circuit.</span>
+    <span class="n">inst_tups_new</span> <span class="o">=</span> <span class="p">[</span><span class="n">inst_tups</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">inst_tups</span><span class="p">))</span> <span class="k">if</span> <span class="n">i</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">del_inds</span><span class="p">]</span>
+    <span class="n">circ_new</span> <span class="o">=</span> <span class="n">create_circuit_from_inst_tups</span><span class="p">(</span><span class="n">inst_tups_new</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="n">circuit_equal</span><span class="p">(</span><span class="n">circ</span><span class="p">,</span> <span class="n">circ_new</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">circ_new</span></div>
+
+
+<div class="viewcode-block" id="transpile_subcircuit"><a class="viewcode-back" href="../../../fd_greens.main.transpilation.html#fd_greens.main.transpilation.transpile_subcircuit">[docs]</a><span class="k">def</span> <span class="nf">transpile_subcircuit</span><span class="p">(</span>
+    <span class="n">circ</span><span class="p">:</span> <span class="n">QuantumCircuit</span><span class="p">,</span> <span class="n">qubits_trans_map</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">QuantumCircuit</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Transpiles a circuit by transpiling the subcircuits.</span>
+<span class="sd">    </span>
+<span class="sd">    This function is carried out by:</span>
+<span class="sd">    </span>
+<span class="sd">    1. Split the circuit into subcircuits</span>
+<span class="sd">    </span>
+<span class="sd">    2. Apply the simplification functions</span>
+<span class="sd">    </span>
+<span class="sd">    3. Merge into the main circuit.</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        circ: The circuit to be transpiled.</span>
+<span class="sd">        qubits_trans_map: A dictionary with qubit indices as the keys and transpilation</span>
+<span class="sd">            function strings as the values.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        circ_new: The circuit after transpiling on the subcircuits.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># print(&#39;circ\n&#39;, circ)</span>
+    <span class="n">inst_tups</span> <span class="o">=</span> <span class="n">circ</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    <span class="k">for</span> <span class="n">qubits</span><span class="p">,</span> <span class="n">trans_strs</span> <span class="ow">in</span> <span class="n">qubits_trans_map</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="c1"># Split the inst_tups of the main circuit into a subcircuit and a main circuit.</span>
+        <span class="c1"># Also record the barrier locations which will be used in reconstructing the circuit.</span>
+        <span class="n">inst_tups_sub</span><span class="p">,</span> <span class="n">inst_tups_main</span><span class="p">,</span> <span class="n">barr_loc</span> <span class="o">=</span> <span class="n">split_subcircuit</span><span class="p">(</span><span class="n">inst_tups</span><span class="p">,</span> <span class="n">qubits</span><span class="p">)</span>
+        <span class="c1"># print(create_circuit_from_inst_tups(inst_tups_sub))</span>
+        <span class="c1"># print(inst_tups_main)</span>
+        <span class="c1"># inst_tups_main = [inst_tup for inst_tup in inst_tups_main if inst_tup[0] is not None]</span>
+        <span class="c1"># print(create_circuit_from_inst_tups([inst_tup for inst_tup in inst_tups_main if inst_tup[0] is not None]))</span>
+
+        <span class="k">for</span> <span class="n">trans_str</span> <span class="ow">in</span> <span class="n">trans_strs</span><span class="p">:</span>
+            <span class="n">trans_func</span> <span class="o">=</span> <span class="n">transpilation_dict</span><span class="p">[</span><span class="n">trans_str</span><span class="p">]</span>
+            <span class="n">inst_tups_sub</span> <span class="o">=</span> <span class="n">trans_func</span><span class="p">(</span><span class="n">inst_tups_sub</span><span class="p">)</span>
+        <span class="n">inst_tups</span> <span class="o">=</span> <span class="n">merge_subcircuit</span><span class="p">(</span><span class="n">inst_tups_sub</span><span class="p">,</span> <span class="n">inst_tups_main</span><span class="p">,</span> <span class="n">barr_loc</span><span class="p">,</span> <span class="n">qubits</span><span class="p">)</span>
+        <span class="c1"># print(create_circuit_from_inst_tups(inst_tups.copy()))</span>
+
+    <span class="c1"># print(&#39;circ\n&#39;, circ)</span>
+    <span class="n">circ_new</span> <span class="o">=</span> <span class="n">create_circuit_from_inst_tups</span><span class="p">(</span><span class="n">inst_tups</span><span class="p">)</span>
+    <span class="c1"># print(&#39;circ_new\n&#39;, circ_new)</span>
+    <span class="k">assert</span> <span class="n">circuit_equal</span><span class="p">(</span><span class="n">circ</span><span class="p">,</span> <span class="n">circ_new</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">circ_new</span></div>
+
+
+<div class="viewcode-block" id="split_subcircuit"><a class="viewcode-back" href="../../../fd_greens.main.transpilation.html#fd_greens.main.transpilation.split_subcircuit">[docs]</a><span class="k">def</span> <span class="nf">split_subcircuit</span><span class="p">(</span>
+    <span class="n">inst_tups</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">InstructionTuple</span><span class="p">],</span> <span class="n">qubits_subcirc</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="n">InstructionTuple</span><span class="p">],</span> <span class="n">List</span><span class="p">[</span><span class="n">InstructionTuple</span><span class="p">],</span> <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]]:</span>
+    <span class="sd">&quot;&quot;&quot;Splits a subcircuit from a circuit.</span>
+
+<span class="sd">    This function is called as a subroutine of ``transpile_subcircuit``.</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        inst_tups: The circuit that need to be split in instruction tuple form.</span>
+<span class="sd">        qubits_subcirc: The qubit indices of the subcircuit.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        inst_tups_sub: The subcircuit instruction tuples.</span>
+<span class="sd">        inst_tups_main: The main circuit instruction tuples.</span>
+<span class="sd">        barr_loc: The main-circuit locations of the barriers in the subcircuits.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">n_qubits</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">qubits_subcirc</span><span class="p">)</span>
+    <span class="n">map_qubits</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">qubits_gate</span><span class="p">:</span> <span class="p">[</span><span class="n">qubits_subcirc</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">q</span><span class="p">)</span> <span class="k">for</span> <span class="n">q</span> <span class="ow">in</span> <span class="n">qubits_gate</span><span class="p">]</span>
+
+    <span class="c1"># inst_tups = circ.data.copy()</span>
+    <span class="n">barr_loc</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">inst_tups_sub</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">inst_tups_main</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="p">(</span><span class="n">inst</span><span class="p">,</span> <span class="n">qargs</span><span class="p">,</span> <span class="n">cargs</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">inst_tups</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">qargs</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="nb">int</span><span class="p">):</span>
+            <span class="n">qubits_gate</span> <span class="o">=</span> <span class="n">qargs</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">qubits_gate</span> <span class="o">=</span> <span class="p">[</span><span class="n">q</span><span class="o">.</span><span class="n">_index</span> <span class="k">for</span> <span class="n">q</span> <span class="ow">in</span> <span class="n">qargs</span><span class="p">]</span>
+
+        <span class="c1"># if qargs_ind == qubits:</span>
+        <span class="k">if</span> <span class="nb">set</span><span class="p">(</span><span class="n">qubits_gate</span><span class="p">)</span><span class="o">.</span><span class="n">issubset</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">qubits_subcirc</span><span class="p">)):</span>
+            <span class="c1"># Gate qubits are a subset of subcircuit qubits. Append the instruction tuple to the</span>
+            <span class="c1"># subcircuit. Append (None, None, None) to the main circuit, which will be handled</span>
+            <span class="c1"># in the merge function.</span>
+            <span class="n">inst_tups_sub</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">inst</span><span class="p">,</span> <span class="n">map_qubits</span><span class="p">(</span><span class="n">qubits_gate</span><span class="p">),</span> <span class="n">cargs</span><span class="p">))</span>
+            <span class="n">inst_tups_main</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">))</span>
+            <span class="c1"># inst_tups_main += [(None, None, None)]</span>
+        <span class="k">elif</span> <span class="nb">set</span><span class="p">(</span><span class="n">qubits_gate</span><span class="p">)</span><span class="o">.</span><span class="n">intersection</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">qubits_subcirc</span><span class="p">)):</span>
+            <span class="c1"># Gate qubits intersect subcircuit qubits. Insert a barrier in the circuit and</span>
+            <span class="c1"># record the barrier location. Append the instruction tuple to the main circuit.</span>
+            <span class="n">barr_loc</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
+            <span class="n">inst_tups_sub</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">Barrier</span><span class="p">(</span><span class="n">n_qubits</span><span class="p">),</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_qubits</span><span class="p">),</span> <span class="p">[]))</span>
+            <span class="n">inst_tups_main</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">inst</span><span class="p">,</span> <span class="n">qargs</span><span class="p">,</span> <span class="n">cargs</span><span class="p">))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># Gate qubits do not overlap with subcircuit qubits. Only append the instruction tuple</span>
+            <span class="c1"># to the main circuit.</span>
+            <span class="n">inst_tups_main</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">inst</span><span class="p">,</span> <span class="n">qargs</span><span class="p">,</span> <span class="n">cargs</span><span class="p">))</span>
+
+    <span class="k">return</span> <span class="n">inst_tups_sub</span><span class="p">,</span> <span class="n">inst_tups_main</span><span class="p">,</span> <span class="n">barr_loc</span></div>
+
+
+<div class="viewcode-block" id="merge_subcircuit"><a class="viewcode-back" href="../../../fd_greens.main.transpilation.html#fd_greens.main.transpilation.merge_subcircuit">[docs]</a><span class="k">def</span> <span class="nf">merge_subcircuit</span><span class="p">(</span>
+    <span class="n">inst_tups_sub</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">InstructionTuple</span><span class="p">],</span>
+    <span class="n">inst_tups_main</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">InstructionTuple</span><span class="p">],</span>
+    <span class="n">barr_loc</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span>
+    <span class="n">qubits</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">QuantumCircuit</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Merges a subcircuit into the main circuit.</span>
+<span class="sd">    </span>
+<span class="sd">    This function is called as a subroutine of ``transpile_subcircuit``.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        inst_tups_sub: Instruction tuples of the subcircuit.</span>
+<span class="sd">        inst_tups_main: Instruction tuples of the main circuit.</span>
+<span class="sd">        barr_loc: Locations of the barriers in the main circuit.</span>
+<span class="sd">        qubits: Qubit indices of the subcircuit.</span>
+<span class="sd">    </span>
+<span class="sd">    Returns:</span>
+<span class="sd">        inst_tups: The instruction tuples after merging the subcircuit and the main circuit.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">map_qubits</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="p">[</span><span class="n">qubits</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">x</span><span class="p">]</span>
+    <span class="n">inst_tups</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="n">barr_inds</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">inst_tups_sub_new</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">barr_ind</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
+    <span class="k">for</span> <span class="n">inst</span><span class="p">,</span> <span class="n">qargs</span><span class="p">,</span> <span class="n">cargs</span> <span class="ow">in</span> <span class="n">inst_tups_sub</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">inst</span><span class="o">.</span><span class="n">name</span> <span class="o">!=</span> <span class="s2">&quot;barrier&quot;</span><span class="p">:</span>
+            <span class="n">inst_tups_sub_new</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">inst</span><span class="p">,</span> <span class="n">qargs</span><span class="p">,</span> <span class="n">cargs</span><span class="p">))</span>
+            <span class="n">barr_inds</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">barr_ind</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">barr_ind</span> <span class="o">=</span> <span class="n">barr_loc</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+
+    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="p">(</span><span class="n">inst</span><span class="p">,</span> <span class="n">qargs</span><span class="p">,</span> <span class="n">cargs</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">inst_tups_main</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">inst</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="c1"># If the instruction is not one of the subcircuit instructions,</span>
+            <span class="c1"># just append it to inst_tups.</span>
+            <span class="n">inst_tups</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">inst</span><span class="p">,</span> <span class="n">qargs</span><span class="p">,</span> <span class="n">cargs</span><span class="p">))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># Look for instruction in inst_tups_sub.</span>
+            <span class="c1"># print(&#39;barr_inds =&#39;, barr_inds)</span>
+            <span class="c1"># barr_ind = barr_inds[0]</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">barr_inds</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">i</span> <span class="o">&gt;</span> <span class="n">barr_inds</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span>
+                <span class="n">inst_</span><span class="p">,</span> <span class="n">qargs_</span><span class="p">,</span> <span class="n">cargs_</span> <span class="o">=</span> <span class="n">inst_tups_sub_new</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+                <span class="n">inst_tups</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">inst_</span><span class="p">,</span> <span class="n">map_qubits</span><span class="p">(</span><span class="n">qargs_</span><span class="p">),</span> <span class="n">cargs_</span><span class="p">))</span>
+                <span class="n">barr_inds</span> <span class="o">=</span> <span class="n">barr_inds</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span>
+
+    <span class="c1"># circ = create_circuit_from_inst_tups(inst_tups)</span>
+    <span class="k">return</span> <span class="n">inst_tups</span></div>
+
+
+<div class="viewcode-block" id="simplify_xzpi2x"><a class="viewcode-back" href="../../../fd_greens.main.transpilation.html#fd_greens.main.transpilation.simplify_xzpi2x">[docs]</a><span class="k">def</span> <span class="nf">simplify_xzpi2x</span><span class="p">(</span>
+    <span class="n">circ</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">QuantumCircuit</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">InstructionTuple</span><span class="p">]]</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">QuantumCircuit</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">InstructionTuple</span><span class="p">]]:</span>
+    <span class="sd">&quot;&quot;&quot;Simplifies :math:`X_{\pi/2}Z_{\pi/2}X_{\pi/2}` to :math:`Z_{\pi/2}X_{\pi/2}Z_{\pi/2}`</span>
+<span class="sd">    on a single-qubit circuit.</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        circ: A circuit on which :math:`X_{\pi/2}Z_{\pi/2}X_{\pi/2}` need to be simplified.</span>
+<span class="sd">    </span>
+<span class="sd">    Returns:</span>
+<span class="sd">        circ_new: The new circuit after the simplifying :math:`X_{\pi/2}Z_{\pi/2}X_{\pi/2}`.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># assert len(circ.qregs[0]) == 1</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">circ</span><span class="p">,</span> <span class="n">QuantumCircuit</span><span class="p">):</span>
+        <span class="n">inst_tups</span> <span class="o">=</span> <span class="n">circ</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">inst_tups</span> <span class="o">=</span> <span class="n">circ</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    <span class="n">inst_tups_new</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">inst_tups_running</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="n">called</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="k">for</span> <span class="n">inst</span><span class="p">,</span> <span class="n">qargs</span><span class="p">,</span> <span class="n">cargs</span> <span class="ow">in</span> <span class="n">inst_tups</span><span class="p">:</span>
+        <span class="c1"># Always append the instruction tuple to inst_tups_new.</span>
+        <span class="c1"># If transpilation is carried out, inst_tups_new is modified at the end.</span>
+        <span class="n">inst_tups_new</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">inst</span><span class="p">,</span> <span class="n">qargs</span><span class="p">,</span> <span class="n">cargs</span><span class="p">))</span>
+
+        <span class="k">if</span> <span class="n">inst</span> <span class="o">==</span> <span class="n">RXGate</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">/</span> <span class="mi">2</span><span class="p">):</span>
+            <span class="c1"># If the gate is X(pi/2), append to inst_tups_running if it contains 0 or 2 elements,</span>
+            <span class="c1"># otherwise reset inst_tups_running to [X(pi/2)].</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">inst_tups_running</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">or</span> <span class="nb">len</span><span class="p">(</span><span class="n">inst_tups_running</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+                <span class="n">inst_tups_running</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">inst</span><span class="p">,</span> <span class="n">qargs</span><span class="p">,</span> <span class="n">cargs</span><span class="p">))</span>
+            <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">inst_tups_running</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="n">inst_tups_running</span> <span class="o">=</span> <span class="p">[(</span><span class="n">inst</span><span class="p">,</span> <span class="n">qargs</span><span class="p">,</span> <span class="n">cargs</span><span class="p">)]</span>
+        <span class="k">elif</span> <span class="n">inst</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="s2">&quot;rz&quot;</span> <span class="ow">and</span> <span class="nb">abs</span><span class="p">(</span><span class="n">inst</span><span class="o">.</span><span class="n">params</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">==</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">/</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="c1"># If the gate is Z(pi/2), append to inst_tups_running if it contains 1 element,</span>
+            <span class="c1"># otherwise reset inst_tups_running to [].</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">inst_tups_running</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="n">inst_tups_running</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">inst</span><span class="p">,</span> <span class="n">qargs</span><span class="p">,</span> <span class="n">cargs</span><span class="p">))</span>
+            <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">inst_tups_running</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">or</span> <span class="nb">len</span><span class="p">(</span><span class="n">inst_tups_running</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+                <span class="n">inst_tups_running</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># The gate is neither X(pi/2) nor Z(pi/2). Reset inst_tups_running to [].</span>
+            <span class="n">inst_tups_running</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="c1"># print(&#39;len(inst_tups_running) =&#39;, len(inst_tups_running))</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">inst_tups_running</span><span class="p">)</span> <span class="o">==</span> <span class="mi">3</span><span class="p">:</span>
+            <span class="c1"># inst_tups_running is of the form [X(pi/2), Z(pi/2), X(pi/2)].</span>
+            <span class="c1"># Remove the last 3 elements of inst_tups_new and append [Z(pi/2), X(pi/2), Z(pi/2)].</span>
+            <span class="n">inst_tups_new</span> <span class="o">=</span> <span class="n">inst_tups_new</span><span class="p">[:</span><span class="o">-</span><span class="mi">3</span><span class="p">]</span>
+            <span class="n">z_angle</span> <span class="o">=</span> <span class="n">inst_tups_running</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">params</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">inst_tups_new</span> <span class="o">+=</span> <span class="p">[</span>
+                <span class="p">(</span><span class="n">RZGate</span><span class="p">(</span><span class="n">z_angle</span><span class="p">),</span> <span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="p">[]),</span>
+                <span class="p">(</span><span class="n">RXGate</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">/</span> <span class="mi">2</span><span class="p">),</span> <span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="p">[]),</span>
+                <span class="p">(</span><span class="n">RZGate</span><span class="p">(</span><span class="n">z_angle</span><span class="p">),</span> <span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="p">[]),</span>
+            <span class="p">]</span>
+
+            <span class="c1"># Set called to True so that the function will be called again recursively.</span>
+            <span class="c1"># Reset inst_tups_running to [] so that the chain of gates will be built up again.</span>
+            <span class="n">called</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="n">inst_tups_running</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="k">assert</span> <span class="n">circuit_equal</span><span class="p">(</span><span class="n">inst_tups</span><span class="p">,</span> <span class="n">inst_tups_new</span><span class="p">,</span> <span class="n">init_state_0</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">circ</span><span class="p">,</span> <span class="n">QuantumCircuit</span><span class="p">):</span>
+        <span class="n">circ_new</span> <span class="o">=</span> <span class="n">create_circuit_from_inst_tups</span><span class="p">(</span><span class="n">inst_tups_new</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">circ_new</span> <span class="o">=</span> <span class="n">inst_tups_new</span>
+
+    <span class="c1"># If called is True, call the function again recursively. Otherwise return the circuit.</span>
+    <span class="k">if</span> <span class="n">called</span><span class="p">:</span>
+        <span class="n">circ_new</span> <span class="o">=</span> <span class="n">simplify_xzpi2x</span><span class="p">(</span><span class="n">circ_new</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">circ_new</span></div>
+
+
+<div class="viewcode-block" id="simplify_xzpix"><a class="viewcode-back" href="../../../fd_greens.main.transpilation.html#fd_greens.main.transpilation.simplify_xzpix">[docs]</a><span class="k">def</span> <span class="nf">simplify_xzpix</span><span class="p">(</span>
+    <span class="n">circ</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">QuantumCircuit</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">InstructionTuple</span><span class="p">]]</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">QuantumCircuit</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">InstructionTuple</span><span class="p">]]:</span>
+    <span class="sd">&quot;&quot;&quot;Simplifies :math:`X_{\pi/2}Z_{\pi}X_{\pi/2}` to :math:`Z_{\pi}` recursively</span>
+<span class="sd">    on a single-qubit subcircuit.</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        circ: A circuit on which :math:`X_{\pi/2}Z_{\pi}X_{\pi/2}` need to be simplified.</span>
+<span class="sd">    </span>
+<span class="sd">    Returns:</span>
+<span class="sd">        circ_new: The new circuit after simplifying :math:`X_{\pi/2}Z_{\pi}X_{\pi/2}`.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># assert len(circ.qregs[0]) == 1</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">circ</span><span class="p">,</span> <span class="n">QuantumCircuit</span><span class="p">):</span>
+        <span class="n">inst_tups</span> <span class="o">=</span> <span class="n">circ</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">inst_tups</span> <span class="o">=</span> <span class="n">circ</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    <span class="n">inst_tups_new</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">inst_tups_running</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="n">called</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="k">for</span> <span class="n">inst</span><span class="p">,</span> <span class="n">qargs</span><span class="p">,</span> <span class="n">cargs</span> <span class="ow">in</span> <span class="n">inst_tups</span><span class="p">:</span>
+        <span class="c1"># Always append the instruction tuple to inst_tups_new.</span>
+        <span class="c1"># If transpilation is carried out, inst_tups_new is modified at the end.</span>
+        <span class="n">inst_tups_new</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">inst</span><span class="p">,</span> <span class="n">qargs</span><span class="p">,</span> <span class="n">cargs</span><span class="p">))</span>
+
+        <span class="k">if</span> <span class="n">inst</span> <span class="o">==</span> <span class="n">RXGate</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">/</span> <span class="mi">2</span><span class="p">):</span>
+            <span class="c1"># If the gate is X(pi/2), append to inst_tups_running if it contains 0 or 2 elements,</span>
+            <span class="c1"># otherwise reset inst_tups_running to [X(pi/2)].</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">inst_tups_running</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">or</span> <span class="nb">len</span><span class="p">(</span><span class="n">inst_tups_running</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+                <span class="n">inst_tups_running</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">inst</span><span class="p">,</span> <span class="n">qargs</span><span class="p">,</span> <span class="n">cargs</span><span class="p">))</span>
+            <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">inst_tups_running</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="n">inst_tups_running</span> <span class="o">=</span> <span class="p">[(</span><span class="n">inst</span><span class="p">,</span> <span class="n">qargs</span><span class="p">,</span> <span class="n">cargs</span><span class="p">)]</span>
+        <span class="k">elif</span> <span class="n">inst</span> <span class="o">==</span> <span class="n">RZGate</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">):</span>
+            <span class="c1"># If the gate is Z(pi), append to inst_tups_running if it contains 1 element,</span>
+            <span class="c1"># otherwise reset inst_tups_running to [].</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">inst_tups_running</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="n">inst_tups_running</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">inst</span><span class="p">,</span> <span class="n">qargs</span><span class="p">,</span> <span class="n">cargs</span><span class="p">))</span>
+            <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">inst_tups_running</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">or</span> <span class="nb">len</span><span class="p">(</span><span class="n">inst_tups_running</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+                <span class="n">inst_tups_running</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># The gate is neither X(pi/2) nor Z(pi/2). Reset inst_tups_running to [].</span>
+            <span class="n">inst_tups_running</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="c1"># print(&#39;len(inst_tups_running) =&#39;, len(inst_tups_running))</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">inst_tups_running</span><span class="p">)</span> <span class="o">==</span> <span class="mi">3</span><span class="p">:</span>
+            <span class="c1"># inst_tups_running is of the form [X(pi/2), Z(pi/2), X(pi/2)].</span>
+            <span class="c1"># Remove the last 3 elements of inst_tups_new and append [Z(pi/2), X(pi/2), Z(pi/2)].</span>
+            <span class="n">inst_tups_new</span> <span class="o">=</span> <span class="n">inst_tups_new</span><span class="p">[:</span><span class="o">-</span><span class="mi">3</span><span class="p">]</span>
+            <span class="c1"># inst_tups_new += [(RZGate(np.pi/2), [0], []),</span>
+            <span class="c1">#                   (RXGate(np.pi/2), [0], []),</span>
+            <span class="c1">#                   (RZGate(np.pi/2), [0], [])]</span>
+            <span class="n">inst_tups_new</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">RZGate</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">),</span> <span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="p">[]))</span>
+
+            <span class="c1"># Set called to True so that the function will be called again recursively.</span>
+            <span class="c1"># Reset inst_tups_running to [] so that the chain of gates will be built up again.</span>
+            <span class="n">called</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="n">inst_tups_running</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="c1"># print(&#39;called =&#39;, called)</span>
+
+    <span class="k">assert</span> <span class="n">circuit_equal</span><span class="p">(</span><span class="n">inst_tups</span><span class="p">,</span> <span class="n">inst_tups_new</span><span class="p">,</span> <span class="n">init_state_0</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">circ</span><span class="p">,</span> <span class="n">QuantumCircuit</span><span class="p">):</span>
+        <span class="n">circ_new</span> <span class="o">=</span> <span class="n">create_circuit_from_inst_tups</span><span class="p">(</span><span class="n">inst_tups_new</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">circ_new</span> <span class="o">=</span> <span class="n">inst_tups_new</span>
+
+    <span class="c1"># If called is True, call the function again recursively. Otherwise return the circuit.</span>
+    <span class="k">if</span> <span class="n">called</span><span class="p">:</span>
+        <span class="n">circ_new</span> <span class="o">=</span> <span class="n">simplify_xzpix</span><span class="p">(</span><span class="n">circ_new</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">circ_new</span></div>
+
+
+<div class="viewcode-block" id="simplify_3xpi2"><a class="viewcode-back" href="../../../fd_greens.main.transpilation.html#fd_greens.main.transpilation.simplify_3xpi2">[docs]</a><span class="k">def</span> <span class="nf">simplify_3xpi2</span><span class="p">(</span>
+    <span class="n">circ</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">QuantumCircuit</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">InstructionTuple</span><span class="p">]]</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">QuantumCircuit</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">InstructionTuple</span><span class="p">]]:</span>
+    <span class="sd">&quot;&quot;&quot;Simplifies :math:`X_{\pi/2}X_{\pi/2}X_{\pi/2}` to :math:`Z_{\pi}X_{\pi/2}Z_{\pi}`</span>
+<span class="sd">    on a single-qubit circuit.</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        circ: A circuit on which :math:`X_{\pi/2}X_{\pi/2}X_{\pi/2}` need to be simplified.</span>
+<span class="sd">        </span>
+<span class="sd">    Returns:</span>
+<span class="sd">        circ_new: The new circuit after simplifying :math:`X_{\pi/2}X_{\pi/2}X_{\pi/2}`.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># assert len(circ.qregs[0]) == 1</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">circ</span><span class="p">,</span> <span class="n">QuantumCircuit</span><span class="p">):</span>
+        <span class="n">inst_tups</span> <span class="o">=</span> <span class="n">circ</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">inst_tups</span> <span class="o">=</span> <span class="n">circ</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    <span class="n">inst_tups_new</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">inst_tups_running</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="n">called</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="k">for</span> <span class="n">inst</span><span class="p">,</span> <span class="n">qargs</span><span class="p">,</span> <span class="n">cargs</span> <span class="ow">in</span> <span class="n">inst_tups</span><span class="p">:</span>
+        <span class="c1"># Always append the instruction tuple to inst_tups_new.</span>
+        <span class="c1"># If transpilation is carried out, inst_tups_new is modified at the end.</span>
+        <span class="n">inst_tups_new</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">inst</span><span class="p">,</span> <span class="n">qargs</span><span class="p">,</span> <span class="n">cargs</span><span class="p">))</span>
+
+        <span class="k">if</span> <span class="n">inst</span> <span class="o">==</span> <span class="n">RXGate</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">/</span> <span class="mi">2</span><span class="p">):</span>
+            <span class="c1"># Append to inst_tups_running if the gate is X(pi/2).</span>
+            <span class="n">inst_tups_running</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">inst</span><span class="p">,</span> <span class="n">qargs</span><span class="p">,</span> <span class="n">cargs</span><span class="p">))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># The gate is not X(pi/2). Reset inst_tups_running to [].</span>
+            <span class="n">inst_tups_running</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="c1"># print(&#39;len(inst_tups_running) =&#39;, len(inst_tups_running))</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">inst_tups_running</span><span class="p">)</span> <span class="o">==</span> <span class="mi">3</span><span class="p">:</span>
+            <span class="c1"># inst_tups_running is of the form [X(pi/2), Z(pi/2), X(pi/2)].</span>
+            <span class="c1"># Remove the last 3 elements of inst_tups_new and append [Z(pi/2), X(pi/2), Z(pi/2)].</span>
+            <span class="n">inst_tups_new</span> <span class="o">=</span> <span class="n">inst_tups_new</span><span class="p">[:</span><span class="o">-</span><span class="mi">3</span><span class="p">]</span>
+            <span class="n">inst_tups_new</span> <span class="o">+=</span> <span class="p">[</span>
+                <span class="p">(</span><span class="n">RZGate</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">),</span> <span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="p">[]),</span>
+                <span class="p">(</span><span class="n">RXGate</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">/</span> <span class="mi">2</span><span class="p">),</span> <span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="p">[]),</span>
+                <span class="p">(</span><span class="n">RZGate</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">),</span> <span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="p">[]),</span>
+            <span class="p">]</span>
+
+            <span class="c1"># Set called to True so that the function will be called again recursively.</span>
+            <span class="c1"># Reset inst_tups_running to [] so that the chain of gates will be built up again.</span>
+            <span class="n">called</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="n">inst_tups_running</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="c1"># print(&#39;called =&#39;, called)</span>
+
+    <span class="k">assert</span> <span class="n">circuit_equal</span><span class="p">(</span><span class="n">inst_tups</span><span class="p">,</span> <span class="n">inst_tups_new</span><span class="p">,</span> <span class="n">init_state_0</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">circ</span><span class="p">,</span> <span class="n">QuantumCircuit</span><span class="p">):</span>
+        <span class="n">circ_new</span> <span class="o">=</span> <span class="n">create_circuit_from_inst_tups</span><span class="p">(</span><span class="n">inst_tups_new</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">circ_new</span> <span class="o">=</span> <span class="n">inst_tups_new</span>
+
+    <span class="c1"># If called is True, call the function again recursively. Otherwise return the circuit.</span>
+    <span class="k">if</span> <span class="n">called</span><span class="p">:</span>
+        <span class="n">circ_new</span> <span class="o">=</span> <span class="n">simplify_xzpix</span><span class="p">(</span><span class="n">circ_new</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">circ_new</span></div>
+
+
+<div class="viewcode-block" id="simplify_z_gates"><a class="viewcode-back" href="../../../fd_greens.main.transpilation.html#fd_greens.main.transpilation.simplify_z_gates">[docs]</a><span class="k">def</span> <span class="nf">simplify_z_gates</span><span class="p">(</span>
+    <span class="n">circ</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">QuantumCircuit</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">InstructionTuple</span><span class="p">]]</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">QuantumCircuit</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">InstructionTuple</span><span class="p">]]:</span>
+    <span class="sd">&quot;&quot;&quot;Simplifes series of Z gates on a single-qubit circuit.</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        circ: A circuit on which series of Z gates need to be simplified.</span>
+<span class="sd">        </span>
+<span class="sd">    Returns:</span>
+<span class="sd">        circ_new: The new circuit after simplifying series of Z gates.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># assert len(circ.qregs[0]) == 1</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">circ</span><span class="p">,</span> <span class="n">QuantumCircuit</span><span class="p">):</span>
+        <span class="n">inst_tups</span> <span class="o">=</span> <span class="n">circ</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">inst_tups</span> <span class="o">=</span> <span class="n">circ</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    <span class="n">inst_tups_new</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">z_angles</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="c1"># combined = False</span>
+    <span class="n">inst_tups</span> <span class="o">+=</span> <span class="p">[(</span><span class="n">Barrier</span><span class="p">(</span><span class="mi">1</span><span class="p">),</span> <span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="p">[])]</span>  <span class="c1"># Append sentinel</span>
+    <span class="k">for</span> <span class="n">inst</span><span class="p">,</span> <span class="n">qargs</span><span class="p">,</span> <span class="n">cargs</span> <span class="ow">in</span> <span class="n">inst_tups</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">inst</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="s2">&quot;rz&quot;</span><span class="p">:</span>
+            <span class="n">z_angles</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">inst</span><span class="o">.</span><span class="n">params</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">z_angles</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">angle</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">z_angles</span><span class="p">)</span> <span class="o">%</span> <span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">angle</span> <span class="o">&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">:</span>
+                    <span class="n">angle</span> <span class="o">-=</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span>  <span class="c1"># [-pi, pi)</span>
+                <span class="k">if</span> <span class="nb">abs</span><span class="p">(</span><span class="n">angle</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mf">1e-8</span><span class="p">:</span>
+                    <span class="n">inst_tups_new</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">RZGate</span><span class="p">(</span><span class="n">angle</span><span class="p">),</span> <span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="p">[]))</span>
+                <span class="n">z_angles</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="n">inst_tups_new</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">inst</span><span class="p">,</span> <span class="n">qargs</span><span class="p">,</span> <span class="n">cargs</span><span class="p">))</span>
+    <span class="n">inst_tups_new</span> <span class="o">=</span> <span class="n">inst_tups_new</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>  <span class="c1"># Remove setinel</span>
+
+    <span class="c1"># Create the new circuit and check if the two circuits are equivalent.</span>
+    <span class="c1"># circ_new = create_circuit_from_inst_tups(inst_tups_new)</span>
+    <span class="k">assert</span> <span class="n">circuit_equal</span><span class="p">(</span><span class="n">inst_tups</span><span class="p">,</span> <span class="n">inst_tups_new</span><span class="p">,</span> <span class="n">init_state_0</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">circ</span><span class="p">,</span> <span class="n">QuantumCircuit</span><span class="p">):</span>
+        <span class="n">circ_new</span> <span class="o">=</span> <span class="n">create_circuit_from_inst_tups</span><span class="p">(</span><span class="n">inst_tups_new</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">circ_new</span> <span class="o">=</span> <span class="n">inst_tups_new</span>
+    <span class="k">return</span> <span class="n">circ_new</span></div>
+
+
+<div class="viewcode-block" id="simplify_swap_gates"><a class="viewcode-back" href="../../../fd_greens.main.transpilation.html#fd_greens.main.transpilation.simplify_swap_gates">[docs]</a><span class="k">def</span> <span class="nf">simplify_swap_gates</span><span class="p">(</span>
+    <span class="n">circ</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">QuantumCircuit</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">InstructionTuple</span><span class="p">]]</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">QuantumCircuit</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">InstructionTuple</span><span class="p">]]:</span>
+    <span class="sd">&quot;&quot;&quot;Simplifies SWAP gates by exchanging the qubits between two SWAP gates and</span>
+<span class="sd">    removing the SWAP gates.</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        circ: A circuit on which SWAP gates need to be simplified.</span>
+<span class="sd">        </span>
+<span class="sd">    Returns:</span>
+<span class="sd">        circ_new: The new circuit after simplifying the SWAP gates.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># assert len(circ.qregs[0]) == 2</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">circ</span><span class="p">,</span> <span class="n">QuantumCircuit</span><span class="p">):</span>
+        <span class="n">inst_tups</span> <span class="o">=</span> <span class="n">circ</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">inst_tups</span> <span class="o">=</span> <span class="n">circ</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    <span class="n">inst_tups_new</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">inst_tups_running</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="n">called</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="n">status</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">for</span> <span class="n">inst</span><span class="p">,</span> <span class="n">qargs</span><span class="p">,</span> <span class="n">cargs</span> <span class="ow">in</span> <span class="n">inst_tups</span><span class="p">:</span>
+        <span class="n">inst_tups_new</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">inst</span><span class="p">,</span> <span class="n">qargs</span><span class="p">,</span> <span class="n">cargs</span><span class="p">))</span>
+
+        <span class="k">if</span> <span class="n">inst</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="s2">&quot;swap&quot;</span><span class="p">:</span>
+            <span class="n">inst_tups_running</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">inst</span><span class="p">,</span> <span class="n">qargs</span><span class="p">,</span> <span class="n">cargs</span><span class="p">))</span>
+            <span class="n">qargs_2q</span> <span class="o">=</span> <span class="n">qargs</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+            <span class="n">status</span> <span class="o">+=</span> <span class="mi">1</span>  <span class="c1"># 0 to 1 or 1 to 2</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">status</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">qargs</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+                    <span class="n">inst_tups_running</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                        <span class="p">(</span><span class="n">inst</span><span class="p">,</span> <span class="nb">list</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">qargs_2q</span><span class="p">)</span><span class="o">.</span><span class="n">difference</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">qargs</span><span class="p">))),</span> <span class="n">cargs</span><span class="p">)</span>
+                    <span class="p">)</span>
+                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">qargs</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">inst</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="s2">&quot;barrier&quot;</span><span class="p">:</span>
+                        <span class="n">status</span> <span class="o">=</span> <span class="mi">0</span>
+                        <span class="n">inst_tups_running</span> <span class="o">=</span> <span class="p">[]</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">inst_tups_running</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">inst</span><span class="p">,</span> <span class="nb">list</span><span class="p">(</span><span class="nb">reversed</span><span class="p">(</span><span class="n">qargs</span><span class="p">)),</span> <span class="n">cargs</span><span class="p">))</span>
+
+        <span class="c1"># print(&#39;status =&#39;, status)</span>
+        <span class="k">if</span> <span class="n">status</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="c1"># print(len(inst_tups_running))</span>
+            <span class="c1"># print(inst_tups_running)</span>
+            <span class="n">inst_tups_new</span> <span class="o">=</span> <span class="n">inst_tups_new</span><span class="p">[:</span> <span class="o">-</span><span class="nb">len</span><span class="p">(</span><span class="n">inst_tups_running</span><span class="p">)]</span>
+            <span class="n">inst_tups_new</span> <span class="o">+=</span> <span class="n">inst_tups_running</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+            <span class="n">called</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="n">inst_tups_running</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="n">status</span> <span class="o">=</span> <span class="mi">0</span>
+
+    <span class="c1"># print(create_circuit_from_inst_tups(inst_tups))</span>
+    <span class="c1"># print(create_circuit_from_inst_tups(inst_tups_new))</span>
+
+    <span class="k">assert</span> <span class="n">circuit_equal</span><span class="p">(</span><span class="n">inst_tups</span><span class="p">,</span> <span class="n">inst_tups_new</span><span class="p">,</span> <span class="n">init_state_0</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">circ</span><span class="p">,</span> <span class="n">QuantumCircuit</span><span class="p">):</span>
+        <span class="n">circ_new</span> <span class="o">=</span> <span class="n">create_circuit_from_inst_tups</span><span class="p">(</span><span class="n">inst_tups_new</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">circ_new</span> <span class="o">=</span> <span class="n">inst_tups_new</span>
+
+    <span class="k">if</span> <span class="n">called</span><span class="p">:</span>
+        <span class="n">circ_new</span> <span class="o">=</span> <span class="n">simplify_swap_gates</span><span class="p">(</span><span class="n">circ_new</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">circ_new</span></div>
+
+
+<div class="viewcode-block" id="simplify_czxcz"><a class="viewcode-back" href="../../../fd_greens.main.transpilation.html#fd_greens.main.transpilation.simplify_czxcz">[docs]</a><span class="k">def</span> <span class="nf">simplify_czxcz</span><span class="p">(</span>
+    <span class="n">circ</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">QuantumCircuit</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">InstructionTuple</span><span class="p">]]</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">QuantumCircuit</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">InstructionTuple</span><span class="p">]]:</span>
+    <span class="sd">&quot;&quot;&quot;Simplifies CZ IX CZ into ZX on a two-qubit circuit.</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        circ: A circuit on which CZ IX CZ need to be simplified.</span>
+<span class="sd">        </span>
+<span class="sd">    Returns:</span>
+<span class="sd">        circ_new: The new circuit after simplifying CZ IX CZ.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">circ</span><span class="p">,</span> <span class="n">QuantumCircuit</span><span class="p">):</span>
+        <span class="n">inst_tups</span> <span class="o">=</span> <span class="n">circ</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    <span class="k">else</span><span class="p">:</span>  <span class="c1"># instruction tuples</span>
+        <span class="n">inst_tups</span> <span class="o">=</span> <span class="n">circ</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    <span class="n">inst_tups_new</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">inst_tups_running</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="n">called</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="k">for</span> <span class="n">inst</span><span class="p">,</span> <span class="n">qargs</span><span class="p">,</span> <span class="n">cargs</span> <span class="ow">in</span> <span class="n">inst_tups</span><span class="p">:</span>
+        <span class="n">inst_tups_new</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">inst</span><span class="p">,</span> <span class="n">qargs</span><span class="p">,</span> <span class="n">cargs</span><span class="p">))</span>
+        <span class="k">if</span> <span class="n">inst</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="s2">&quot;cz&quot;</span><span class="p">:</span>
+            <span class="n">qargs_2q</span> <span class="o">=</span> <span class="n">qargs</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">inst_tups_running</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">or</span> <span class="nb">len</span><span class="p">(</span><span class="n">inst_tups_running</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+                <span class="n">inst_tups_running</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">inst</span><span class="p">,</span> <span class="n">qargs</span><span class="p">,</span> <span class="n">cargs</span><span class="p">))</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">inst_tups_running</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span>
+                <span class="n">inst_tups_running</span> <span class="o">=</span> <span class="p">[(</span><span class="n">inst</span><span class="p">,</span> <span class="n">qargs</span><span class="p">,</span> <span class="n">cargs</span><span class="p">)]</span>
+
+        <span class="k">elif</span> <span class="n">inst</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="s2">&quot;x&quot;</span><span class="p">:</span>
+            <span class="n">qargs_1q</span> <span class="o">=</span> <span class="n">qargs</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">inst_tups_running</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="n">inst_tups_running</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">inst</span><span class="p">,</span> <span class="n">qargs</span><span class="p">,</span> <span class="n">cargs</span><span class="p">))</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">inst_tups_running</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">or</span> <span class="nb">len</span><span class="p">(</span><span class="n">inst_tups_running</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span>
+                <span class="n">inst_tups_running</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">inst_tups_running</span><span class="p">)</span> <span class="o">==</span> <span class="mi">3</span><span class="p">:</span>
+            <span class="n">inst_tups_new</span> <span class="o">=</span> <span class="n">inst_tups_new</span><span class="p">[:</span><span class="o">-</span><span class="mi">3</span><span class="p">]</span>
+            <span class="n">inst_tups_new</span> <span class="o">+=</span> <span class="p">[</span>
+                <span class="p">(</span><span class="n">RZGate</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">),</span> <span class="nb">list</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">qargs_2q</span><span class="p">)</span><span class="o">.</span><span class="n">difference</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">qargs_1q</span><span class="p">))),</span> <span class="p">[]),</span>
+                <span class="p">(</span><span class="n">XGate</span><span class="p">(),</span> <span class="n">qargs_1q</span><span class="p">,</span> <span class="p">[]),</span>
+            <span class="p">]</span>
+
+            <span class="n">called</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="n">inst_tups_running</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="k">assert</span> <span class="n">circuit_equal</span><span class="p">(</span><span class="n">inst_tups</span><span class="p">,</span> <span class="n">inst_tups_new</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">circ</span><span class="p">,</span> <span class="n">QuantumCircuit</span><span class="p">):</span>
+        <span class="n">circ_new</span> <span class="o">=</span> <span class="n">create_circuit_from_inst_tups</span><span class="p">(</span><span class="n">inst_tups_new</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">circ_new</span> <span class="o">=</span> <span class="n">inst_tups_new</span>
+    <span class="k">return</span> <span class="n">circ_new</span></div>
+
+
+<span class="n">transpilation_dict</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;xzpi2x&quot;</span><span class="p">:</span> <span class="n">simplify_xzpi2x</span><span class="p">,</span>
+    <span class="s2">&quot;combz&quot;</span><span class="p">:</span> <span class="n">simplify_z_gates</span><span class="p">,</span>
+    <span class="s2">&quot;xzpix&quot;</span><span class="p">:</span> <span class="n">simplify_xzpix</span><span class="p">,</span>
+    <span class="s2">&quot;3xpi2&quot;</span><span class="p">:</span> <span class="n">simplify_3xpi2</span><span class="p">,</span>
+    <span class="s2">&quot;swap&quot;</span><span class="p">:</span> <span class="n">simplify_swap_gates</span><span class="p">,</span>
+    <span class="s2">&quot;czxcz&quot;</span><span class="p">:</span> <span class="n">simplify_czxcz</span><span class="p">,</span>
+<span class="p">}</span>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Shi-Ning Sun.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

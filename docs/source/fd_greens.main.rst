@@ -1,6 +1,11 @@
 fd\_greens.main package
 =======================
 
+.. automodule:: fd_greens.main
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 Submodules
 ----------
 
@@ -22,11 +27,3 @@ Submodules
    fd_greens.main.response_function
    fd_greens.main.transpilation
    fd_greens.main.z2symmetries
-
-Module contents
----------------
-
-.. automodule:: fd_greens.main
-   :members:
-   :undoc-members:
-   :show-inheritance:

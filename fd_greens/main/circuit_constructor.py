@@ -1,4 +1,8 @@
-"""Circuit constructor."""
+"""
+===============================================================
+Circuit Constructor (:mod:`fd_greens.main.circuit_constructor`)
+===============================================================
+"""
 
 from typing import Tuple, Optional, Union, Sequence, List
 from cmath import polar

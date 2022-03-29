@@ -1,4 +1,8 @@
-"""Charge-charge response function."""
+"""
+===========================================================
+Response Function (:mod:`fd_greens.main.response_function`)
+===========================================================
+"""
 
 from typing import Sequence
 

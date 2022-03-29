@@ -1,3 +1,10 @@
+"""
+==============================================================
+Tomography Utilities (:mod:`fd_greens.utils.tomography_utils`)
+==============================================================
+"""
+
+
 from typing import Optional, Tuple, Iterable, Union
 import itertools
 import numpy as np

@@ -1,4 +1,8 @@
-"""N-electron excited state solver module."""
+"""
+======================================================================
+N-Electron States Solver (:mod:`fd_greens.main.excited_states_solver`)
+======================================================================
+"""
 
 from typing import Optional
 

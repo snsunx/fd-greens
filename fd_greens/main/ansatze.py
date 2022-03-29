@@ -1,4 +1,8 @@
-"""Ansatz construction functions."""
+"""
+================================================
+Ansatz Functions (:mod:`fd_greens.main.ansatze`)
+================================================
+"""
 
 from typing import Callable, Sequence
 from qiskit import QuantumCircuit, QuantumRegister

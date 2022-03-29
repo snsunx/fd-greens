@@ -1,5 +1,5 @@
-greens-function
-===============
+fd-greens
+=========
 
 .. toctree::
    :maxdepth: 4

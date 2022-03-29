@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>fd_greens.utils.io_utils module &mdash; fd-greens 0.0.1 documentation</title>
+  <title>I/O Utilities (fd_greens.utils.io_utils) &mdash; fd-greens 0.0.1 documentation</title>
       <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
   <!--[if lt IE 9]>
@@ -18,8 +18,8 @@
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="fd_greens.utils.plot_utils module" href="fd_greens.utils.plot_utils.html" />
-    <link rel="prev" title="fd_greens.utils.helpers module" href="fd_greens.utils.helpers.html" /> 
+    <link rel="next" title="Plot Utilities (fd_greens.utils.plot_utils)" href="fd_greens.utils.plot_utils.html" />
+    <link rel="prev" title="Helpers (fd_greens.utils.helpers)" href="fd_greens.utils.helpers.html" /> 
 </head>
 
 <body class="wy-body-for-nav"> 
@@ -39,14 +39,14 @@
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
               <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
 <ul class="current">
-<li class="toctree-l1 current"><a class="reference internal" href="modules.html">greens-function</a><ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">fd-greens</a><ul class="current">
 <li class="toctree-l2 current"><a class="reference internal" href="fd_greens.html">fd_greens package</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="fd_greens.html#utils-fd-greens-utils">Utils (<code class="xref py py-mod docutils literal notranslate"><span class="pre">fd_greens.utils</span></code>)</a></li>
 <li class="toctree-l3 current"><a class="reference internal" href="fd_greens.html#subpackages">Subpackages</a><ul class="current">
 <li class="toctree-l4"><a class="reference internal" href="fd_greens.main.html">fd_greens.main package</a></li>
 <li class="toctree-l4 current"><a class="reference internal" href="fd_greens.utils.html">fd_greens.utils package</a></li>
 </ul>
 </li>
-<li class="toctree-l3"><a class="reference internal" href="fd_greens.html#module-fd_greens">Module contents</a></li>
 </ul>
 </li>
 </ul>
@@ -67,10 +67,10 @@
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
       <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
-          <li><a href="modules.html">greens-function</a> &raquo;</li>
+          <li><a href="modules.html">fd-greens</a> &raquo;</li>
           <li><a href="fd_greens.html">fd_greens package</a> &raquo;</li>
           <li><a href="fd_greens.utils.html">fd_greens.utils package</a> &raquo;</li>
-      <li>fd_greens.utils.io_utils module</li>
+      <li>I/O Utilities (<code class="xref py py-mod docutils literal notranslate"><span class="pre">fd_greens.utils.io_utils</span></code>)</li>
       <li class="wy-breadcrumbs-aside">
             <a href="_sources/fd_greens.utils.io_utils.rst.txt" rel="nofollow"> View page source</a>
       </li>
@@ -80,11 +80,11 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <section id="module-fd_greens.utils.io_utils">
-<span id="fd-greens-utils-io-utils-module"></span><h1>fd_greens.utils.io_utils module<a class="headerlink" href="#module-fd_greens.utils.io_utils" title="Permalink to this headline"></a></h1>
+  <span class="target" id="module-fd_greens.utils.io_utils"></span><section id="i-o-utilities-fd-greens-utils-io-utils">
+<h1>I/O Utilities (<a class="reference internal" href="#module-fd_greens.utils.io_utils" title="fd_greens.utils.io_utils"><code class="xref py py-mod docutils literal notranslate"><span class="pre">fd_greens.utils.io_utils</span></code></a>)<a class="headerlink" href="#i-o-utilities-fd-greens-utils-io-utils" title="Permalink to this headline"></a></h1>
 <dl class="py function">
 <dt class="sig sig-object py" id="fd_greens.utils.io_utils.initialize_hdf5">
-<span class="sig-prename descclassname"><span class="pre">fd_greens.utils.io_utils.</span></span><span class="sig-name descname"><span class="pre">initialize_hdf5</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fname</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">'lih'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">calc</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">'greens'</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#fd_greens.utils.io_utils.initialize_hdf5" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">initialize_hdf5</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fname</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">'lih'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">calc</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">'greens'</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/fd_greens/utils/io_utils.html#initialize_hdf5"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#fd_greens.utils.io_utils.initialize_hdf5" title="Permalink to this definition"></a></dt>
 <dd><p>Creates the HDF5 file and group names if they do not exist.</p>
 <p>The group created in the HDF5 file are:
 gs (for ground-state calculation),
@@ -105,7 +105,7 @@ circ01 (The (0, 1)-element circuit).</p>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="fd_greens.utils.io_utils.write_hdf5">
-<span class="sig-prename descclassname"><span class="pre">fd_greens.utils.io_utils.</span></span><span class="sig-name descname"><span class="pre">write_hdf5</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">h5file</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">h5py._hl.files.File</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">grpname</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dsetname</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Any</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">overwrite</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">bool</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#fd_greens.utils.io_utils.write_hdf5" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">write_hdf5</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">h5file</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">h5py._hl.files.File</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">grpname</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dsetname</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Any</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">overwrite</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">bool</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/fd_greens/utils/io_utils.html#write_hdf5"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#fd_greens.utils.io_utils.write_hdf5" title="Permalink to this definition"></a></dt>
 <dd><p>Writes a data object to a dataset in an HDF5 file.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -122,7 +122,7 @@ circ01 (The (0, 1)-element circuit).</p>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="fd_greens.utils.io_utils.circuit_to_qasm_str">
-<span class="sig-prename descclassname"><span class="pre">fd_greens.utils.io_utils.</span></span><span class="sig-name descname"><span class="pre">circuit_to_qasm_str</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">circ</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">qiskit.circuit.quantumcircuit.QuantumCircuit</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="headerlink" href="#fd_greens.utils.io_utils.circuit_to_qasm_str" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">circuit_to_qasm_str</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">circ</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">qiskit.circuit.quantumcircuit.QuantumCircuit</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="reference internal" href="_modules/fd_greens/utils/io_utils.html#circuit_to_qasm_str"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#fd_greens.utils.io_utils.circuit_to_qasm_str" title="Permalink to this definition"></a></dt>
 <dd><p>Converts a quantum circuit to QASM string.</p>
 <p>This function implements the CC-iX gate (both controls on 0) and is required to
 transpile circuits that contain the Berekely C-iX-C gate.</p>
@@ -138,13 +138,13 @@ transpile circuits that contain the Berekely C-iX-C gate.</p>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="fd_greens.utils.io_utils.save_circuit_figure">
-<span class="sig-prename descclassname"><span class="pre">fd_greens.utils.io_utils.</span></span><span class="sig-name descname"><span class="pre">save_circuit_figure</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">circ</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">qiskit.circuit.quantumcircuit.QuantumCircuit</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">suffix</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#fd_greens.utils.io_utils.save_circuit_figure" title="Permalink to this definition"></a></dt>
-<dd><p>Saves the circuit figure under the directory <cite>figs</cite>.</p>
+<span class="sig-name descname"><span class="pre">save_circuit_figure</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">circ</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">qiskit.circuit.quantumcircuit.QuantumCircuit</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">suffix</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/fd_greens/utils/io_utils.html#save_circuit_figure"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#fd_greens.utils.io_utils.save_circuit_figure" title="Permalink to this definition"></a></dt>
+<dd><p>Saves the circuit figure under the directory <code class="docutils literal notranslate"><span class="pre">figs</span></code>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>circ</strong> – The quantum circuit to be saved.</p></li>
-<li><p><strong>suffix</strong> – The suffix associated with the quantum circuit.</p></li>
+<li><p><strong>suffix</strong> – The suffix to be appended to the figure name.</p></li>
 </ul>
 </dd>
 </dl>
@@ -156,8 +156,8 @@ transpile circuits that contain the Berekely C-iX-C gate.</p>
            </div>
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
-        <a href="fd_greens.utils.helpers.html" class="btn btn-neutral float-left" title="fd_greens.utils.helpers module" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
-        <a href="fd_greens.utils.plot_utils.html" class="btn btn-neutral float-right" title="fd_greens.utils.plot_utils module" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="fd_greens.utils.helpers.html" class="btn btn-neutral float-left" title="Helpers (fd_greens.utils.helpers)" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="fd_greens.utils.plot_utils.html" class="btn btn-neutral float-right" title="Plot Utilities (fd_greens.utils.plot_utils)" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 
   <hr/>

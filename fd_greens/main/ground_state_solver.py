@@ -1,4 +1,8 @@
-"""Ground state solver module."""
+"""
+===============================================================
+Ground State Solver (:mod:`fd_greens.main.ground_state_solver`)
+===============================================================
+"""
 
 from typing import Optional, Sequence, Tuple
 import h5py

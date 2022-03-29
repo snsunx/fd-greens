@@ -1,3 +1,8 @@
+"""
+===============================================
+I/O Utilities (:mod:`fd_greens.utils.io_utils`)
+===============================================
+"""
 import os
 import h5py
 from typing import Any
@@ -139,11 +144,13 @@ def circuit_to_qasm_str(circ: QuantumCircuit) -> str:
 
 
 def save_circuit_figure(circ: QuantumCircuit, suffix: str) -> None:
-    """Saves the circuit figure under the directory `figs`.
+    """Saves the circuit figure under the directory ``figs``.
     
     Args:
         circ: The quantum circuit to be saved.
-        suffix: The suffix associated with the quantum circuit.
+        suffix: The suffix to be appended to the figure name.
     """
+    if not os.path.exists("figs"):
+        os.makedirs("figs")
     fig = circ.draw("mpl")
     fig.savefig(f"figs/circ{suffix}.png", bbox_inches="tight")

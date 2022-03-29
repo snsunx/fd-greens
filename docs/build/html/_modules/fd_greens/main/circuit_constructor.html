@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>fd_greens.main.circuit_constructor &mdash; fd-greens 0.0.1 documentation</title>
+      <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../../../index.html" class="icon icon-home"> fd-greens
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules.html">fd-greens</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">fd-greens</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+      <li>fd_greens.main.circuit_constructor</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for fd_greens.main.circuit_constructor</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">===============================================================</span>
+<span class="sd">Circuit Constructor (:mod:`fd_greens.main.circuit_constructor`)</span>
+<span class="sd">===============================================================</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Union</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">,</span> <span class="n">List</span>
+<span class="kn">from</span> <span class="nn">cmath</span> <span class="kn">import</span> <span class="n">polar</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">permutation</span> <span class="kn">import</span> <span class="n">Permutation</span>
+
+<span class="kn">from</span> <span class="nn">qiskit</span> <span class="kn">import</span> <span class="n">QuantumCircuit</span>
+<span class="kn">from</span> <span class="nn">qiskit.circuit</span> <span class="kn">import</span> <span class="n">Instruction</span><span class="p">,</span> <span class="n">Qubit</span><span class="p">,</span> <span class="n">Clbit</span><span class="p">,</span> <span class="n">Barrier</span>
+<span class="kn">from</span> <span class="nn">qiskit.extensions</span> <span class="kn">import</span> <span class="n">XGate</span><span class="p">,</span> <span class="n">HGate</span><span class="p">,</span> <span class="n">RXGate</span><span class="p">,</span> <span class="n">RZGate</span><span class="p">,</span> <span class="n">CPhaseGate</span><span class="p">,</span> <span class="n">CZGate</span>
+<span class="kn">from</span> <span class="nn">qiskit.quantum_info</span> <span class="kn">import</span> <span class="n">SparsePauliOp</span>
+
+<span class="kn">from</span> <span class="nn">.params</span> <span class="kn">import</span> <span class="n">CCZGate</span>
+<span class="kn">from</span> <span class="nn">..utils</span> <span class="kn">import</span> <span class="n">create_circuit_from_inst_tups</span>
+
+<span class="n">QubitLike</span> <span class="o">=</span> <span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">Qubit</span><span class="p">]</span>
+<span class="n">ClbitLike</span> <span class="o">=</span> <span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">Clbit</span><span class="p">]</span>
+<span class="n">InstructionTuple</span> <span class="o">=</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">Instruction</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="n">QubitLike</span><span class="p">],</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="n">ClbitLike</span><span class="p">]]]</span>
+
+
+<div class="viewcode-block" id="CircuitConstructor"><a class="viewcode-back" href="../../../fd_greens.main.circuit_constructor.html#fd_greens.main.circuit_constructor.CircuitConstructor">[docs]</a><span class="k">class</span> <span class="nc">CircuitConstructor</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;A class to construct circuits for calculating transition amplitudes in Green&#39;s functions.&quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">ansatz</span><span class="p">:</span> <span class="n">QuantumCircuit</span><span class="p">,</span>
+        <span class="n">add_barriers</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="n">anc</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Creates a CircuitConstructor object.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            ansatz: The ansatz quantum circuit containing the ground state.</span>
+<span class="sd">            add_barriers: Whether to add barriers to the circuit.</span>
+<span class="sd">            ccx_inst_tups: The instruction tuples for customized CCX gate.</span>
+<span class="sd">            anc: Indices of the ancilla qubits in the off-diagonal circuits.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ansatz</span> <span class="o">=</span> <span class="n">ansatz</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">add_barriers</span> <span class="o">=</span> <span class="n">add_barriers</span>
+        <span class="c1"># self.ccx_inst_tups = ccx_inst_tups</span>
+        <span class="c1"># TODO: anc is not necessary. Can possibly deprecate this variable.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">anc</span> <span class="o">=</span> <span class="n">anc</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sys</span> <span class="o">=</span> <span class="p">[</span><span class="n">i</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">4</span><span class="p">)</span> <span class="k">if</span> <span class="n">i</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">anc</span><span class="p">]</span>  <span class="c1"># Total # of qubits = 4</span>
+
+<div class="viewcode-block" id="CircuitConstructor.build_diagonal"><a class="viewcode-back" href="../../../fd_greens.main.circuit_constructor.html#fd_greens.main.circuit_constructor.CircuitConstructor.build_diagonal">[docs]</a>    <span class="k">def</span> <span class="nf">build_diagonal</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">a_op</span><span class="p">:</span> <span class="n">SparsePauliOp</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">QuantumCircuit</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Constructs the circuit to calculate a diagonal transition amplitude.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            The creation/annihilation operator of the circuit.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            The new circuit with the creation/annihilation operator added.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">a_op</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span>
+        <span class="n">n_qubits</span> <span class="o">=</span> <span class="mi">3</span>  <span class="c1"># Hardcoded</span>
+
+        <span class="c1"># Copy the ansatz circuit into the system qubit indices.</span>
+        <span class="n">inst_tups</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ansatz</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="p">(</span><span class="n">inst</span><span class="p">,</span> <span class="n">qargs</span><span class="p">,</span> <span class="n">cargs</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">inst_tups</span><span class="p">):</span>
+            <span class="n">qargs</span> <span class="o">=</span> <span class="p">[</span><span class="n">q</span><span class="o">.</span><span class="n">_index</span> <span class="o">+</span> <span class="mi">1</span> <span class="k">for</span> <span class="n">q</span> <span class="ow">in</span> <span class="n">qargs</span><span class="p">]</span>
+            <span class="n">inst_tups</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">inst</span><span class="p">,</span> <span class="n">qargs</span><span class="p">,</span> <span class="n">cargs</span><span class="p">)</span>
+
+        <span class="c1"># Add Hadamard gate on the ancilla at the beginning.</span>
+        <span class="n">inst_tups</span> <span class="o">+=</span> <span class="p">[(</span><span class="n">HGate</span><span class="p">(),</span> <span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="p">[])]</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">add_barriers</span><span class="p">:</span>
+            <span class="n">inst_tups</span> <span class="o">+=</span> <span class="p">[(</span><span class="n">Barrier</span><span class="p">(</span><span class="n">n_qubits</span><span class="p">),</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_qubits</span><span class="p">),</span> <span class="p">[])]</span>
+
+        <span class="c1"># Add C-gate of the first operator.</span>
+        <span class="n">inst_tups</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_controlled_gate_inst_tups</span><span class="p">(</span><span class="n">a_op</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">ctrl_states</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">add_barriers</span><span class="p">:</span>
+            <span class="n">inst_tups</span> <span class="o">+=</span> <span class="p">[(</span><span class="n">Barrier</span><span class="p">(</span><span class="n">n_qubits</span><span class="p">),</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_qubits</span><span class="p">),</span> <span class="p">[])]</span>
+
+        <span class="c1"># Add C-gate of the second operator.</span>
+        <span class="n">inst_tups</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_controlled_gate_inst_tups</span><span class="p">(</span><span class="n">a_op</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">ctrl_states</span><span class="o">=</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">add_barriers</span><span class="p">:</span>
+            <span class="n">inst_tups</span> <span class="o">+=</span> <span class="p">[(</span><span class="n">Barrier</span><span class="p">(</span><span class="n">n_qubits</span><span class="p">),</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_qubits</span><span class="p">),</span> <span class="p">[])]</span>
+
+        <span class="c1"># Add Hadamard gate on the ancilla at the end.</span>
+        <span class="n">inst_tups</span> <span class="o">+=</span> <span class="p">[(</span><span class="n">HGate</span><span class="p">(),</span> <span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="p">[])]</span>
+
+        <span class="n">circ</span> <span class="o">=</span> <span class="n">create_circuit_from_inst_tups</span><span class="p">(</span><span class="n">inst_tups</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">circ</span></div>
+
+<div class="viewcode-block" id="CircuitConstructor.build_off_diagonal"><a class="viewcode-back" href="../../../fd_greens.main.circuit_constructor.html#fd_greens.main.circuit_constructor.CircuitConstructor.build_off_diagonal">[docs]</a>    <span class="k">def</span> <span class="nf">build_off_diagonal</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">a_op_m</span><span class="p">:</span> <span class="n">SparsePauliOp</span><span class="p">,</span> <span class="n">a_op_n</span><span class="p">:</span> <span class="n">SparsePauliOp</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">QuantumCircuit</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Constructs the circuit to calculate off-diagonal transition amplitudes.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            a_op_m: The first operator in the circuit.</span>
+<span class="sd">            a_op_n: The second operator in the circuit.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            The new circuit with the two operators appended.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">a_op_m</span><span class="p">)</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="n">a_op_n</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span>
+        <span class="n">n_qubits</span> <span class="o">=</span> <span class="mi">4</span>  <span class="c1"># Hardcoded</span>
+
+        <span class="c1"># Copy the ansatz circuit into the system qubit indices.</span>
+        <span class="n">inst_tups</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ansatz</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="p">(</span><span class="n">inst</span><span class="p">,</span> <span class="n">qargs</span><span class="p">,</span> <span class="n">cargs</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">inst_tups</span><span class="p">):</span>
+            <span class="n">qargs</span> <span class="o">=</span> <span class="p">[</span><span class="n">q</span><span class="o">.</span><span class="n">_index</span> <span class="o">+</span> <span class="mi">2</span> <span class="k">for</span> <span class="n">q</span> <span class="ow">in</span> <span class="n">qargs</span><span class="p">]</span>
+            <span class="n">inst_tups</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">inst</span><span class="p">,</span> <span class="n">qargs</span><span class="p">,</span> <span class="n">cargs</span><span class="p">)</span>
+
+        <span class="c1"># Add Hadamard gates on the ancillas at the beginning.</span>
+        <span class="n">inst_tups</span> <span class="o">+=</span> <span class="p">[(</span><span class="n">HGate</span><span class="p">(),</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">anc</span><span class="p">[</span><span class="mi">0</span><span class="p">]],</span> <span class="p">[]),</span> <span class="p">(</span><span class="n">HGate</span><span class="p">(),</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">anc</span><span class="p">[</span><span class="mi">1</span><span class="p">]],</span> <span class="p">[])]</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">add_barriers</span><span class="p">:</span>
+            <span class="n">inst_tups</span> <span class="o">+=</span> <span class="p">[(</span><span class="n">Barrier</span><span class="p">(</span><span class="n">n_qubits</span><span class="p">),</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_qubits</span><span class="p">),</span> <span class="p">[])]</span>
+
+        <span class="c1"># Add the CC-gate of the first operator.</span>
+        <span class="n">inst_tups</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_controlled_gate_inst_tups</span><span class="p">(</span><span class="n">a_op_m</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">ctrl_states</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">])</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">add_barriers</span><span class="p">:</span>
+            <span class="n">inst_tups</span> <span class="o">+=</span> <span class="p">[(</span><span class="n">Barrier</span><span class="p">(</span><span class="n">n_qubits</span><span class="p">),</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_qubits</span><span class="p">),</span> <span class="p">[])]</span>
+        <span class="n">inst_tups</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_controlled_gate_inst_tups</span><span class="p">(</span><span class="n">a_op_m</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">ctrl_states</span><span class="o">=</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">])</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">add_barriers</span><span class="p">:</span>
+            <span class="n">inst_tups</span> <span class="o">+=</span> <span class="p">[(</span><span class="n">Barrier</span><span class="p">(</span><span class="n">n_qubits</span><span class="p">),</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_qubits</span><span class="p">),</span> <span class="p">[])]</span>
+
+        <span class="c1"># Add the phase gate in the middle if the second operator is not all I or all Z.</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">set</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">a_op_n</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">to_labels</span><span class="p">()))</span><span class="o">.</span><span class="n">issubset</span><span class="p">({</span><span class="s2">&quot;I&quot;</span><span class="p">,</span> <span class="s2">&quot;Z&quot;</span><span class="p">}):</span>
+            <span class="n">inst_tups</span> <span class="o">+=</span> <span class="p">[(</span><span class="n">RZGate</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">/</span> <span class="mi">4</span><span class="p">),</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">anc</span><span class="p">[</span><span class="mi">1</span><span class="p">]],</span> <span class="p">[])]</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">add_barriers</span><span class="p">:</span>
+                <span class="n">inst_tups</span> <span class="o">+=</span> <span class="p">[(</span><span class="n">Barrier</span><span class="p">(</span><span class="n">n_qubits</span><span class="p">),</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_qubits</span><span class="p">),</span> <span class="p">[])]</span>
+
+        <span class="c1"># Add the CC-gate of the second operator.</span>
+        <span class="n">inst_tups</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_controlled_gate_inst_tups</span><span class="p">(</span><span class="n">a_op_n</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">ctrl_states</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">])</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">add_barriers</span><span class="p">:</span>
+            <span class="n">inst_tups</span> <span class="o">+=</span> <span class="p">[(</span><span class="n">Barrier</span><span class="p">(</span><span class="n">n_qubits</span><span class="p">),</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_qubits</span><span class="p">),</span> <span class="p">[])]</span>
+        <span class="n">inst_tups</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_controlled_gate_inst_tups</span><span class="p">(</span><span class="n">a_op_n</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">ctrl_states</span><span class="o">=</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">])</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">add_barriers</span><span class="p">:</span>
+            <span class="n">inst_tups</span> <span class="o">+=</span> <span class="p">[(</span><span class="n">Barrier</span><span class="p">(</span><span class="n">n_qubits</span><span class="p">),</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_qubits</span><span class="p">),</span> <span class="p">[])]</span>
+
+        <span class="c1"># Add the phase gate after the second operator if it is all I or all Z.</span>
+        <span class="k">if</span> <span class="nb">set</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">a_op_n</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">to_labels</span><span class="p">()))</span><span class="o">.</span><span class="n">issubset</span><span class="p">({</span><span class="s2">&quot;I&quot;</span><span class="p">,</span> <span class="s2">&quot;Z&quot;</span><span class="p">}):</span>
+            <span class="n">inst_tups</span> <span class="o">+=</span> <span class="p">[(</span><span class="n">RZGate</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">/</span> <span class="mi">4</span><span class="p">),</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">anc</span><span class="p">[</span><span class="mi">1</span><span class="p">]],</span> <span class="p">[])]</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">add_barriers</span><span class="p">:</span>
+                <span class="n">inst_tups</span> <span class="o">+=</span> <span class="p">[(</span><span class="n">Barrier</span><span class="p">(</span><span class="n">n_qubits</span><span class="p">),</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_qubits</span><span class="p">),</span> <span class="p">[])]</span>
+
+        <span class="c1"># Add Hadamard gates on the ancillas at the end.</span>
+        <span class="n">inst_tups</span> <span class="o">+=</span> <span class="p">[(</span><span class="n">HGate</span><span class="p">(),</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">anc</span><span class="p">[</span><span class="mi">0</span><span class="p">]],</span> <span class="p">[]),</span> <span class="p">(</span><span class="n">HGate</span><span class="p">(),</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">anc</span><span class="p">[</span><span class="mi">1</span><span class="p">]],</span> <span class="p">[])]</span>
+        <span class="n">circ</span> <span class="o">=</span> <span class="n">create_circuit_from_inst_tups</span><span class="p">(</span><span class="n">inst_tups</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">circ</span></div>
+
+    <span class="k">def</span> <span class="nf">_get_controlled_gate_inst_tups</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">sparse_pauli_op</span><span class="p">:</span> <span class="n">SparsePauliOp</span><span class="p">,</span> <span class="n">ctrl_states</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">InstructionTuple</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;Obtains the instruction tuple corresponding to a controlled-U gate.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            sparse_pauli_op: The Pauli operator from which the controlled gate is constructed.</span>
+<span class="sd">            ctrl_states: The qubit states on which the cU gate is controlled on.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">sparse_pauli_op</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span>  <span class="c1"># Only a single Pauli string</span>
+        <span class="k">assert</span> <span class="nb">set</span><span class="p">(</span><span class="n">ctrl_states</span><span class="p">)</span><span class="o">.</span><span class="n">issubset</span><span class="p">({</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">})</span>
+        <span class="n">n_anc</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">ctrl_states</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="n">n_anc</span> <span class="ow">in</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">]</span>  <span class="c1"># Only single or double controlled gates</span>
+        <span class="n">coeff</span> <span class="o">=</span> <span class="n">sparse_pauli_op</span><span class="o">.</span><span class="n">coeffs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">label</span> <span class="o">=</span> <span class="n">sparse_pauli_op</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">to_labels</span><span class="p">()[</span><span class="mi">0</span><span class="p">][::</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">n_sys</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">label</span><span class="p">)</span>
+        <span class="n">inst_tups</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="c1"># Find the indices to apply X gates (for control on 0), H gates (for Pauli X)</span>
+        <span class="c1"># and X(pi/2) gates (for Pauli Y) as well as the pivot (target qubit of the</span>
+        <span class="c1"># multi-controlled gate). The pivot selection is hardcoded: for single-controlled</span>
+        <span class="c1"># gates, the pivot is the smallest index; for double-controlled gate, the pivot is</span>
+        <span class="c1"># the largest index.</span>
+        <span class="k">if</span> <span class="nb">set</span><span class="p">(</span><span class="n">label</span><span class="p">)</span> <span class="o">!=</span> <span class="p">{</span><span class="s2">&quot;I&quot;</span><span class="p">}:</span>
+            <span class="n">cnot_inds</span> <span class="o">=</span> <span class="p">[</span><span class="n">i</span> <span class="o">+</span> <span class="n">n_anc</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_sys</span><span class="p">)</span> <span class="k">if</span> <span class="n">label</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">!=</span> <span class="s2">&quot;I&quot;</span><span class="p">]</span>
+            <span class="n">pivot</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">cnot_inds</span><span class="p">)</span>
+            <span class="n">cnot_inds</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">pivot</span><span class="p">)</span>
+            <span class="n">x_inds</span> <span class="o">=</span> <span class="p">[</span><span class="n">i</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_anc</span><span class="p">)</span> <span class="k">if</span> <span class="n">ctrl_states</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">==</span> <span class="mi">0</span><span class="p">]</span>
+            <span class="n">h_inds</span> <span class="o">=</span> <span class="p">[</span><span class="n">i</span> <span class="o">+</span> <span class="n">n_anc</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_sys</span><span class="p">)</span> <span class="k">if</span> <span class="n">label</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;X&quot;</span><span class="p">]</span>
+            <span class="n">rx_inds</span> <span class="o">=</span> <span class="p">[</span><span class="n">i</span> <span class="o">+</span> <span class="n">n_anc</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_sys</span><span class="p">)</span> <span class="k">if</span> <span class="n">label</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;Y&quot;</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>  <span class="c1"># Identity gate, only need to check the phase below.</span>
+            <span class="n">cnot_inds</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="n">x_inds</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="n">h_inds</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="n">rx_inds</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="c1"># Apply the phase gate and controlled-Z gate.</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">ctrl_states</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">coeff</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="n">angle</span> <span class="o">=</span> <span class="n">polar</span><span class="p">(</span><span class="n">coeff</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span>
+                <span class="n">inst_tups</span> <span class="o">+=</span> <span class="p">[(</span><span class="n">RZGate</span><span class="p">(</span><span class="n">angle</span><span class="p">),</span> <span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="p">[])]</span>
+            <span class="k">if</span> <span class="nb">set</span><span class="p">(</span><span class="n">label</span><span class="p">)</span> <span class="o">!=</span> <span class="p">{</span><span class="s2">&quot;I&quot;</span><span class="p">}:</span>
+                <span class="n">inst_tups</span> <span class="o">+=</span> <span class="p">[(</span><span class="n">CZGate</span><span class="p">(),</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="n">pivot</span><span class="p">],</span> <span class="p">[])]</span>
+        <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">ctrl_states</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">coeff</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="n">angle</span> <span class="o">=</span> <span class="n">polar</span><span class="p">(</span><span class="n">coeff</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span>
+                <span class="k">assert</span> <span class="n">angle</span> <span class="ow">in</span> <span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">/</span> <span class="mi">2</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">,</span> <span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">/</span> <span class="mi">2</span><span class="p">]</span>
+                <span class="k">if</span> <span class="nb">abs</span><span class="p">(</span><span class="n">angle</span><span class="p">)</span> <span class="o">==</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">/</span> <span class="mi">2</span><span class="p">:</span>
+                    <span class="n">inst_tups</span> <span class="o">+=</span> <span class="p">[(</span><span class="n">CPhaseGate</span><span class="p">(</span><span class="n">angle</span><span class="p">),</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">anc</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">anc</span><span class="p">[</span><span class="mi">1</span><span class="p">]],</span> <span class="p">[])]</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">inst_tups</span> <span class="o">+=</span> <span class="p">[(</span><span class="n">CZGate</span><span class="p">(),</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">anc</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">anc</span><span class="p">[</span><span class="mi">1</span><span class="p">]],</span> <span class="p">[])]</span>
+            <span class="k">if</span> <span class="nb">set</span><span class="p">(</span><span class="n">label</span><span class="p">)</span> <span class="o">!=</span> <span class="p">{</span><span class="s2">&quot;I&quot;</span><span class="p">}:</span>
+                <span class="n">inst_tups</span> <span class="o">+=</span> <span class="p">[(</span><span class="n">CCZGate</span><span class="p">,</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">anc</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">anc</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">pivot</span><span class="p">],</span> <span class="p">[])]</span>
+
+        <span class="c1"># Wrap CNOT gates around for multi-qubit Pauli string. Note that these CNOTs are applied</span>
+        <span class="c1"># in the reverse direction because the controlled gate is Z.</span>
+        <span class="k">for</span> <span class="n">ind</span> <span class="ow">in</span> <span class="n">cnot_inds</span><span class="p">:</span>
+            <span class="n">cx_inst_tups</span> <span class="o">=</span> <span class="p">[</span>
+                <span class="p">(</span><span class="n">HGate</span><span class="p">(),</span> <span class="p">[</span><span class="n">pivot</span><span class="p">],</span> <span class="p">[]),</span>
+                <span class="p">(</span><span class="n">CZGate</span><span class="p">(),</span> <span class="p">[</span><span class="n">pivot</span><span class="p">,</span> <span class="n">ind</span><span class="p">],</span> <span class="p">[]),</span>
+                <span class="p">(</span><span class="n">HGate</span><span class="p">(),</span> <span class="p">[</span><span class="n">pivot</span><span class="p">],</span> <span class="p">[]),</span>
+            <span class="p">]</span>
+            <span class="n">inst_tups</span> <span class="o">=</span> <span class="n">cx_inst_tups</span> <span class="o">+</span> <span class="n">inst_tups</span>
+            <span class="n">inst_tups</span> <span class="o">=</span> <span class="n">inst_tups</span> <span class="o">+</span> <span class="n">cx_inst_tups</span>
+            <span class="n">pivot</span> <span class="o">=</span> <span class="n">ind</span>
+
+        <span class="c1"># Wrap X gates around for control on 0.</span>
+        <span class="k">for</span> <span class="n">ind</span> <span class="ow">in</span> <span class="n">x_inds</span><span class="p">:</span>
+            <span class="n">inst_tups</span> <span class="o">=</span> <span class="p">[(</span><span class="n">XGate</span><span class="p">(),</span> <span class="p">[</span><span class="n">ind</span><span class="p">],</span> <span class="p">[])]</span> <span class="o">+</span> <span class="n">inst_tups</span>
+            <span class="n">inst_tups</span> <span class="o">=</span> <span class="n">inst_tups</span> <span class="o">+</span> <span class="p">[(</span><span class="n">XGate</span><span class="p">(),</span> <span class="p">[</span><span class="n">ind</span><span class="p">],</span> <span class="p">[])]</span>
+
+        <span class="c1"># Wrap H gates around for Pauli X.</span>
+        <span class="k">for</span> <span class="n">ind</span> <span class="ow">in</span> <span class="n">h_inds</span><span class="p">:</span>
+            <span class="n">inst_tups</span> <span class="o">=</span> <span class="p">[(</span><span class="n">HGate</span><span class="p">(),</span> <span class="p">[</span><span class="n">ind</span><span class="p">],</span> <span class="p">[])]</span> <span class="o">+</span> <span class="n">inst_tups</span>
+            <span class="n">inst_tups</span> <span class="o">=</span> <span class="n">inst_tups</span> <span class="o">+</span> <span class="p">[(</span><span class="n">HGate</span><span class="p">(),</span> <span class="p">[</span><span class="n">ind</span><span class="p">],</span> <span class="p">[])]</span>
+
+        <span class="c1"># Wrap X(pi/2) gates around for Pauli Y.</span>
+        <span class="k">for</span> <span class="n">ind</span> <span class="ow">in</span> <span class="n">rx_inds</span><span class="p">:</span>
+            <span class="n">inst_tups</span> <span class="o">=</span> <span class="p">[(</span><span class="n">RXGate</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">/</span> <span class="mi">2</span><span class="p">),</span> <span class="p">[</span><span class="n">ind</span><span class="p">],</span> <span class="p">[])]</span> <span class="o">+</span> <span class="n">inst_tups</span>
+            <span class="n">inst_tups</span> <span class="o">=</span> <span class="n">inst_tups</span> <span class="o">+</span> <span class="p">[</span>
+                <span class="p">(</span><span class="n">RZGate</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">),</span> <span class="p">[</span><span class="n">ind</span><span class="p">],</span> <span class="p">[]),</span>
+                <span class="p">(</span><span class="n">RXGate</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">/</span> <span class="mi">2</span><span class="p">),</span> <span class="p">[</span><span class="n">ind</span><span class="p">],</span> <span class="p">[]),</span>
+                <span class="p">(</span><span class="n">RZGate</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">),</span> <span class="p">[</span><span class="n">ind</span><span class="p">],</span> <span class="p">[]),</span>
+            <span class="p">]</span>
+
+        <span class="k">return</span> <span class="n">inst_tups</span></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Shi-Ning Sun.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

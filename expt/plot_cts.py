@@ -1,5 +1,5 @@
 import sys
-sys.path.append('../../')
+sys.path.append('../')
 from itertools import product
 from fd_greens.utils import plot_counts, compute_tvd, get_circuit_depth, get_n_2q_gates, get_n_3q_gates
 

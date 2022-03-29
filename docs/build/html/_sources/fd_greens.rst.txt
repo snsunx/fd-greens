@@ -1,6 +1,11 @@
 fd\_greens package
 ==================
 
+.. automodule:: fd_greens
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 Subpackages
 -----------
 
@@ -9,11 +14,3 @@ Subpackages
 
    fd_greens.main
    fd_greens.utils
-
-Module contents
----------------
-
-.. automodule:: fd_greens
-   :members:
-   :undoc-members:
-   :show-inheritance:

@@ -1,4 +1,8 @@
-"""Z2 symmetry transform functions."""
+"""
+================================================================
+Z2 Symmetry Transformation (:mod:`fd_greens.main.z2_symmetries`)
+================================================================
+"""
 
 from typing import Union, Sequence, Optional
 import numpy as np

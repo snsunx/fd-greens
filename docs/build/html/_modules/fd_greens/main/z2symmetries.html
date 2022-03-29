@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>fd_greens.main.z2symmetries &mdash; fd-greens 0.0.1 documentation</title>
+      <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../../../index.html" class="icon icon-home"> fd-greens
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules.html">fd-greens</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">fd-greens</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+      <li>fd_greens.main.z2symmetries</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for fd_greens.main.z2symmetries</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">================================================================</span>
+<span class="sd">Z2 Symmetry Transformation (:mod:`fd_greens.main.z2_symmetries`)</span>
+<span class="sd">================================================================</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Union</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">,</span> <span class="n">Optional</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+
+<span class="c1"># from qiskit import *</span>
+<span class="kn">from</span> <span class="nn">qiskit.quantum_info</span> <span class="kn">import</span> <span class="n">PauliTable</span><span class="p">,</span> <span class="n">SparsePauliOp</span>
+<span class="kn">from</span> <span class="nn">qiskit.opflow</span> <span class="kn">import</span> <span class="n">PauliSumOp</span>
+
+<span class="kn">from</span> <span class="nn">.qubit_indices</span> <span class="kn">import</span> <span class="n">QubitIndices</span>
+
+<span class="n">PauliOperator</span> <span class="o">=</span> <span class="n">Union</span><span class="p">[</span><span class="n">PauliSumOp</span><span class="p">,</span> <span class="n">SparsePauliOp</span><span class="p">]</span>
+
+
+<div class="viewcode-block" id="cnot_pauli"><a class="viewcode-back" href="../../../fd_greens.main.z2symmetries.html#fd_greens.main.z2symmetries.cnot_pauli">[docs]</a><span class="k">def</span> <span class="nf">cnot_pauli</span><span class="p">(</span><span class="n">pauli_op</span><span class="p">:</span> <span class="n">PauliOperator</span><span class="p">,</span> <span class="n">ctrl</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">targ</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PauliOperator</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Applies a CNOT operation to the Z2 representation of a Pauli operator.</span>
+
+<span class="sd">    Note that the operator in string form follows Qiskit qubit order,</span>
+<span class="sd">    but in vector (PauliTable) form follows normal qubit order. The returned </span>
+<span class="sd">    type is the same as the input type, which can be either a PauliSumOp or</span>
+<span class="sd">    a SparsePauliOp.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        pauli_op: A Pauli operator on which a CNOT is to be applied.</span>
+<span class="sd">        ctrl: An integer indicating the index of the control qubit.</span>
+<span class="sd">        targ: An integer indicating the index of the target qubit.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        The new Pauli operator after a CNOT is applied.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">pauli_op</span><span class="p">,</span> <span class="n">PauliSumOp</span><span class="p">):</span>
+        <span class="n">sparse_pauli_op</span> <span class="o">=</span> <span class="n">pauli_op</span><span class="o">.</span><span class="n">primitive</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">pauli_op</span><span class="p">,</span> <span class="n">SparsePauliOp</span><span class="p">):</span>
+        <span class="n">sparse_pauli_op</span> <span class="o">=</span> <span class="n">pauli_op</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;Operator must be a PauliSumOp or SparsePauliOp&quot;</span><span class="p">)</span>
+
+    <span class="n">coeffs</span> <span class="o">=</span> <span class="n">sparse_pauli_op</span><span class="o">.</span><span class="n">coeffs</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    <span class="n">x_arr</span> <span class="o">=</span> <span class="n">sparse_pauli_op</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">X</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    <span class="n">z_arr</span> <span class="o">=</span> <span class="n">sparse_pauli_op</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">Z</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    <span class="n">n_paulis</span><span class="p">,</span> <span class="n">n_qubits</span> <span class="o">=</span> <span class="n">x_arr</span><span class="o">.</span><span class="n">shape</span>
+
+    <span class="c1"># Flip sign when the pauli is X_cZ_t or Y_cY_t</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_paulis</span><span class="p">):</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="n">x_arr</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+        <span class="n">z</span> <span class="o">=</span> <span class="n">z_arr</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">z</span><span class="p">[</span><span class="n">targ</span><span class="p">]</span> <span class="o">==</span> <span class="n">x</span><span class="p">[</span><span class="n">ctrl</span><span class="p">]</span> <span class="o">==</span> <span class="kc">True</span> <span class="ow">and</span> <span class="n">z</span><span class="p">[</span><span class="n">ctrl</span><span class="p">]</span> <span class="o">==</span> <span class="n">x</span><span class="p">[</span><span class="n">targ</span><span class="p">]:</span>
+            <span class="n">coeffs</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">*=</span> <span class="o">-</span><span class="mi">1</span>
+
+    <span class="c1"># Apply binary addition forward on the X part, backward on the Z part.</span>
+    <span class="n">x_arr</span><span class="p">[:,</span> <span class="n">targ</span><span class="p">]</span> <span class="o">^=</span> <span class="n">x_arr</span><span class="p">[:,</span> <span class="n">ctrl</span><span class="p">]</span>
+    <span class="n">z_arr</span><span class="p">[:,</span> <span class="n">ctrl</span><span class="p">]</span> <span class="o">^=</span> <span class="n">z_arr</span><span class="p">[:,</span> <span class="n">targ</span><span class="p">]</span>
+
+    <span class="c1"># Stack the new X and Z arrays and create the new operator.</span>
+    <span class="n">pauli_table</span> <span class="o">=</span> <span class="n">PauliTable</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">hstack</span><span class="p">((</span><span class="n">x_arr</span><span class="p">,</span> <span class="n">z_arr</span><span class="p">)))</span>
+    <span class="n">pauli_op_new</span> <span class="o">=</span> <span class="n">SparsePauliOp</span><span class="p">(</span><span class="n">pauli_table</span><span class="p">,</span> <span class="n">coeffs</span><span class="o">=</span><span class="n">coeffs</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">pauli_op</span><span class="p">,</span> <span class="n">PauliSumOp</span><span class="p">):</span>
+        <span class="n">pauli_op_new</span> <span class="o">=</span> <span class="n">PauliSumOp</span><span class="p">(</span><span class="n">pauli_op_new</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">pauli_op_new</span></div>
+
+
+<div class="viewcode-block" id="swap_pauli"><a class="viewcode-back" href="../../../fd_greens.main.z2symmetries.html#fd_greens.main.z2symmetries.swap_pauli">[docs]</a><span class="k">def</span> <span class="nf">swap_pauli</span><span class="p">(</span><span class="n">pauli_op</span><span class="p">:</span> <span class="n">PauliOperator</span><span class="p">,</span> <span class="n">q1</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">q2</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PauliOperator</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Applies a SWAP operation to the Z2 representation of a Pauli operator.</span>
+
+<span class="sd">    Note that the operator in string form follows Qiskit qubit order,</span>
+<span class="sd">    but in vector (PauliTable) form follows normal qubit order. The returned type</span>
+<span class="sd">    is the same as the input type, which can be either a PauliSumOp or</span>
+<span class="sd">    a SparsePauliOp.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        pauli_op: A Pauli operator on which a SWAP is to be applied.</span>
+<span class="sd">        q1: An integer indicating the first qubit index.</span>
+<span class="sd">        q2: An integer indicating the second qubit index.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        The new Pauli operator after a SWAP is applied.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">pauli_op</span><span class="p">,</span> <span class="n">PauliSumOp</span><span class="p">):</span>
+        <span class="n">sparse_pauli_op</span> <span class="o">=</span> <span class="n">pauli_op</span><span class="o">.</span><span class="n">primitive</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">pauli_op</span><span class="p">,</span> <span class="n">SparsePauliOp</span><span class="p">):</span>
+        <span class="n">sparse_pauli_op</span> <span class="o">=</span> <span class="n">pauli_op</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;Operator must be a PauliSumOp or SparsePauliOp&quot;</span><span class="p">)</span>
+
+    <span class="n">coeffs</span> <span class="o">=</span> <span class="n">sparse_pauli_op</span><span class="o">.</span><span class="n">coeffs</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    <span class="n">x_arr</span> <span class="o">=</span> <span class="n">sparse_pauli_op</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">X</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    <span class="n">z_arr</span> <span class="o">=</span> <span class="n">sparse_pauli_op</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">Z</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    <span class="n">n_paulis</span><span class="p">,</span> <span class="n">n_qubits</span> <span class="o">=</span> <span class="n">x_arr</span><span class="o">.</span><span class="n">shape</span>
+
+    <span class="n">x_tmp</span> <span class="o">=</span> <span class="n">x_arr</span><span class="p">[:,</span> <span class="n">q1</span><span class="p">]</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    <span class="n">z_tmp</span> <span class="o">=</span> <span class="n">z_arr</span><span class="p">[:,</span> <span class="n">q1</span><span class="p">]</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    <span class="n">x_arr</span><span class="p">[:,</span> <span class="n">q1</span><span class="p">]</span> <span class="o">=</span> <span class="n">x_arr</span><span class="p">[:,</span> <span class="n">q2</span><span class="p">]</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    <span class="n">z_arr</span><span class="p">[:,</span> <span class="n">q1</span><span class="p">]</span> <span class="o">=</span> <span class="n">z_arr</span><span class="p">[:,</span> <span class="n">q2</span><span class="p">]</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    <span class="n">x_arr</span><span class="p">[:,</span> <span class="n">q2</span><span class="p">]</span> <span class="o">=</span> <span class="n">x_tmp</span>
+    <span class="n">z_arr</span><span class="p">[:,</span> <span class="n">q2</span><span class="p">]</span> <span class="o">=</span> <span class="n">z_tmp</span>
+
+    <span class="c1"># Stack the new X and Z arrays and create the new operator.</span>
+    <span class="n">pauli_table</span> <span class="o">=</span> <span class="n">PauliTable</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">hstack</span><span class="p">((</span><span class="n">x_arr</span><span class="p">,</span> <span class="n">z_arr</span><span class="p">)))</span>
+    <span class="n">pauli_op_new</span> <span class="o">=</span> <span class="n">SparsePauliOp</span><span class="p">(</span><span class="n">pauli_table</span><span class="p">,</span> <span class="n">coeffs</span><span class="o">=</span><span class="n">coeffs</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">pauli_op</span><span class="p">,</span> <span class="n">PauliSumOp</span><span class="p">):</span>
+        <span class="n">pauli_op_new</span> <span class="o">=</span> <span class="n">PauliSumOp</span><span class="p">(</span><span class="n">pauli_op_new</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">pauli_op_new</span></div>
+
+
+<div class="viewcode-block" id="taper_pauli"><a class="viewcode-back" href="../../../fd_greens.main.z2symmetries.html#fd_greens.main.z2symmetries.taper_pauli">[docs]</a><span class="k">def</span> <span class="nf">taper_pauli</span><span class="p">(</span>
+    <span class="n">pauli_op</span><span class="p">:</span> <span class="n">PauliOperator</span><span class="p">,</span>
+    <span class="n">inds_tapered</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span>
+    <span class="n">init_state</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PauliOperator</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Tapers certain qubits off a Pauli operator.</span>
+
+<span class="sd">    Note that the operator in string form follows Qiskit qubit order,</span>
+<span class="sd">    but in vector (PauliTable) form follows normal qubit order. THe returned type</span>
+<span class="sd">    is the same as the input type, which can be either a PauliSumOp or</span>
+<span class="sd">    a SparsePauliOp.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        pauli_op: A Pauli operator on which certain qubits are to be tapered.</span>
+<span class="sd">        inds_tapered: Indices of the tapered qubits.</span>
+<span class="sd">        init_state: A sequence of 0 and 1 indicating the initial state on the</span>
+<span class="sd">            tapered qubits. Default to 0 on all the tapered qubits.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        The new operator after certain qubits are tapered.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># TODO: Checking statements for inds_tapered and init_state</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">pauli_op</span><span class="p">,</span> <span class="n">PauliSumOp</span><span class="p">):</span>
+        <span class="n">sparse_pauli_op</span> <span class="o">=</span> <span class="n">pauli_op</span><span class="o">.</span><span class="n">primitive</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">pauli_op</span><span class="p">,</span> <span class="n">SparsePauliOp</span><span class="p">):</span>
+        <span class="n">sparse_pauli_op</span> <span class="o">=</span> <span class="n">pauli_op</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;Operator must be a PauliSumOp or SparsePauliOp&quot;</span><span class="p">)</span>
+
+    <span class="n">coeffs</span> <span class="o">=</span> <span class="n">sparse_pauli_op</span><span class="o">.</span><span class="n">coeffs</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    <span class="n">x_arr</span> <span class="o">=</span> <span class="n">sparse_pauli_op</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">X</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    <span class="n">z_arr</span> <span class="o">=</span> <span class="n">sparse_pauli_op</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">Z</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    <span class="n">n_paulis</span><span class="p">,</span> <span class="n">n_qubits</span> <span class="o">=</span> <span class="n">x_arr</span><span class="o">.</span><span class="n">shape</span>
+    <span class="n">n_tapered</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">inds_tapered</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">init_state</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">init_state</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">*</span> <span class="n">n_tapered</span>
+
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_paulis</span><span class="p">):</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="n">x_arr</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+        <span class="n">z</span> <span class="o">=</span> <span class="n">z_arr</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_tapered</span><span class="p">):</span>
+            <span class="c1"># Z acts on |1&gt;</span>
+            <span class="k">if</span> <span class="n">z</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="o">==</span> <span class="kc">True</span> <span class="ow">and</span> <span class="n">x</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="o">==</span> <span class="kc">False</span> <span class="ow">and</span> <span class="n">init_state</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="n">coeffs</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">*=</span> <span class="o">-</span><span class="mf">1.0</span>
+            <span class="c1"># Y acting on either |0&gt; or |1&gt;</span>
+            <span class="k">if</span> <span class="n">z</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="o">==</span> <span class="kc">True</span> <span class="ow">and</span> <span class="n">x</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="o">==</span> <span class="kc">True</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">init_state</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="n">coeffs</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">*=</span> <span class="mi">1</span><span class="n">j</span>
+                <span class="k">elif</span> <span class="n">init_state</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+                    <span class="n">coeffs</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">*=</span> <span class="o">-</span><span class="mi">1</span><span class="n">j</span>
+
+    <span class="n">inds_kept</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="n">n_qubits</span><span class="p">))</span> <span class="o">-</span> <span class="nb">set</span><span class="p">(</span><span class="n">inds_tapered</span><span class="p">))</span>
+    <span class="n">x_arr</span> <span class="o">=</span> <span class="n">x_arr</span><span class="p">[:,</span> <span class="n">inds_kept</span><span class="p">]</span>
+    <span class="n">z_arr</span> <span class="o">=</span> <span class="n">z_arr</span><span class="p">[:,</span> <span class="n">inds_kept</span><span class="p">]</span>
+
+    <span class="n">pauli_table</span> <span class="o">=</span> <span class="n">PauliTable</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">hstack</span><span class="p">((</span><span class="n">x_arr</span><span class="p">,</span> <span class="n">z_arr</span><span class="p">)))</span>
+    <span class="n">pauli_op_new</span> <span class="o">=</span> <span class="n">SparsePauliOp</span><span class="p">(</span><span class="n">pauli_table</span><span class="p">,</span> <span class="n">coeffs</span><span class="o">=</span><span class="n">coeffs</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">pauli_op</span><span class="p">,</span> <span class="n">PauliSumOp</span><span class="p">):</span>
+        <span class="n">pauli_op_new</span> <span class="o">=</span> <span class="n">PauliSumOp</span><span class="p">(</span><span class="n">pauli_op_new</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">pauli_op_new</span></div>
+
+
+<div class="viewcode-block" id="transform_4q_pauli"><a class="viewcode-back" href="../../../fd_greens.main.z2symmetries.html#fd_greens.main.z2symmetries.transform_4q_pauli">[docs]</a><span class="k">def</span> <span class="nf">transform_4q_pauli</span><span class="p">(</span>
+    <span class="n">pauli_op</span><span class="p">:</span> <span class="n">PauliOperator</span><span class="p">,</span>
+    <span class="n">swap</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+    <span class="n">taper</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+    <span class="n">init_state</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PauliOperator</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Transforms a 4q pauli operator (or sum of them) to a 2q pauli operators (or sum of them).</span>
+
+<span class="sd">    THe symmetries are assumed to be ZIZI and IZIZ. The operations applied are </span>
+<span class="sd">    CNOT(2, 0), CNOT(3, 1) and SWAP(2, 3), followed by optionally tapering off q0 and q1.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        pauli_op: A four-qubit Pauli operator to be transformed.</span>
+<span class="sd">        swap: Whether to swap q2 and q3.</span>
+<span class="sd">        taper: Whether to taper q0 and q1.</span>
+<span class="sd">        init_state: The initial state on the first two qubits if tapered.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        A two-qubit Pauli operator after transformation if tapered, otherwise a four-qubit</span>
+<span class="sd">        Pauli operator.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">n_qubits</span> <span class="o">=</span> <span class="mi">4</span>  <span class="c1"># 4 is hardcoded</span>
+    <span class="n">pauli_op_new</span> <span class="o">=</span> <span class="n">pauli_op</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">taper</span><span class="p">:</span>
+        <span class="k">assert</span> <span class="n">init_state</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">init_state</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span>
+
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_qubits</span> <span class="o">//</span> <span class="mi">2</span><span class="p">):</span>
+        <span class="n">pauli_op_new</span> <span class="o">=</span> <span class="n">cnot_pauli</span><span class="p">(</span><span class="n">pauli_op_new</span><span class="p">,</span> <span class="n">i</span> <span class="o">+</span> <span class="n">n_qubits</span> <span class="o">//</span> <span class="mi">2</span><span class="p">,</span> <span class="n">i</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">swap</span><span class="p">:</span>
+        <span class="n">pauli_op_new</span> <span class="o">=</span> <span class="n">swap_pauli</span><span class="p">(</span><span class="n">pauli_op_new</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">taper</span><span class="p">:</span>
+        <span class="n">pauli_op_new</span> <span class="o">=</span> <span class="n">taper_pauli</span><span class="p">(</span><span class="n">pauli_op_new</span><span class="p">,</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span> <span class="n">init_state</span><span class="o">=</span><span class="n">init_state</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">pauli_op_new</span><span class="p">,</span> <span class="n">PauliSumOp</span><span class="p">):</span>
+        <span class="n">pauli_op_new</span> <span class="o">=</span> <span class="n">pauli_op_new</span><span class="o">.</span><span class="n">reduce</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">pauli_op_new</span></div>
+
+
+<span class="n">transform_dict</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;cnot&quot;</span><span class="p">:</span> <span class="n">cnot_pauli</span><span class="p">,</span> <span class="s2">&quot;swap&quot;</span><span class="p">:</span> <span class="n">swap_pauli</span><span class="p">,</span> <span class="s2">&quot;taper&quot;</span><span class="p">:</span> <span class="n">taper_pauli</span><span class="p">}</span>
+
+
+<div class="viewcode-block" id="cnot_indices"><a class="viewcode-back" href="../../../fd_greens.main.z2symmetries.html#fd_greens.main.z2symmetries.cnot_indices">[docs]</a><span class="k">def</span> <span class="nf">cnot_indices</span><span class="p">(</span><span class="n">qubit_inds</span><span class="p">:</span> <span class="n">QubitIndices</span><span class="p">,</span> <span class="n">ctrl</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">targ</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">QubitIndices</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Applies a CNOT operation to qubit indices.</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        qubit_inds: The input QubitIndices object.</span>
+<span class="sd">        ctrl: Index of the control qubit.</span>
+<span class="sd">        targ: Index of the target qubit.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        The QubitIndices object after CNOT is applied.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">data_list</span> <span class="o">=</span> <span class="n">qubit_inds</span><span class="o">.</span><span class="n">list_form</span>
+    <span class="n">data_list_new</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">q_ind</span> <span class="ow">in</span> <span class="n">data_list</span><span class="p">:</span>
+        <span class="n">q_ind_new</span> <span class="o">=</span> <span class="n">q_ind</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="n">q_ind_new</span><span class="p">[</span><span class="n">targ</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">q_ind</span><span class="p">[</span><span class="n">ctrl</span><span class="p">]</span> <span class="o">+</span> <span class="n">q_ind</span><span class="p">[</span><span class="n">targ</span><span class="p">])</span> <span class="o">%</span> <span class="mi">2</span>
+        <span class="n">data_list_new</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">q_ind_new</span><span class="p">)</span>
+    <span class="n">qubit_inds_new</span> <span class="o">=</span> <span class="n">QubitIndices</span><span class="p">(</span><span class="n">data_list_new</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">qubit_inds_new</span></div>
+
+
+<div class="viewcode-block" id="swap_indices"><a class="viewcode-back" href="../../../fd_greens.main.z2symmetries.html#fd_greens.main.z2symmetries.swap_indices">[docs]</a><span class="k">def</span> <span class="nf">swap_indices</span><span class="p">(</span><span class="n">qubit_inds</span><span class="p">:</span> <span class="n">QubitIndices</span><span class="p">,</span> <span class="n">q1</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">q2</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">QubitIndices</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Applies a SWAP operation to qubit indices.</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        qubit_inds: The input QubitIndices object.</span>
+<span class="sd">        q1: Index of the first qubit.</span>
+<span class="sd">        q2: Index of the second qubit.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        The QubitIndices object after SWAP is applied.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">data_list</span> <span class="o">=</span> <span class="n">qubit_inds</span><span class="o">.</span><span class="n">list_form</span>
+    <span class="n">data_list_new</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">q_ind</span> <span class="ow">in</span> <span class="n">data_list</span><span class="p">:</span>
+        <span class="n">q_ind_new</span> <span class="o">=</span> <span class="n">q_ind</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="n">q_ind_new</span><span class="p">[</span><span class="n">q2</span><span class="p">]</span> <span class="o">=</span> <span class="n">q_ind</span><span class="p">[</span><span class="n">q1</span><span class="p">]</span>
+        <span class="n">q_ind_new</span><span class="p">[</span><span class="n">q1</span><span class="p">]</span> <span class="o">=</span> <span class="n">q_ind</span><span class="p">[</span><span class="n">q2</span><span class="p">]</span>
+        <span class="n">data_list_new</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">q_ind_new</span><span class="p">)</span>
+    <span class="n">qubit_inds_new</span> <span class="o">=</span> <span class="n">QubitIndices</span><span class="p">(</span><span class="n">data_list_new</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">qubit_inds_new</span></div>
+
+
+<div class="viewcode-block" id="taper_indices"><a class="viewcode-back" href="../../../fd_greens.main.z2symmetries.html#fd_greens.main.z2symmetries.taper_indices">[docs]</a><span class="k">def</span> <span class="nf">taper_indices</span><span class="p">(</span>
+    <span class="n">qubit_inds</span><span class="p">:</span> <span class="n">QubitIndices</span><span class="p">,</span> <span class="n">inds_tapered</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">QubitIndices</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Tapers certain qubits off in a QubitIndices object.</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        qubit_inds: The input QubitIndices object.</span>
+<span class="sd">        inds_tapered: The tapered qubit indices.</span>
+<span class="sd">    </span>
+<span class="sd">    Returns:</span>
+<span class="sd">        The QubitIndices object after tapering.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">qubit_inds_list</span> <span class="o">=</span> <span class="n">qubit_inds</span><span class="o">.</span><span class="n">list_form</span>
+    <span class="n">qubit_inds_list_new</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">q_ind</span> <span class="ow">in</span> <span class="n">qubit_inds_list</span><span class="p">:</span>
+        <span class="n">q_ind_new</span> <span class="o">=</span> <span class="p">[</span><span class="n">q</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">q</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">q_ind</span><span class="p">)</span> <span class="k">if</span> <span class="n">i</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">inds_tapered</span><span class="p">]</span>
+        <span class="n">qubit_inds_list_new</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">q_ind_new</span><span class="p">)</span>
+
+    <span class="n">qubit_inds_new</span> <span class="o">=</span> <span class="n">QubitIndices</span><span class="p">(</span><span class="n">qubit_inds_list_new</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">qubit_inds_new</span></div>
+
+
+<div class="viewcode-block" id="transform_4q_indices"><a class="viewcode-back" href="../../../fd_greens.main.z2symmetries.html#fd_greens.main.z2symmetries.transform_4q_indices">[docs]</a><span class="k">def</span> <span class="nf">transform_4q_indices</span><span class="p">(</span>
+    <span class="n">qubit_inds</span><span class="p">:</span> <span class="n">QubitIndices</span><span class="p">,</span> <span class="n">swap</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">tapered</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">QubitIndices</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Transforms 4q qubit indices to 2q qubit indices.</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        qubit_inds: The qubit indices.</span>
+<span class="sd">        swap: Whether to swap the last two qubits.</span>
+<span class="sd">        tapered: Whether to taper off the first two qubits.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        The qubit indices after the transformation.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">qubit_inds_new</span> <span class="o">=</span> <span class="n">cnot_indices</span><span class="p">(</span><span class="n">qubit_inds</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+    <span class="n">qubit_inds_new</span> <span class="o">=</span> <span class="n">cnot_indices</span><span class="p">(</span><span class="n">qubit_inds_new</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">swap</span><span class="p">:</span>
+        <span class="n">qubit_inds_new</span> <span class="o">=</span> <span class="n">swap_indices</span><span class="p">(</span><span class="n">qubit_inds_new</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">tapered</span><span class="p">:</span>
+        <span class="n">qubit_inds_new</span> <span class="o">=</span> <span class="n">taper_indices</span><span class="p">(</span><span class="n">qubit_inds_new</span><span class="p">,</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">])</span>
+    <span class="k">return</span> <span class="n">qubit_inds_new</span></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Shi-Ning Sun.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

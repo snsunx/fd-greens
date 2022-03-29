@@ -1,4 +1,8 @@
-"""Molecular Hamiltonian."""
+"""
+===================================================================
+Molecular Hamiltonian (:mod:`fd_greens.main.molecular_hamiltonian`)
+===================================================================
+"""
 
 from typing import Union, Sequence, List, Tuple, Optional
 

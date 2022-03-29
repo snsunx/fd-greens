@@ -1,5 +1,8 @@
-"""(N+/-1)-electron states solver."""
-
+"""
+=====================================================================
+(N±1)-Electron States Solver (:mod:`fd_greens.main.eh_states_solver`)
+=====================================================================
+"""
 from typing import Optional
 
 import h5py

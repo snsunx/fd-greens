@@ -1,4 +1,8 @@
-"""Utility functions"""
+"""
+========================================================
+General Utilities (:mod:`fd_greens.utils.general_utils`)
+========================================================
+"""
 
 import os
 import h5py

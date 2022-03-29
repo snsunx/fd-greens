@@ -1,6 +1,11 @@
 fd\_greens.utils package
 ========================
 
+.. automodule:: fd_greens.utils
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 Submodules
 ----------
 
@@ -14,11 +19,3 @@ Submodules
    fd_greens.utils.plot_utils
    fd_greens.utils.process_utils
    fd_greens.utils.tomography_utils
-
-Module contents
----------------
-
-.. automodule:: fd_greens.utils
-   :members:
-   :undoc-members:
-   :show-inheritance:

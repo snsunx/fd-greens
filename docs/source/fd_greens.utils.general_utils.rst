@@ -1,6 +1,3 @@
-fd\_greens.utils.general\_utils module
-======================================
-
 .. automodule:: fd_greens.utils.general_utils
    :members:
    :undoc-members:

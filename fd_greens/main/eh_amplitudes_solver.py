@@ -1,4 +1,8 @@
-"""Solver for transition amplitudes between ground and (N+/-1)-electron states."""
+"""
+========================================================================================
+(N±1)-Electron Transition Amplitudes Solver (:mod:`fd_greens.main.eh_amplitudes_solver`)
+========================================================================================
+"""
 
 from typing import Optional, Sequence
 from functools import partial

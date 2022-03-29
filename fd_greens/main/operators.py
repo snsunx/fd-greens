@@ -1,4 +1,8 @@
-"""Operators."""
+"""
+===========================================
+Operators (:mod:`fd_greens.main.operators`)
+===========================================
+"""
 
 from typing import Callable, Tuple, Dict, Union, Sequence, Optional
 import numpy as np

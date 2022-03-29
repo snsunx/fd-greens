@@ -1,4 +1,8 @@
-"""Helper functions module."""
+"""
+========================================
+Helpers (:mod:`fd_greens.utils.helpers`)
+========================================
+"""
 
 from typing import Sequence, Optional
 import numpy as np
