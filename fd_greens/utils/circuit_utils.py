@@ -30,7 +30,7 @@ def remove_instructions_in_circuit(
         instructions: An iterable of strings representing instruction names.
         
     Returns:
-        A new quantum circuit on which certain instructions are removed.
+        circ_new:  new circuit on which certain instructions are removed.
     """
     if isinstance(circ_like, QuantumCircuit):
         inst_tups = circ_like.data.copy()
@@ -47,9 +47,9 @@ def remove_instructions_in_circuit(
 
     if isinstance(circ_like, QuantumCircuit):
         circ_new = create_circuit_from_inst_tups(inst_tups_new, qreg=qreg, creg=creg)
-        return circ_new
     else:
-        return inst_tups_new
+        circ_new = inst_tups_new
+    return circ_new
 
 
 remove_instructions = remove_instructions_in_circuit
@@ -58,7 +58,7 @@ remove_instructions = remove_instructions_in_circuit
 def get_registers_in_circuit(
     circ_like: QuantumCircuitLike,
 ) -> Tuple[Optional[QuantumRegister], Optional[ClassicalRegister]]:
-    """Returns the quantum and classical registers from a quantum circuit. 
+    """Returns the quantum and classical registers from a circuit. 
     
     Qubits and classical bits can be specified either as Qubit/Clbit instances or as 
     integers in the circuit. New instances of QuantumRegister and ClassicalRegister will
@@ -66,13 +66,13 @@ def get_registers_in_circuit(
     returned as None.
 
     Args:
-        The instruction tuples from which qreg and creg are extracted.
+        circ_like: The instruction tuples from which qreg and creg are extracted.
 
     Returns:
         qreg: The quantum register in the instruction tuples.
         creg: The classical register in the instruction tuples.
     """
-    # Extract the instruction tuples from the quantum circuit.
+    # Extract the instruction tuples from the circuit.
     if isinstance(circ_like, QuantumCircuit):
         inst_tups = circ_like.data.copy()
     else:
@@ -138,7 +138,7 @@ def create_circuit_from_inst_tups(
             will be a new ClassicalRegister with name 'c'.
         
     Returns:
-    	A quantum circuit constructed from the instruction tuples.
+    	circ: A circuit constructed from the instruction tuples.
     """
     # Obtain the quantum register and classical register in the instruction tuples,
     # and create a QuantumCircuit with them.
@@ -160,7 +160,14 @@ def create_circuit_from_inst_tups(
 
 
 def split_circuit_across_barriers(circ: QuantumCircuit) -> List[List[InstructionTuple]]:
-    """Splits a circuit into instruction tuples across barriers."""
+    """Splits a circuit into instruction tuples across barriers.
+    
+    Args:
+        circ: A circuit to be split across barriers.
+        
+    Returns:
+        inst_tups_all: The instruction tuples corresponding to all subcircuits.
+    """
     inst_tups = circ.data.copy()
     inst_tups_all = []  # all inst_tups_single
     inst_tups_single = []  # temporary variable to hold inst_tups_all components
@@ -189,14 +196,14 @@ def measure_operator(
     """Measures an operator on a circuit.
 
     Args:
-        circ: The quantum circuit to be measured.
+        circ: The circuit to be measured.
         op: The operator to be measured.
         q_instance: The QuantumInstance on which to execute the circuit.
         anc_state: A sequence of integers indicating the ancilla states.
         qreg: The quantum register on which the operator is measured.
     
     Returns:
-        The value of the operator on the circuit.
+        value: The value of the operator on the circuit.
     """
     if qreg is None:
         qreg = circ.qregs[0]
@@ -257,7 +264,15 @@ def measure_operator(
 
 
 def get_circuit_depth(h5fname: str, circ_label: str) -> int:
-    """Returns the circuit depth of a circuit saved in an HDF5 file."""
+    """Returns the circuit depth of a circuit saved in an HDF5 file.
+    
+    Args:
+        h5fname: Name of the HDF5 file in which the circuit is saved.
+        circ_label: The circuit label.
+        
+    Returns:
+        depth: The circuit depth.
+    """
     h5file = h5py.File(h5fname + ".h5", "r")
     dset = h5file[f"circ{circ_label}/transpiled"]
     circ = QuantumCircuit.from_qasm_str(dset[()].decode())
@@ -266,7 +281,15 @@ def get_circuit_depth(h5fname: str, circ_label: str) -> int:
 
 
 def get_n_2q_gates(h5fname: str, circ_label: str) -> int:
-    """Returns the number of 2q gates in a circuit saved in an HDF5 file."""
+    """Returns the number of 2q gates in a circuit saved in an HDF5 file.
+    
+    Args:
+        h5fname: Name of the HDF5 file in which the circuit is saved.
+        circ_label: The circuit label.
+    
+    Returns:
+        count: Number of two-qubit gates in the circuit.
+    """
     h5file = h5py.File(h5fname + ".h5", "r")
     dset = h5file[f"circ{circ_label}/transpiled"]
     qasm_str = dset[()].decode()
@@ -279,7 +302,15 @@ def get_n_2q_gates(h5fname: str, circ_label: str) -> int:
 
 
 def get_n_3q_gates(h5fname: str, circ_label: str) -> int:
-    """Returns the number of 3q gates in a circuit saved in an HDF5 file."""
+    """Returns the number of 3q gates in a circuit saved in an HDF5 file.
+
+    Args:
+        h5fname: Name of the HDF5 file in which the circuit is saved.
+        circ_label: The circuit label.
+    
+    Returns:
+        count: Number of three-qubit gates in the circuit.
+    """
     h5file = h5py.File(h5fname + ".h5", "r")
     dset = h5file[f"circ{circ_label}/transpiled"]
     qasm_str = dset[()].decode()

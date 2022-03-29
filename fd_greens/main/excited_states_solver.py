@@ -85,7 +85,7 @@ class ExcitedStatesSolver:
         """Runs the excited state calculation.
         
         Args:
-            The method to calculate the excited states. Either exact ('exact') or VQE ('vqe').
+            method: The method to calculate the excited states. Either exact ('exact') or VQE ('vqe').
         """
         if method == "exact":
             self._run_exact()

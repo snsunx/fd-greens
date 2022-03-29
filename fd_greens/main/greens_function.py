@@ -45,7 +45,7 @@ class GreensFunction:
             eta: The imaginary part, i.e. broadening factor.
         
         Returns:
-            The Green's function numpy array.
+            G: The Green's function numpy array.
         """
         # Green's function arrays
         G_e = np.zeros((self.n_orb, self.n_orb), dtype=complex)
@@ -75,7 +75,7 @@ class GreensFunction:
             save: Whether to save the spectral function to file.
         
         Returns:
-            (Optional) The spectral function numpy array.
+            As: The spectral function numpy array.
         """
         As = []
         for omega in omegas:
@@ -100,7 +100,7 @@ class GreensFunction:
             save: Whether to save the spectral function to file.
 
         Returns:
-            (Optional) Trace of the self-energy.
+            TrSigmas: Trace of the self-energy.
         """
         TrSigmas = []
         for omega in omegas:

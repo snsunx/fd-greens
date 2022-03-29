@@ -18,15 +18,15 @@ def get_lih_hamiltonian(r: float) -> MolecularHamiltonian:
     """Returns the HOMO-LUMO LiH Hamiltonian with bond length r.
     
     Args:
-        The bond length of the molecule in Angstrom.
+        r: The bond length of the molecule in Angstrom.
     
     Returns:
-        The molecular Hamiltonian.
+        h: The molecular Hamiltonian.
     """
-    hamiltonian = MolecularHamiltonian(
+    h = MolecularHamiltonian(
         [["Li", (0, 0, 0)], ["H", (0, 0, r)]], "sto3g", occ_inds=[0], act_inds=[1, 2]
     )
-    return hamiltonian
+    return h
 
 
 def get_quantum_instance(type_str: str) -> QuantumInstance:
@@ -37,10 +37,10 @@ def get_quantum_instance(type_str: str) -> QuantumInstance:
     simulator ('noisy').
 
     Args:
-        A string indicating the type of the quantum instance.
+        type_str: A string indicating the type of the quantum instance.
     
     Returns:
-        The pre-defined quantum instance based on the input string.
+        q_instance: The pre-defined quantum instance based on the input string.
     """
     if type_str == "sv":
         q_instance = QuantumInstance(Aer.get_backend("statevector_simulator"))

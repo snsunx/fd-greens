@@ -123,15 +123,16 @@ circ01 (The (0, 1)-element circuit).</p>
 <dl class="py function">
 <dt class="sig sig-object py" id="fd_greens.utils.io_utils.circuit_to_qasm_str">
 <span class="sig-name descname"><span class="pre">circuit_to_qasm_str</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">circ</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">qiskit.circuit.quantumcircuit.QuantumCircuit</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="reference internal" href="_modules/fd_greens/utils/io_utils.html#circuit_to_qasm_str"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#fd_greens.utils.io_utils.circuit_to_qasm_str" title="Permalink to this definition"></a></dt>
-<dd><p>Converts a quantum circuit to QASM string.</p>
-<p>This function implements the CC-iX gate (both controls on 0) and is required to
-transpile circuits that contain the Berekely C-iX-C gate.</p>
+<dd><p>Converts a circuit to QASM string.</p>
+<p>This function generates QASM string of the C0iXC0 gate and is required to transpile circuits
+that contain this gate, as the QASM string generation function in Qiskit does not implement
+this gate.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>string.</strong> (<em>The quantum circuit to be transformed to a QASM</em>) – </p>
+<dd class="field-odd"><p><strong>circ</strong> – The circuit to be transformed to a QASM string.</p>
 </dd>
 <dt class="field-even">Returns</dt>
-<dd class="field-even"><p><strong>The QASM string corresponding to the quantum circuit.</strong></p>
+<dd class="field-even"><p><strong>qasm_str</strong> – The QASM string corresponding to the circuit.</p>
 </dd>
 </dl>
 </dd></dl>
@@ -143,7 +144,7 @@ transpile circuits that contain the Berekely C-iX-C gate.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>circ</strong> – The quantum circuit to be saved.</p></li>
+<li><p><strong>circ</strong> – The circuit to be saved.</p></li>
 <li><p><strong>suffix</strong> – The suffix to be appended to the figure name.</p></li>
 </ul>
 </dd>

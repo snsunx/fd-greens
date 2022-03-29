@@ -12,14 +12,14 @@ AnsatzFunction = Callable[[Sequence[float]], QuantumCircuit]
 
 def build_ansatz_gs(params: Sequence[float]) -> QuantumCircuit:
     r"""Constructs an N-electron ansatz of the encoded Hamiltonian. The ansatz is of
-    the form :math:`(R_y(\theta_2)\otimes R_y(\theta_3)) CZ (R_y(\theta_0)\otimes Ry(\theta_1))
+    the form :math:`(R_y(\theta_2)\otimes R_y(\theta_3)) CZ (R_y(\theta_0)\otimes R_y(\theta_1))
     |00\rangle`.
 
     Args:
-        A sequence of the parameters.
+        params: A sequence of the parameters.
 
     Returns:
-        The ansatz quantum circuit.
+        ansatz: The ansatz quantum circuit.
     """
     assert len(params) == 6
     qreg = QuantumRegister(2, name="q")
@@ -40,10 +40,10 @@ def build_ansatz_e(params: Sequence[float]) -> QuantumCircuit:
     The ansatz is of the form :math:`(I \otimes R_y(\theta))|10\rangle`.
 
     Args:
-        A sequence of the parameters.
+        params: A sequence of the parameters.
 
     Returns:
-        The ansatz quantum circuit.
+        ansatz: The ansatz quantum circuit.
     """
     assert len(params) == 1
     qreg = QuantumRegister(2, name="q")
@@ -58,10 +58,10 @@ def build_ansatz_h(params: Sequence[float]) -> QuantumCircuit:
     The ansatz is of the form :math:`(I \otimes R_y(\theta))|00\rangle`.
     
     Args:
-        A sequence of the parameters.
+        params: A sequence of the parameters.
 
     Returns:
-        The ansatz quantum circuit.
+        ansatz: The ansatz quantum circuit.
     """
     assert len(params) == 1
     qreg = QuantumRegister(2, name="q")

@@ -91,16 +91,17 @@ def write_hdf5(
 
 
 def circuit_to_qasm_str(circ: QuantumCircuit) -> str:
-    """Converts a quantum circuit to QASM string.
+    """Converts a circuit to QASM string.
     
-    This function implements the CC-iX gate (both controls on 0) and is required to
-    transpile circuits that contain the Berekely C-iX-C gate.
+    This function generates QASM string of the C0iXC0 gate and is required to transpile circuits
+    that contain this gate, as the QASM string generation function in Qiskit does not implement 
+    this gate.
     
     Args:
-        The quantum circuit to be transformed to a QASM string.
+        circ: The circuit to be transformed to a QASM string.
     
     Returns:
-        The QASM string corresponding to the quantum circuit.
+        qasm_str: The QASM string corresponding to the circuit.
     """
     # print(set([x[0].name for x in circ.data]))
     # The header of the QASM string.
@@ -147,7 +148,7 @@ def save_circuit_figure(circ: QuantumCircuit, suffix: str) -> None:
     """Saves the circuit figure under the directory ``figs``.
     
     Args:
-        circ: The quantum circuit to be saved.
+        circ: The circuit to be saved.
         suffix: The suffix to be appended to the figure name.
     """
     if not os.path.exists("figs"):

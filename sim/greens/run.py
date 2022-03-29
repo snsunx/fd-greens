@@ -40,5 +40,5 @@ if __name__ == '__main__':
     initialize_hdf5(h5fname)
     main_gs()
     main_es()
-    main_amp(execute=False, process=False)
-    # main_greens()
+    main_amp(execute=True, process=True)
+    main_greens()

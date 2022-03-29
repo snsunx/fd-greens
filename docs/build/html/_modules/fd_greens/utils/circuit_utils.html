@@ -96,7 +96,7 @@
 <span class="sd">        instructions: An iterable of strings representing instruction names.</span>
 <span class="sd">        </span>
 <span class="sd">    Returns:</span>
-<span class="sd">        A new quantum circuit on which certain instructions are removed.</span>
+<span class="sd">        circ_new:  new circuit on which certain instructions are removed.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">circ_like</span><span class="p">,</span> <span class="n">QuantumCircuit</span><span class="p">):</span>
         <span class="n">inst_tups</span> <span class="o">=</span> <span class="n">circ_like</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
@@ -113,9 +113,9 @@
 
     <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">circ_like</span><span class="p">,</span> <span class="n">QuantumCircuit</span><span class="p">):</span>
         <span class="n">circ_new</span> <span class="o">=</span> <span class="n">create_circuit_from_inst_tups</span><span class="p">(</span><span class="n">inst_tups_new</span><span class="p">,</span> <span class="n">qreg</span><span class="o">=</span><span class="n">qreg</span><span class="p">,</span> <span class="n">creg</span><span class="o">=</span><span class="n">creg</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">circ_new</span>
     <span class="k">else</span><span class="p">:</span>
-        <span class="k">return</span> <span class="n">inst_tups_new</span></div>
+        <span class="n">circ_new</span> <span class="o">=</span> <span class="n">inst_tups_new</span>
+    <span class="k">return</span> <span class="n">circ_new</span></div>
 
 
 <span class="n">remove_instructions</span> <span class="o">=</span> <span class="n">remove_instructions_in_circuit</span>
@@ -124,7 +124,7 @@
 <div class="viewcode-block" id="get_registers_in_circuit"><a class="viewcode-back" href="../../../fd_greens.utils.circuit_utils.html#fd_greens.utils.circuit_utils.get_registers_in_circuit">[docs]</a><span class="k">def</span> <span class="nf">get_registers_in_circuit</span><span class="p">(</span>
     <span class="n">circ_like</span><span class="p">:</span> <span class="n">QuantumCircuitLike</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">Optional</span><span class="p">[</span><span class="n">QuantumRegister</span><span class="p">],</span> <span class="n">Optional</span><span class="p">[</span><span class="n">ClassicalRegister</span><span class="p">]]:</span>
-    <span class="sd">&quot;&quot;&quot;Returns the quantum and classical registers from a quantum circuit. </span>
+    <span class="sd">&quot;&quot;&quot;Returns the quantum and classical registers from a circuit. </span>
 <span class="sd">    </span>
 <span class="sd">    Qubits and classical bits can be specified either as Qubit/Clbit instances or as </span>
 <span class="sd">    integers in the circuit. New instances of QuantumRegister and ClassicalRegister will</span>
@@ -132,13 +132,13 @@
 <span class="sd">    returned as None.</span>
 
 <span class="sd">    Args:</span>
-<span class="sd">        The instruction tuples from which qreg and creg are extracted.</span>
+<span class="sd">        circ_like: The instruction tuples from which qreg and creg are extracted.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        qreg: The quantum register in the instruction tuples.</span>
 <span class="sd">        creg: The classical register in the instruction tuples.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="c1"># Extract the instruction tuples from the quantum circuit.</span>
+    <span class="c1"># Extract the instruction tuples from the circuit.</span>
     <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">circ_like</span><span class="p">,</span> <span class="n">QuantumCircuit</span><span class="p">):</span>
         <span class="n">inst_tups</span> <span class="o">=</span> <span class="n">circ_like</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
     <span class="k">else</span><span class="p">:</span>
@@ -204,7 +204,7 @@
 <span class="sd">            will be a new ClassicalRegister with name &#39;c&#39;.</span>
 <span class="sd">        </span>
 <span class="sd">    Returns:</span>
-<span class="sd">    	A quantum circuit constructed from the instruction tuples.</span>
+<span class="sd">    	circ: A circuit constructed from the instruction tuples.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="c1"># Obtain the quantum register and classical register in the instruction tuples,</span>
     <span class="c1"># and create a QuantumCircuit with them.</span>
@@ -226,7 +226,14 @@
 
 
 <div class="viewcode-block" id="split_circuit_across_barriers"><a class="viewcode-back" href="../../../fd_greens.utils.circuit_utils.html#fd_greens.utils.circuit_utils.split_circuit_across_barriers">[docs]</a><span class="k">def</span> <span class="nf">split_circuit_across_barriers</span><span class="p">(</span><span class="n">circ</span><span class="p">:</span> <span class="n">QuantumCircuit</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="n">InstructionTuple</span><span class="p">]]:</span>
-    <span class="sd">&quot;&quot;&quot;Splits a circuit into instruction tuples across barriers.&quot;&quot;&quot;</span>
+    <span class="sd">&quot;&quot;&quot;Splits a circuit into instruction tuples across barriers.</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        circ: A circuit to be split across barriers.</span>
+<span class="sd">        </span>
+<span class="sd">    Returns:</span>
+<span class="sd">        inst_tups_all: The instruction tuples corresponding to all subcircuits.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">inst_tups</span> <span class="o">=</span> <span class="n">circ</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
     <span class="n">inst_tups_all</span> <span class="o">=</span> <span class="p">[]</span>  <span class="c1"># all inst_tups_single</span>
     <span class="n">inst_tups_single</span> <span class="o">=</span> <span class="p">[]</span>  <span class="c1"># temporary variable to hold inst_tups_all components</span>
@@ -255,14 +262,14 @@
     <span class="sd">&quot;&quot;&quot;Measures an operator on a circuit.</span>
 
 <span class="sd">    Args:</span>
-<span class="sd">        circ: The quantum circuit to be measured.</span>
+<span class="sd">        circ: The circuit to be measured.</span>
 <span class="sd">        op: The operator to be measured.</span>
 <span class="sd">        q_instance: The QuantumInstance on which to execute the circuit.</span>
 <span class="sd">        anc_state: A sequence of integers indicating the ancilla states.</span>
 <span class="sd">        qreg: The quantum register on which the operator is measured.</span>
 <span class="sd">    </span>
 <span class="sd">    Returns:</span>
-<span class="sd">        The value of the operator on the circuit.</span>
+<span class="sd">        value: The value of the operator on the circuit.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">if</span> <span class="n">qreg</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">qreg</span> <span class="o">=</span> <span class="n">circ</span><span class="o">.</span><span class="n">qregs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
@@ -323,7 +330,15 @@
 
 
 <div class="viewcode-block" id="get_circuit_depth"><a class="viewcode-back" href="../../../fd_greens.utils.circuit_utils.html#fd_greens.utils.circuit_utils.get_circuit_depth">[docs]</a><span class="k">def</span> <span class="nf">get_circuit_depth</span><span class="p">(</span><span class="n">h5fname</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">circ_label</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Returns the circuit depth of a circuit saved in an HDF5 file.&quot;&quot;&quot;</span>
+    <span class="sd">&quot;&quot;&quot;Returns the circuit depth of a circuit saved in an HDF5 file.</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        h5fname: Name of the HDF5 file in which the circuit is saved.</span>
+<span class="sd">        circ_label: The circuit label.</span>
+<span class="sd">        </span>
+<span class="sd">    Returns:</span>
+<span class="sd">        depth: The circuit depth.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">h5file</span> <span class="o">=</span> <span class="n">h5py</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="n">h5fname</span> <span class="o">+</span> <span class="s2">&quot;.h5&quot;</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">)</span>
     <span class="n">dset</span> <span class="o">=</span> <span class="n">h5file</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;circ</span><span class="si">{</span><span class="n">circ_label</span><span class="si">}</span><span class="s2">/transpiled&quot;</span><span class="p">]</span>
     <span class="n">circ</span> <span class="o">=</span> <span class="n">QuantumCircuit</span><span class="o">.</span><span class="n">from_qasm_str</span><span class="p">(</span><span class="n">dset</span><span class="p">[()]</span><span class="o">.</span><span class="n">decode</span><span class="p">())</span>
@@ -332,7 +347,15 @@
 
 
 <div class="viewcode-block" id="get_n_2q_gates"><a class="viewcode-back" href="../../../fd_greens.utils.circuit_utils.html#fd_greens.utils.circuit_utils.get_n_2q_gates">[docs]</a><span class="k">def</span> <span class="nf">get_n_2q_gates</span><span class="p">(</span><span class="n">h5fname</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">circ_label</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Returns the number of 2q gates in a circuit saved in an HDF5 file.&quot;&quot;&quot;</span>
+    <span class="sd">&quot;&quot;&quot;Returns the number of 2q gates in a circuit saved in an HDF5 file.</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        h5fname: Name of the HDF5 file in which the circuit is saved.</span>
+<span class="sd">        circ_label: The circuit label.</span>
+<span class="sd">    </span>
+<span class="sd">    Returns:</span>
+<span class="sd">        count: Number of two-qubit gates in the circuit.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">h5file</span> <span class="o">=</span> <span class="n">h5py</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="n">h5fname</span> <span class="o">+</span> <span class="s2">&quot;.h5&quot;</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">)</span>
     <span class="n">dset</span> <span class="o">=</span> <span class="n">h5file</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;circ</span><span class="si">{</span><span class="n">circ_label</span><span class="si">}</span><span class="s2">/transpiled&quot;</span><span class="p">]</span>
     <span class="n">qasm_str</span> <span class="o">=</span> <span class="n">dset</span><span class="p">[()]</span><span class="o">.</span><span class="n">decode</span><span class="p">()</span>
@@ -345,7 +368,15 @@
 
 
 <div class="viewcode-block" id="get_n_3q_gates"><a class="viewcode-back" href="../../../fd_greens.utils.circuit_utils.html#fd_greens.utils.circuit_utils.get_n_3q_gates">[docs]</a><span class="k">def</span> <span class="nf">get_n_3q_gates</span><span class="p">(</span><span class="n">h5fname</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">circ_label</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Returns the number of 3q gates in a circuit saved in an HDF5 file.&quot;&quot;&quot;</span>
+    <span class="sd">&quot;&quot;&quot;Returns the number of 3q gates in a circuit saved in an HDF5 file.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        h5fname: Name of the HDF5 file in which the circuit is saved.</span>
+<span class="sd">        circ_label: The circuit label.</span>
+<span class="sd">    </span>
+<span class="sd">    Returns:</span>
+<span class="sd">        count: Number of three-qubit gates in the circuit.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">h5file</span> <span class="o">=</span> <span class="n">h5py</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="n">h5fname</span> <span class="o">+</span> <span class="s2">&quot;.h5&quot;</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">)</span>
     <span class="n">dset</span> <span class="o">=</span> <span class="n">h5file</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;circ</span><span class="si">{</span><span class="n">circ_label</span><span class="si">}</span><span class="s2">/transpiled&quot;</span><span class="p">]</span>
     <span class="n">qasm_str</span> <span class="o">=</span> <span class="n">dset</span><span class="p">[()]</span><span class="o">.</span><span class="n">decode</span><span class="p">()</span>

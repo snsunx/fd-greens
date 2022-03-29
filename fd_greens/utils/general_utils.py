@@ -4,6 +4,7 @@ General Utilities (:mod:`fd_greens.utils.general_utils`)
 ========================================================
 """
 
+from mimetypes import init
 import os
 import h5py
 from typing import (
@@ -42,14 +43,14 @@ AnsatzFunction = Callable[[Sequence[float]], QuantumCircuit]
 
 
 def get_statevector(circ_like: QuantumCircuitLike, reverse: bool = False) -> np.ndarray:
-    """Returns the statevector of a quantum circuit.
+    """Returns the statevector of a circuit.
 
     Args:
         circ_like: The circuit or instruction tuples on which the state is to be obtained.
         reverse: Whether qubit order is reversed.
 
     Returns:
-        The statevector array of the circuit.
+        statevector: The statevector array of the circuit.
     """
     if isinstance(circ_like, QuantumCircuit):
         circ = circ_like
@@ -66,14 +67,14 @@ def get_statevector(circ_like: QuantumCircuitLike, reverse: bool = False) -> np.
 
 
 def get_unitary(circ_like: QuantumCircuitLike, reverse: bool = False) -> np.ndarray:
-    """Returns the unitary of a quantum circuit.
+    """Returns the unitary of a circuit.
 
     Args:
         circ_like: The circuit or instruction tuples on which the unitary is to be obtained.
         reverse: Whether qubit order is reversed.
 
     Returns:
-        The unitary array of the circuit.
+        unitary: The unitary array of the circuit.
     """
     circ_like = remove_instructions(circ_like, ["barrier", "measure"])
     if isinstance(circ_like, QuantumCircuit):
@@ -97,22 +98,23 @@ def get_overlap(state1: np.ndarray, state2: np.ndarray) -> float:
         state2: A 1D or 2D numpy array corresponding to the second state.
 
     Returns:
-        The overlap between the two states.
+        overlap: The overlap between the two states.
     """
     # If both state1 and state2 are statevectors, return |<state1|state2>|^2.
     if len(state1.shape) == 1 and len(state2.shape) == 1:
-        return abs(state1.conj() @ state2) ** 2
+        overlap = abs(state1.conj() @ state2) ** 2
     # If state1 is a statevector and state2 is a density matrix,
     # return Re(<state1|state2|state1>).
     elif len(state1.shape) == 1 and len(state2.shape) == 2:
-        return (state1.conj() @ state2 @ state1).real
+        overlap = (state1.conj() @ state2 @ state1).real
     # If state1 is a density matrix and state2 is a statevector,
     # return Re(<state2|state1|state2>).
     elif len(state1.shape) == 2 and len(state2.shape) == 1:
-        return (state2.conj() @ state1 @ state2).real
+        overlap = (state2.conj() @ state1 @ state2).real
     # If both state1 and state2 are density matries, return Re(<state1|state2>).
     elif len(state1.shape) == 2 and len(state2.shape) == 2:
-        return np.trace(state1.conj().T @ state2).real
+        overlap = np.trace(state1.conj().T @ state2).real
+    return overlap
 
 
 def reverse_qubit_order(arr: np.ndarray) -> np.ndarray:
@@ -121,10 +123,10 @@ def reverse_qubit_order(arr: np.ndarray) -> np.ndarray:
     This is because Qiskit uses big endian order and 
 
     Args:
-        The 1D or 2D array on which the qubit order is to be reversed.
+        arr: The 1D or 2D array on which the qubit order is to be reversed.
 
     Returns:
-        The 1D or 2D array after qubit order is reversed.
+       arr: The 1D or 2D array after qubit order is reversed.
     """
     if len(arr.shape) == 1:
         # Extract the dimension and number of qubits.
@@ -168,7 +170,7 @@ def counts_dict_to_arr(
             from the bitstring counts.
 
     Returns:
-        A numpy array corresponding to the bitstring counts.
+        arr: A numpy array corresponding to the bitstring counts.
     """
     # Convert counts from Counts form to dict form and extract the number of qubits.
     if isinstance(counts, Counts):
@@ -192,18 +194,18 @@ def counts_dict_to_arr(
 def circuit_equal(
     circ1: QuantumCircuitLike, circ2: QuantumCircuitLike, init_state_0: bool = True
 ) -> bool:
-    """Checks if two quantum circuits are equivalent.
+    """Checks if two circuits are equivalent.
 
     The two circuits are equivalent either when the unitaries are equal up to a phase or 
     when the statevectors with initial state all 0 are equal up to a phase.
     
     Args:
-        circ1: The first quantum cicuit.
-        circ2: The second quantum circuit.
-        init_state_0: Whether to assume the initial state is all 0.
+        circ1: The first cicuit.
+        circ2: The second circuit.
+        init_state_0: Whether to assume the initial state is the all 0 state.
         
     Returns:
-        Whether the two circuits are equivalent.
+        is_equal: Whether the two circuits are equivalent.
     """
     # If the circuits are in instruction tuple form.
     if not isinstance(circ1, QuantumCircuit):
@@ -215,7 +217,8 @@ def circuit_equal(
     assert uni1.shape == uni2.shape
     # print('uni1\n', uni1)
     # print('uni2\n', uni2)
-    return unitary_equal(uni1, uni2, init_state_0=init_state_0)
+    is_equal = unitary_equal(uni1, uni2, init_state_0=init_state_0)
+    return is_equal
 
 
 def unitary_equal(
@@ -230,7 +233,7 @@ def unitary_equal(
             corresponding to the all 0 state.
 
     Returns:
-        Whether the two unitaries are equal up to a phase.
+        is_equal: Whether the two unitaries are equal up to a phase.
     """
     if init_state_0:
         vec1 = uni1[:, 0]
@@ -242,7 +245,7 @@ def unitary_equal(
         phase2 = vec2[ind] / abs(vec2[ind])
         vec1 /= phase1
         vec2 /= phase2
-        return np.allclose(vec1, vec2)
+        is_equal = np.allclose(vec1, vec2)
     else:
         ind = np.argmax(np.abs(uni1[0]))
         if abs(uni2[0, ind]) == 0:
@@ -251,7 +254,8 @@ def unitary_equal(
         phase2 = uni2[0, ind] / abs(uni2[0, ind])
         uni1 /= phase1
         uni2 /= phase2
-        return np.allclose(uni1, uni2)
+        is_equal = np.allclose(uni1, uni2)
+    return is_equal
 
 
 def vqe_minimize(

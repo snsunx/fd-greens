@@ -78,14 +78,14 @@
 
 <div class="viewcode-block" id="build_ansatz_gs"><a class="viewcode-back" href="../../../fd_greens.main.ansatze.html#fd_greens.main.ansatze.build_ansatz_gs">[docs]</a><span class="k">def</span> <span class="nf">build_ansatz_gs</span><span class="p">(</span><span class="n">params</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">float</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">QuantumCircuit</span><span class="p">:</span>
     <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Constructs an N-electron ansatz of the encoded Hamiltonian. The ansatz is of</span>
-<span class="sd">    the form :math:`(R_y(\theta_2)\otimes R_y(\theta_3)) CZ (R_y(\theta_0)\otimes Ry(\theta_1))</span>
+<span class="sd">    the form :math:`(R_y(\theta_2)\otimes R_y(\theta_3)) CZ (R_y(\theta_0)\otimes R_y(\theta_1))</span>
 <span class="sd">    |00\rangle`.</span>
 
 <span class="sd">    Args:</span>
-<span class="sd">        A sequence of the parameters.</span>
+<span class="sd">        params: A sequence of the parameters.</span>
 
 <span class="sd">    Returns:</span>
-<span class="sd">        The ansatz quantum circuit.</span>
+<span class="sd">        ansatz: The ansatz quantum circuit.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">params</span><span class="p">)</span> <span class="o">==</span> <span class="mi">6</span>
     <span class="n">qreg</span> <span class="o">=</span> <span class="n">QuantumRegister</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;q&quot;</span><span class="p">)</span>
@@ -106,10 +106,10 @@
 <span class="sd">    The ansatz is of the form :math:`(I \otimes R_y(\theta))|10\rangle`.</span>
 
 <span class="sd">    Args:</span>
-<span class="sd">        A sequence of the parameters.</span>
+<span class="sd">        params: A sequence of the parameters.</span>
 
 <span class="sd">    Returns:</span>
-<span class="sd">        The ansatz quantum circuit.</span>
+<span class="sd">        ansatz: The ansatz quantum circuit.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">params</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span>
     <span class="n">qreg</span> <span class="o">=</span> <span class="n">QuantumRegister</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;q&quot;</span><span class="p">)</span>
@@ -124,10 +124,10 @@
 <span class="sd">    The ansatz is of the form :math:`(I \otimes R_y(\theta))|00\rangle`.</span>
 <span class="sd">    </span>
 <span class="sd">    Args:</span>
-<span class="sd">        A sequence of the parameters.</span>
+<span class="sd">        params: A sequence of the parameters.</span>
 
 <span class="sd">    Returns:</span>
-<span class="sd">        The ansatz quantum circuit.</span>
+<span class="sd">        ansatz: The ansatz quantum circuit.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">params</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span>
     <span class="n">qreg</span> <span class="o">=</span> <span class="n">QuantumRegister</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;q&quot;</span><span class="p">)</span>

@@ -19,7 +19,7 @@ from ..utils import state_tomography, write_hdf5, vqe_minimize
 
 
 class EHStatesSolver:
-    """A class to calculate and store information of (N+/-1)-electron states."""
+    """A class to calculate and store information of (N±1)-electron states."""
 
     def __init__(
         self,
@@ -37,9 +37,10 @@ class EHStatesSolver:
             h: The molecular Hamiltonian.
             ansatz_func_e: The ansatz function for (N+1)-electron states.
             ansatz_func_h: The ansatz function for (N-1)-electron states.
-            q_instance: The quantum instance for (N+/-1)-electron state calculation.
-            spin: A character indicating whether up spins ('u') or down spins ('d') are included.
-            method: The method to calculate the (N+/-1)-electron states. Either exact ('exact') or VQE ('vqe').
+            q_instance: The quantum instance for (N±1)-electron state calculation.
+            spin: A character indicating whether up spins (``'u'``) or down spins (``'d'``) are included.
+            method: The method to calculate the (N+/-1)-electron states. Either exact
+                (``'exact'``) or VQE (``'vqe'``).
             h5fname: The HDF5 file name.
         """
         assert spin in ["u", "d"]
@@ -86,7 +87,7 @@ class EHStatesSolver:
         print(f"(N-1)-electron energies are {self.energies_h} eV")
 
     def run_vqe(self) -> None:
-        """Calculates the (N+/-1)-electron energies and states of the Hamiltonian using VQE."""
+        """Calculates the (N±1)-electron energies and states of the Hamiltonian using VQE."""
         energy_min, circ_min = vqe_minimize(
             self.h_op, self.ansatz_func_e, (0.0,), self.q_instance
         )
@@ -117,7 +118,7 @@ class EHStatesSolver:
         print(f"(N-1)-electron energies are {self.energies_h} eV")
 
     def save_data(self) -> None:
-        """Saves (N+/-1)-electron energies and states to HDF5 file."""
+        """Saves (N±1)-electron energies and states to HDF5 file."""
         h5file = h5py.File(self.h5fname, "r+")
 
         write_hdf5(h5file, "es", "energies_e", self.energies_e)
@@ -128,10 +129,10 @@ class EHStatesSolver:
         h5file.close()
 
     def run(self, method: Optional[str] = None) -> None:
-        """Runs the (N+/-1)-electron states calculation.
+        """Runs the (N±1)-electron states calculation.
         
         Args:
-            The method to calculate the excited states. Either exact ('exact') or VQE ('vqe').
+            The method to calculate the excited states. Either exact (``'exact'``) or VQE (``'vqe'``).
         """
         assert method in [None, "exact", "vqe"]
 

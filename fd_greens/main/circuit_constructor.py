@@ -96,7 +96,7 @@ class CircuitConstructor:
             a_op_n: The second operator in the circuit.
 
         Returns:
-            The new circuit with the two operators appended.
+            circ: The new circuit with the two operators appended.
         """
         assert len(a_op_m) == len(a_op_n) == 2
         n_qubits = 4  # Hardcoded
@@ -153,6 +153,9 @@ class CircuitConstructor:
         Args:
             sparse_pauli_op: The Pauli operator from which the controlled gate is constructed.
             ctrl_states: The qubit states on which the cU gate is controlled on.
+
+        Returns:
+            Instruction tuples corresponding to the controlled-U gate.
         """
         assert len(sparse_pauli_op) == 1  # Only a single Pauli string
         assert set(ctrl_states).issubset({0, 1})

@@ -123,7 +123,7 @@
 <span class="sd">        q_instance: The QuantumInstance to execute the circuit.</span>
 
 <span class="sd">    Returns:</span>
-<span class="sd">        The density matrix obtained from state tomography.</span>
+<span class="sd">        rho_fit: The density matrix obtained from state tomography.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">if</span> <span class="n">q_instance</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">backend</span> <span class="o">=</span> <span class="n">Aer</span><span class="o">.</span><span class="n">get_backend</span><span class="p">(</span><span class="s2">&quot;qasm_simulator&quot;</span><span class="p">)</span>
@@ -151,7 +151,7 @@
 <span class="sd">        label: The tomography states label.</span>
 <span class="sd">    </span>
 <span class="sd">    Returns:</span>
-<span class="sd">        A new circuit with tomography gates appended.</span>
+<span class="sd">        tomo_circ: A new circuit with tomography gates appended.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">qubits</span><span class="p">)</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="n">label</span><span class="p">)</span>
     <span class="n">inst_tups</span> <span class="o">=</span> <span class="n">circ</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
@@ -196,10 +196,10 @@
     <span class="sd">&quot;&quot;&quot;Appends measurement gates to a circuit.</span>
 <span class="sd">    </span>
 <span class="sd">    Args:</span>
-<span class="sd">        The circuit to which measurement gates are to be appended.</span>
+<span class="sd">        circ: The circuit to which measurement gates are to be appended.</span>
 <span class="sd">        </span>
 <span class="sd">    Returns:</span>
-<span class="sd">        A new circuit with measurement gates appended.</span>
+<span class="sd">        circ_new: A new circuit with measurement gates appended.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">qreg</span> <span class="o">=</span> <span class="n">circ</span><span class="o">.</span><span class="n">qregs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
     <span class="n">n_qubits</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">qreg</span><span class="p">)</span>

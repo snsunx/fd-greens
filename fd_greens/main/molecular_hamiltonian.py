@@ -35,7 +35,7 @@ class MolecularHamiltonian:
         occ_inds: Optional[Sequence[int]] = None,
         act_inds: Optional[Sequence[int]] = None,
         build_ops: bool = True,
-    ):
+    ) -> None:
         """Initializes a MolecularHamiltonian object.
 
         Args:
@@ -87,7 +87,7 @@ class MolecularHamiltonian:
 
     def _build_openfermion_operator(self) -> None:
         """A private method for constructing the Openfermion qubit operator
-        in QubitOperator form. Called by the `build` function."""
+        in QubitOperator form. Called by the ``build`` function."""
         # if self.occ_inds is None and self.act_inds is None:
         #     self.act_inds = range(self.molecule.n_orbitals)
         hamiltonian = self.molecule.get_molecular_hamiltonian(
@@ -100,7 +100,7 @@ class MolecularHamiltonian:
 
     def _build_qiskit_operator(self) -> None:
         """A private method for constructing the Qiskit qubit operator
-        in PauliSumOp form. Called by the `build` function."""
+        in PauliSumOp form. Called by the ``build`` function."""
         if self._openfermion_op is None:
             self._build_openfermion_operator()
         table = []
@@ -160,15 +160,17 @@ class MolecularHamiltonian:
         """Converts the molecular Hamiltonian to an array form.
 
         Args:
-            A string indicating the type of the output array.
+            array_type: A string indicating the type of the output array.
+
+        Returns:
+            array: The operator in matrix, sparse matrix of ndarray form.
         """
         assert array_type in ["sparse", "matrix", "array", "ndarray"]
         if self._openfermion_op is None:
             self._build_openfermion_operator()
         array = get_sparse_operator(self._openfermion_op)
-        if array_type == "sparse":
-            return array
-        elif array_type == "matrix":
-            return array.todense()
+        if array_type == "matrix":
+            array = array.todense()
         elif array_type == "array" or array_type == "ndarray":
-            return array.toarray()
+            array = array.toarray()
+        return array

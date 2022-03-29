@@ -25,7 +25,7 @@ def take_01(
         circ_label: The circuit label.
     
     Returns:
-        The processed bitstring counts array.
+        arr_new: The processed bitstring counts array.
     """
     # Extract the number of qubits and construct the bitstrings. For certain circuit labels,
     # permute the bitstring elements according to the SWAP gates at the end.

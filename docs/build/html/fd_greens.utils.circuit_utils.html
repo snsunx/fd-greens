@@ -94,7 +94,7 @@
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
-<dd class="field-even"><p><strong>A new quantum circuit on which certain instructions are removed.</strong></p>
+<dd class="field-even"><p><strong>circ_new</strong> – new circuit on which certain instructions are removed.</p>
 </dd>
 </dl>
 </dd></dl>
@@ -111,7 +111,7 @@
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
-<dd class="field-even"><p><strong>A new quantum circuit on which certain instructions are removed.</strong></p>
+<dd class="field-even"><p><strong>circ_new</strong> – new circuit on which certain instructions are removed.</p>
 </dd>
 </dl>
 </dd></dl>
@@ -119,14 +119,14 @@
 <dl class="py function">
 <dt class="sig sig-object py" id="fd_greens.utils.circuit_utils.get_registers_in_circuit">
 <span class="sig-name descname"><span class="pre">get_registers_in_circuit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">circ_like</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">qiskit.circuit.quantumcircuit.QuantumCircuit</span><span class="p"><span class="pre">,</span> </span><span class="pre">Iterable</span><span class="p"><span class="pre">[</span></span><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">qiskit.circuit.instruction.Instruction</span><span class="p"><span class="pre">,</span> </span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span> </span><span class="pre">qiskit.circuit.quantumregister.Qubit</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span> </span><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span> </span><span class="pre">qiskit.circuit.classicalregister.Clbit</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">qiskit.circuit.quantumregister.QuantumRegister</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span> </span><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">qiskit.circuit.classicalregister.ClassicalRegister</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/fd_greens/utils/circuit_utils.html#get_registers_in_circuit"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#fd_greens.utils.circuit_utils.get_registers_in_circuit" title="Permalink to this definition"></a></dt>
-<dd><p>Returns the quantum and classical registers from a quantum circuit.</p>
+<dd><p>Returns the quantum and classical registers from a circuit.</p>
 <p>Qubits and classical bits can be specified either as Qubit/Clbit instances or as
 integers in the circuit. New instances of QuantumRegister and ClassicalRegister will
 be created with name ‘q’ and ‘c’. If the quantum or classical register is found, it is
 returned as None.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>extracted.</strong> (<em>The instruction tuples from which qreg and creg are</em>) – </p>
+<dd class="field-odd"><p><strong>circ_like</strong> – The instruction tuples from which qreg and creg are extracted.</p>
 </dd>
 <dt class="field-even">Returns</dt>
 <dd class="field-even"><ul class="simple">
@@ -140,14 +140,14 @@ returned as None.</p>
 <dl class="py function">
 <dt class="sig sig-object py" id="fd_greens.utils.circuit_utils.get_registers_in_inst_tups">
 <span class="sig-name descname"><span class="pre">get_registers_in_inst_tups</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">circ_like</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">qiskit.circuit.quantumcircuit.QuantumCircuit</span><span class="p"><span class="pre">,</span> </span><span class="pre">Iterable</span><span class="p"><span class="pre">[</span></span><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">qiskit.circuit.instruction.Instruction</span><span class="p"><span class="pre">,</span> </span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span> </span><span class="pre">qiskit.circuit.quantumregister.Qubit</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span> </span><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span> </span><span class="pre">qiskit.circuit.classicalregister.Clbit</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">qiskit.circuit.quantumregister.QuantumRegister</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span> </span><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">qiskit.circuit.classicalregister.ClassicalRegister</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#fd_greens.utils.circuit_utils.get_registers_in_inst_tups" title="Permalink to this definition"></a></dt>
-<dd><p>Returns the quantum and classical registers from a quantum circuit.</p>
+<dd><p>Returns the quantum and classical registers from a circuit.</p>
 <p>Qubits and classical bits can be specified either as Qubit/Clbit instances or as
 integers in the circuit. New instances of QuantumRegister and ClassicalRegister will
 be created with name ‘q’ and ‘c’. If the quantum or classical register is found, it is
 returned as None.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>extracted.</strong> (<em>The instruction tuples from which qreg and creg are</em>) – </p>
+<dd class="field-odd"><p><strong>circ_like</strong> – The instruction tuples from which qreg and creg are extracted.</p>
 </dd>
 <dt class="field-even">Returns</dt>
 <dd class="field-even"><ul class="simple">
@@ -177,7 +177,7 @@ will be a new ClassicalRegister with name ‘c’.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
-<dd class="field-even"><p><strong>A quantum circuit constructed from the instruction tuples.</strong></p>
+<dd class="field-even"><p><strong>circ</strong> – A circuit constructed from the instruction tuples.</p>
 </dd>
 </dl>
 </dd></dl>
@@ -186,6 +186,14 @@ will be a new ClassicalRegister with name ‘c’.</p></li>
 <dt class="sig sig-object py" id="fd_greens.utils.circuit_utils.split_circuit_across_barriers">
 <span class="sig-name descname"><span class="pre">split_circuit_across_barriers</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">circ</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">qiskit.circuit.quantumcircuit.QuantumCircuit</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">qiskit.circuit.instruction.Instruction</span><span class="p"><span class="pre">,</span> </span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span> </span><span class="pre">qiskit.circuit.quantumregister.Qubit</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span> </span><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span> </span><span class="pre">qiskit.circuit.classicalregister.Clbit</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/fd_greens/utils/circuit_utils.html#split_circuit_across_barriers"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#fd_greens.utils.circuit_utils.split_circuit_across_barriers" title="Permalink to this definition"></a></dt>
 <dd><p>Splits a circuit into instruction tuples across barriers.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>circ</strong> – A circuit to be split across barriers.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>inst_tups_all</strong> – The instruction tuples corresponding to all subcircuits.</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py function">
@@ -195,7 +203,7 @@ will be a new ClassicalRegister with name ‘c’.</p></li>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>circ</strong> – The quantum circuit to be measured.</p></li>
+<li><p><strong>circ</strong> – The circuit to be measured.</p></li>
 <li><p><strong>op</strong> – The operator to be measured.</p></li>
 <li><p><strong>q_instance</strong> – The QuantumInstance on which to execute the circuit.</p></li>
 <li><p><strong>anc_state</strong> – A sequence of integers indicating the ancilla states.</p></li>
@@ -203,7 +211,7 @@ will be a new ClassicalRegister with name ‘c’.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
-<dd class="field-even"><p><strong>The value of the operator on the circuit.</strong></p>
+<dd class="field-even"><p><strong>value</strong> – The value of the operator on the circuit.</p>
 </dd>
 </dl>
 </dd></dl>
@@ -212,18 +220,51 @@ will be a new ClassicalRegister with name ‘c’.</p></li>
 <dt class="sig sig-object py" id="fd_greens.utils.circuit_utils.get_circuit_depth">
 <span class="sig-name descname"><span class="pre">get_circuit_depth</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">h5fname</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">circ_label</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">int</span></span></span><a class="reference internal" href="_modules/fd_greens/utils/circuit_utils.html#get_circuit_depth"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#fd_greens.utils.circuit_utils.get_circuit_depth" title="Permalink to this definition"></a></dt>
 <dd><p>Returns the circuit depth of a circuit saved in an HDF5 file.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>h5fname</strong> – Name of the HDF5 file in which the circuit is saved.</p></li>
+<li><p><strong>circ_label</strong> – The circuit label.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>depth</strong> – The circuit depth.</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="fd_greens.utils.circuit_utils.get_n_2q_gates">
 <span class="sig-name descname"><span class="pre">get_n_2q_gates</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">h5fname</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">circ_label</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">int</span></span></span><a class="reference internal" href="_modules/fd_greens/utils/circuit_utils.html#get_n_2q_gates"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#fd_greens.utils.circuit_utils.get_n_2q_gates" title="Permalink to this definition"></a></dt>
 <dd><p>Returns the number of 2q gates in a circuit saved in an HDF5 file.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>h5fname</strong> – Name of the HDF5 file in which the circuit is saved.</p></li>
+<li><p><strong>circ_label</strong> – The circuit label.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>count</strong> – Number of two-qubit gates in the circuit.</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="fd_greens.utils.circuit_utils.get_n_3q_gates">
 <span class="sig-name descname"><span class="pre">get_n_3q_gates</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">h5fname</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">circ_label</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">int</span></span></span><a class="reference internal" href="_modules/fd_greens/utils/circuit_utils.html#get_n_3q_gates"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#fd_greens.utils.circuit_utils.get_n_3q_gates" title="Permalink to this definition"></a></dt>
 <dd><p>Returns the number of 3q gates in a circuit saved in an HDF5 file.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>h5fname</strong> – Name of the HDF5 file in which the circuit is saved.</p></li>
+<li><p><strong>circ_label</strong> – The circuit label.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>count</strong> – Number of three-qubit gates in the circuit.</p>
+</dd>
+</dl>
 </dd></dl>
 
 </section>

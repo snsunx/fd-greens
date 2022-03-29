@@ -1,4 +1,8 @@
-import itertools
+"""
+=========================================
+Parameters (:mod:`fd_greens.main.params`)
+=========================================
+"""
 import numpy as np
 
 from qiskit.circuit import Barrier

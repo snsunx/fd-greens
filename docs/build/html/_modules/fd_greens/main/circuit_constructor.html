@@ -162,7 +162,7 @@
 <span class="sd">            a_op_n: The second operator in the circuit.</span>
 
 <span class="sd">        Returns:</span>
-<span class="sd">            The new circuit with the two operators appended.</span>
+<span class="sd">            circ: The new circuit with the two operators appended.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">a_op_m</span><span class="p">)</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="n">a_op_n</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span>
         <span class="n">n_qubits</span> <span class="o">=</span> <span class="mi">4</span>  <span class="c1"># Hardcoded</span>
@@ -219,6 +219,9 @@
 <span class="sd">        Args:</span>
 <span class="sd">            sparse_pauli_op: The Pauli operator from which the controlled gate is constructed.</span>
 <span class="sd">            ctrl_states: The qubit states on which the cU gate is controlled on.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Instruction tuples corresponding to the controlled-U gate.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">sparse_pauli_op</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span>  <span class="c1"># Only a single Pauli string</span>
         <span class="k">assert</span> <span class="nb">set</span><span class="p">(</span><span class="n">ctrl_states</span><span class="p">)</span><span class="o">.</span><span class="n">issubset</span><span class="p">({</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">})</span>

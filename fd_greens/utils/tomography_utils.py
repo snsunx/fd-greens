@@ -57,7 +57,7 @@ def state_tomography(
         q_instance: The QuantumInstance to execute the circuit.
 
     Returns:
-        The density matrix obtained from state tomography.
+        rho_fit: The density matrix obtained from state tomography.
     """
     if q_instance is None:
         backend = Aer.get_backend("qasm_simulator")
@@ -85,7 +85,7 @@ def append_tomography_gates(
         label: The tomography states label.
     
     Returns:
-        A new circuit with tomography gates appended.
+        tomo_circ: A new circuit with tomography gates appended.
     """
     assert len(qubits) == len(label)
     inst_tups = circ.data.copy()
@@ -130,10 +130,10 @@ def append_measurement_gates(circ: QuantumCircuit) -> QuantumCircuit:
     """Appends measurement gates to a circuit.
     
     Args:
-        The circuit to which measurement gates are to be appended.
+        circ: The circuit to which measurement gates are to be appended.
         
     Returns:
-        A new circuit with measurement gates appended.
+        circ_new: A new circuit with measurement gates appended.
     """
     qreg = circ.qregs[0]
     n_qubits = len(qreg)

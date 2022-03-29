@@ -70,6 +70,7 @@
 <span class="sd">========================================================</span>
 <span class="sd">&quot;&quot;&quot;</span>
 
+<span class="kn">from</span> <span class="nn">mimetypes</span> <span class="kn">import</span> <span class="n">init</span>
 <span class="kn">import</span> <span class="nn">os</span>
 <span class="kn">import</span> <span class="nn">h5py</span>
 <span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="p">(</span>
@@ -108,14 +109,14 @@
 
 
 <div class="viewcode-block" id="get_statevector"><a class="viewcode-back" href="../../../fd_greens.utils.general_utils.html#fd_greens.utils.general_utils.get_statevector">[docs]</a><span class="k">def</span> <span class="nf">get_statevector</span><span class="p">(</span><span class="n">circ_like</span><span class="p">:</span> <span class="n">QuantumCircuitLike</span><span class="p">,</span> <span class="n">reverse</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Returns the statevector of a quantum circuit.</span>
+    <span class="sd">&quot;&quot;&quot;Returns the statevector of a circuit.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        circ_like: The circuit or instruction tuples on which the state is to be obtained.</span>
 <span class="sd">        reverse: Whether qubit order is reversed.</span>
 
 <span class="sd">    Returns:</span>
-<span class="sd">        The statevector array of the circuit.</span>
+<span class="sd">        statevector: The statevector array of the circuit.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">circ_like</span><span class="p">,</span> <span class="n">QuantumCircuit</span><span class="p">):</span>
         <span class="n">circ</span> <span class="o">=</span> <span class="n">circ_like</span>
@@ -132,14 +133,14 @@
 
 
 <div class="viewcode-block" id="get_unitary"><a class="viewcode-back" href="../../../fd_greens.utils.general_utils.html#fd_greens.utils.general_utils.get_unitary">[docs]</a><span class="k">def</span> <span class="nf">get_unitary</span><span class="p">(</span><span class="n">circ_like</span><span class="p">:</span> <span class="n">QuantumCircuitLike</span><span class="p">,</span> <span class="n">reverse</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Returns the unitary of a quantum circuit.</span>
+    <span class="sd">&quot;&quot;&quot;Returns the unitary of a circuit.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        circ_like: The circuit or instruction tuples on which the unitary is to be obtained.</span>
 <span class="sd">        reverse: Whether qubit order is reversed.</span>
 
 <span class="sd">    Returns:</span>
-<span class="sd">        The unitary array of the circuit.</span>
+<span class="sd">        unitary: The unitary array of the circuit.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">circ_like</span> <span class="o">=</span> <span class="n">remove_instructions</span><span class="p">(</span><span class="n">circ_like</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;barrier&quot;</span><span class="p">,</span> <span class="s2">&quot;measure&quot;</span><span class="p">])</span>
     <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">circ_like</span><span class="p">,</span> <span class="n">QuantumCircuit</span><span class="p">):</span>
@@ -163,22 +164,23 @@
 <span class="sd">        state2: A 1D or 2D numpy array corresponding to the second state.</span>
 
 <span class="sd">    Returns:</span>
-<span class="sd">        The overlap between the two states.</span>
+<span class="sd">        overlap: The overlap between the two states.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="c1"># If both state1 and state2 are statevectors, return |&lt;state1|state2&gt;|^2.</span>
     <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">state1</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">state2</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
-        <span class="k">return</span> <span class="nb">abs</span><span class="p">(</span><span class="n">state1</span><span class="o">.</span><span class="n">conj</span><span class="p">()</span> <span class="o">@</span> <span class="n">state2</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span>
+        <span class="n">overlap</span> <span class="o">=</span> <span class="nb">abs</span><span class="p">(</span><span class="n">state1</span><span class="o">.</span><span class="n">conj</span><span class="p">()</span> <span class="o">@</span> <span class="n">state2</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span>
     <span class="c1"># If state1 is a statevector and state2 is a density matrix,</span>
     <span class="c1"># return Re(&lt;state1|state2|state1&gt;).</span>
     <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">state1</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">state2</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
-        <span class="k">return</span> <span class="p">(</span><span class="n">state1</span><span class="o">.</span><span class="n">conj</span><span class="p">()</span> <span class="o">@</span> <span class="n">state2</span> <span class="o">@</span> <span class="n">state1</span><span class="p">)</span><span class="o">.</span><span class="n">real</span>
+        <span class="n">overlap</span> <span class="o">=</span> <span class="p">(</span><span class="n">state1</span><span class="o">.</span><span class="n">conj</span><span class="p">()</span> <span class="o">@</span> <span class="n">state2</span> <span class="o">@</span> <span class="n">state1</span><span class="p">)</span><span class="o">.</span><span class="n">real</span>
     <span class="c1"># If state1 is a density matrix and state2 is a statevector,</span>
     <span class="c1"># return Re(&lt;state2|state1|state2&gt;).</span>
     <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">state1</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">state2</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
-        <span class="k">return</span> <span class="p">(</span><span class="n">state2</span><span class="o">.</span><span class="n">conj</span><span class="p">()</span> <span class="o">@</span> <span class="n">state1</span> <span class="o">@</span> <span class="n">state2</span><span class="p">)</span><span class="o">.</span><span class="n">real</span>
+        <span class="n">overlap</span> <span class="o">=</span> <span class="p">(</span><span class="n">state2</span><span class="o">.</span><span class="n">conj</span><span class="p">()</span> <span class="o">@</span> <span class="n">state1</span> <span class="o">@</span> <span class="n">state2</span><span class="p">)</span><span class="o">.</span><span class="n">real</span>
     <span class="c1"># If both state1 and state2 are density matries, return Re(&lt;state1|state2&gt;).</span>
     <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">state1</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">state2</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
-        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">trace</span><span class="p">(</span><span class="n">state1</span><span class="o">.</span><span class="n">conj</span><span class="p">()</span><span class="o">.</span><span class="n">T</span> <span class="o">@</span> <span class="n">state2</span><span class="p">)</span><span class="o">.</span><span class="n">real</span></div>
+        <span class="n">overlap</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">trace</span><span class="p">(</span><span class="n">state1</span><span class="o">.</span><span class="n">conj</span><span class="p">()</span><span class="o">.</span><span class="n">T</span> <span class="o">@</span> <span class="n">state2</span><span class="p">)</span><span class="o">.</span><span class="n">real</span>
+    <span class="k">return</span> <span class="n">overlap</span></div>
 
 
 <div class="viewcode-block" id="reverse_qubit_order"><a class="viewcode-back" href="../../../fd_greens.utils.general_utils.html#fd_greens.utils.general_utils.reverse_qubit_order">[docs]</a><span class="k">def</span> <span class="nf">reverse_qubit_order</span><span class="p">(</span><span class="n">arr</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
@@ -187,10 +189,10 @@
 <span class="sd">    This is because Qiskit uses big endian order and </span>
 
 <span class="sd">    Args:</span>
-<span class="sd">        The 1D or 2D array on which the qubit order is to be reversed.</span>
+<span class="sd">        arr: The 1D or 2D array on which the qubit order is to be reversed.</span>
 
 <span class="sd">    Returns:</span>
-<span class="sd">        The 1D or 2D array after qubit order is reversed.</span>
+<span class="sd">       arr: The 1D or 2D array after qubit order is reversed.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">arr</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
         <span class="c1"># Extract the dimension and number of qubits.</span>
@@ -234,7 +236,7 @@
 <span class="sd">            from the bitstring counts.</span>
 
 <span class="sd">    Returns:</span>
-<span class="sd">        A numpy array corresponding to the bitstring counts.</span>
+<span class="sd">        arr: A numpy array corresponding to the bitstring counts.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="c1"># Convert counts from Counts form to dict form and extract the number of qubits.</span>
     <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">counts</span><span class="p">,</span> <span class="n">Counts</span><span class="p">):</span>
@@ -258,18 +260,18 @@
 <div class="viewcode-block" id="circuit_equal"><a class="viewcode-back" href="../../../fd_greens.utils.general_utils.html#fd_greens.utils.general_utils.circuit_equal">[docs]</a><span class="k">def</span> <span class="nf">circuit_equal</span><span class="p">(</span>
     <span class="n">circ1</span><span class="p">:</span> <span class="n">QuantumCircuitLike</span><span class="p">,</span> <span class="n">circ2</span><span class="p">:</span> <span class="n">QuantumCircuitLike</span><span class="p">,</span> <span class="n">init_state_0</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Checks if two quantum circuits are equivalent.</span>
+    <span class="sd">&quot;&quot;&quot;Checks if two circuits are equivalent.</span>
 
 <span class="sd">    The two circuits are equivalent either when the unitaries are equal up to a phase or </span>
 <span class="sd">    when the statevectors with initial state all 0 are equal up to a phase.</span>
 <span class="sd">    </span>
 <span class="sd">    Args:</span>
-<span class="sd">        circ1: The first quantum cicuit.</span>
-<span class="sd">        circ2: The second quantum circuit.</span>
-<span class="sd">        init_state_0: Whether to assume the initial state is all 0.</span>
+<span class="sd">        circ1: The first cicuit.</span>
+<span class="sd">        circ2: The second circuit.</span>
+<span class="sd">        init_state_0: Whether to assume the initial state is the all 0 state.</span>
 <span class="sd">        </span>
 <span class="sd">    Returns:</span>
-<span class="sd">        Whether the two circuits are equivalent.</span>
+<span class="sd">        is_equal: Whether the two circuits are equivalent.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="c1"># If the circuits are in instruction tuple form.</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">circ1</span><span class="p">,</span> <span class="n">QuantumCircuit</span><span class="p">):</span>
@@ -281,7 +283,8 @@
     <span class="k">assert</span> <span class="n">uni1</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="n">uni2</span><span class="o">.</span><span class="n">shape</span>
     <span class="c1"># print(&#39;uni1\n&#39;, uni1)</span>
     <span class="c1"># print(&#39;uni2\n&#39;, uni2)</span>
-    <span class="k">return</span> <span class="n">unitary_equal</span><span class="p">(</span><span class="n">uni1</span><span class="p">,</span> <span class="n">uni2</span><span class="p">,</span> <span class="n">init_state_0</span><span class="o">=</span><span class="n">init_state_0</span><span class="p">)</span></div>
+    <span class="n">is_equal</span> <span class="o">=</span> <span class="n">unitary_equal</span><span class="p">(</span><span class="n">uni1</span><span class="p">,</span> <span class="n">uni2</span><span class="p">,</span> <span class="n">init_state_0</span><span class="o">=</span><span class="n">init_state_0</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">is_equal</span></div>
 
 
 <div class="viewcode-block" id="unitary_equal"><a class="viewcode-back" href="../../../fd_greens.utils.general_utils.html#fd_greens.utils.general_utils.unitary_equal">[docs]</a><span class="k">def</span> <span class="nf">unitary_equal</span><span class="p">(</span>
@@ -296,7 +299,7 @@
 <span class="sd">            corresponding to the all 0 state.</span>
 
 <span class="sd">    Returns:</span>
-<span class="sd">        Whether the two unitaries are equal up to a phase.</span>
+<span class="sd">        is_equal: Whether the two unitaries are equal up to a phase.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">if</span> <span class="n">init_state_0</span><span class="p">:</span>
         <span class="n">vec1</span> <span class="o">=</span> <span class="n">uni1</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span>
@@ -308,7 +311,7 @@
         <span class="n">phase2</span> <span class="o">=</span> <span class="n">vec2</span><span class="p">[</span><span class="n">ind</span><span class="p">]</span> <span class="o">/</span> <span class="nb">abs</span><span class="p">(</span><span class="n">vec2</span><span class="p">[</span><span class="n">ind</span><span class="p">])</span>
         <span class="n">vec1</span> <span class="o">/=</span> <span class="n">phase1</span>
         <span class="n">vec2</span> <span class="o">/=</span> <span class="n">phase2</span>
-        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">allclose</span><span class="p">(</span><span class="n">vec1</span><span class="p">,</span> <span class="n">vec2</span><span class="p">)</span>
+        <span class="n">is_equal</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">allclose</span><span class="p">(</span><span class="n">vec1</span><span class="p">,</span> <span class="n">vec2</span><span class="p">)</span>
     <span class="k">else</span><span class="p">:</span>
         <span class="n">ind</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">uni1</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span>
         <span class="k">if</span> <span class="nb">abs</span><span class="p">(</span><span class="n">uni2</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="n">ind</span><span class="p">])</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
@@ -317,7 +320,8 @@
         <span class="n">phase2</span> <span class="o">=</span> <span class="n">uni2</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="n">ind</span><span class="p">]</span> <span class="o">/</span> <span class="nb">abs</span><span class="p">(</span><span class="n">uni2</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="n">ind</span><span class="p">])</span>
         <span class="n">uni1</span> <span class="o">/=</span> <span class="n">phase1</span>
         <span class="n">uni2</span> <span class="o">/=</span> <span class="n">phase2</span>
-        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">allclose</span><span class="p">(</span><span class="n">uni1</span><span class="p">,</span> <span class="n">uni2</span><span class="p">)</span></div>
+        <span class="n">is_equal</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">allclose</span><span class="p">(</span><span class="n">uni1</span><span class="p">,</span> <span class="n">uni2</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">is_equal</span></div>
 
 
 <div class="viewcode-block" id="vqe_minimize"><a class="viewcode-back" href="../../../fd_greens.utils.general_utils.html#fd_greens.utils.general_utils.vqe_minimize">[docs]</a><span class="k">def</span> <span class="nf">vqe_minimize</span><span class="p">(</span>

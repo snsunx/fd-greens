@@ -157,16 +157,17 @@
 
 
 <div class="viewcode-block" id="circuit_to_qasm_str"><a class="viewcode-back" href="../../../fd_greens.utils.io_utils.html#fd_greens.utils.io_utils.circuit_to_qasm_str">[docs]</a><span class="k">def</span> <span class="nf">circuit_to_qasm_str</span><span class="p">(</span><span class="n">circ</span><span class="p">:</span> <span class="n">QuantumCircuit</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Converts a quantum circuit to QASM string.</span>
+    <span class="sd">&quot;&quot;&quot;Converts a circuit to QASM string.</span>
 <span class="sd">    </span>
-<span class="sd">    This function implements the CC-iX gate (both controls on 0) and is required to</span>
-<span class="sd">    transpile circuits that contain the Berekely C-iX-C gate.</span>
+<span class="sd">    This function generates QASM string of the C0iXC0 gate and is required to transpile circuits</span>
+<span class="sd">    that contain this gate, as the QASM string generation function in Qiskit does not implement </span>
+<span class="sd">    this gate.</span>
 <span class="sd">    </span>
 <span class="sd">    Args:</span>
-<span class="sd">        The quantum circuit to be transformed to a QASM string.</span>
+<span class="sd">        circ: The circuit to be transformed to a QASM string.</span>
 <span class="sd">    </span>
 <span class="sd">    Returns:</span>
-<span class="sd">        The QASM string corresponding to the quantum circuit.</span>
+<span class="sd">        qasm_str: The QASM string corresponding to the circuit.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="c1"># print(set([x[0].name for x in circ.data]))</span>
     <span class="c1"># The header of the QASM string.</span>
@@ -213,7 +214,7 @@
     <span class="sd">&quot;&quot;&quot;Saves the circuit figure under the directory ``figs``.</span>
 <span class="sd">    </span>
 <span class="sd">    Args:</span>
-<span class="sd">        circ: The quantum circuit to be saved.</span>
+<span class="sd">        circ: The circuit to be saved.</span>
 <span class="sd">        suffix: The suffix to be appended to the figure name.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="s2">&quot;figs&quot;</span><span class="p">):</span>

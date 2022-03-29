@@ -111,7 +111,7 @@
 <span class="sd">            eta: The imaginary part, i.e. broadening factor.</span>
 <span class="sd">        </span>
 <span class="sd">        Returns:</span>
-<span class="sd">            The Green&#39;s function numpy array.</span>
+<span class="sd">            G: The Green&#39;s function numpy array.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="c1"># Green&#39;s function arrays</span>
         <span class="n">G_e</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">n_orb</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_orb</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">complex</span><span class="p">)</span>
@@ -141,7 +141,7 @@
 <span class="sd">            save: Whether to save the spectral function to file.</span>
 <span class="sd">        </span>
 <span class="sd">        Returns:</span>
-<span class="sd">            (Optional) The spectral function numpy array.</span>
+<span class="sd">            As: The spectral function numpy array.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">As</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="k">for</span> <span class="n">omega</span> <span class="ow">in</span> <span class="n">omegas</span><span class="p">:</span>
@@ -166,7 +166,7 @@
 <span class="sd">            save: Whether to save the spectral function to file.</span>
 
 <span class="sd">        Returns:</span>
-<span class="sd">            (Optional) Trace of the self-energy.</span>
+<span class="sd">            TrSigmas: Trace of the self-energy.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">TrSigmas</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="k">for</span> <span class="n">omega</span> <span class="ow">in</span> <span class="n">omegas</span><span class="p">:</span>

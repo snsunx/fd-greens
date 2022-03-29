@@ -85,7 +85,7 @@
 
 
 <div class="viewcode-block" id="EHStatesSolver"><a class="viewcode-back" href="../../../fd_greens.main.eh_states_solver.html#fd_greens.main.eh_states_solver.EHStatesSolver">[docs]</a><span class="k">class</span> <span class="nc">EHStatesSolver</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;A class to calculate and store information of (N+/-1)-electron states.&quot;&quot;&quot;</span>
+    <span class="sd">&quot;&quot;&quot;A class to calculate and store information of (N±1)-electron states.&quot;&quot;&quot;</span>
 
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
@@ -103,9 +103,10 @@
 <span class="sd">            h: The molecular Hamiltonian.</span>
 <span class="sd">            ansatz_func_e: The ansatz function for (N+1)-electron states.</span>
 <span class="sd">            ansatz_func_h: The ansatz function for (N-1)-electron states.</span>
-<span class="sd">            q_instance: The quantum instance for (N+/-1)-electron state calculation.</span>
-<span class="sd">            spin: A character indicating whether up spins (&#39;u&#39;) or down spins (&#39;d&#39;) are included.</span>
-<span class="sd">            method: The method to calculate the (N+/-1)-electron states. Either exact (&#39;exact&#39;) or VQE (&#39;vqe&#39;).</span>
+<span class="sd">            q_instance: The quantum instance for (N±1)-electron state calculation.</span>
+<span class="sd">            spin: A character indicating whether up spins (``&#39;u&#39;``) or down spins (``&#39;d&#39;``) are included.</span>
+<span class="sd">            method: The method to calculate the (N+/-1)-electron states. Either exact</span>
+<span class="sd">                (``&#39;exact&#39;``) or VQE (``&#39;vqe&#39;``).</span>
 <span class="sd">            h5fname: The HDF5 file name.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">assert</span> <span class="n">spin</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;u&quot;</span><span class="p">,</span> <span class="s2">&quot;d&quot;</span><span class="p">]</span>
@@ -152,7 +153,7 @@
         <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;(N-1)-electron energies are </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">energies_h</span><span class="si">}</span><span class="s2"> eV&quot;</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="EHStatesSolver.run_vqe"><a class="viewcode-back" href="../../../fd_greens.main.eh_states_solver.html#fd_greens.main.eh_states_solver.EHStatesSolver.run_vqe">[docs]</a>    <span class="k">def</span> <span class="nf">run_vqe</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Calculates the (N+/-1)-electron energies and states of the Hamiltonian using VQE.&quot;&quot;&quot;</span>
+        <span class="sd">&quot;&quot;&quot;Calculates the (N±1)-electron energies and states of the Hamiltonian using VQE.&quot;&quot;&quot;</span>
         <span class="n">energy_min</span><span class="p">,</span> <span class="n">circ_min</span> <span class="o">=</span> <span class="n">vqe_minimize</span><span class="p">(</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">h_op</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">ansatz_func_e</span><span class="p">,</span> <span class="p">(</span><span class="mf">0.0</span><span class="p">,),</span> <span class="bp">self</span><span class="o">.</span><span class="n">q_instance</span>
         <span class="p">)</span>
@@ -183,7 +184,7 @@
         <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;(N-1)-electron energies are </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">energies_h</span><span class="si">}</span><span class="s2"> eV&quot;</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="EHStatesSolver.save_data"><a class="viewcode-back" href="../../../fd_greens.main.eh_states_solver.html#fd_greens.main.eh_states_solver.EHStatesSolver.save_data">[docs]</a>    <span class="k">def</span> <span class="nf">save_data</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Saves (N+/-1)-electron energies and states to HDF5 file.&quot;&quot;&quot;</span>
+        <span class="sd">&quot;&quot;&quot;Saves (N±1)-electron energies and states to HDF5 file.&quot;&quot;&quot;</span>
         <span class="n">h5file</span> <span class="o">=</span> <span class="n">h5py</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">h5fname</span><span class="p">,</span> <span class="s2">&quot;r+&quot;</span><span class="p">)</span>
 
         <span class="n">write_hdf5</span><span class="p">(</span><span class="n">h5file</span><span class="p">,</span> <span class="s2">&quot;es&quot;</span><span class="p">,</span> <span class="s2">&quot;energies_e&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">energies_e</span><span class="p">)</span>
@@ -194,10 +195,10 @@
         <span class="n">h5file</span><span class="o">.</span><span class="n">close</span><span class="p">()</span></div>
 
 <div class="viewcode-block" id="EHStatesSolver.run"><a class="viewcode-back" href="../../../fd_greens.main.eh_states_solver.html#fd_greens.main.eh_states_solver.EHStatesSolver.run">[docs]</a>    <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">method</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Runs the (N+/-1)-electron states calculation.</span>
+        <span class="sd">&quot;&quot;&quot;Runs the (N±1)-electron states calculation.</span>
 <span class="sd">        </span>
 <span class="sd">        Args:</span>
-<span class="sd">            The method to calculate the excited states. Either exact (&#39;exact&#39;) or VQE (&#39;vqe&#39;).</span>
+<span class="sd">            The method to calculate the excited states. Either exact (``&#39;exact&#39;``) or VQE (``&#39;vqe&#39;``).</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">assert</span> <span class="n">method</span> <span class="ow">in</span> <span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="s2">&quot;exact&quot;</span><span class="p">,</span> <span class="s2">&quot;vqe&quot;</span><span class="p">]</span>
 

@@ -101,7 +101,7 @@
         <span class="n">occ_inds</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">act_inds</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">build_ops</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
-    <span class="p">):</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;Initializes a MolecularHamiltonian object.</span>
 
 <span class="sd">        Args:</span>
@@ -153,7 +153,7 @@
 
     <span class="k">def</span> <span class="nf">_build_openfermion_operator</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;A private method for constructing the Openfermion qubit operator</span>
-<span class="sd">        in QubitOperator form. Called by the `build` function.&quot;&quot;&quot;</span>
+<span class="sd">        in QubitOperator form. Called by the ``build`` function.&quot;&quot;&quot;</span>
         <span class="c1"># if self.occ_inds is None and self.act_inds is None:</span>
         <span class="c1">#     self.act_inds = range(self.molecule.n_orbitals)</span>
         <span class="n">hamiltonian</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">molecule</span><span class="o">.</span><span class="n">get_molecular_hamiltonian</span><span class="p">(</span>
@@ -166,7 +166,7 @@
 
     <span class="k">def</span> <span class="nf">_build_qiskit_operator</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;A private method for constructing the Qiskit qubit operator</span>
-<span class="sd">        in PauliSumOp form. Called by the `build` function.&quot;&quot;&quot;</span>
+<span class="sd">        in PauliSumOp form. Called by the ``build`` function.&quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_openfermion_op</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_build_openfermion_operator</span><span class="p">()</span>
         <span class="n">table</span> <span class="o">=</span> <span class="p">[]</span>
@@ -226,18 +226,20 @@
         <span class="sd">&quot;&quot;&quot;Converts the molecular Hamiltonian to an array form.</span>
 
 <span class="sd">        Args:</span>
-<span class="sd">            A string indicating the type of the output array.</span>
+<span class="sd">            array_type: A string indicating the type of the output array.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            array: The operator in matrix, sparse matrix of ndarray form.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">assert</span> <span class="n">array_type</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;sparse&quot;</span><span class="p">,</span> <span class="s2">&quot;matrix&quot;</span><span class="p">,</span> <span class="s2">&quot;array&quot;</span><span class="p">,</span> <span class="s2">&quot;ndarray&quot;</span><span class="p">]</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_openfermion_op</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_build_openfermion_operator</span><span class="p">()</span>
         <span class="n">array</span> <span class="o">=</span> <span class="n">get_sparse_operator</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_openfermion_op</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">array_type</span> <span class="o">==</span> <span class="s2">&quot;sparse&quot;</span><span class="p">:</span>
-            <span class="k">return</span> <span class="n">array</span>
-        <span class="k">elif</span> <span class="n">array_type</span> <span class="o">==</span> <span class="s2">&quot;matrix&quot;</span><span class="p">:</span>
-            <span class="k">return</span> <span class="n">array</span><span class="o">.</span><span class="n">todense</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">array_type</span> <span class="o">==</span> <span class="s2">&quot;matrix&quot;</span><span class="p">:</span>
+            <span class="n">array</span> <span class="o">=</span> <span class="n">array</span><span class="o">.</span><span class="n">todense</span><span class="p">()</span>
         <span class="k">elif</span> <span class="n">array_type</span> <span class="o">==</span> <span class="s2">&quot;array&quot;</span> <span class="ow">or</span> <span class="n">array_type</span> <span class="o">==</span> <span class="s2">&quot;ndarray&quot;</span><span class="p">:</span>
-            <span class="k">return</span> <span class="n">array</span><span class="o">.</span><span class="n">toarray</span><span class="p">()</span></div></div>
+            <span class="n">array</span> <span class="o">=</span> <span class="n">array</span><span class="o">.</span><span class="n">toarray</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">array</span></div></div>
 </pre></div>
 
            </div>
