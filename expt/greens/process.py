@@ -21,8 +21,6 @@ def main_process(h5fname: str, circ_label: str, tomo_label: str, counts_name: st
 
 if __name__ == '__main__':
     h5fnames = ['lih', 'lih_run2']
-    # circ_labels = ['0d', '1d', '01d']
-    circ_labels = ['0u', '0d', '1u', '1d', '0u0d', '0u1u', '0u1d', '0d1u', '0d1d', '1u1d']
     tomo_labels = [''.join(x) for x in product('xyz', repeat=2)] 
     counts_name = 'counts_noisy'
 

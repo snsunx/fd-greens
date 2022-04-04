@@ -70,6 +70,7 @@
 <span class="sd">========================================================</span>
 <span class="sd">&quot;&quot;&quot;</span>
 
+<span class="kn">import</span> <span class="nn">os</span>
 <span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Union</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">,</span> <span class="n">Optional</span>
 
 <span class="kn">import</span> <span class="nn">h5py</span>
@@ -131,14 +132,14 @@
         <span class="k">return</span> <span class="n">G</span></div>
 
 <div class="viewcode-block" id="GreensFunction.spectral_function"><a class="viewcode-back" href="../../../fd_greens.main.greens_function.html#fd_greens.main.greens_function.GreensFunction.spectral_function">[docs]</a>    <span class="k">def</span> <span class="nf">spectral_function</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span> <span class="n">omegas</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">float</span><span class="p">],</span> <span class="n">eta</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span> <span class="n">save</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">omegas</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">float</span><span class="p">],</span> <span class="n">eta</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span> <span class="n">save_data</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]:</span>
         <span class="sd">&quot;&quot;&quot;Returns the spectral function at certain frequencies.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            omegas: The frequencies at which the spectral function is calculated.</span>
 <span class="sd">            eta: The imaginary part, i.e. broadening factor.</span>
-<span class="sd">            save: Whether to save the spectral function to file.</span>
+<span class="sd">            save_data: Whether to save the spectral function to file.</span>
 <span class="sd">        </span>
 <span class="sd">        Returns:</span>
 <span class="sd">            As: The spectral function numpy array.</span>
@@ -150,20 +151,22 @@
             <span class="n">As</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">A</span><span class="p">)</span>
         <span class="n">As</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">As</span><span class="p">)</span>
 
-        <span class="k">if</span> <span class="n">save</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">save_data</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="s1">&#39;data&#39;</span><span class="p">):</span>
+                <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="s1">&#39;data&#39;</span><span class="p">)</span>
             <span class="n">np</span><span class="o">.</span><span class="n">savetxt</span><span class="p">(</span><span class="s2">&quot;data/&quot;</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">datfname</span> <span class="o">+</span> <span class="s2">&quot;_A.dat&quot;</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">vstack</span><span class="p">((</span><span class="n">omegas</span><span class="p">,</span> <span class="n">As</span><span class="p">))</span><span class="o">.</span><span class="n">T</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="k">return</span> <span class="n">As</span></div>
 
 <div class="viewcode-block" id="GreensFunction.self_energy"><a class="viewcode-back" href="../../../fd_greens.main.greens_function.html#fd_greens.main.greens_function.GreensFunction.self_energy">[docs]</a>    <span class="k">def</span> <span class="nf">self_energy</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span> <span class="n">omegas</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">float</span><span class="p">],</span> <span class="n">eta</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span> <span class="n">save</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">omegas</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">float</span><span class="p">],</span> <span class="n">eta</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span> <span class="n">save_data</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]:</span>
         <span class="sd">&quot;&quot;&quot;Returns the trace of self-energy at frequency omega.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            omegas: The frequencies at which the spectral function is calculated.</span>
 <span class="sd">            eta: The imaginary part, i.e. broadening factor.</span>
-<span class="sd">            save: Whether to save the spectral function to file.</span>
+<span class="sd">            save_data: Whether to save the spectral function to file.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            TrSigmas: Trace of the self-energy.</span>
@@ -179,7 +182,9 @@
             <span class="n">TrSigmas</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">trace</span><span class="p">(</span><span class="n">Sigma</span><span class="p">))</span>
         <span class="n">TrSigmas</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">TrSigmas</span><span class="p">)</span>
 
-        <span class="k">if</span> <span class="n">save</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">save_data</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="s1">&#39;data&#39;</span><span class="p">):</span>
+                <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="s1">&#39;data&#39;</span><span class="p">)</span>
             <span class="n">np</span><span class="o">.</span><span class="n">savetxt</span><span class="p">(</span>
                 <span class="s2">&quot;data/&quot;</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">datfname</span> <span class="o">+</span> <span class="s2">&quot;_TrS.dat&quot;</span><span class="p">,</span>
                 <span class="n">np</span><span class="o">.</span><span class="n">vstack</span><span class="p">((</span><span class="n">omegas</span><span class="p">,</span> <span class="n">TrSigmas</span><span class="o">.</span><span class="n">real</span><span class="p">,</span> <span class="n">TrSigmas</span><span class="o">.</span><span class="n">imag</span><span class="p">))</span><span class="o">.</span><span class="n">T</span><span class="p">,</span>

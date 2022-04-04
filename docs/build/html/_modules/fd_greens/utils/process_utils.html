@@ -84,11 +84,12 @@
 <div class="viewcode-block" id="take_01"><a class="viewcode-back" href="../../../fd_greens.utils.process_utils.html#fd_greens.utils.process_utils.take_01">[docs]</a><span class="k">def</span> <span class="nf">take_01</span><span class="p">(</span>
     <span class="n">arr</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">circ_label</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">reverse</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Takes the bitstrings with 0 and 1 in a bitstring counts and reverse the qubit order.</span>
+    <span class="sd">&quot;&quot;&quot;Takes the bitstrings with 0 and 1 (excluding 2) and reverses the qubit order.</span>
 <span class="sd">    </span>
 <span class="sd">    Args:</span>
 <span class="sd">        arr: The bitstring counts array.</span>
-<span class="sd">        circ_label: The circuit label.</span>
+<span class="sd">        circ_label: The circuit label, which determines what qubit order is reversed</span>
+<span class="sd">        reverse: Whether the qubit order is reversed. Default to True.</span>
 <span class="sd">    </span>
 <span class="sd">    Returns:</span>
 <span class="sd">        arr_new: The processed bitstring counts array.</span>

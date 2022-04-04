@@ -4,6 +4,7 @@ Response Function (:mod:`fd_greens.main.response_function`)
 ===========================================================
 """
 
+import os
 from typing import Sequence
 
 import h5py
@@ -29,7 +30,7 @@ class ResponseFunction:
         self.N = h5file[f"amp/N{suffix}"]
 
     def response_function(
-        self, omegas: Sequence[float], eta: float = 0.0, save: bool = True
+        self, omegas: Sequence[float], eta: float = 0.0, save_data: bool = True
     ) -> np.ndarray:
         """Returns the charge-charge response function at given frequencies.
 
@@ -57,8 +58,12 @@ class ResponseFunction:
                     )
                 chis.append(chi)
             chis = np.array(chis)
-            if save:
+            if save_data:
+                if not os.path.exists('data'):
+                    os.makedirs('data')
                 np.savetxt(
                     f"data/{self.datfname}_chi{label}.dat",
                     np.vstack((omegas, chis.real, chis.imag)).T,
                 )
+            else:
+                return chis

@@ -144,6 +144,7 @@ def circuit_to_qasm_str(circ: QuantumCircuit) -> str:
     return qasm_str
 
 
+# TODO: This function is not necessary. Can remove.
 def save_circuit_figure(circ: QuantumCircuit, suffix: str) -> None:
     """Saves the circuit figure under the directory ``figs``.
     

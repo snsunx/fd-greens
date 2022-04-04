@@ -18,11 +18,12 @@ bitstrings = ["".join(x) for x in product("012", repeat=3)]
 def take_01(
     arr: np.ndarray, circ_label: Optional[str] = None, reverse: bool = True
 ) -> np.ndarray:
-    """Takes the bitstrings with 0 and 1 in a bitstring counts and reverse the qubit order.
+    """Takes the bitstrings with 0 and 1 (excluding 2) and reverses the qubit order.
     
     Args:
         arr: The bitstring counts array.
-        circ_label: The circuit label.
+        circ_label: The circuit label, which determines what qubit order is reversed
+        reverse: Whether the qubit order is reversed. Default to True.
     
     Returns:
         arr_new: The processed bitstring counts array.

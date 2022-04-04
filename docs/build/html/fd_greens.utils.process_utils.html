@@ -85,12 +85,13 @@
 <dl class="py function">
 <dt class="sig sig-object py" id="fd_greens.utils.process_utils.take_01">
 <span class="sig-name descname"><span class="pre">take_01</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">arr</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">numpy.ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">circ_label</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reverse</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">bool</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">numpy.ndarray</span></span></span><a class="reference internal" href="_modules/fd_greens/utils/process_utils.html#take_01"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#fd_greens.utils.process_utils.take_01" title="Permalink to this definition"></a></dt>
-<dd><p>Takes the bitstrings with 0 and 1 in a bitstring counts and reverse the qubit order.</p>
+<dd><p>Takes the bitstrings with 0 and 1 (excluding 2) and reverses the qubit order.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>arr</strong> – The bitstring counts array.</p></li>
-<li><p><strong>circ_label</strong> – The circuit label.</p></li>
+<li><p><strong>circ_label</strong> – The circuit label, which determines what qubit order is reversed</p></li>
+<li><p><strong>reverse</strong> – Whether the qubit order is reversed. Default to True.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>

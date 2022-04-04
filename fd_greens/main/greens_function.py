@@ -4,6 +4,7 @@ Green's Function (:mod:`fd_greens.main.greens_function`)
 ========================================================
 """
 
+import os
 from typing import Union, Sequence, Optional
 
 import h5py
@@ -65,14 +66,14 @@ class GreensFunction:
         return G
 
     def spectral_function(
-        self, omegas: Sequence[float], eta: float = 0.0, save: bool = True
+        self, omegas: Sequence[float], eta: float = 0.0, save_data: bool = True
     ) -> Optional[np.ndarray]:
         """Returns the spectral function at certain frequencies.
 
         Args:
             omegas: The frequencies at which the spectral function is calculated.
             eta: The imaginary part, i.e. broadening factor.
-            save: Whether to save the spectral function to file.
+            save_data: Whether to save the spectral function to file.
         
         Returns:
             As: The spectral function numpy array.
@@ -84,20 +85,22 @@ class GreensFunction:
             As.append(A)
         As = np.array(As)
 
-        if save:
+        if save_data:
+            if not os.path.exists('data'):
+                os.makedirs('data')
             np.savetxt("data/" + self.datfname + "_A.dat", np.vstack((omegas, As)).T)
         else:
             return As
 
     def self_energy(
-        self, omegas: Sequence[float], eta: float = 0.0, save: bool = True
+        self, omegas: Sequence[float], eta: float = 0.0, save_data: bool = True
     ) -> Optional[np.ndarray]:
         """Returns the trace of self-energy at frequency omega.
 
         Args:
             omegas: The frequencies at which the spectral function is calculated.
             eta: The imaginary part, i.e. broadening factor.
-            save: Whether to save the spectral function to file.
+            save_data: Whether to save the spectral function to file.
 
         Returns:
             TrSigmas: Trace of the self-energy.
@@ -113,7 +116,9 @@ class GreensFunction:
             TrSigmas.append(np.trace(Sigma))
         TrSigmas = np.array(TrSigmas)
 
-        if save:
+        if save_data:
+            if not os.path.exists('data'):
+                os.makedirs('data')
             np.savetxt(
                 "data/" + self.datfname + "_TrS.dat",
                 np.vstack((omegas, TrSigmas.real, TrSigmas.imag)).T,
