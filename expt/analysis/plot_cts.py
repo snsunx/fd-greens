@@ -1,7 +1,9 @@
 import sys
 
-sys.path.append("../")
+sys.path.append("../../")
+
 from itertools import product
+
 from fd_greens.utils import (
     plot_counts,
     compute_tvd,
@@ -13,7 +15,7 @@ from fd_greens.utils import (
 
 def main_counts_greens():
     # h5fnames = ['lih_1p6A', 'lih_1p6A_run2', 'lih_3A_run2']
-    h5fnames = ["lih_1p6A_run2"]
+    h5fnames = ["../greens/lih_1p6A_run2"]
     circ_labels = ["0d", "1d", "01d"]
     counts_name = "counts_d"
     tomo_labels = ["".join(x) for x in product("xyz", repeat=2)]
@@ -25,7 +27,7 @@ def main_counts_greens():
 
 
 def main_counts_resp():
-    h5fnames = ["lih", "lih_run2"]
+    h5fnames = ["../resp/lih", "../resp/lih_run2"]
     circ_labels = [
         "0u",
         "0d",
@@ -49,7 +51,7 @@ def main_counts_resp():
 
 def main_tvd_greens():
     # h5fnames = ['lih_1p6A', 'lih_1p6A_run2', 'lih_3A_run2']
-    h5fnames = ["lih_1p6A_run2"]
+    h5fnames = ["../greens/lih_1p6A_run2"]
     circ_labels = ["0d", "1d", "01d"]
     counts_name = "counts_d"
 
@@ -71,7 +73,7 @@ def main_tvd_greens():
 
 
 def main_tvd_resp():
-    h5fnames = ["lih", "lih_run2"]
+    h5fnames = ["../resp/lih", "../resp/lih_run2"]
     circ_labels = [
         "0u",
         "0d",
@@ -102,6 +104,8 @@ def main_tvd_resp():
                 f"{h5fname:13} | {circ_label:13} | {depth:13} | {count_2q:10} | {count_3q:10} | {tvd:6.4f}"
             )
 
+def main():
+    main_tvd_resp()
 
 if __name__ == "__main__":
-    main_tvd_resp()
+    main()

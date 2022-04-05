@@ -1,4 +1,4 @@
-# Quantum Computation of Frequency-Domain Green's Functions
+# fd-greens: Quantum Computation of Frequency-Domain Green's Functions and Response Functions
 
 This project implements a quantum algorithm based on [linear combination of unitaries][1] to 
 compute frequency-domain [Green's functions][2] and [response functions][3]. The experiments are

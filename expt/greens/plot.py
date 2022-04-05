@@ -1,10 +1,8 @@
 import sys
 
-sys.path.append("../../src")
-from helpers import plot_A, plot_TrS, plot_chi
+sys.path.append("../../")
 
-import numpy as np
-import matplotlib.pyplot as plt
+from fd_greens.utils import plot_A, plot_TrS, plot_chi
 
 
 def main_1p6A():
@@ -124,10 +122,22 @@ def main_chi():
         n_curves=2,
         figname="chiex",
     )
-    # plot_chi(h5fnames, suffixes, labels=labels, circ_label='01', linestyles=linestyles, text='annotation')
+    """
+    plot_chi(
+        h5fnames,
+        suffixes,
+        labels=labels,
+        circ_label="01",
+        linestyles=linestyles,
+        text="annotation",
+    )
+    """
+
+
+def main():
+    main_1p6A()
+    main_3A()
 
 
 if __name__ == "__main__":
-    main_1p6A()
-    main_3A()
-    main_chi()
+    main()
