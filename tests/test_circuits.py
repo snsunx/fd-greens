@@ -1,12 +1,13 @@
 import unittest
-import numpy as np 
+import numpy as np
 from qiskit import *
 import sys
-sys.path.append('../src/')
+
+sys.path.append("../src/")
 from circuits import *
 from utils import get_unitary
 
-'''
+"""
 def diagonal_circuits_test():
     n_qubits = 5
     ansatz = QuantumCircuit(n_qubits)
@@ -45,10 +46,11 @@ def off_diagonal_circuits_test():
         assert np.allclose(U, U1)
 
     print("Off-diagonal circuits test passed.")
-'''
+"""
+
 
 class TestPushSwapGates(unittest.TestCase):
-    '''
+    """
     def test_push_swap_gates_right(self):
         circ = QuantumCircuit(2)
         circ.swap(0, 1)
@@ -130,7 +132,7 @@ class TestPushSwapGates(unittest.TestCase):
 
         U_ref = get_unitary(circ)
         np.testing.assert_almost_equal(U, U_ref)
-    '''
+    """
 
     def test_staggered_2q(self):
         circ = QuantumCircuit(4)
@@ -146,8 +148,9 @@ class TestPushSwapGates(unittest.TestCase):
         U1 = get_unitary(circ1)
         np.testing.assert_almost_equal(U, U1)
 
+
 class TestCombineSwapGates(unittest.TestCase):
-    '''
+    """
     def test_combine_overlap_2(self):
         print('=' * 80)
 
@@ -174,9 +177,10 @@ class TestCombineSwapGates(unittest.TestCase):
 
         circ1 = combine_swap_gates(circ)
         print(circ1)
-    '''
+    """
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     unittest.main()
-    #diagonal_circuits_test()
-    #off_diagonal_circuits_test()
+    # diagonal_circuits_test()
+    # off_diagonal_circuits_test()

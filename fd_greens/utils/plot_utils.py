@@ -57,8 +57,8 @@ def plot_A(
         for i in range(n_curves):
             ax.text(**annotations[i], transform=ax.transAxes)
 
-    if not os.path.exists('figs'):
-        os.makedirs('figs')
+    if not os.path.exists("figs"):
+        os.makedirs("figs")
     fig.savefig(f"figs/{figname}.png", dpi=300, bbox_inches="tight")
 
 
@@ -108,8 +108,8 @@ def plot_TrS(
         for i in range(n_curves):
             ax.text(**annotations[i], transform=ax.transAxes)
 
-    if not os.path.exists('figs'):
-        os.makedirs('figs')
+    if not os.path.exists("figs"):
+        os.makedirs("figs")
     fig.savefig(f"figs/{figname}.png", dpi=300, bbox_inches="tight")
 
 
@@ -162,8 +162,8 @@ def plot_chi(
         for i in range(n_curves):
             ax.text(**annotations[i], transform=ax.transAxes)
 
-    if not os.path.exists('figs'):
-        os.makedirs('figs')
+    if not os.path.exists("figs"):
+        os.makedirs("figs")
     fig.savefig(f"figs/{figname}{circ_label}.png", dpi=300, bbox_inches="tight")
 
 
@@ -205,8 +205,8 @@ def plot_counts(
     ax.set_ylabel("Ratio")
     ax.set_title(f"Total Variational Distance: {tvd:.4f}")
     ax.legend()
-    if not os.path.exists('figs'):
-        os.makedirs('figs')
+    if not os.path.exists("figs"):
+        os.makedirs("figs")
     fig.savefig(
         f"figs/counts_{h5fname}_{circ_label}{tomo_label}.png",
         dpi=300,

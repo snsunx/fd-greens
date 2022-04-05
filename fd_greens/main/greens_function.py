@@ -86,8 +86,8 @@ class GreensFunction:
         As = np.array(As)
 
         if save_data:
-            if not os.path.exists('data'):
-                os.makedirs('data')
+            if not os.path.exists("data"):
+                os.makedirs("data")
             np.savetxt("data/" + self.datfname + "_A.dat", np.vstack((omegas, As)).T)
         else:
             return As
@@ -117,8 +117,8 @@ class GreensFunction:
         TrSigmas = np.array(TrSigmas)
 
         if save_data:
-            if not os.path.exists('data'):
-                os.makedirs('data')
+            if not os.path.exists("data"):
+                os.makedirs("data")
             np.savetxt(
                 "data/" + self.datfname + "_TrS.dat",
                 np.vstack((omegas, TrSigmas.real, TrSigmas.imag)).T,

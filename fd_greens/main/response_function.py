@@ -59,8 +59,8 @@ class ResponseFunction:
                 chis.append(chi)
             chis = np.array(chis)
             if save_data:
-                if not os.path.exists('data'):
-                    os.makedirs('data')
+                if not os.path.exists("data"):
+                    os.makedirs("data")
                 np.savetxt(
                     f"data/{self.datfname}_chi{label}.dat",
                     np.vstack((omegas, chis.real, chis.imag)).T,

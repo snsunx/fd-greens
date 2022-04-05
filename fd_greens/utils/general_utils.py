@@ -4,7 +4,6 @@ General Utilities (:mod:`fd_greens.utils.general_utils`)
 ========================================================
 """
 
-from mimetypes import init
 import os
 import h5py
 from typing import (
@@ -18,6 +17,7 @@ from typing import (
     Any,
     Callable,
 )
+from itertools import product
 import numpy as np
 
 from qiskit import (
@@ -40,6 +40,12 @@ ClbitLike = Union[int, Clbit]
 InstructionTuple = Tuple[Instruction, List[QubitLike], Optional[List[ClbitLike]]]
 QuantumCircuitLike = Union[QuantumCircuit, Iterable[InstructionTuple]]
 AnsatzFunction = Callable[[Sequence[float]], QuantumCircuit]
+
+
+def get_tomography_labels(n_qubits: int) -> List[str]:
+    """Returns the tomography labels on a certain number of qubits."""
+    tomo_labels = ["".join(x) for x in product("xyz", repeat=n_qubits)]
+    return tomo_labels
 
 
 def get_statevector(circ_like: QuantumCircuitLike, reverse: bool = False) -> np.ndarray:

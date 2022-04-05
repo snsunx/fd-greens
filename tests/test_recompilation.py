@@ -1,5 +1,6 @@
 import sys
-sys.path.append('../src')
+
+sys.path.append("../src")
 
 import unittest
 import numpy as np
@@ -19,13 +20,15 @@ class TestCircuitRecompiler(unittest.TestCase):
         circ = QuantumCircuit(n_qubits)
         statevector = get_statevector(circ)
 
-        A = np.kron(np.eye(2), np.random.random((2**(n_qubits-1), 2**(n_qubits-1))))
+        A = np.kron(
+            np.eye(2), np.random.random((2 ** (n_qubits - 1), 2 ** (n_qubits - 1)))
+        )
         U = expm(-1j * (A + A.T))
-        
+
         circuit_recompiler = CircuitRecompiler(n_rounds=n_rounds)
         quimb_gates = circuit_recompiler.recompile(U, statevector)
         print(quimb_gates)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

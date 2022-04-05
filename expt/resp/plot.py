@@ -1,9 +1,11 @@
 import sys
-sys.path.append('../../src')
+
+sys.path.append("../../src")
 from helpers import plot_chi
 
 import numpy as np
 import matplotlib.pyplot as plt
+
 """
 def main_chi(h5fnames, suffixes, labels=None, figname='chi', circ_label='00', linestyles=None):
     if labels is None:
@@ -19,15 +21,18 @@ def main_chi(h5fnames, suffixes, labels=None, figname='chi', circ_label='00', li
     # ax.legend()
     fig.savefig(f'figs/{figname}{circ_label}.png', dpi=300, bbox_inches='tight')
 """
-def main_chi():
-    h5fnames = ['lih', 'lih_run2']
-    suffixes = ['_exact', '_noisy_exp_proc']
-    linestyles = [{}, {'ls': '--', 'marker': 'x', 'markevery': 30}]
-    
-    plot_chi(h5fnames, suffixes, circ_label='00', linestyles=linestyles)
-    plot_chi(h5fnames, suffixes, circ_label='01', linestyles=linestyles)
 
-if __name__ == '__main__':
+
+def main_chi():
+    h5fnames = ["lih", "lih_run2"]
+    suffixes = ["_exact", "_noisy_exp_proc"]
+    linestyles = [{}, {"ls": "--", "marker": "x", "markevery": 30}]
+
+    plot_chi(h5fnames, suffixes, circ_label="00", linestyles=linestyles)
+    plot_chi(h5fnames, suffixes, circ_label="01", linestyles=linestyles)
+
+
+if __name__ == "__main__":
     # h5fnames = ['lih', 'lih_run2']
     # suffixes = ['_exact', '_noisy_exp_proc']
     # linestyles = [{}, {'ls': '--', 'marker': 'x', 'markevery': 30}]

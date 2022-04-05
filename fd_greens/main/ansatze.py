@@ -12,8 +12,8 @@ AnsatzFunction = Callable[[Sequence[float]], QuantumCircuit]
 
 def build_ansatz_gs(params: Sequence[float]) -> QuantumCircuit:
     r"""Constructs an N-electron ansatz of the encoded Hamiltonian. The ansatz is of
-    the form :math:`(R_y(\theta_2)\otimes R_y(\theta_3)) CZ (R_y(\theta_0)\otimes R_y(\theta_1))
-    |00\rangle`.
+    the form :math:`(R_y(\theta_2)\otimes R_y(\theta_3)) CZ (R_y(\theta_0)\otimes 
+    R_y(\theta_1)) |00\rangle`.
 
     Args:
         params: A sequence of the parameters.

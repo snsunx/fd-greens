@@ -12,13 +12,17 @@ import numpy as np
 from qiskit import QuantumCircuit
 from .general_utils import reverse_qubit_order
 
-bitstrings = ["".join(x) for x in product("012", repeat=3)]
 
-
-def take_01(
+def restrict_to_qubit_subspace(
     arr: np.ndarray, circ_label: Optional[str] = None, reverse: bool = True
 ) -> np.ndarray:
-    """Takes the bitstrings with 0 and 1 (excluding 2) and reverses the qubit order.
+    """Restricts the bitstrings counts to the qubit subspace.
+    
+    Specifically, this functions does the following:
+    
+    1. Discard the bitstrings with 2 in ternary representation.
+
+    2. Reverses the qubit order due to difference in Qiskit and Berkeley qubit ordering.
     
     Args:
         arr: The bitstring counts array.
@@ -33,10 +37,10 @@ def take_01(
     n_qubits = int(np.log(arr.shape[0]) / np.log(3))
     bitstrings = ["".join(x) for x in product("012", repeat=n_qubits)]
     if circ_label in ["0u", "1u"]:
-        print("bitstring swapped")
+        # print("bitstring swapped")
         bitstrings = ["".join([x[i] for i in [0, 2, 1]]) for x in bitstrings]
     if circ_label in ["0u1u", "0d1u"]:
-        print("bitstring swapped")
+        # print("bitstring swapped")
         bitstrings = ["".join([x[i] for i in [0, 1, 3, 2]]) for x in bitstrings]
 
     # Construct the new array by taking only the bitstrings that don't contain 2.
@@ -69,7 +73,7 @@ def process_berkeley_results(
     counts_exp = dset.attrs[f"{counts_name}_exp"]
 
     # Process the results and saves to a new bitstring counts attributes with suffix _exp_proc.
-    counts_exp_proc = take_01(counts_exp, circ_label=circ_label)
+    counts_exp_proc = restrict_to_qubit_subspace(counts_exp, circ_label=circ_label)
     dset.attrs[f"{counts_name}_exp_proc"] = counts_exp_proc
 
 
