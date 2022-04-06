@@ -36,14 +36,14 @@ class MolecularHamiltonian:
         act_inds: Optional[Sequence[int]] = None,
         build_ops: bool = True,
     ) -> None:
-        """Initializes a MolecularHamiltonian object.
+        """Initializes a ``MolecularHamiltonian`` object.
 
         Args:
-            geometry: A list of tuples giving the coordinates of each atom.
-                An example is [['Li', (0, 0, 0)], ['H', (0, 0, 1.6)]].
-            basis: A string giving the basis set.
-            multiplicity: An integer giving the spin multiplicity.
-            charge: An integer giving the total molecular charge. Defaults to 0.
+            geometry: The coordinates of all atoms in the molecule, 
+                e.g. ``[['Li', (0, 0, 0)], ['H', (0, 0, 1.6)]]``.
+            basis: The basis set.
+            multiplicity: The spin multiplicity.
+            charge: The total molecular charge. Defaults to 0.
             name: The string identifer used for saving and loading cached circuits.
             run_pyscf_options: A dictionary of keyword arguments passed to the run_pyscf function.
             occ_inds: A list of spatial orbital indices indicating which orbitals 

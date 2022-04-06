@@ -4,12 +4,12 @@ Postprocessing Utilities (:mod:`fd_greens.utils.process_utils`)
 ===============================================================
 """
 
-from fd_greens.utils.circuit_utils import QuantumCircuitLike
 import h5py
 from typing import Optional
 from itertools import product
+
 import numpy as np
-from qiskit import QuantumCircuit
+
 from .general_utils import reverse_qubit_order
 
 

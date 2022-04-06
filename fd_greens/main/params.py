@@ -68,6 +68,7 @@ cxc_inst_tups = [
 ]
 
 CCZGate = UnitaryGate(np.array([[1, 0], [0, -1]])).control(2, ctrl_state="11")
+CCZGate.name = "ccz"
 # CCiXGate = UnitaryGate(1j*np.array([[0, 1], [1, 0]])).control(2, ctrl_state='11')
 # C0C0iXGate = UnitaryGate(1j*np.array([[0, 1], [1, 0]])).control(2, ctrl_state='00')
 C0C0iXGate = UnitaryGate(
@@ -82,3 +83,4 @@ C0C0iXGate = UnitaryGate(
         [0, 0, 0, 0, 0, 0, 0, 1],
     ]
 )
+C0C0iXGate.name = "c0c0ix"

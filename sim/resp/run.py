@@ -40,7 +40,8 @@ def main_resp():
     resp_func.response_function(omegas, eta)
 
 
-if __name__ == "__main__":
+def main():
+    global h, q_instance, method, h5fname, suffix, omegas, eta
     h = get_lih_hamiltonian(3.0)
     q_instance = get_quantum_instance("sv")
     method = "exact"
@@ -52,5 +53,9 @@ if __name__ == "__main__":
     initialize_hdf5(calc="resp")
     main_gs()
     main_es()
-    main_amp(method=method, build=True, execute=False, process=False)
+    main_amp(method=method, build=True, execute=True, process=True)
     # main_resp()
+
+
+if __name__ == "__main__":
+    main()

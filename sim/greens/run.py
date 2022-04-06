@@ -6,6 +6,7 @@ import warnings
 warnings.filterwarnings("ignore")
 
 import numpy as np
+
 from fd_greens.main import (
     GroundStateSolver,
     EHStatesSolver,
@@ -50,7 +51,8 @@ def main_greens():
     greens_func.self_energy(omegas, eta)
 
 
-if __name__ == "__main__":
+def main():
+    global h, q_instance, method, h5fname, suffix, spin, omegas, eta
     h = get_lih_hamiltonian(3.0)
     q_instance = get_quantum_instance("sv")
     method = "exact"
@@ -65,3 +67,7 @@ if __name__ == "__main__":
     main_es()
     main_amp(execute=True, process=True)
     main_greens()
+
+
+if __name__ == "__main__":
+    main()

@@ -91,7 +91,6 @@ class EHAmplitudesSolver:
         """Loads ground state and (N+/-1)-electron states data from hdf5 file."""
         # Attributes from ground and (N+/-1)-electron state solver.
         h5file = h5py.File(self.h5fname, "r+")
-        print(h5file["es"].keys())
 
         self.ansatz = QuantumCircuit.from_qasm_str(h5file["gs/ansatz"][()].decode())
         self.states = {"e": h5file["es/states_e"][:], "h": h5file["es/states_h"][:]}
@@ -292,9 +291,8 @@ class EHAmplitudesSolver:
 
         # Transpile the circuit and save to HDF5 file.
         circ = transpile_into_berkeley_gates(circ, "01" + self.spin)
-        write_hdf5(
-            h5file, f"circ01{self.spin}", "transpiled", circuit_to_qasm_str(circ)
-        )
+        qasm_str = circuit_to_qasm_str(circ)
+        write_hdf5(h5file, f"circ01{self.spin}", "transpiled", qasm_str)
 
         if self.method == "tomo":
             for label in self.tomo_labels:

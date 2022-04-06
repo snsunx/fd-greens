@@ -293,7 +293,7 @@ def convert_ccz_to_cixc(circ: QuantumCircuit) -> QuantumCircuit:
 
     count = 0
     for inst, qargs, cargs in inst_tups:
-        if inst.name == "c-unitary":
+        if inst.name == "ccz":
             # CiZC instruction tuples.
             cizc_inst_tups = [
                 (XGate(), [qargs[0]], []),

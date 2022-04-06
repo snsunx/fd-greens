@@ -32,6 +32,7 @@ from qiskit.utils import QuantumInstance
 from qiskit.circuit import Instruction, Qubit, Clbit
 from qiskit.opflow import PauliSumOp
 from qiskit.result import Result, Counts
+import scipy
 
 from .circuit_utils import remove_instructions, create_circuit_from_inst_tups
 
@@ -208,7 +209,7 @@ def circuit_equal(
     Args:
         circ1: The first cicuit.
         circ2: The second circuit.
-        init_state_0: Whether to assume the initial state is the all 0 state.
+        init_state_0: Whether to assume the initial state is the all 0 state. Default to True.
         
     Returns:
         is_equal: Whether the two circuits are equivalent.
@@ -262,6 +263,21 @@ def unitary_equal(
         uni2 /= phase2
         is_equal = np.allclose(uni1, uni2)
     return is_equal
+
+
+def get_iToffoli_matrix(reverse: bool = True) -> np.ndarray:
+    """Returns the iToffoli gate matrix.
+    
+    Args:
+        reverse: Whether the gate is in reverse qubit order. Default to True.
+    
+    Returns:
+        mat: The iToffoli gate matrix.
+    """
+    mat = scipy.linalg.block_diag([[0, 1j], [1j, 0]], np.eye(6))
+    if reverse:
+        mat = reverse_qubit_order(mat)
+    return mat
 
 
 def vqe_minimize(

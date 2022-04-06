@@ -9,7 +9,7 @@ from typing import Any
 import numpy as np
 
 from qiskit import QuantumCircuit
-from .general_utils import get_unitary
+from .general_utils import circuit_equal, get_iToffoli_matrix, get_unitary
 
 
 def initialize_hdf5(fname: str = "lih", calc: str = "greens") -> None:
@@ -91,23 +91,24 @@ def write_hdf5(
 
 
 def circuit_to_qasm_str(circ: QuantumCircuit) -> str:
-    """Converts a circuit to QASM string.
+    """Converts a circuit to a QASM string.
     
-    This function generates QASM string of the C0iXC0 gate and is required to transpile circuits
-    that contain this gate, as the QASM string generation function in Qiskit does not implement 
-    this gate.
+    This function generates QASM string of the C0iXC0 gate and is required to transpile 
+    circuits that contain this gate. The QASM string generation method ``.qasm()`` in Qiskit 
+    does not implement this gate.
     
     Args:
         circ: The circuit to be transformed to a QASM string.
     
     Returns:
-        qasm_str: The QASM string corresponding to the circuit.
+        qasm_str: The QASM string of the circuit.
     """
     # print(set([x[0].name for x in circ.data]))
     # The header of the QASM string.
-    qasm_str = 'OPENQASM 2.0;\ninclude "qelib1.inc";\n'
+    qasm_str = "OPENQASM 2.0;\n"
+    qasm_str += 'include "qelib1.inc";\n'
     qasm_str += (
-        "gate ccix p0,p1,p2 {x p0; x p1; ccx p0,p1,p2; cp(pi/2) p0, p1; x p0; x p1;}\n"
+        "gate ccix p0,p1,p2 {x p0; x p1; ccx p0,p1,p2; cp(pi/2) p0,p1; x p0; x p1;}\n"
     )
     # qasm_str += 'gate ccix p0,p1,p2 {x p0; x p1; ccx p0,p1,p2; x p0; x p1;}\n'
     if len(circ.qregs) > 0:
@@ -118,29 +119,32 @@ def circuit_to_qasm_str(circ: QuantumCircuit) -> str:
         qasm_str += f"creg c[{n_clbits}];\n"
 
     for inst, qargs, cargs in circ.data:
-        if inst.name == "rz":
+        if inst.name in ["rz", "rx", "p"]:  # 1q gate
             qasm_str += f"{inst.name}({inst.params[0]}) q[{qargs[0]._index}];\n"
-        elif inst.name == "rx":
-            qasm_str += f"{inst.name}({inst.params[0]}) q[{qargs[0]._index}];\n"
-        elif inst.name == "p":
-            qasm_str += f"{inst.name}({inst.params[0]}) q[{qargs[0]._index}];\n"
-        elif inst.name == "cz":
+        elif inst.name in ["cz", "swap"]:  # 2q gate, no parameter
             qasm_str += f"{inst.name} q[{qargs[0]._index}],q[{qargs[1]._index}];\n"
-        elif inst.name == "cp":
+        # elif inst.name == "swap":
+        #     qasm_str += f"{inst.name} q[{qargs[0]._index}],q[{qargs[1]._index}];\n"
+        elif inst.name == "cp":  # 2q gate, 1 parameter
             qasm_str += f"{inst.name}({inst.params[0]}) q[{qargs[0]._index}],q[{qargs[1]._index}];\n"
-        elif inst.name == "unitary":
+        elif inst.name == "c0c0ix":
+            # print("In circuit_to_qasm_str")
+            # print(inst, qargs, cargs)
+            assert np.allclose(inst.to_matrix(), get_iToffoli_matrix())
             assert [q._index for q in qargs] == [0, 2, 1]
             qasm_str += f"ccix q[0],q[2],q[1];\n"
-        elif inst.name == "swap":
-            qasm_str += f"swap q[{qargs[0]._index}],q[{qargs[1]._index}];\n"
         elif inst.name == "measure":
             qasm_str += f"{inst.name} q[{qargs[0]._index}] -> c[{cargs[0]._index}];\n"
+        else:
+            raise TypeError(
+                f"Instruction {inst.name} cannot be converted to QASM string."
+            )
 
     # Temporary check statement.
-    uni = get_unitary(circ)
+    # uni = get_unitary(circ)
     circ_new = QuantumCircuit.from_qasm_str(qasm_str)
-    uni_new = get_unitary(circ_new)
-    assert np.allclose(uni, uni_new)
+    # uni_new = get_unitary(circ_new)
+    assert circuit_equal(circ, circ_new)
     return qasm_str
 
 
