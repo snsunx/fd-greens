@@ -29,6 +29,7 @@ from ..utils import (
     basis_matrix,
     append_tomography_gates,
     append_measurement_gates,
+    get_tomography_labels,
 )
 
 np.set_printoptions(precision=6)
@@ -147,7 +148,7 @@ class EHAmplitudesSolver:
 
         # The circuit constructor and tomography labels.
         self.constructor = CircuitConstructor(self.ansatz, anc=self.anc)
-        self.tomo_labels = ["".join(x) for x in product("xyz", repeat=self.n_sys)]
+        self.tomo_labels = get_tomography_labels(self.n_sys)
 
         # print("----- Printing out physical quantities -----")
         # print(f"Number of electrons is {self.n_elec}")
@@ -287,7 +288,9 @@ class EHAmplitudesSolver:
             circ = self.constructor.build_off_diagonal(a_op_1, a_op_0)
         else:
             circ = self.constructor.build_off_diagonal(a_op_0, a_op_1)
-        # write_hdf5(h5file, f'circ01{self.spin}', 'untranspiled', circuit_to_qasm_str(circ))
+        # print(circ)
+        # qasm_str = circ.qasm()
+        # write_hdf5(h5file, f"circ01{self.spin}", "untranspiled", qasm_str)
 
         # Transpile the circuit and save to HDF5 file.
         circ = transpile_into_berkeley_gates(circ, "01" + self.spin)
@@ -295,11 +298,14 @@ class EHAmplitudesSolver:
         write_hdf5(h5file, f"circ01{self.spin}", "transpiled", qasm_str)
 
         if self.method == "tomo":
-            for label in self.tomo_labels:
-                tomo_circ = append_tomography_gates(circ, self.sys, label)
+            for tomo_label in self.tomo_labels:
+                tomo_circ = append_tomography_gates(circ, self.sys, tomo_label)
                 tomo_circ = append_measurement_gates(tomo_circ)
                 write_hdf5(
-                    h5file, f"circ01{self.spin}", label, circuit_to_qasm_str(tomo_circ)
+                    h5file,
+                    f"circ01{self.spin}",
+                    tomo_label,
+                    circuit_to_qasm_str(tomo_circ),
                 )
 
         h5file.close()

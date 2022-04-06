@@ -9,7 +9,12 @@ from typing import Any
 import numpy as np
 
 from qiskit import QuantumCircuit
-from .general_utils import circuit_equal, get_iToffoli_matrix, get_unitary
+from .general_utils import (
+    circuit_equal,
+    get_itoffoli_matrix,
+    get_ccz_matrix,
+    get_unitary,
+)
 
 
 def initialize_hdf5(fname: str = "lih", calc: str = "greens") -> None:
@@ -108,9 +113,11 @@ def circuit_to_qasm_str(circ: QuantumCircuit) -> str:
     qasm_str = "OPENQASM 2.0;\n"
     qasm_str += 'include "qelib1.inc";\n'
     qasm_str += (
-        "gate ccix p0,p1,p2 {x p0; x p1; ccx p0,p1,p2; cp(pi/2) p0,p1; x p0; x p1;}\n"
+        "gate c0c0ix p0,p1,p2 {x p0; x p1; ccx p0,p1,p2; cp(pi/2) p0,p1; x p0; x p1;}\n"
     )
-    # qasm_str += 'gate ccix p0,p1,p2 {x p0; x p1; ccx p0,p1,p2; x p0; x p1;}\n'
+    qasm_str += "gate ccz p0,p1,p2 {h p2; ccx p0,p1,p2; h p2;}\n"
+
+    # Define quantum and classical registers.
     if len(circ.qregs) > 0:
         n_qubits = len(circ.qregs[0])
         qasm_str += f"qreg q[{n_qubits}];\n"
@@ -119,22 +126,44 @@ def circuit_to_qasm_str(circ: QuantumCircuit) -> str:
         qasm_str += f"creg c[{n_clbits}];\n"
 
     for inst, qargs, cargs in circ.data:
-        if inst.name in ["rz", "rx", "p"]:  # 1q gate
-            qasm_str += f"{inst.name}({inst.params[0]}) q[{qargs[0]._index}];\n"
-        elif inst.name in ["cz", "swap"]:  # 2q gate, no parameter
-            qasm_str += f"{inst.name} q[{qargs[0]._index}],q[{qargs[1]._index}];\n"
-        # elif inst.name == "swap":
-        #     qasm_str += f"{inst.name} q[{qargs[0]._index}],q[{qargs[1]._index}];\n"
-        elif inst.name == "cp":  # 2q gate, 1 parameter
-            qasm_str += f"{inst.name}({inst.params[0]}) q[{qargs[0]._index}],q[{qargs[1]._index}];\n"
+        # Build instruction string, quantum register string and
+        # optionally classical register string.
+        if len(inst.params) > 0 and not isinstance(inst.params[0], np.ndarray):
+            # 1q or 2q gate with parameters
+            params_str = ",".join([str(x) for x in inst.params])
+            inst_str = f"{inst.name}({params_str})"
+        else:  # 1q, 2q gate without parameters, 3q gate, measure or barrier
+            inst_str = inst.name
+        qargs_inds = [q._index for q in qargs]
+        qargs_str = ",".join([f"q[{i}]" for i in qargs_inds])
+        if cargs != []:
+            cargs_inds = [c._index for c in cargs]
+            cargs_str = ",".join([f"c[{i}]" for i in cargs_inds])
+
+        if inst.name in [
+            "rz",
+            "rx",
+            "ry",
+            "h",
+            "p",
+            "u3",
+            "cz",
+            "swap",
+            "cp",
+            "barrier",
+        ]:
+            qasm_str += f"{inst_str} {qargs_str};\n"
         elif inst.name == "c0c0ix":
             # print("In circuit_to_qasm_str")
             # print(inst, qargs, cargs)
-            assert np.allclose(inst.to_matrix(), get_iToffoli_matrix())
-            assert [q._index for q in qargs] == [0, 2, 1]
-            qasm_str += f"ccix q[0],q[2],q[1];\n"
+            # assert np.allclose(inst.to_matrix(), get_itoffoli_matrix())
+            assert qargs_inds == [0, 2, 1]
+            qasm_str += f"{inst_str} {qargs_str};\n"
+        elif inst.name == "ccz":
+            # assert np.allclose(inst.to_matrix(), get_ccz_matrix())
+            qasm_str += f"{inst_str} {qargs_str};\n"
         elif inst.name == "measure":
-            qasm_str += f"{inst.name} q[{qargs[0]._index}] -> c[{cargs[0]._index}];\n"
+            qasm_str += f"{inst_str} {qargs_str} -> {cargs_str};\n"
         else:
             raise TypeError(
                 f"Instruction {inst.name} cannot be converted to QASM string."

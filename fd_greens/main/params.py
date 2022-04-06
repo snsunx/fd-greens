@@ -67,7 +67,9 @@ cxc_inst_tups = [
     (XGate(), [2], []),
 ]
 
-CCZGate = UnitaryGate(np.array([[1, 0], [0, -1]])).control(2, ctrl_state="11")
+# CCZGate = UnitaryGate(np.array([[1, 0], [0, -1]])).control(2, ctrl_state="11")
+# CCZGate.name = "ccz"
+CCZGate = UnitaryGate(np.diag([1] * 7 + [-1]))
 CCZGate.name = "ccz"
 # CCiXGate = UnitaryGate(1j*np.array([[0, 1], [1, 0]])).control(2, ctrl_state='11')
 # C0C0iXGate = UnitaryGate(1j*np.array([[0, 1], [1, 0]])).control(2, ctrl_state='00')

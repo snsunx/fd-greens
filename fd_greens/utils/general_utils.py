@@ -265,7 +265,7 @@ def unitary_equal(
     return is_equal
 
 
-def get_iToffoli_matrix(reverse: bool = True) -> np.ndarray:
+def get_itoffoli_matrix(reverse: bool = True) -> np.ndarray:
     """Returns the iToffoli gate matrix.
     
     Args:
@@ -277,6 +277,16 @@ def get_iToffoli_matrix(reverse: bool = True) -> np.ndarray:
     mat = scipy.linalg.block_diag([[0, 1j], [1j, 0]], np.eye(6))
     if reverse:
         mat = reverse_qubit_order(mat)
+    return mat
+
+
+def get_ccz_matrix() -> np.ndarray:
+    """Returns the CCZ gate matrix.
+    
+    Returns:
+        mat: The CCZ gate matrix.
+    """
+    mat = np.diag([1] * 7 + [-1])
     return mat
 
 
