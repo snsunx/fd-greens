@@ -6,7 +6,6 @@
 
 from typing import Optional, Sequence
 from functools import partial
-from itertools import product
 
 import h5py
 import numpy as np
@@ -54,8 +53,8 @@ class EHAmplitudesSolver:
         Args:
             h: The molecular Hamiltonian.
             q_instance: The quantum instance for executing the circuits.
-            method: The method for calculating the transition amplitudes. Either exact ('exact') 
-                or tomography ('tomo').
+            method: The method for calculating the transition amplitudes. Either exact 
+                (``'exact'``) or tomography (``'tomo'``).
             h5fname: The HDF5 file name.
             anc: Location of the ancilla qubits.
             spin: The spin of the creation and annihilation operators.
@@ -123,6 +122,7 @@ class EHAmplitudesSolver:
         # Build qubit indices for off-diagonal circuits.
         self.keys_off_diag = ["ep", "em", "hp", "hm"]
         self.qinds_anc_off_diag = [[1, 0], [1, 1], [0, 0], [0, 1]]
+        # self.qinds_anc_off_diag = [[0, 1], [0, 0], [1, 1], [1, 0]] # tmp
         self.qinds_tot_off_diag = dict()
         for key, qind in zip(self.keys_off_diag, self.qinds_anc_off_diag):
             self.qinds_tot_off_diag[key] = self.qinds_sys[key[0]].insert_ancilla(qind)
@@ -170,7 +170,8 @@ class EHAmplitudesSolver:
 
             # Build the diagonal circuit and save to HDF5 file.
             circ = self.constructor.build_diagonal(a_op)
-            # write_hdf5(h5file, f'circ{m}{self.spin}', 'untranspiled', circuit_to_qasm_str(circ))
+            qasm_str = circuit_to_qasm_str(circ)
+            write_hdf5(h5file, f"circ{m}{self.spin}", "untranspiled", qasm_str)
 
             # Transpile the circuit and save to HDF5 file.
             circ = transpile_into_berkeley_gates(circ, str(m) + self.spin)
@@ -179,16 +180,14 @@ class EHAmplitudesSolver:
             )
 
             if self.method == "tomo":
-                for label in self.tomo_labels:
+                for tomo_label in self.tomo_labels:
                     # When using tomography, build circuits with tomography and measurement
                     # gates appended and store the QASM string in the HDF5 file.
-                    tomo_circ = append_tomography_gates(circ, [1, 2], label)
+                    tomo_circ = append_tomography_gates(circ, [1, 2], tomo_label)
                     tomo_circ = append_measurement_gates(tomo_circ)
+                    qasm_str = circuit_to_qasm_str(tomo_circ)
                     write_hdf5(
-                        h5file,
-                        f"circ{m}{self.spin}",
-                        label,
-                        circuit_to_qasm_str(tomo_circ),
+                        h5file, f"circ{m}{self.spin}", tomo_label, qasm_str,
                     )
 
         h5file.close()
@@ -201,7 +200,8 @@ class EHAmplitudesSolver:
             if self.method == "exact":
                 # Extract the quantum circuit from the HDF5 file.
                 dset = h5file[f"circ{m}{self.spin}/transpiled"]
-                circ = QuantumCircuit.from_qasm_str(dset[()].decode())
+                qasm_str = dset[()].decode()
+                circ = QuantumCircuit.from_qasm_str(qasm_str)
                 # circ = replace_with_cixc(circ)
 
                 # Execute the circuit and store the statevector in the HDF5 file.
@@ -209,10 +209,11 @@ class EHAmplitudesSolver:
                 psi = result.get_statevector()
                 dset.attrs[f"psi{self.suffix}"] = psi
             else:  # Tomography
-                for label in self.tomo_labels:
+                for tomo_label in self.tomo_labels:
                     # Extract the quantum circuit from the HDF5 file.
-                    dset = h5file[f"circ{m}{self.spin}/{label}"]
-                    circ = QuantumCircuit.from_qasm_str(dset[()].decode())
+                    dset = h5file[f"circ{m}{self.spin}/{tomo_label}"]
+                    qasm_str = dset[()].decode()
+                    circ = QuantumCircuit.from_qasm_str(qasm_str)
 
                     # Execute the circuit and store the counts array in the HDF5 file.
                     result = self.q_instance.execute(circ)
@@ -250,8 +251,8 @@ class EHAmplitudesSolver:
                     # first extract the raw counts_arr, slice the counts array to the specific
                     # label, and then stack the counts_arr_label to counts_arr_key.
                     counts_arr_key = np.array([])
-                    for label in self.tomo_labels:
-                        counts_arr = h5file[f"circ{m}{self.spin}/{label}"].attrs[
+                    for tomo_label in self.tomo_labels:
+                        counts_arr = h5file[f"circ{m}{self.spin}/{tomo_label}"].attrs[
                             f"counts{self.suffix}"
                         ]
                         start = int("".join([str(i) for i in qind])[::-1], 2)
@@ -285,27 +286,25 @@ class EHAmplitudesSolver:
 
         # Build the diagonal circuit and save to HDF5 file.
         if self.spin == "u":
-            circ = self.constructor.build_off_diagonal(a_op_1, a_op_0)
+            circ = self.constructor.build_off_diagonal(a_op_0, a_op_1)
         else:
             circ = self.constructor.build_off_diagonal(a_op_0, a_op_1)
-        # print(circ)
-        # qasm_str = circ.qasm()
-        # write_hdf5(h5file, f"circ01{self.spin}", "untranspiled", qasm_str)
+        # print(set([x[0].name for x in circ]))
+        qasm_str = circuit_to_qasm_str(circ)
+        write_hdf5(h5file, f"circ01{self.spin}", "untranspiled", qasm_str)
 
         # Transpile the circuit and save to HDF5 file.
-        circ = transpile_into_berkeley_gates(circ, "01" + self.spin)
-        qasm_str = circuit_to_qasm_str(circ)
+        # circ = transpile_into_berkeley_gates(circ, "01" + self.spin)
+        # qasm_str = circuit_to_qasm_str(circ)
         write_hdf5(h5file, f"circ01{self.spin}", "transpiled", qasm_str)
 
         if self.method == "tomo":
             for tomo_label in self.tomo_labels:
                 tomo_circ = append_tomography_gates(circ, self.sys, tomo_label)
                 tomo_circ = append_measurement_gates(tomo_circ)
+                qasm_str = circuit_to_qasm_str(tomo_circ)
                 write_hdf5(
-                    h5file,
-                    f"circ01{self.spin}",
-                    tomo_label,
-                    circuit_to_qasm_str(tomo_circ),
+                    h5file, f"circ01{self.spin}", tomo_label, qasm_str,
                 )
 
         h5file.close()
@@ -317,16 +316,18 @@ class EHAmplitudesSolver:
         if self.method == "exact":
             # Extract the quantum circuit from the HDF5 file.
             dset = h5file[f"circ01{self.spin}/transpiled"]
-            circ = QuantumCircuit.from_qasm_str(dset[()].decode())
+            qasm_str = dset[()].decode()
+            circ = QuantumCircuit.from_qasm_str(qasm_str)
 
             result = self.q_instance.execute(circ)
             psi = result.get_statevector()
             dset.attrs[f"psi{self.suffix}"] = psi
         else:  # Tomography
-            for label in self.tomo_labels:
+            for tomo_label in self.tomo_labels:
                 # Extract the quantum circuit from the HDF5 file.
-                dset = h5file[f"circ01{self.spin}/{label}"]
-                circ = QuantumCircuit.from_qasm_str(dset[()].decode())
+                dset = h5file[f"circ01{self.spin}/{tomo_label}"]
+                qasm_str = dset[()].decode()
+                circ = QuantumCircuit.from_qasm_str(qasm_str)
 
                 result = self.q_instance.execute(circ)
                 counts = result.get_counts()
@@ -341,8 +342,18 @@ class EHAmplitudesSolver:
 
         if self.method == "exact":
             psi = h5file[f"circ01{self.spin}/transpiled"].attrs[f"psi{self.suffix}"]
+            # print("psi norm^2 =", np.linalg.norm(psi) ** 2)
+            l = []
+            for i, x in enumerate(psi):
+                if abs(x) > 1e-8:
+                    l.append(f"{int(bin(i)[2:]):04}")
+            # print('nonzero indices =', l)
+
             for key in self.keys_off_diag:
-                psi_key = self.qinds_tot_off_diag[key](psi)
+                qinds = self.qinds_tot_off_diag[key]
+                # print("qinds =", qinds)
+                psi_key = qinds(psi)
+                # print("psi_key norm^2 =", np.linalg.norm(psi_key) ** 2)
 
                 # Obtain the D matrix elements by computing the overlaps.
                 self.D[key][0, 1] = self.D[key][1, 0] = (
@@ -357,8 +368,8 @@ class EHAmplitudesSolver:
                 # first extract the raw counts_arr, slice the counts array to the specific
                 # label, and then stack the counts_arr_label to counts_arr_key.
                 counts_arr_key = np.array([])
-                for label in self.tomo_labels:
-                    counts_arr = h5file[f"circ01{self.spin}/{label}"].attrs[
+                for tomo_label in self.tomo_labels:
+                    counts_arr = h5file[f"circ01{self.spin}/{tomo_label}"].attrs[
                         f"counts{self.suffix}"
                     ]
                     start = int("".join([str(i) for i in qind])[::-1], 2)

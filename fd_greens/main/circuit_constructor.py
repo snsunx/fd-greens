@@ -24,7 +24,7 @@ InstructionTuple = Tuple[Instruction, List[QubitLike], Optional[List[ClbitLike]]
 
 
 class CircuitConstructor:
-    """A class to construct circuits for calculating transition amplitudes in Green's functions."""
+    """A class to construct circuits for calculating transition amplitudes."""
 
     def __init__(
         self,
@@ -51,13 +51,14 @@ class CircuitConstructor:
         """Constructs the circuit to calculate a diagonal transition amplitude.
 
         Args:
-            The creation/annihilation operator of the circuit.
+            a_op: The creation/annihilation operator of the circuit.
 
         Returns:
-            The new circuit with the creation/annihilation operator added.
+            circ: The new circuit with the creation/annihilation operator added.
         """
         assert len(a_op) == 2
         n_qubits = 3  # Hardcoded
+        barrier_inst_tups = [(Barrier(n_qubits), range(n_qubits), [])]
 
         # Copy the ansatz circuit into the system qubit indices.
         inst_tups = self.ansatz.data.copy()
@@ -68,17 +69,17 @@ class CircuitConstructor:
         # Add Hadamard gate on the ancilla at the beginning.
         inst_tups += [(HGate(), [0], [])]
         if self.add_barriers:
-            inst_tups += [(Barrier(n_qubits), range(n_qubits), [])]
+            inst_tups += barrier_inst_tups
 
         # Add C-gate of the first operator.
         inst_tups += self._get_controlled_gate_inst_tups(a_op[0], ctrl_states=[0])
         if self.add_barriers:
-            inst_tups += [(Barrier(n_qubits), range(n_qubits), [])]
+            inst_tups += barrier_inst_tups
 
         # Add C-gate of the second operator.
         inst_tups += self._get_controlled_gate_inst_tups(a_op[1], ctrl_states=[1])
         if self.add_barriers:
-            inst_tups += [(Barrier(n_qubits), range(n_qubits), [])]
+            inst_tups += barrier_inst_tups
 
         # Add Hadamard gate on the ancilla at the end.
         inst_tups += [(HGate(), [0], [])]
@@ -89,7 +90,7 @@ class CircuitConstructor:
     def build_off_diagonal(
         self, a_op_m: SparsePauliOp, a_op_n: SparsePauliOp
     ) -> QuantumCircuit:
-        """Constructs the circuit to calculate off-diagonal transition amplitudes.
+        """Constructs the circuit to calculate an off-diagonal transition amplitude.
 
         Args:
             a_op_m: The first operator in the circuit.
@@ -100,6 +101,7 @@ class CircuitConstructor:
         """
         assert len(a_op_m) == len(a_op_n) == 2
         n_qubits = 4  # Hardcoded
+        barrier_inst_tups = [(Barrier(n_qubits), range(n_qubits), [])]
 
         # Copy the ansatz circuit into the system qubit indices.
         inst_tups = self.ansatz.data.copy()
@@ -110,35 +112,35 @@ class CircuitConstructor:
         # Add Hadamard gates on the ancillas at the beginning.
         inst_tups += [(HGate(), [self.anc[0]], []), (HGate(), [self.anc[1]], [])]
         if self.add_barriers:
-            inst_tups += [(Barrier(n_qubits), range(n_qubits), [])]
+            inst_tups += barrier_inst_tups
 
         # Add the CC-gate of the first operator.
         inst_tups += self._get_controlled_gate_inst_tups(a_op_m[0], ctrl_states=[0, 0])
         if self.add_barriers:
-            inst_tups += [(Barrier(n_qubits), range(n_qubits), [])]
+            inst_tups += barrier_inst_tups
         inst_tups += self._get_controlled_gate_inst_tups(a_op_m[1], ctrl_states=[1, 0])
         if self.add_barriers:
-            inst_tups += [(Barrier(n_qubits), range(n_qubits), [])]
+            inst_tups += barrier_inst_tups
 
         # Add the phase gate in the middle if the second operator is not all I or all Z.
         if not set("".join(a_op_n.table.to_labels())).issubset({"I", "Z"}):
             inst_tups += [(RZGate(np.pi / 4), [self.anc[1]], [])]
             if self.add_barriers:
-                inst_tups += [(Barrier(n_qubits), range(n_qubits), [])]
+                inst_tups += barrier_inst_tups
 
         # Add the CC-gate of the second operator.
         inst_tups += self._get_controlled_gate_inst_tups(a_op_n[0], ctrl_states=[0, 1])
         if self.add_barriers:
-            inst_tups += [(Barrier(n_qubits), range(n_qubits), [])]
+            inst_tups += barrier_inst_tups
         inst_tups += self._get_controlled_gate_inst_tups(a_op_n[1], ctrl_states=[1, 1])
         if self.add_barriers:
-            inst_tups += [(Barrier(n_qubits), range(n_qubits), [])]
+            inst_tups += barrier_inst_tups
 
         # Add the phase gate after the second operator if it is all I or all Z.
         if set("".join(a_op_n.table.to_labels())).issubset({"I", "Z"}):
             inst_tups += [(RZGate(np.pi / 4), [self.anc[1]], [])]
             if self.add_barriers:
-                inst_tups += [(Barrier(n_qubits), range(n_qubits), [])]
+                inst_tups += barrier_inst_tups
 
         # Add Hadamard gates on the ancillas at the end.
         inst_tups += [(HGate(), [self.anc[0]], []), (HGate(), [self.anc[1]], [])]
@@ -155,7 +157,7 @@ class CircuitConstructor:
             ctrl_states: The qubit states on which the cU gate is controlled on.
 
         Returns:
-            Instruction tuples corresponding to the controlled-U gate.
+            inst_tups: Instruction tuples corresponding to the controlled-U gate.
         """
         assert len(sparse_pauli_op) == 1  # Only a single Pauli string
         assert set(ctrl_states).issubset({0, 1})
@@ -175,14 +177,15 @@ class CircuitConstructor:
             cnot_inds = [i + n_anc for i in range(n_sys) if label[i] != "I"]
             pivot = min(cnot_inds)
             cnot_inds.remove(pivot)
-            x_inds = [i for i in range(n_anc) if ctrl_states[i] == 0]
+            # x_inds = [i for i in range(n_anc) if ctrl_states[i] == 0]
             h_inds = [i + n_anc for i in range(n_sys) if label[i] == "X"]
             rx_inds = [i + n_anc for i in range(n_sys) if label[i] == "Y"]
         else:  # Identity gate, only need to check the phase below.
             cnot_inds = []
-            x_inds = []
+            # x_inds = []
             h_inds = []
             rx_inds = []
+        x_inds = [i for i in range(n_anc) if ctrl_states[i] == 0]
 
         # Apply the phase gate and controlled-Z gate.
         if len(ctrl_states) == 1:

@@ -4,17 +4,13 @@ I/O Utilities (:mod:`fd_greens.utils.io_utils`)
 ===============================================
 """
 import os
-import h5py
 from typing import Any
-import numpy as np
 
+import h5py
+import numpy as np
 from qiskit import QuantumCircuit
-from .general_utils import (
-    circuit_equal,
-    get_itoffoli_matrix,
-    get_ccz_matrix,
-    get_unitary,
-)
+
+from .general_utils import circuit_equal
 
 
 def initialize_hdf5(fname: str = "lih", calc: str = "greens") -> None:
@@ -98,9 +94,8 @@ def write_hdf5(
 def circuit_to_qasm_str(circ: QuantumCircuit) -> str:
     """Converts a circuit to a QASM string.
     
-    This function generates QASM string of the C0iXC0 gate and is required to transpile 
-    circuits that contain this gate. The QASM string generation method ``.qasm()`` in Qiskit 
-    does not implement this gate.
+    This function is required to transpile circuits that contain C0C0iX and CCZ gates. 
+    The ``QuantumCircuit.qasm()`` method in Qiskit does not implement these gates.
     
     Args:
         circ: The circuit to be transformed to a QASM string.
@@ -108,10 +103,10 @@ def circuit_to_qasm_str(circ: QuantumCircuit) -> str:
     Returns:
         qasm_str: The QASM string of the circuit.
     """
-    # print(set([x[0].name for x in circ.data]))
     # The header of the QASM string.
-    qasm_str = "OPENQASM 2.0;\n"
-    qasm_str += 'include "qelib1.inc";\n'
+    qasm_str = 'OPENQASM 2.0;\ninclude "qelib1.inc";\n'
+
+    # Define 3q gates c0c0ix and ccz, since these are not defined in the standard library.
     qasm_str += (
         "gate c0c0ix p0,p1,p2 {x p0; x p1; ccx p0,p1,p2; cp(pi/2) p0,p1; x p0; x p1;}\n"
     )
@@ -145,22 +140,16 @@ def circuit_to_qasm_str(circ: QuantumCircuit) -> str:
             "rx",
             "ry",
             "h",
+            "x",
             "p",
             "u3",
             "cz",
             "swap",
             "cp",
             "barrier",
+            "c0c0ix",
+            "ccz",
         ]:
-            qasm_str += f"{inst_str} {qargs_str};\n"
-        elif inst.name == "c0c0ix":
-            # print("In circuit_to_qasm_str")
-            # print(inst, qargs, cargs)
-            # assert np.allclose(inst.to_matrix(), get_itoffoli_matrix())
-            assert qargs_inds == [0, 2, 1]
-            qasm_str += f"{inst_str} {qargs_str};\n"
-        elif inst.name == "ccz":
-            # assert np.allclose(inst.to_matrix(), get_ccz_matrix())
             qasm_str += f"{inst_str} {qargs_str};\n"
         elif inst.name == "measure":
             qasm_str += f"{inst_str} {qargs_str} -> {cargs_str};\n"
@@ -170,9 +159,7 @@ def circuit_to_qasm_str(circ: QuantumCircuit) -> str:
             )
 
     # Temporary check statement.
-    # uni = get_unitary(circ)
     circ_new = QuantumCircuit.from_qasm_str(qasm_str)
-    # uni_new = get_unitary(circ_new)
     assert circuit_equal(circ, circ_new)
     return qasm_str
 
