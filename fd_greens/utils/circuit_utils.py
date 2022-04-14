@@ -320,3 +320,9 @@ def get_n_3q_gates(h5fname: str, circ_label: str) -> int:
         if len(qargs) == 3:
             count += 1
     return count
+
+def qtrl_to_qiskit_circuit(qtrl_circ: List[List[str]], n_qubits: int = 4) -> QuantumCircuit:
+    circ = QuantumCircuit(n_qubits)
+
+
+    return circ

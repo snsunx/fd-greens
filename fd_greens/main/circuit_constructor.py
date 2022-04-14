@@ -32,7 +32,7 @@ class CircuitConstructor:
         add_barriers: bool = True,
         anc: Sequence[int] = [0, 1],
     ) -> None:
-        """Creates a CircuitConstructor object.
+        """Creates a ``CircuitConstructor`` object.
 
         Args:
             ansatz: The ansatz quantum circuit containing the ground state.
@@ -177,12 +177,10 @@ class CircuitConstructor:
             cnot_inds = [i + n_anc for i in range(n_sys) if label[i] != "I"]
             pivot = min(cnot_inds)
             cnot_inds.remove(pivot)
-            # x_inds = [i for i in range(n_anc) if ctrl_states[i] == 0]
             h_inds = [i + n_anc for i in range(n_sys) if label[i] == "X"]
             rx_inds = [i + n_anc for i in range(n_sys) if label[i] == "Y"]
         else:  # Identity gate, only need to check the phase below.
             cnot_inds = []
-            # x_inds = []
             h_inds = []
             rx_inds = []
         x_inds = [i for i in range(n_anc) if ctrl_states[i] == 0]

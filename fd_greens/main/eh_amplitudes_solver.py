@@ -122,7 +122,6 @@ class EHAmplitudesSolver:
         # Build qubit indices for off-diagonal circuits.
         self.keys_off_diag = ["ep", "em", "hp", "hm"]
         self.qinds_anc_off_diag = [[1, 0], [1, 1], [0, 0], [0, 1]]
-        # self.qinds_anc_off_diag = [[0, 1], [0, 0], [1, 1], [1, 0]] # tmp
         self.qinds_tot_off_diag = dict()
         for key, qind in zip(self.keys_off_diag, self.qinds_anc_off_diag):
             self.qinds_tot_off_diag[key] = self.qinds_sys[key[0]].insert_ancilla(qind)
@@ -431,8 +430,8 @@ class EHAmplitudesSolver:
         """Executes all functions to calculate transition amplitudes.
         
         Args:
-            method: The method to calculate transition amplitudes. Either exact ('exact')
-                or tomography ('tomo').
+            method: The method to calculate transition amplitudes. Either exact 
+                (``'exact'``) or tomography (``'tomo'``).
             build: Whether to construct the circuits.
             execute: Whether to execute the calculations.
             process: Whether to process the results.

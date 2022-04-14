@@ -26,7 +26,7 @@ def initialize_hdf5(fname: str = "lih", calc: str = "greens") -> None:
     
     Args:
         fname: The HDF5 file name.
-        calc: Calculation mode. Either 'greens' or 'resp'.
+        calc: Calculation mode. Either ``'greens'`` or ``'resp'``.
     """
     assert calc in ["greens", "resp"]
 
