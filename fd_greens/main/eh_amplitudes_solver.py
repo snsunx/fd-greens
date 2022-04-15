@@ -23,12 +23,13 @@ from .transpilation import transpile_into_berkeley_gates
 from ..utils import (
     get_overlap,
     counts_dict_to_arr,
-    circuit_to_qasm_str,
     write_hdf5,
     basis_matrix,
     append_tomography_gates,
     append_measurement_gates,
     get_tomography_labels,
+    convert_circuit_to_string,
+    convert_string_to_circuit,
 )
 
 np.set_printoptions(precision=6)
@@ -77,6 +78,8 @@ class EHAmplitudesSolver:
         self.hspin = "d" if self.spin == "u" else "u"
         self.suffix = suffix
         self.verbose = verbose
+
+        self.circ_str_type = "qasm"
 
         # Hardcoded problem parameters.
         self.n_anc_diag = 1
@@ -169,13 +172,16 @@ class EHAmplitudesSolver:
 
             # Build the diagonal circuit and save to HDF5 file.
             circ = self.constructor.build_diagonal(a_op)
-            qasm_str = circuit_to_qasm_str(circ)
-            write_hdf5(h5file, f"circ{m}{self.spin}", "untranspiled", qasm_str)
+            circ_str = convert_circuit_to_string(circ, self.circ_str_type)
+            write_hdf5(h5file, f"circ{m}{self.spin}", "untranspiled", circ_str)
 
             # Transpile the circuit and save to HDF5 file.
             circ = transpile_into_berkeley_gates(circ, str(m) + self.spin)
             write_hdf5(
-                h5file, f"circ{m}{self.spin}", "transpiled", circuit_to_qasm_str(circ)
+                h5file,
+                f"circ{m}{self.spin}",
+                "transpiled",
+                convert_circuit_to_string(circ, self.circ_str_type),
             )
 
             if self.method == "tomo":
@@ -184,10 +190,8 @@ class EHAmplitudesSolver:
                     # gates appended and store the QASM string in the HDF5 file.
                     tomo_circ = append_tomography_gates(circ, [1, 2], tomo_label)
                     tomo_circ = append_measurement_gates(tomo_circ)
-                    qasm_str = circuit_to_qasm_str(tomo_circ)
-                    write_hdf5(
-                        h5file, f"circ{m}{self.spin}", tomo_label, qasm_str,
-                    )
+                    circ_str = convert_circuit_to_string(tomo_circ, self.circ_str_type)
+                    write_hdf5(h5file, f"circ{m}{self.spin}", tomo_label, circ_str)
 
         h5file.close()
 
@@ -199,9 +203,10 @@ class EHAmplitudesSolver:
             if self.method == "exact":
                 # Extract the quantum circuit from the HDF5 file.
                 dset = h5file[f"circ{m}{self.spin}/transpiled"]
-                qasm_str = dset[()].decode()
-                circ = QuantumCircuit.from_qasm_str(qasm_str)
-                # circ = replace_with_cixc(circ)
+                # qasm_str = dset[()].decode()
+                # circ = QuantumCircuit.from_qasm_str(qasm_str)
+                circ_str = dset[()]
+                circ = convert_string_to_circuit(circ_str, self.circ_str_type)
 
                 # Execute the circuit and store the statevector in the HDF5 file.
                 result = self.q_instance.execute(circ)
@@ -211,8 +216,8 @@ class EHAmplitudesSolver:
                 for tomo_label in self.tomo_labels:
                     # Extract the quantum circuit from the HDF5 file.
                     dset = h5file[f"circ{m}{self.spin}/{tomo_label}"]
-                    qasm_str = dset[()].decode()
-                    circ = QuantumCircuit.from_qasm_str(qasm_str)
+                    circ_str = dset[()]
+                    circ = convert_string_to_circuit(circ_str, self.circ_str_type)
 
                     # Execute the circuit and store the counts array in the HDF5 file.
                     result = self.q_instance.execute(circ)
@@ -289,22 +294,20 @@ class EHAmplitudesSolver:
         else:
             circ = self.constructor.build_off_diagonal(a_op_0, a_op_1)
         # print(set([x[0].name for x in circ]))
-        qasm_str = circuit_to_qasm_str(circ)
-        write_hdf5(h5file, f"circ01{self.spin}", "untranspiled", qasm_str)
+        circ_str = convert_circuit_to_string(circ, self.circ_str_type)
+        write_hdf5(h5file, f"circ01{self.spin}", "untranspiled", circ_str)
 
         # Transpile the circuit and save to HDF5 file.
         # circ = transpile_into_berkeley_gates(circ, "01" + self.spin)
-        # qasm_str = circuit_to_qasm_str(circ)
-        write_hdf5(h5file, f"circ01{self.spin}", "transpiled", qasm_str)
+        circ_str = convert_circuit_to_string(circ, self.circ_str_type)
+        write_hdf5(h5file, f"circ01{self.spin}", "transpiled", circ_str)
 
         if self.method == "tomo":
             for tomo_label in self.tomo_labels:
                 tomo_circ = append_tomography_gates(circ, self.sys, tomo_label)
                 tomo_circ = append_measurement_gates(tomo_circ)
-                qasm_str = circuit_to_qasm_str(tomo_circ)
-                write_hdf5(
-                    h5file, f"circ01{self.spin}", tomo_label, qasm_str,
-                )
+                circ_str = convert_circuit_to_string(tomo_circ, self.circ_str_type)
+                write_hdf5(h5file, f"circ01{self.spin}", tomo_label, circ_str)
 
         h5file.close()
 
@@ -315,8 +318,10 @@ class EHAmplitudesSolver:
         if self.method == "exact":
             # Extract the quantum circuit from the HDF5 file.
             dset = h5file[f"circ01{self.spin}/transpiled"]
-            qasm_str = dset[()].decode()
-            circ = QuantumCircuit.from_qasm_str(qasm_str)
+            # qasm_str = dset[()].decode()
+            # circ = QuantumCircuit.from_qasm_str(qasm_str)
+            circ_str = dset[()]
+            circ = convert_string_to_circuit(circ_str, self.circ_str_type)
 
             result = self.q_instance.execute(circ)
             psi = result.get_statevector()
@@ -325,8 +330,10 @@ class EHAmplitudesSolver:
             for tomo_label in self.tomo_labels:
                 # Extract the quantum circuit from the HDF5 file.
                 dset = h5file[f"circ01{self.spin}/{tomo_label}"]
-                qasm_str = dset[()].decode()
-                circ = QuantumCircuit.from_qasm_str(qasm_str)
+                # qasm_str = dset[()].decode()
+                # circ = QuantumCircuit.from_qasm_str(qasm_str)
+                circ_str = dset[()]
+                circ = convert_string_to_circuit(circ_str, self.circ_str_type)
 
                 result = self.q_instance.execute(circ)
                 counts = result.get_counts()

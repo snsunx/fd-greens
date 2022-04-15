@@ -10,8 +10,6 @@ import h5py
 import numpy as np
 from qiskit import QuantumCircuit
 
-from .general_utils import circuit_equal
-
 
 def initialize_hdf5(fname: str = "lih", calc: str = "greens") -> None:
     """Creates the HDF5 file and group names if they do not exist.
@@ -91,78 +89,7 @@ def write_hdf5(
         pass
 
 
-def circuit_to_qasm_str(circ: QuantumCircuit) -> str:
-    """Converts a circuit to a QASM string.
-    
-    This function is required to transpile circuits that contain C0C0iX and CCZ gates. 
-    The ``QuantumCircuit.qasm()`` method in Qiskit does not implement these gates.
-    
-    Args:
-        circ: The circuit to be transformed to a QASM string.
-    
-    Returns:
-        qasm_str: The QASM string of the circuit.
-    """
-    # The header of the QASM string.
-    qasm_str = 'OPENQASM 2.0;\ninclude "qelib1.inc";\n'
-
-    # Define 3q gates c0c0ix and ccz, since these are not defined in the standard library.
-    qasm_str += (
-        "gate c0c0ix p0,p1,p2 {x p0; x p1; ccx p0,p1,p2; cp(pi/2) p0,p1; x p0; x p1;}\n"
-    )
-    qasm_str += "gate ccz p0,p1,p2 {h p2; ccx p0,p1,p2; h p2;}\n"
-
-    # Define quantum and classical registers.
-    if len(circ.qregs) > 0:
-        n_qubits = len(circ.qregs[0])
-        qasm_str += f"qreg q[{n_qubits}];\n"
-    if len(circ.cregs) > 0:
-        n_clbits = len(circ.cregs[0])
-        qasm_str += f"creg c[{n_clbits}];\n"
-
-    for inst, qargs, cargs in circ.data:
-        # Build instruction string, quantum register string and
-        # optionally classical register string.
-        if len(inst.params) > 0 and not isinstance(inst.params[0], np.ndarray):
-            # 1q or 2q gate with parameters
-            params_str = ",".join([str(x) for x in inst.params])
-            inst_str = f"{inst.name}({params_str})"
-        else:  # 1q, 2q gate without parameters, 3q gate, measure or barrier
-            inst_str = inst.name
-        qargs_inds = [q._index for q in qargs]
-        qargs_str = ",".join([f"q[{i}]" for i in qargs_inds])
-        if cargs != []:
-            cargs_inds = [c._index for c in cargs]
-            cargs_str = ",".join([f"c[{i}]" for i in cargs_inds])
-
-        if inst.name in [
-            "rz",
-            "rx",
-            "ry",
-            "h",
-            "x",
-            "p",
-            "u3",
-            "cz",
-            "swap",
-            "cp",
-            "barrier",
-            "c0c0ix",
-            "ccz",
-        ]:
-            qasm_str += f"{inst_str} {qargs_str};\n"
-        elif inst.name == "measure":
-            qasm_str += f"{inst_str} {qargs_str} -> {cargs_str};\n"
-        else:
-            raise TypeError(
-                f"Instruction {inst.name} cannot be converted to QASM string."
-            )
-
-    # Temporary check statement.
-    circ_new = QuantumCircuit.from_qasm_str(qasm_str)
-    assert circuit_equal(circ, circ_new)
-    return qasm_str
-
+# circuit_to_qasm_str = lambda circ: convert_circuit_to_string(circ, "qasm")
 
 # TODO: This function is not necessary. Can remove.
 def save_circuit_figure(circ: QuantumCircuit, suffix: str) -> None:

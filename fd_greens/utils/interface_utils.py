@@ -1,63 +1,281 @@
+"""
+============================================================
+Interface Utilities (:mod:`fd_greens.utils.interface_utils`)
+============================================================
+"""
+
 import re
-from typing import List
+from typing import List, Optional, Union
+import json
+
 import numpy as np
-
 from qiskit import QuantumCircuit
-from qiskit.circuit import Gate
-from qiskit.extensions import RXGate, RYGate, RZGate, CZGate, CPhaseGate, CCXGate
+from qiskit.circuit import Gate, Qubit
+from qiskit.extensions import RXGate, RYGate, RZGate, CZGate, CPhaseGate
 
-from .circuit_utils import create_circuit_from_inst_tups
+from ..main.params import C0C0iXGate
+from .circuit_utils import create_circuit_from_inst_tups, remove_instructions_in_circuit
+from .general_utils import circuit_equal
 
-def qargs_from_str(qstr: str, offset: int = 4) -> List[int]:
-    """Converts a qtrl qargs string to qargs."""
-    qargs = re.findall('(\d)', qstr)
+QtrlStrings = List[str]
+
+
+def qstr_to_qargs(qstr: str, offset: int = 4) -> List[int]:
+    """Converts a qtrl qargs string to a Qiskit qargs object.
+    
+    Args:
+        qstr: The qtrl qargs string, e.g. "Q6", "C5T6".
+        offset: The offset of the qubits on the Berkeley device. Default to 4.
+    
+    Returns:
+        qargs: The Qiskit qargs object.
+    """
+    qargs = re.findall("(\d)", qstr)
     qargs = [int(x) - offset for x in qargs]
     return qargs
 
-def gate_from_str(gstr: str) -> Gate:
-    """Converts a qtrl gate string to gate."""
-    if re.findall('\d+', gstr) == []:
-        if gstr == 'CZ': 
+
+def qargs_to_qstr(qargs: List[Qubit], gate: Gate, offset: int = 4) -> str:
+    """Qiskit qargs to qtrl qargs string.
+    
+    Args:
+        qargs: A Qiskit qargs object.
+        gate: A quantum gate.
+        offset: Index of the first qubit in use on the Berkeley device.
+    
+    Returns:
+        qstr: The qtrl qargs string.
+    """
+    if gate.name in ["rx", "rz"]:
+        assert len(qargs) == 1
+        qstr = "Q" + str(qargs[0]._index + offset)
+    elif gate.name == ["cz", "cp"]:
+        assert len(qargs) == 2
+        qnum = reversed([q._index + offset for q in qargs])
+        qstr = f"C{qnum[0]}T{qnum[1]}"
+    elif gate.name == "c0c0ix":
+        assert len(qargs) == 3
+        qnum = [q._index + offset for q in qargs]
+        qstr = f"C{qnum[0]}C{qnum[2]}T{qnum[1]}"
+    return qstr
+
+
+def gstr_to_gate(gstr: str) -> Gate:
+    """Converts a qtrl gate string to a Qiskit gate.
+    
+    Args:
+        gstr: A qtrl gate string.
+        
+    Returns:
+        gate: The Qiskit gate corresponding to the qtrl gate string. 
+    """
+    if re.findall("\d+", gstr) == []:
+        if gstr == "CZ":
             gate = CZGate()
-        elif gstr == 'CS':
-            gate = CPhaseGate(np.pi/2)
-        elif gstr == 'CSD':
-            gate = CPhaseGate(-np.pi/2)
-        elif gstr == 'TOF':
-            # TODO: CCXGate is just a placeholder.
-            gate = CCXGate()
+        elif gstr == "CS":
+            gate = CPhaseGate(np.pi / 2)
+        elif gstr == "CSD":
+            gate = CPhaseGate(-np.pi / 2)
+        elif gstr == "TOF":
+            gate = C0C0iXGate
     else:
         gname = gstr[0]
-        angle = float(gstr[1:])
-        if gname == 'X':
+        angle = float(gstr[1:]) / 180 * np.pi
+        if gname == "X":
             gate = RXGate(angle)
-        elif gname == 'Y':
+        elif gname == "Y":
             gate = RYGate(angle)
-        elif gname == 'Z':
+        elif gname == "Z":
             gate = RZGate(angle)
     return gate
 
-def create_circuit_from_qtrl_strings(qtrl_strings: List[List[str]]) -> QuantumCircuit:
-    """Creates a circuit from qtrl strings.
+
+def gate_to_gstr(gate: Gate) -> str:
+    """Qiskit instruction to qtrl gate string.
     
     Args:
-        qtrl_strings: The qtrl strings of the circuit.
+        gate: A Qiskit gate.
         
     Returns:
-        circ: A Qiskit circuit built from the qtrl strings.
+        gstr: The qtrl gate string corresponding to the Qiskit gate.
     """
-    qtrl_strings = [y for x in qtrl_strings for y in x]
-    inst_tups = []
+    assert gate.name in ["rx", "rz", "cz", "cp", "c0c0ix"]
+    if gate.name in ["rx", "rz"]:
+        gname = gate.name[-1]
+        gname.upper()
+        angle = gate.params[0] / np.pi * 180
+        gstr = gname + str(angle)
+    elif gate.name == "cz":
+        gstr = "CZ"
+    elif gate.name == "cp":
+        if abs(gate.params[0] - np.pi / 2) < 1e-8:
+            gstr = "CS"
+        elif abs(gate.params[0] + np.pi / 2) < 1e-8:
+            gstr = "CSD"
+    elif gate.name == "c0c0ix":
+        gstr = "TOF"
+    return gstr
+
+
+def qtrl_strings_to_qiskit_circuit(qtrl_strs: List[List[str]]) -> QuantumCircuit:
+    """Converts qtrl strings to Qiskit circuits.
     
-    for s in qtrl_strings:
-        if s[0] == 'Q':
-            qstr, gstr = s.split('/')
+    Args:
+        qtrl_strings: A list of qtrl strings.
+        
+    Returns:
+        circ: A Qiskit circuit corresponding to the qtrl strings.
+    """
+    qtrl_strs = [y for x in qtrl_strs for y in x]
+    inst_tups = []
+
+    for s in qtrl_strs:
+        if s[0] == "Q":
+            qstr, gstr = s.split("/")
         else:
-            gstr, qstr = s.split('/')
-        qargs = qargs_from_str(qstr)
-        gate = gate_from_str(gstr)
+            gstr, qstr = s.split("/")
+        qargs = qstr_to_qargs(qstr)
+        gate = gstr_to_gate(gstr)
         inst_tups += [(gate, qargs, [])]
 
     circ = create_circuit_from_inst_tups(inst_tups)
     return circ
 
+
+def qiskit_circuit_to_qtrl_strings(circ: QuantumCircuit) -> List[str]:
+    """Converts a Qiskit circuit to qtrl strings.
+    
+    Args:
+        circ: A Qiskit circuit.
+        
+    Returns:
+        qtrl_strs: The qtrl strings corresponding to the Qiskit circuit.
+    """
+    circ = remove_instructions_in_circuit(circ, ["measure", "barrier"])
+    qtrl_strs = []
+
+    for gate, qargs, _ in circ.data:
+        gstr = gate_to_gstr(gate)
+        qstr = qargs_to_qstr(qargs, gate)
+        if gstr in ["rx", "rz"]:
+            qtrl_str = qstr + "/" + gstr
+        elif gstr in ["cz", "cp", "c0c0ix"]:
+            qtrl_str = gstr + "/" + qstr
+        qtrl_strs.append(qtrl_str)
+    return qtrl_strs
+
+
+def qiskit_circuit_to_qasm_string(circ: QuantumCircuit) -> str:
+    """Converts a circuit to a QASM string.
+    
+    This function is required to transpile circuits that contain C0C0iX and CCZ gates. 
+    The ``QuantumCircuit.qasm()`` method in Qiskit does not implement these gates.
+    
+    Args:
+        circ: The circuit to be transformed to a QASM string.
+    
+    Returns:
+        qasm_str: The QASM string of the circuit.
+    """
+    # The header of the QASM string.
+    qasm_str = 'OPENQASM 2.0;\ninclude "qelib1.inc";\n'
+
+    # Define 3q gates c0c0ix and ccz, since these are not defined in the standard library.
+    qasm_str += (
+        "gate c0c0ix p0,p1,p2 {x p0; x p1; ccx p0,p1,p2; cp(pi/2) p0,p1; x p0; x p1;}\n"
+    )
+    qasm_str += "gate ccz p0,p1,p2 {h p2; ccx p0,p1,p2; h p2;}\n"
+
+    # Define quantum and classical registers.
+    if len(circ.qregs) > 0:
+        n_qubits = len(circ.qregs[0])
+        qasm_str += f"qreg q[{n_qubits}];\n"
+    if len(circ.cregs) > 0:
+        n_clbits = len(circ.cregs[0])
+        qasm_str += f"creg c[{n_clbits}];\n"
+
+    for inst, qargs, cargs in circ.data:
+        # Build instruction string, quantum register string and
+        # optionally classical register string.
+        if len(inst.params) > 0 and not isinstance(inst.params[0], np.ndarray):
+            # 1q or 2q gate with parameters
+            params_str = ",".join([str(x) for x in inst.params])
+            inst_str = f"{inst.name}({params_str})"
+        else:  # 1q, 2q gate without parameters, 3q gate, measure or barrier
+            inst_str = inst.name
+        qargs_inds = [q._index for q in qargs]
+        qargs_str = ",".join([f"q[{i}]" for i in qargs_inds])
+        if cargs != []:
+            cargs_inds = [c._index for c in cargs]
+            cargs_str = ",".join([f"c[{i}]" for i in cargs_inds])
+
+        # Only measure requires a `inst qargs -> cargs` format. All the other gates
+        # follow the same `inst qargs` format.
+        if inst.name in [
+            "rz",
+            "rx",
+            "ry",
+            "h",
+            "x",
+            "p",
+            "u3",
+            "cz",
+            "swap",
+            "cp",
+            "barrier",
+            "c0c0ix",
+            "ccz",
+        ]:
+            qasm_str += f"{inst_str} {qargs_str};\n"
+        elif inst.name == "measure":
+            qasm_str += f"{inst_str} {qargs_str} -> {cargs_str};\n"
+        else:
+            raise TypeError(
+                f"Instruction {inst.name} cannot be converted to QASM string."
+            )
+
+    # Temporary check statement.
+    circ_new = QuantumCircuit.from_qasm_str(qasm_str)
+    assert circuit_equal(circ, circ_new)
+    return qasm_str
+
+
+def convert_circuit_to_string(
+    circ: Union[QuantumCircuit, QtrlStrings], kind: str
+) -> Union[QuantumCircuit, QtrlStrings]:
+    """Converts a circuit to its qtrl or qasm string form.
+    
+    Args:
+        circ: A circuit.
+        kind: The type of output string, "qtrl" or "qasm"
+    
+    Returns:
+        circ_new: The circuit in a different form.
+    """
+    assert kind in ["qtrl", "qasm"]
+    if kind == "qtrl":
+        string = qiskit_circuit_to_qtrl_strings(circ)
+        string = json.dumps(string)
+    else:
+        string = qiskit_circuit_to_qasm_string(circ)
+    return string
+
+
+def convert_string_to_circuit(string: str, kind: str) -> QuantumCircuit:
+    """Converts a qtrl or qasm string to its circuit form.
+    
+    Args:
+        string: A qtrl or qasm string.
+        kind: The type of input string, "qtrl" or "qasm".
+    
+    Returns:
+        circ: The circuit created from the string.
+    """
+    assert kind in ["qtrl", "qasm"]
+    if kind == "qtrl":
+        qtrl_strs = json.loads(string)
+        circ = qtrl_strings_to_qiskit_circuit(qtrl_strs)
+    else:
+        qasm_str = string.decode()
+        circ = QuantumCircuit.from_qasm_str(qasm_str)
+    return circ

@@ -25,11 +25,12 @@ from .z2symmetries import transform_4q_indices, transform_4q_pauli
 from ..utils import (
     get_overlap,
     counts_dict_to_arr,
-    circuit_to_qasm_str,
     write_hdf5,
     basis_matrix,
     append_tomography_gates,
     append_measurement_gates,
+    convert_circuit_to_string,
+    convert_string_to_circuit,
 )
 
 
@@ -60,6 +61,8 @@ class ExcitedAmplitudesSolver:
         self.q_instance = q_instance
         self.method = method
         self.suffix = suffix
+
+        self.circ_str_type = "qasm"
 
         # Load data and initialize quantities.
         self.h5fname = h5fname + ".h5"
@@ -145,18 +148,18 @@ class ExcitedAmplitudesSolver:
 
                 # Transpile the circuit and save to HDF5 file.
                 circ = transpile_into_berkeley_gates(circ, f"r{m}{s}")
-                write_hdf5(
-                    h5file, f"circ{m}{s}", "transpiled", circuit_to_qasm_str(circ)
-                )
+                circ_str = convert_circuit_to_string(circ, self.circ_str_type)
+                write_hdf5(h5file, f"circ{m}{s}", "transpiled", circ_str)
 
                 if self.method == "tomo":
                     for label in self.tomo_labels:
                         # Append tomography and measurement gates and save to HDF5 file.
                         tomo_circ = append_tomography_gates(circ, [1, 2], label)
                         tomo_circ = append_measurement_gates(tomo_circ)
-                        write_hdf5(
-                            h5file, f"circ{m}{s}", label, circuit_to_qasm_str(tomo_circ)
+                        circ_str = convert_circuit_to_string(
+                            tomo_circ, self.circ_str_type
                         )
+                        write_hdf5(h5file, f"circ{m}{s}", label, circ_str)
 
         h5file.close()
 
@@ -170,7 +173,9 @@ class ExcitedAmplitudesSolver:
                 m, s = self.orb_labels[i]
                 if self.method == "exact":
                     dset = h5file[f"circ{m}{s}/transpiled"]
-                    circ = QuantumCircuit.from_qasm_str(dset[()].decode())
+                    circ_str = dset[()]
+                    circ = convert_string_to_circuit(circ_str, self.circ_str_type)
+                    # circ = QuantumCircuit.from_qasm_str(dset[()].decode())
 
                     result = self.q_instance.execute(circ)
                     # print(result)
@@ -180,7 +185,9 @@ class ExcitedAmplitudesSolver:
                 else:  # Tomography
                     for label in self.tomo_labels:
                         dset = h5file[f"circ{m}{s}/{label}"]
-                        circ = QuantumCircuit.from_qasm_str(dset[()].decode())
+                        circ_str = dset[()]
+                        circ = convert_string_to_circuit(circ_str, self.circ_str_type)
+                        # circ = QuantumCircuit.from_qasm_str(dset[()].decode())
 
                         result = self.q_instance.execute(circ)
                         counts = result.get_counts()
@@ -252,24 +259,18 @@ class ExcitedAmplitudesSolver:
 
                 # Transpile the circuit and save to HDF5 file.
                 circ = transpile_into_berkeley_gates(circ, f"r{m}{s}{m_}{s_}")
-                write_hdf5(
-                    h5file,
-                    f"circ{m}{s}{m_}{s_}",
-                    "transpiled",
-                    circuit_to_qasm_str(circ),
-                )
+                circ_str = convert_circuit_to_string(circ, self.circ_str_type)
+                write_hdf5(h5file, f"circ{m}{s}{m_}{s_}", "transpiled", circ_str)
 
                 if self.method == "tomo":
                     for label in self.tomo_labels:
                         # Append tomography and measurement gates and save to HDF5 file.
                         tomo_circ = append_tomography_gates(circ, [2, 3], label)
                         tomo_circ = append_measurement_gates(tomo_circ)
-                        write_hdf5(
-                            h5file,
-                            f"circ{m}{s}{m_}{s_}",
-                            label,
-                            circuit_to_qasm_str(tomo_circ),
+                        circ_str = convert_circuit_to_string(
+                            tomo_circ, self.circ_str_type
                         )
+                        write_hdf5(h5file, f"circ{m}{s}{m_}{s_}", label, circ_str)
 
         h5file.close()
 
@@ -285,7 +286,9 @@ class ExcitedAmplitudesSolver:
                 if self.method == "exact":
                     print(m, s, m_, s_)
                     dset = h5file[f"circ{m}{s}{m_}{s_}/transpiled"]
-                    circ = QuantumCircuit.from_qasm_str(dset[()].decode())
+                    circ_str = dset[()]
+                    circ = convert_string_to_circuit(circ_str, self.circ_str_type)
+                    # circ = QuantumCircuit.from_qasm_str(dset[()].decode())
 
                     result = self.q_instance.execute(circ)
                     psi = result.get_statevector()
@@ -294,7 +297,9 @@ class ExcitedAmplitudesSolver:
                 else:  # Tomography
                     for label in self.tomo_labels:
                         dset = h5file[f"circ{m}{s}{m_}{s_}/{label}"]
-                        circ = QuantumCircuit.from_qasm_str(dset[()].decode())
+                        circ_str = dset[()]
+                        circ = convert_string_to_circuit(circ_str, self.circ_str_type)
+                        # circ = QuantumCircuit.from_qasm_str(dset[()].decode())
 
                         result = self.q_instance.execute(circ)
                         counts = result.get_counts()
