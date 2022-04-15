@@ -46,17 +46,19 @@ def qargs_to_qstr(qargs: List[Qubit], gate: Gate, offset: int = 4) -> str:
     Returns:
         qstr: The qtrl qargs string.
     """
+    assert gate.name in ["rx", "rz", "cz", "cp", "c0c0ix"]
     if gate.name in ["rx", "rz"]:
         assert len(qargs) == 1
         qstr = "Q" + str(qargs[0]._index + offset)
-    elif gate.name == ["cz", "cp"]:
+    elif gate.name in ["cz", "cp"]:
         assert len(qargs) == 2
-        qnum = reversed([q._index + offset for q in qargs])
+        qnum = list(reversed([q._index + offset for q in qargs]))
         qstr = f"C{qnum[0]}T{qnum[1]}"
     elif gate.name == "c0c0ix":
         assert len(qargs) == 3
         qnum = [q._index + offset for q in qargs]
-        qstr = f"C{qnum[0]}C{qnum[2]}T{qnum[1]}"
+        qstr = f"C{qnum[0]}C{qnum[1]}T{qnum[2]}"
+    print(f"{qstr=}")
     return qstr
 
 
@@ -101,8 +103,7 @@ def gate_to_gstr(gate: Gate) -> str:
     """
     assert gate.name in ["rx", "rz", "cz", "cp", "c0c0ix"]
     if gate.name in ["rx", "rz"]:
-        gname = gate.name[-1]
-        gname.upper()
+        gname = gate.name[-1].upper()
         angle = gate.params[0] / np.pi * 180
         gstr = gname + str(angle)
     elif gate.name == "cz":
@@ -126,7 +127,9 @@ def qtrl_strings_to_qiskit_circuit(qtrl_strs: List[List[str]]) -> QuantumCircuit
     Returns:
         circ: A Qiskit circuit corresponding to the qtrl strings.
     """
-    qtrl_strs = [y for x in qtrl_strs for y in x]
+    # TODO: Now implemented as a list. Should be a list of lists.
+    if isinstance(qtrl_strs[0], list):
+        qtrl_strs = [y for x in qtrl_strs for y in x]
     inst_tups = []
 
     for s in qtrl_strs:
@@ -155,13 +158,19 @@ def qiskit_circuit_to_qtrl_strings(circ: QuantumCircuit) -> List[str]:
     qtrl_strs = []
 
     for gate, qargs, _ in circ.data:
+        print(f"{gate.name=}")
         gstr = gate_to_gstr(gate)
         qstr = qargs_to_qstr(qargs, gate)
-        if gstr in ["rx", "rz"]:
+        print(gstr, qstr)
+        if gate.name in ["rx", "rz"]:
             qtrl_str = qstr + "/" + gstr
-        elif gstr in ["cz", "cp", "c0c0ix"]:
+        elif gate.name in ["cz", "cp", "c0c0ix"]:
             qtrl_str = gstr + "/" + qstr
+        else:
+            raise TypeError(f"The gate {gstr} is not valid.")
         qtrl_strs.append(qtrl_str)
+
+    print(qtrl_strs)
     return qtrl_strs
 
 

@@ -79,7 +79,7 @@ class EHAmplitudesSolver:
         self.suffix = suffix
         self.verbose = verbose
 
-        self.circ_str_type = "qasm"
+        self.circ_str_type = "qtrl"
 
         # Hardcoded problem parameters.
         self.n_anc_diag = 1
@@ -172,16 +172,17 @@ class EHAmplitudesSolver:
 
             # Build the diagonal circuit and save to HDF5 file.
             circ = self.constructor.build_diagonal(a_op)
-            circ_str = convert_circuit_to_string(circ, self.circ_str_type)
-            write_hdf5(h5file, f"circ{m}{self.spin}", "untranspiled", circ_str)
+            # circ_str = convert_circuit_to_string(circ, self.circ_str_type)
+            # write_hdf5(h5file, f"circ{m}{self.spin}", "untranspiled", circ_str)
 
             # Transpile the circuit and save to HDF5 file.
             circ = transpile_into_berkeley_gates(circ, str(m) + self.spin)
+            circ_str = convert_circuit_to_string(circ, self.circ_str_type)
             write_hdf5(
                 h5file,
                 f"circ{m}{self.spin}",
                 "transpiled",
-                convert_circuit_to_string(circ, self.circ_str_type),
+                circ_str
             )
 
             if self.method == "tomo":
@@ -294,11 +295,11 @@ class EHAmplitudesSolver:
         else:
             circ = self.constructor.build_off_diagonal(a_op_0, a_op_1)
         # print(set([x[0].name for x in circ]))
-        circ_str = convert_circuit_to_string(circ, self.circ_str_type)
-        write_hdf5(h5file, f"circ01{self.spin}", "untranspiled", circ_str)
+        # circ_str = convert_circuit_to_string(circ, self.circ_str_type)
+        # write_hdf5(h5file, f"circ01{self.spin}", "untranspiled", circ_str)
 
         # Transpile the circuit and save to HDF5 file.
-        # circ = transpile_into_berkeley_gates(circ, "01" + self.spin)
+        circ = transpile_into_berkeley_gates(circ, "01" + self.spin)
         circ_str = convert_circuit_to_string(circ, self.circ_str_type)
         write_hdf5(h5file, f"circ01{self.spin}", "transpiled", circ_str)
 
