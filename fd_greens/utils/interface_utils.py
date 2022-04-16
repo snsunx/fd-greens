@@ -5,7 +5,7 @@ Interface Utilities (:mod:`fd_greens.utils.interface_utils`)
 """
 
 import re
-from typing import List, Optional, Union
+from typing import List
 import json
 
 import numpy as np
@@ -17,11 +17,8 @@ from ..main.params import C0C0iXGate
 from .circuit_utils import create_circuit_from_inst_tups, remove_instructions_in_circuit
 from .general_utils import circuit_equal
 
-QtrlStrings = List[str]
-
-
 def qstr_to_qargs(qstr: str, offset: int = 4) -> List[int]:
-    """Converts a qtrl qargs string to a Qiskit qargs object.
+    """Qtrl qargs string to Qiskit qargs.
     
     Args:
         qstr: The qtrl qargs string, e.g. "Q6", "C5T6".
@@ -63,7 +60,7 @@ def qargs_to_qstr(qargs: List[Qubit], gate: Gate, offset: int = 4) -> str:
 
 
 def gstr_to_gate(gstr: str) -> Gate:
-    """Converts a qtrl gate string to a Qiskit gate.
+    """qtrl gate string to Qiskit gate.
     
     Args:
         gstr: A qtrl gate string.
@@ -93,7 +90,7 @@ def gstr_to_gate(gstr: str) -> Gate:
 
 
 def gate_to_gstr(gate: Gate) -> str:
-    """Qiskit instruction to qtrl gate string.
+    """Qiskit gate to qtrl gate string.
     
     Args:
         gate: A Qiskit gate.
@@ -119,7 +116,7 @@ def gate_to_gstr(gate: Gate) -> str:
 
 
 def qtrl_strings_to_qiskit_circuit(qtrl_strs: List[List[str]]) -> QuantumCircuit:
-    """Converts qtrl strings to Qiskit circuits.
+    """Converts qtrl strings to a Qiskit circuit.
     
     Args:
         qtrl_strings: A list of qtrl strings.
@@ -147,6 +144,9 @@ def qtrl_strings_to_qiskit_circuit(qtrl_strs: List[List[str]]) -> QuantumCircuit
 
 def qiskit_circuit_to_qtrl_strings(circ: QuantumCircuit) -> List[str]:
     """Converts a Qiskit circuit to qtrl strings.
+
+    The only gates that can be converted are ``"rx"``, ``"rz"``, ``"cz"``,
+    ``"cp"``, ``"c0c0ix"``.
     
     Args:
         circ: A Qiskit circuit.
@@ -158,19 +158,17 @@ def qiskit_circuit_to_qtrl_strings(circ: QuantumCircuit) -> List[str]:
     qtrl_strs = []
 
     for gate, qargs, _ in circ.data:
-        print(f"{gate.name=}")
+        # print(f"{gate.name=}")
         gstr = gate_to_gstr(gate)
         qstr = qargs_to_qstr(qargs, gate)
-        print(gstr, qstr)
+        # print(gstr, qstr)
         if gate.name in ["rx", "rz"]:
             qtrl_str = qstr + "/" + gstr
         elif gate.name in ["cz", "cp", "c0c0ix"]:
             qtrl_str = gstr + "/" + qstr
         else:
-            raise TypeError(f"The gate {gstr} is not valid.")
+            raise TypeError(f"The gate {gate.name} is not valid when converting to qtrl string.")
         qtrl_strs.append(qtrl_str)
-
-    print(qtrl_strs)
     return qtrl_strs
 
 
@@ -197,9 +195,11 @@ def qiskit_circuit_to_qasm_string(circ: QuantumCircuit) -> str:
 
     # Define quantum and classical registers.
     if len(circ.qregs) > 0:
+        assert len(circ.qregs[0]) == 1
         n_qubits = len(circ.qregs[0])
         qasm_str += f"qreg q[{n_qubits}];\n"
     if len(circ.cregs) > 0:
+        assert len(circ.cregs) == 1
         n_clbits = len(circ.cregs[0])
         qasm_str += f"creg c[{n_clbits}];\n"
 
@@ -249,17 +249,15 @@ def qiskit_circuit_to_qasm_string(circ: QuantumCircuit) -> str:
     return qasm_str
 
 
-def convert_circuit_to_string(
-    circ: Union[QuantumCircuit, QtrlStrings], kind: str
-) -> Union[QuantumCircuit, QtrlStrings]:
+def convert_circuit_to_string(circ: QuantumCircuit, kind: str) -> str:
     """Converts a circuit to its qtrl or qasm string form.
     
     Args:
-        circ: A circuit.
-        kind: The type of output string, "qtrl" or "qasm"
+        circ: A circuit to be converted to a string.
+        kind: The type of output string, ``"qtrl"`` or ``"qasm"``.
     
     Returns:
-        circ_new: The circuit in a different form.
+        string: The string created from the circuit.
     """
     assert kind in ["qtrl", "qasm"]
     if kind == "qtrl":
@@ -274,8 +272,8 @@ def convert_string_to_circuit(string: str, kind: str) -> QuantumCircuit:
     """Converts a qtrl or qasm string to its circuit form.
     
     Args:
-        string: A qtrl or qasm string.
-        kind: The type of input string, "qtrl" or "qasm".
+        string: A qtrl or qasm string to be converted to a circuit.
+        kind: The type of input string, ``"qtrl"`` or ``"qasm"``.
     
     Returns:
         circ: The circuit created from the string.
