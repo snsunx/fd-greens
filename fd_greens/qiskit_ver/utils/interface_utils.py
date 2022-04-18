@@ -17,6 +17,7 @@ from ..main.params import C0C0iXGate
 from .circuit_utils import create_circuit_from_inst_tups, remove_instructions_in_circuit
 from .general_utils import circuit_equal
 
+
 def qstr_to_qargs(qstr: str, offset: int = 4) -> List[int]:
     """Qtrl qargs string to Qiskit qargs.
     
@@ -167,7 +168,9 @@ def qiskit_circuit_to_qtrl_strings(circ: QuantumCircuit) -> List[str]:
         elif gate.name in ["cz", "cp", "c0c0ix"]:
             qtrl_str = gstr + "/" + qstr
         else:
-            raise TypeError(f"The gate {gate.name} is not valid when converting to qtrl string.")
+            raise TypeError(
+                f"The gate {gate.name} is not valid when converting to qtrl string."
+            )
         qtrl_strs.append(qtrl_str)
     return qtrl_strs
 

@@ -14,6 +14,7 @@ from qiskit.quantum_info import SparsePauliOp
 
 InstructionTuple = Any
 
+
 class CircuitConstructor:
     """A class to construct circuits for calculating transition amplitudes."""
 

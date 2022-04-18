@@ -178,12 +178,7 @@ class EHAmplitudesSolver:
             # Transpile the circuit and save to HDF5 file.
             circ = transpile_into_berkeley_gates(circ, str(m) + self.spin)
             circ_str = convert_circuit_to_string(circ, self.circ_str_type)
-            write_hdf5(
-                h5file,
-                f"circ{m}{self.spin}",
-                "transpiled",
-                circ_str
-            )
+            write_hdf5(h5file, f"circ{m}{self.spin}", "transpiled", circ_str)
 
             if self.method == "tomo":
                 for tomo_label in self.tomo_labels:
