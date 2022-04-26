@@ -20,7 +20,7 @@ from .molecular_hamiltonian import MolecularHamiltonian
 from .operators import ChargeOperators
 from .qubit_indices import QubitIndices
 from .circuit_constructor import CircuitConstructor, InstructionTuple
-from .transpilation import transpile_into_berkeley_gates
+# from .transpilation_backup import transpile_into_berkeley_gates
 from .z2symmetries import transform_4q_indices, transform_4q_pauli
 from ..utils import (
     get_overlap,

@@ -19,7 +19,7 @@ from .molecular_hamiltonian import MolecularHamiltonian
 from .operators import SecondQuantizedOperators
 from .z2symmetries import transform_4q_pauli, transform_4q_indices
 from .circuit_constructor import CircuitConstructor
-from .transpilation import transpile_into_berkeley_gates
+# from .transpilation_backup import transpile_into_berkeley_gates
 from ..utils import (
     get_overlap,
     counts_dict_to_arr,
