@@ -4,7 +4,7 @@ Circuit Constructor (:mod:`fd_greens.main.circuit_constructor`)
 ===============================================================
 """
 
-from typing import Tuple, Optional, Union, Sequence, List, Any
+from typing import Sequence, Optional
 from cmath import polar
 
 import numpy as np
@@ -12,44 +12,47 @@ import numpy as np
 import cirq
 from qiskit.quantum_info import SparsePauliOp
 
-InstructionTuple = Any
-
 
 class CircuitConstructor:
-    """A class to construct circuits for calculating transition amplitudes."""
+    """Constructor of transition amplitude circuits."""
 
-    def __init__(self, ansatz: cirq.Circuit) -> None:
+    def __init__(
+        self, ansatz: cirq.Circuit, qubits: Optional[Sequence[cirq.Qid]] = None
+    ) -> None:
         """Initializes a ``CircuitConstructor`` object.
 
         Args:
             ansatz: The ansatz circuit containing the ground state.
-            anc: Indices of the ancilla qubits in the off-diagonal circuits.
+            qubits: The qubits on which the circuits are to be constructed.
         """
         self.ansatz = ansatz.copy()
-        self.qubits = [cirq.LineQubit(i) for i in range(4)]
+        if qubits is None:
+            self.qubits = [cirq.LineQubit(i) for i in range(4)]
+        else:
+            self.qubits = qubits
 
-    def build_diagonal(self, op: SparsePauliOp) -> cirq.Circuit:
+    def build_diagonal(self, pauli_op: SparsePauliOp) -> cirq.Circuit:
         """Constructs the circuit to calculate a diagonal transition amplitude.
 
         Args:
-            op: The operator in the circuit.
+            pauli_op: The Pauli operator to be applied.
 
         Returns:
             circuit: A circuit with the operator appended.
         """
-        assert len(op) == 2
+        assert len(pauli_op) == 2
 
         # Copy the ansatz circuit into the system qubit indices.
         circuit = cirq.Circuit()
-        for op in self.ansatz.all_operations():
-            circuit.append(op.gate(*[q + 1 for q in op.qubits]))
+        for pauli_op in self.ansatz.all_operations():
+            circuit.append(pauli_op.gate(*[q + 1 for q in pauli_op.qubits]))
 
         # Append Hadamard gate on the ancilla at the beginning.
         circuit.append(cirq.H(self.qubits[0]))
 
         # Append the LCU circuit of the operator.
-        self.append_controlled_gate(circuit, op[0], ctrl_states=[0])
-        self.append_controlled_gate(circuit, op[1], ctrl_states=[1])
+        self.append_controlled_gate(circuit, pauli_op[0], ctrl_states=[0])
+        self.append_controlled_gate(circuit, pauli_op[1], ctrl_states=[1])
 
         # Append Hadamard gate on the ancilla at the end.
         circuit.append(cirq.H(self.qubits[0]))
@@ -57,18 +60,18 @@ class CircuitConstructor:
         return circuit
 
     def build_off_diagonal(
-        self, first_op: SparsePauliOp, second_op: SparsePauliOp
+        self, first_pauli_op: SparsePauliOp, second_pauli_op: SparsePauliOp
     ) -> cirq.Circuit:
         """Constructs the circuit to calculate an off-diagonal transition amplitude.
 
         Args:
-            first_op: The first operator in the circuit.
-            second_op: The second operator in the circuit.
+            first_op: The first Pauli operator to be applied.
+            second_op: The second Pauli operator to be applied.
 
         Returns:
             circ: The new circuit with the two operators appended.
         """
-        assert len(first_op) == len(second_op) == 2
+        assert len(first_pauli_op) == len(second_pauli_op) == 2
 
         # Copy the ansatz circuit into the system qubit indices.
         circuit = cirq.Circuit()
@@ -81,19 +84,27 @@ class CircuitConstructor:
         circuit.append(cirq.H(self.qubits[1]))
 
         # Append the LCU circuit of the first operator.
-        self.append_controlled_gate(circuit, first_op[0], ctrl_states=[0, 0])
-        self.append_controlled_gate(circuit, first_op[1], ctrl_states=[1, 0])
+        circuit.append(
+            self._get_controlled_gate_operations(first_pauli_op[0], ctrl_states=[0, 0])
+        )
+        circuit.append(
+            self._get_controlled_gate_operations(first_pauli_op[1], ctrl_states=[1, 0])
+        )
 
         # Append the phase gate in the middle if the second operator is not all I or all Z.
-        if not set("".join(second_op.table.to_labels())).issubset({"I", "Z"}):
+        if not set("".join(second_pauli_op.table.to_labels())).issubset({"I", "Z"}):
             circuit.append(cirq.rz(np.pi / 4)(self.qubits[1]))
 
         # Append the LCU circuit of the second operator.
-        self.append_controlled_gate(circuit, second_op[0], ctrl_states=[0, 1])
-        self.append_controlled_gate(circuit, second_op[1], ctrl_states=[1, 1])
+        circuit.append(
+            self._get_controlled_gate_operations(second_pauli_op[0], ctrl_states=[0, 1])
+        )
+        circuit.append(
+            self._get_controlled_gate_operations(second_pauli_op[1], ctrl_states=[1, 1])
+        )
 
         # Append the phase gate after the second operator if it is all I or all Z.
-        if set("".join(second_op.table.to_labels())).issubset({"I", "Z"}):
+        if set("".join(second_pauli_op.table.to_labels())).issubset({"I", "Z"}):
             circuit.append(cirq.rz(np.pi / 4)(self.qubits[1]))
 
         # Add Hadamard gates on the ancillas at the end.
@@ -101,11 +112,8 @@ class CircuitConstructor:
         circuit.append(cirq.H(self.qubits[1]))
         return circuit
 
-    def append_controlled_gate(
-        self,
-        circuit: cirq.Circuit,
-        sparse_pauli_op: SparsePauliOp,
-        ctrl_states: Sequence[int] = [1],
+    def _get_controlled_gate_operations(
+        self, sparse_pauli_op: SparsePauliOp, ctrl_states: Sequence[int] = [1]
     ) -> None:
         """Appends a controlled gate to a circuit.
 
@@ -120,6 +128,7 @@ class CircuitConstructor:
         coeff = sparse_pauli_op.coeffs[0]
         label = sparse_pauli_op.table.to_labels()[0][::-1]
         n_sys = len(label)
+        operations = []
 
         # Find the indices to apply X gates (for control on 0), H gates (for Pauli X)
         # and X(pi/2) gates (for Pauli Y) as well as the pivot (target qubit of the
@@ -144,25 +153,25 @@ class CircuitConstructor:
         if len(ctrl_states) == 1:
             if coeff != 1:
                 angle = polar(coeff)[1]
-                circuit.append(cirq.rz(angle)(self.qubits[0]))
+                operations += [cirq.rz(angle)(self.qubits[0])]
             if set(label) != {"I"}:
-                circuit.append(cirq.CZ(self.qubits[0], self.qubits[pivot]))
+                operations += [cirq.CZ(self.qubits[0], self.qubits[pivot])]
         elif len(ctrl_states) == 2:
             if coeff != 1:
                 angle = polar(coeff)[1]
                 assert angle in [np.pi / 2, np.pi, -np.pi / 2]
                 if abs(angle) == np.pi / 2:
-                    circuit.append(
+                    operations += [
                         cirq.CZPowGate(exponent=angle / np.pi)(
                             self.qubits[0], self.qubits[1]
                         )
-                    )
+                    ]
                 else:
-                    circuit.append(cirq.CZ(self.qubits[0], self.qubits[1]))
+                    operations += [cirq.CZ(self.qubits[0], self.qubits[1])]
             if set(label) != {"I"}:
-                circuit.append(
+                operations += [
                     cirq.CCZ(self.qubits[0], self.qubits[1], self.qubits[pivot])
-                )
+                ]
 
         # Wrap CNOT gates around for multi-qubit Pauli string. Note that these CNOTs are applied
         # in the reverse direction because the controlled gate is Z.
@@ -172,27 +181,25 @@ class CircuitConstructor:
                 cirq.CZ(self.qubits[pivot], self.qubits[ind]),
                 cirq.H(self.qubits[pivot]),
             ]
-            circuit.insert(0, cx_ops)
-            circuit.append(cx_ops)
+            operations = cx_ops + operations
+            operations = operations + cx_ops
             pivot = ind
 
         # Wrap X gates around when controlled on 0.
         for ind in x_inds:
-            circuit.insert(0, cirq.X(self.qubits[ind]))
-            circuit.append(cirq.X(self.qubits[ind]))
+            x_ops = [cirq.X(self.qubits[ind])]
+            operations = x_ops + operations
+            operations = operations + x_ops
 
         # Wrap H gates around for Pauli X.
         for ind in h_inds:
-            circuit.insert(0, cirq.H(self.qubits[ind]))
-            circuit.append(cirq.H(self.qubits[ind]))
+            h_ops = [cirq.H(self.qubits[ind])]
+            operations = h_ops + operations
+            operations = operations + h_ops
 
         # Wrap X(pi/2) gate in front and X(-pi/2) at the end when applying Pauli Y.
         for ind in rx_inds:
-            circuit.insert(0, cirq.rx(np.pi / 2)(self.qubits[ind]))
-            circuit.append(
-                [
-                    cirq.rz(np.pi)(self.qubits[ind]),
-                    cirq.rx(np.pi / 2)(self.qubits[ind]),
-                    cirq.rz(np.pi)(self.qubits[ind]),
-                ]
-            )
+            operations = [cirq.rx(np.pi / 2)(self.qubits[ind])] + operations
+            operations = operations + [cirq.rx(-np.pi / 2)(self.qubits[ind])]
+
+        return operations

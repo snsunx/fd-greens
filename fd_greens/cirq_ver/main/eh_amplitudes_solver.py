@@ -14,7 +14,7 @@ from scipy.special import binom
 from qiskit import QuantumCircuit, Aer
 from qiskit.utils import QuantumInstance
 
-from .params import e_inds, h_inds
+from .qubit_indices import e_inds, h_inds
 from .molecular_hamiltonian import MolecularHamiltonian
 from .operators import SecondQuantizedOperators
 from .z2symmetries import transform_4q_pauli, transform_4q_indices
@@ -36,7 +36,7 @@ np.set_printoptions(precision=6)
 
 
 class EHAmplitudesSolver:
-    """A class to calculate transition amplitudes."""
+    """Transition amplitudes between ground state and (N±1)-electron states."""
 
     def __init__(
         self,
@@ -49,15 +49,15 @@ class EHAmplitudesSolver:
         suffix: str = "",
         verbose: bool = True,
     ) -> None:
-        """Initializes an EHAmplitudesSolver object.
+        """Initializes an ``EHAmplitudesSolver`` object.
 
         Args:
             h: The molecular Hamiltonian.
             q_instance: The quantum instance for executing the circuits.
-            method: The method for calculating the transition amplitudes. Either exact 
-                (``'exact'``) or tomography (``'tomo'``).
+            method: The method for calculating the transition amplitudes. Either
+                ``"exact"`` or ``"tomo"``.
             h5fname: The HDF5 file name.
-            anc: Location of the ancilla qubits.
+            anc: Indices of the ancilla qubits.
             spin: The spin of the creation and annihilation operators.
             suffix: The suffix for a specific experimental run.
             verbose: Whether to print out information about the calculation.
@@ -161,37 +161,37 @@ class EHAmplitudesSolver:
         # print(f"Number of (N-1)-electron states is {self.n_h}")
         # print("--------------------------------------------")
 
-    def build_diagonal(self) -> None:
+    def _build_diagonal(self) -> None:
         """Constructs diagonal transition amplitude circuits."""
         h5file = h5py.File(self.h5fname, "r+")
 
-        for m in range(self.n_orb):  # 0, 1
+        for m in range(self.n_orb):
             # Build the circuit based on the creation/annihilation operator
             # and store the QASM string in the HDF5 file.
             a_op = self.pauli_dict[(m, self.spin)]
 
             # Build the diagonal circuit and save to HDF5 file.
-            circ = self.constructor.build_diagonal(a_op)
+            circuit = self.constructor.build_diagonal(a_op)
             # circ_str = convert_circuit_to_string(circ, self.circ_str_type)
             # write_hdf5(h5file, f"circ{m}{self.spin}", "untranspiled", circ_str)
 
             # Transpile the circuit and save to HDF5 file.
-            circ = transpile_into_berkeley_gates(circ, str(m) + self.spin)
-            circ_str = convert_circuit_to_string(circ, self.circ_str_type)
-            write_hdf5(h5file, f"circ{m}{self.spin}", "transpiled", circ_str)
+            # circ = transpile_into_berkeley_gates(circ, str(m) + self.spin)
+            circuit_str = convert_circuit_to_string(circuit, self.circ_str_type)
+            write_hdf5(h5file, f"circ{m}{self.spin}", "transpiled", circuit_str)
 
             if self.method == "tomo":
                 for tomo_label in self.tomo_labels:
                     # When using tomography, build circuits with tomography and measurement
                     # gates appended and store the QASM string in the HDF5 file.
-                    tomo_circ = append_tomography_gates(circ, [1, 2], tomo_label)
-                    tomo_circ = append_measurement_gates(tomo_circ)
-                    circ_str = convert_circuit_to_string(tomo_circ, self.circ_str_type)
-                    write_hdf5(h5file, f"circ{m}{self.spin}", tomo_label, circ_str)
+                    tomo_circuit = append_tomography_gates(circuit, [1, 2], tomo_label)
+                    tomo_circuit = append_measurement_gates(tomo_circuit)
+                    circuit_str = convert_circuit_to_string(tomo_circuit, self.circuit_str_type)
+                    write_hdf5(h5file, f"circ{m}{self.spin}", tomo_label, circuit)
 
         h5file.close()
 
-    def execute_diagonal(self) -> None:
+    def _execute_diagonal(self) -> None:
         """Executes the diagonal circuits circ0 and circ1."""
         h5file = h5py.File(self.h5fname, "r+")
 
@@ -223,7 +223,7 @@ class EHAmplitudesSolver:
 
         h5file.close()
 
-    def process_diagonal(self) -> None:
+    def _process_diagonal(self) -> None:
         """Post-processes diagonal transition amplitude results."""
         h5file = h5py.File(self.h5fname, "r+")
 
@@ -277,7 +277,7 @@ class EHAmplitudesSolver:
 
         h5file.close()
 
-    def build_off_diagonal(self) -> None:
+    def _build_off_diagonal(self) -> None:
         """Constructs off-diagonal transition amplitude circuits."""
         h5file = h5py.File(self.h5fname, "r+")
 
@@ -307,7 +307,7 @@ class EHAmplitudesSolver:
 
         h5file.close()
 
-    def execute_off_diagonal(self) -> None:
+    def _execute_off_diagonal(self) -> None:
         """Executes the off-diagonal transition amplitude circuit circ01."""
         h5file = h5py.File(self.h5fname, "r+")
 
@@ -338,7 +338,7 @@ class EHAmplitudesSolver:
 
         h5file.close()
 
-    def process_off_diagonal(self) -> None:
+    def _process_off_diagonal(self) -> None:
         """Post-processes off-diagonal transition amplitude results."""
         h5file = h5py.File(self.h5fname, "r+")
 
@@ -408,7 +408,7 @@ class EHAmplitudesSolver:
 
         h5file.close()
 
-    def save_data(self) -> None:
+    def _save_data(self) -> None:
         """Saves transition amplitudes data to HDF5 file."""
         h5file = h5py.File(self.h5fname, "r+")
 
@@ -444,12 +444,12 @@ class EHAmplitudesSolver:
         if method is not None:
             self.method = method
         if build:
-            self.build_diagonal()
-            self.build_off_diagonal()
+            self._build_diagonal()
+            self._build_off_diagonal()
         if execute:
-            self.execute_diagonal()
-            self.execute_off_diagonal()
+            self._execute_diagonal()
+            self._execute_off_diagonal()
         if process:
-            self.process_diagonal()
-            self.process_off_diagonal()
-            self.save_data()
+            self._process_diagonal()
+            self._process_off_diagonal()
+            self._save_data()

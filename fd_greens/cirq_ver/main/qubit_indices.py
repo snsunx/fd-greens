@@ -151,3 +151,15 @@ class QubitIndices:
     def str_form(self) -> List[str]:
         """Returns the str form of the qubit indices."""
         return self._str
+
+# Qubit indices for Green's functions
+eu_inds = QubitIndices(["1101", "0111"])
+ed_inds = QubitIndices(["1110", "1011"])
+hu_inds = QubitIndices(["0100", "0001"])
+hd_inds = QubitIndices(["1000", "0010"])
+e_inds = {"u": eu_inds, "d": ed_inds}
+h_inds = {"u": hu_inds, "d": hd_inds}
+
+# Qubit indices for charge-charge correlation functions
+singlet_inds = QubitIndices(["0011", "0110", "1001", "1100"])
+triplet_inds = QubitIndices(["0101", "1010"])

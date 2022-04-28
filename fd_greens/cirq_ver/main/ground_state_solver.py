@@ -4,64 +4,47 @@ Ground State Solver (:mod:`fd_greens.main.ground_state_solver`)
 ===============================================================
 """
 
-from typing import Optional, Sequence, Tuple, List
-import h5py
-import numpy as np
-from scipy.optimize import minimize
+from typing import Sequence, List
 
+import numpy as np
+import h5py
 import cirq
-from qiskit import QuantumCircuit, Aer
-from qiskit.opflow import PauliSumOp
-from qiskit.utils import QuantumInstance
 
 from .molecular_hamiltonian import MolecularHamiltonian
-from .ansatze import AnsatzFunction, build_ansatz_gs
 from .z2symmetries import transform_4q_pauli
 from ..utils import (
-    get_statevector,
     write_hdf5,
-    vqe_minimize,
     decompose_1q_gate,
     unitary_equal,
 )
 
 
 class GroundStateSolver:
-    """A class to solve the ground state energy and state."""
+    """Ground state solver."""
 
     def __init__(
         self,
         h: MolecularHamiltonian,
         qubits: Sequence[cirq.Qid],
-        # ansatz_func: AnsatzFunction = build_ansatz_gs,
-        # init_params: Sequence[float] = [1, 2, 3, 4],
-        method: str = "exact",
         h5fname: str = "lih",
     ) -> None:
         """Initializes a ``GroudStateSolver`` object.
         
         Args:
             h: The molecular Hamiltonian object.
-            ansatz_func: The ansatz function for VQE.
-            init_params: Initial guess parameters for VQE.
-            q_instance: The quantum instance for VQE.
+            qubits: The qubits on which the ground state is prepared.
             h5fname: The hdf5 file name.
-            dsetname: The dataset name in the hdf5 file.
         """
         self.h = h
         self.qubits = qubits
         self.h_op = transform_4q_pauli(self.h.qiskit_op, init_state=[1, 1])
-        # self.ansatz_func = ansatz_func
-        # self.init_params = init_params
-        self.method = method
         self.h5fname = h5fname + ".h5"
 
         self.energy = None
         self.ansatz = None
 
-    def run_exact(self) -> None:
-        """Calculates the exact ground state of the Hamiltonian using 
-        exact 2q gate decomposition."""
+    def _run_exact(self) -> None:
+        """Calculates the ground state using exact two-qubit gate decomposition."""
         # Solve for the eigenvalue and eigenvectors of the Hamiltonian. The energy is the smallest
         # eigenvalue. The ansatz is prepared by the unitary with the lowest eigenvector as the first
         # column and the rest filled in randomly. The matrix after going through a QR factorization
@@ -83,18 +66,15 @@ class GroundStateSolver:
             + operations_AB
             + operations_M_conjugate
         )
-        print("M conj T\n", cirq.unitary(cirq.Circuit(operations_M_conjugate)))
+        # print("M conj T\n", cirq.unitary(cirq.Circuit(operations_M_conjugate)))
         circuit = cirq.Circuit(all_operations)
 
         assert unitary_equal(cirq.unitary(circuit), U)
         self.ansatz = circuit
         print(f"Ground state energy is {self.energy:.3f} eV")
 
-    def run_vqe(self) -> None:
-        """Calculates the ground state of the Hamiltonian using VQE."""
-        raise NotImplementedError("VQE for ground state is not implemented.")
 
-    def save_data(self) -> None:
+    def _save_data(self) -> None:
         """Saves ground state energy and ground state ansatz to hdf5 file."""
         h5file = h5py.File(self.h5fname, "r+")
 
@@ -103,29 +83,27 @@ class GroundStateSolver:
 
         h5file.close()
 
-    def run(self, method: Optional[str] = None) -> None:
+    def run(self) -> None:
         """Runs the ground state calculation."""
-        if method is not None:
-            self.method = method
-        if self.method == "exact":
-            self.run_exact()
-        elif self.method == "vqe":
-            self.run_vqe()
-        self.save_data()
+        self._run_exact()
+        self._save_data()
 
 
 def get_AB_operations(
     U: np.ndarray, qubits: Sequence[cirq.Qid]
-) -> Tuple[List[cirq.Operation], List[cirq.Operation]]:
-    """Decomposes a two-qubit unitary into a tensor product of two unitaries.
+) -> List[cirq.Operation]:
+    """Returns the operations of :math:`A\otimes B` in :math:`O(4)` gate decomposition.
+
+    This function uses Theorem 2 of Vatan and Williams, Phys. Rev. A 69, 032315 (2004) to 
+    decomposes a two-qubit unitary in :math:`O(4)` into a tensor product of two single-qubit
+    unitaries. 
     
     Args:
         U: The unitary to be decomposed.
         qubits: The qubits on which the unitary acts on.
         
     Returns:
-        circuit_A: The circuit of the unitary acting on the first qubit.
-        circuit_B: The circuit of the unitary acting on the second qubit.
+        operations: The operations of :math:`A\otimes B` in the unitary decomposition.
     """
     assert U.shape == (4, 4)
     assert len(qubits) == 2
@@ -161,29 +139,49 @@ def get_AB_operations(
 def get_magic_basis_operations(
     qubits: Sequence[cirq.Qid], swapped: bool = False, conjugate: bool = False
 ) -> cirq.Circuit:
-    """Returns the circuit corresponding to the magic basis."""
+    """Returns the operations of the magic basis matrix.
+
+    The magic basis matrix decomposition is given in Fig. 1 of Vatan and Williams, 
+    Phys. Rev. A 69, 032315 (2004), which is
+
+    .. math::
+    
+        (H\otimes I) CZ (H\otimes H) (S\otimes S)
+    
+    Args:
+        qubits: The qubits on which the magic basis matrix acts.
+        swapped: Whether the two qubits are swapped.
+        conjugate: Whether to take the complex conjugate of the matrix.
+    
+    Returns:
+        operations: The operations of the magic basis matrix.
+    """
     operations = [
         cirq.rz(np.pi / 2)(qubits[0]),
         cirq.rz(np.pi / 2)(qubits[1]),
-        cirq.rz(np.pi / 2)(qubits[0]),
-        cirq.rx(np.pi / 2)(qubits[0]),
-        cirq.rz(np.pi / 2)(qubits[0]),
-        cirq.rz(np.pi / 2)(qubits[1]),
-        cirq.rx(np.pi / 2)(qubits[1]),
-        cirq.rz(np.pi / 2)(qubits[1]),
+        cirq.H(qubits[0]),
+        cirq.H(qubits[1]),
+        # cirq.rz(np.pi / 2)(qubits[0]),
+        # cirq.rx(np.pi / 2)(qubits[0]),
+        # cirq.rz(np.pi / 2)(qubits[0]),
+        # cirq.rz(np.pi / 2)(qubits[1]),
+        # cirq.rx(np.pi / 2)(qubits[1]),
+        # cirq.rz(np.pi / 2)(qubits[1]),
         cirq.CZ(qubits[0], qubits[1]),
     ]
     if not swapped:
         operations += [
-            cirq.rz(np.pi / 2)(qubits[0]),
-            cirq.rx(np.pi / 2)(qubits[0]),
-            cirq.rz(np.pi / 2)(qubits[0]),
+            # cirq.rz(np.pi / 2)(qubits[0]),
+            # cirq.rx(np.pi / 2)(qubits[0]),
+            # cirq.rz(np.pi / 2)(qubits[0]),
+            cirq.H(qubits[0])
         ]
     else:
         operations += [
-            cirq.rz(np.pi / 2)(qubits[1]),
-            cirq.rx(np.pi / 2)(qubits[1]),
-            cirq.rz(np.pi / 2)(qubits[1]),
+            # cirq.rz(np.pi / 2)(qubits[1]),
+            # cirq.rx(np.pi / 2)(qubits[1]),
+            # cirq.rz(np.pi / 2)(qubits[1]),
+            cirq.H(qubits[1])
         ]
 
     if conjugate:

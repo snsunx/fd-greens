@@ -15,11 +15,10 @@ import numpy as np
 from qiskit import QuantumCircuit
 from qiskit.utils import QuantumInstance
 
-from .params import singlet_inds
 from .molecular_hamiltonian import MolecularHamiltonian
 from .operators import ChargeOperators
-from .qubit_indices import QubitIndices
-from .circuit_constructor import CircuitConstructor, InstructionTuple
+from .qubit_indices import QubitIndices, singlet_inds
+from .circuit_constructor import CircuitConstructor
 # from .transpilation_backup import transpile_into_berkeley_gates
 from .z2symmetries import transform_4q_indices, transform_4q_pauli
 from ..utils import (

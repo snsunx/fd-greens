@@ -13,9 +13,8 @@ from qiskit.utils import QuantumInstance
 
 from .molecular_hamiltonian import MolecularHamiltonian
 from .z2symmetries import transform_4q_pauli, transform_4q_indices
-from .params import e_inds, h_inds
-from .ansatze import AnsatzFunction, build_ansatz_e, build_ansatz_h
-from ..utils import state_tomography, write_hdf5, vqe_minimize
+from .qubit_indices import e_inds, h_inds
+from ..utils import write_hdf5
 
 
 class EHStatesSolver:
@@ -24,27 +23,19 @@ class EHStatesSolver:
     def __init__(
         self,
         h: MolecularHamiltonian,
-        ansatz_func_e: AnsatzFunction = build_ansatz_e,
-        ansatz_func_h: AnsatzFunction = build_ansatz_h,
         q_instance: Optional[QuantumInstance] = None,
         spin: str = "d",
-        method: str = "exact",
         h5fname: str = "lih",
     ) -> None:
-        """Initializes an EHStatesSolver object.
+        """Initializes an ``EHStatesSolver`` object.
         
         Args:
             h: The molecular Hamiltonian.
-            ansatz_func_e: The ansatz function for (N+1)-electron states.
-            ansatz_func_h: The ansatz function for (N-1)-electron states.
             q_instance: The quantum instance for (N±1)-electron state calculation.
             spin: A character indicating whether up spins (``'u'``) or down spins (``'d'``) are included.
-            method: The method to calculate the (N+/-1)-electron states. Either exact
-                (``'exact'``) or VQE (``'vqe'``).
             h5fname: The HDF5 file name.
         """
         assert spin in ["u", "d"]
-        assert method in ["exact", "vqe"]
 
         self.h = h
         init_state = [1, 0] if spin == "d" else [0, 1]
@@ -56,13 +47,10 @@ class EHStatesSolver:
             "h": transform_4q_indices(h_inds[self.hspin]),
         }
 
-        self.ansatz_func_e = ansatz_func_e
-        self.ansatz_func_h = ansatz_func_h
         if q_instance is None:
             self.q_instance = QuantumInstance(Aer.get_backend("statevector_simulator"))
         else:
             self.q_instance = q_instance
-        self.method = method
         self.h5fname = h5fname + ".h5"
 
         self.energies_e = None
@@ -70,8 +58,8 @@ class EHStatesSolver:
         self.states_e = None
         self.states_h = None
 
-    def run_exact(self) -> None:
-        """Calculates the exact (N+/-1)-electron energies and states of the Hamiltonian."""
+    def _run_exact(self) -> None:
+        """Calculates the exact (N±1)-electron energies and states of the Hamiltonian."""
 
         def eigensolve(arr, inds):
             arr = arr[inds][:, inds]
@@ -86,38 +74,7 @@ class EHStatesSolver:
         print(f"(N+1)-electron energies are {self.energies_e} eV")
         print(f"(N-1)-electron energies are {self.energies_h} eV")
 
-    def run_vqe(self) -> None:
-        """Calculates the (N±1)-electron energies and states of the Hamiltonian using VQE."""
-        energy_min, circ_min = vqe_minimize(
-            self.h_op, self.ansatz_func_e, (0.0,), self.q_instance
-        )
-        minus_energy_max, circ_max = vqe_minimize(
-            -self.h_op, self.ansatz_func_e, (0.0,), self.q_instance
-        )
-        state_min = state_tomography(circ_min, q_instance=self.q_instance)
-        state_max = state_tomography(circ_max, q_instance=self.q_instance)
-        self.energies_e = np.array([energy_min, -minus_energy_max])
-        self.states_e = [self.inds["e"](state_min), self.inds["e"](state_max)]
-        # inds_e = self.inds['e'].int_form
-        # self.states_e = [state_min[[inds_e][:, inds_e]], state_max[[inds_e][:, inds_e]]]
-
-        energy_min, circ_min = vqe_minimize(
-            self.h_op, self.ansatz_func_h, (0.0,), self.q_instance
-        )
-        minus_energy_max, circ_max = vqe_minimize(
-            -self.h_op, self.ansatz_func_h, (0.0,), self.q_instance
-        )
-        state_min = state_tomography(circ_min, q_instance=self.q_instance)
-        state_max = state_tomography(circ_max, q_instance=self.q_instance)
-        self.energies_h = np.array([energy_min, -minus_energy_max])
-        self.states_h = [self.inds["h"](state_min), self.inds["h"](state_max)]
-        # inds_h = self.inds['h'].int_form
-        # self.states_h = [state_min[[inds_h][:, inds_h]], state_max[[inds_h][:, inds_h]]]
-
-        print(f"(N+1)-electron energies are {self.energies_e} eV")
-        print(f"(N-1)-electron energies are {self.energies_h} eV")
-
-    def save_data(self) -> None:
+    def _save_data(self) -> None:
         """Saves (N±1)-electron energies and states to HDF5 file."""
         h5file = h5py.File(self.h5fname, "r+")
 
@@ -128,18 +85,7 @@ class EHStatesSolver:
 
         h5file.close()
 
-    def run(self, method: Optional[str] = None) -> None:
-        """Runs the (N±1)-electron states calculation.
-        
-        Args:
-            The method to calculate the excited states. Either exact (``'exact'``) or VQE (``'vqe'``).
-        """
-        assert method in [None, "exact", "vqe"]
-
-        if method is not None:
-            self.method = method
-        if self.method == "exact":
-            self.run_exact()
-        elif self.method == "vqe":
-            self.run_vqe()
-        self.save_data()
+    def run(self) -> None:
+        """Runs the (N±1)-electron states calculation."""
+        self._run_exact()
+        self._save_data()

@@ -13,7 +13,7 @@ from qiskit import QuantumCircuit
 from qiskit.circuit import Gate, Qubit
 from qiskit.extensions import RXGate, RYGate, RZGate, CZGate, CPhaseGate
 
-from ..main.params import C0C0iXGate
+# from ..main.params import C0C0iXGate
 from .circuit_utils import create_circuit_from_inst_tups, remove_instructions_in_circuit
 from .general_utils import circuit_equal
 

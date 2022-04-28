@@ -16,10 +16,9 @@ from openfermion.transforms import jordan_wigner, get_fermion_operator
 from openfermion.linalg import get_sparse_operator
 from openfermionpyscf import run_pyscf
 
-from .params import HARTREE_TO_EV
-
 GeometryType = List[Tuple[str, Sequence[Union[int, float]]]]
 
+HARTREE_TO_EV = 27.211386245988
 
 class MolecularHamiltonian:
     """A class to store a molecular Hamiltonian."""
