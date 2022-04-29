@@ -199,7 +199,7 @@ class CircuitConstructor:
 
         # Wrap X(pi/2) gate in front and X(-pi/2) at the end when applying Pauli Y.
         for ind in rx_inds:
-            operations = [cirq.rx(np.pi / 2)(self.qubits[ind])] + operations
-            operations = operations + [cirq.rx(-np.pi / 2)(self.qubits[ind])]
+            operations = [cirq.XPowGate(exponent=0.5)(self.qubits[ind])] + operations
+            operations = operations + [cirq.XPowGate(exponent=-0.5)(self.qubits[ind])]
 
         return operations

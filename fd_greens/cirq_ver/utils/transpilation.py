@@ -8,12 +8,12 @@ from qiskit import QuantumCircuit
 from .general_utils import circuit_equal
 
 
-class C0iXC0Gate(cirq.Gate):
+class C0C0iXGate(cirq.ThreeQubitGate):
     """The Berkeley iToffoli gate."""
 
     def __init__(self):
-        super(C0iXC0Gate, self)
-        self._name = "C0iXC0"
+        super(C0C0iXGate, self)
+        self._name = "C0C0iX"
 
     def _num_qubits_(self) -> int:
         return 3
@@ -21,9 +21,9 @@ class C0iXC0Gate(cirq.Gate):
     def _unitary_(self) -> np.ndarray:
         return np.array(
             [
-                [0, 0, 1j, 0, 0, 0, 0, 0],
-                [0, 1, 0, 0, 0, 0, 0, 0],
+                [0, 1j, 0, 0, 0, 0, 0, 0],
                 [1j, 0, 0, 0, 0, 0, 0, 0],
+                [0, 0, 1, 0, 0, 0, 0, 0],
                 [0, 0, 0, 1, 0, 0, 0, 0],
                 [0, 0, 0, 0, 1, 0, 0, 0],
                 [0, 0, 0, 0, 0, 1, 0, 0],
@@ -36,10 +36,10 @@ class C0iXC0Gate(cirq.Gate):
         return self._name
 
     def _circuit_diagram_info_(self, args):
-        return "(0)", "iX", "(0)"
+        return "(0)", "(0)", "iX"
 
 
-C0iXC0 = C0iXC0Gate()
+C0C0iX = C0C0iXGate()
 
 
 def convert_ccz_to_c0ixc0(circuit: cirq.Circuit) -> cirq.Circuit:
@@ -62,7 +62,7 @@ def convert_ccz_to_c0ixc0(circuit: cirq.Circuit) -> cirq.Circuit:
                     cirq.X(qubits[0]),
                     cirq.H(qubits[1]),
                     cirq.X(qubits[2]),
-                    C0iXC0(qubits[0], qubits[1], qubits[2]),
+                    C0C0iX(qubits[0], qubits[2], qubits[1]),
                     cirq.X(qubits[0]),
                     cirq.H(qubits[1]),
                     cirq.X(qubits[2]),
@@ -121,6 +121,7 @@ def convert_swap_to_cz(circuit: QuantumCircuit) -> QuantumCircuit:
 
     assert circuit_equal(circuit, circuit_new)
     return circuit_new
+
 
 def optimize_circuit(circuit: cirq.Circuit) -> None:
     pass

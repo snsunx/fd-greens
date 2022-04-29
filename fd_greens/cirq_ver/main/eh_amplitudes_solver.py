@@ -19,6 +19,7 @@ from .molecular_hamiltonian import MolecularHamiltonian
 from .operators import SecondQuantizedOperators
 from .z2symmetries import transform_4q_pauli, transform_4q_indices
 from .circuit_constructor import CircuitConstructor
+
 # from .transpilation_backup import transpile_into_berkeley_gates
 from ..utils import (
     get_overlap,
@@ -28,8 +29,6 @@ from ..utils import (
     append_tomography_gates,
     append_measurement_gates,
     get_tomography_labels,
-    convert_circuit_to_string,
-    convert_string_to_circuit,
 )
 
 np.set_printoptions(precision=6)
@@ -186,7 +185,9 @@ class EHAmplitudesSolver:
                     # gates appended and store the QASM string in the HDF5 file.
                     tomo_circuit = append_tomography_gates(circuit, [1, 2], tomo_label)
                     tomo_circuit = append_measurement_gates(tomo_circuit)
-                    circuit_str = convert_circuit_to_string(tomo_circuit, self.circuit_str_type)
+                    circuit_str = convert_circuit_to_string(
+                        tomo_circuit, self.circuit_str_type
+                    )
                     write_hdf5(h5file, f"circ{m}{self.spin}", tomo_label, circuit)
 
         h5file.close()

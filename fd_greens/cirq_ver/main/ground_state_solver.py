@@ -12,21 +12,14 @@ import cirq
 
 from .molecular_hamiltonian import MolecularHamiltonian
 from .z2symmetries import transform_4q_pauli
-from ..utils import (
-    write_hdf5,
-    decompose_1q_gate,
-    unitary_equal,
-)
+from ..utils import write_hdf5, decompose_1q_gate, unitary_equal
 
 
 class GroundStateSolver:
     """Ground state solver."""
 
     def __init__(
-        self,
-        h: MolecularHamiltonian,
-        qubits: Sequence[cirq.Qid],
-        h5fname: str = "lih",
+        self, h: MolecularHamiltonian, qubits: Sequence[cirq.Qid], h5fname: str = "lih"
     ) -> None:
         """Initializes a ``GroudStateSolver`` object.
         
@@ -73,7 +66,6 @@ class GroundStateSolver:
         self.ansatz = circuit
         print(f"Ground state energy is {self.energy:.3f} eV")
 
-
     def _save_data(self) -> None:
         """Saves ground state energy and ground state ansatz to hdf5 file."""
         h5file = h5py.File(self.h5fname, "r+")
@@ -108,11 +100,13 @@ def get_AB_operations(
     assert U.shape == (4, 4)
     assert len(qubits) == 2
 
-    M = np.array([[1, 1j, 0, 0], [0, 0, 1j, 1], [0, 0, 1j, -1], [1, -1j, 0, 0]]) / np.sqrt(2)
+    M = np.array(
+        [[1, 1j, 0, 0], [0, 0, 1j, 1], [0, 0, 1j, -1], [1, -1j, 0, 0]]
+    ) / np.sqrt(2)
     IZ = np.kron(np.eye(2), cirq.unitary(cirq.Z))
     SWAP = cirq.unitary(cirq.SWAP)
     U1 = M @ U @ M.conj().T @ IZ @ SWAP
-    
+
     U_reshaped = np.array([])
 
     for i in range(2):

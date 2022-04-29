@@ -152,6 +152,7 @@ class QubitIndices:
         """Returns the str form of the qubit indices."""
         return self._str
 
+
 # Qubit indices for Green's functions
 eu_inds = QubitIndices(["1101", "0111"])
 ed_inds = QubitIndices(["1110", "1011"])

@@ -36,10 +36,7 @@ from qiskit.opflow import PauliSumOp
 from qiskit.result import Result, Counts
 from qiskit.quantum_info import OneQubitEulerDecomposer
 
-from .circuit_utils import (
-    remove_instructions,
-    create_circuit_from_inst_tups,
-)
+from .circuit_utils import remove_instructions, create_circuit_from_inst_tups
 
 QubitLike = Union[int, Qubit]
 ClbitLike = Union[int, Clbit]

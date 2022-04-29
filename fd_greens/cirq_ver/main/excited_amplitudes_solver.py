@@ -19,6 +19,7 @@ from .molecular_hamiltonian import MolecularHamiltonian
 from .operators import ChargeOperators
 from .qubit_indices import QubitIndices, singlet_inds
 from .circuit_constructor import CircuitConstructor
+
 # from .transpilation_backup import transpile_into_berkeley_gates
 from .z2symmetries import transform_4q_indices, transform_4q_pauli
 from ..utils import (
@@ -28,8 +29,6 @@ from ..utils import (
     basis_matrix,
     append_tomography_gates,
     append_measurement_gates,
-    convert_circuit_to_string,
-    convert_string_to_circuit,
 )
 
 

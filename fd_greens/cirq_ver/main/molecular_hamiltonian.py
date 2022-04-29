@@ -20,6 +20,7 @@ GeometryType = List[Tuple[str, Sequence[Union[int, float]]]]
 
 HARTREE_TO_EV = 27.211386245988
 
+
 class MolecularHamiltonian:
     """A class to store a molecular Hamiltonian."""
 
