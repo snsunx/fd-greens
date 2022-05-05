@@ -80,7 +80,7 @@ class CircuitStringConverter:
             angle = str(gate.exponent * 180.0)
             gstr = gname + angle
         elif isinstance(gate, cirq.CZPowGate):
-            if gate._exponent == 1.0:
+            if abs(gate._exponent) == 1.0:
                 gstr = "CZ"
             elif gate._exponent == 0.5:
                 gstr = "CS"

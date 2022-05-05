@@ -11,6 +11,8 @@ import h5py
 import cirq
 import json
 
+from fd_greens.cirq_ver.utils.transpilation import transpile_into_berkeley_gates
+
 from .molecular_hamiltonian import MolecularHamiltonian
 from .z2symmetries import transform_4q_pauli
 from ..utils import write_hdf5, decompose_1q_gate, unitary_equal, CircuitStringConverter
@@ -63,6 +65,7 @@ class GroundStateSolver:
         )
         # print("M conj T\n", cirq.unitary(cirq.Circuit(operations_M_conjugate)))
         circuit = cirq.Circuit(all_operations)
+        circuit = transpile_into_berkeley_gates(circuit)
 
         assert unitary_equal(cirq.unitary(circuit), U)
         self.ansatz = circuit
@@ -138,7 +141,7 @@ class GroundStateSolver:
         return operations
 
     def _save_data(self) -> None:
-        """Saves ground state energy and ground state ansatz to hdf5 file."""
+        """Saves ground state energy and ansatz to hdf5 file."""
         h5file = h5py.File(self.h5fname, "r+")
         qtrl_strings = self.circuit_string_converter.convert_circuit_to_strings(
             self.ansatz

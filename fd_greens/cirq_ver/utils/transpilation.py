@@ -157,5 +157,22 @@ def convert_phxz_to_xpi2(circuit: cirq.Circuit) -> cirq.Circuit:
     return circuit_new
 
 
-def optimize_circuit(circuit: cirq.Circuit) -> None:
-    pass
+def transpile_into_berkeley_gates(circuit: cirq.Circuit) -> cirq.Circuit:
+    """Transpiles a circuit into native gates on the Berkeley device.
+    
+    Args:
+        circuit: The circuit to be transpiled.
+    
+    Returns:
+        circuit_new: The new circuit after transpilation.
+    """
+    # Three-qubit transpilation
+    circuit_new = convert_ccz_to_c0ixc0(circuit)
+
+    # Two-qubit transpilation
+    circuit_new = convert_swap_to_cz(circuit_new)
+    
+    # Single-qubit transpilation
+    cirq.merge_single_qubit_gates_into_phxz(circuit_new)
+    circuit_new = convert_phxz_to_xpi2(circuit_new)
+    return circuit_new
