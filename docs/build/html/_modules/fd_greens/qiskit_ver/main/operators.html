@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>fd_greens.qiskit_ver.main.operators &mdash; fd-greens 0.0.1 documentation</title>
+      <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../../../" id="documentation_options" src="../../../../_static/documentation_options.js"></script>
+        <script src="../../../../_static/jquery.js"></script>
+        <script src="../../../../_static/underscore.js"></script>
+        <script src="../../../../_static/doctools.js"></script>
+    <script src="../../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../../../../index.html" class="icon icon-home"> fd-greens
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../modules.html">fd-greens</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../index.html">fd-greens</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="../../../index.html">Module code</a> &raquo;</li>
+      <li>fd_greens.qiskit_ver.main.operators</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for fd_greens.qiskit_ver.main.operators</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">===========================================</span>
+<span class="sd">Operators (:mod:`fd_greens.main.operators`)</span>
+<span class="sd">===========================================</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">Union</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">,</span> <span class="n">Optional</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">qiskit</span> <span class="kn">import</span> <span class="o">*</span>
+<span class="kn">from</span> <span class="nn">qiskit.quantum_info</span> <span class="kn">import</span> <span class="n">PauliTable</span><span class="p">,</span> <span class="n">SparsePauliOp</span>
+<span class="kn">from</span> <span class="nn">qiskit.opflow</span> <span class="kn">import</span> <span class="n">PauliSumOp</span>
+
+<span class="n">PauliOperator</span> <span class="o">=</span> <span class="n">Union</span><span class="p">[</span><span class="n">PauliSumOp</span><span class="p">,</span> <span class="n">SparsePauliOp</span><span class="p">]</span>
+
+
+<div class="viewcode-block" id="SecondQuantizedOperators"><a class="viewcode-back" href="../../../../fd_greens.qiskit_ver.main.operators.html#fd_greens.qiskit_ver.main.operators.SecondQuantizedOperators">[docs]</a><span class="k">class</span> <span class="nc">SecondQuantizedOperators</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;A class to store the X and Y parts of the creation and annihilation operators.&quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">n_qubits</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">factor</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Initializes a SecondQuantizedOperators object.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            n_qubits: The number of qubits in the creation and annihilation operators.</span>
+<span class="sd">            factor: A multiplication factor for simpler gate implementation.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">n_qubits</span> <span class="o">=</span> <span class="n">n_qubits</span>
+        <span class="n">labels</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;I&quot;</span> <span class="o">*</span> <span class="p">(</span><span class="n">n_qubits</span> <span class="o">-</span> <span class="n">i</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;X&quot;</span> <span class="o">+</span> <span class="s2">&quot;Z&quot;</span> <span class="o">*</span> <span class="n">i</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_qubits</span><span class="p">)]</span>
+        <span class="n">labels</span> <span class="o">+=</span> <span class="p">[</span><span class="s2">&quot;I&quot;</span> <span class="o">*</span> <span class="p">(</span><span class="n">n_qubits</span> <span class="o">-</span> <span class="n">i</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;Y&quot;</span> <span class="o">+</span> <span class="s2">&quot;Z&quot;</span> <span class="o">*</span> <span class="n">i</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_qubits</span><span class="p">)]</span>
+        <span class="n">pauli_table</span> <span class="o">=</span> <span class="n">PauliTable</span><span class="o">.</span><span class="n">from_labels</span><span class="p">(</span><span class="n">labels</span><span class="p">)</span>
+        <span class="n">coeffs</span> <span class="o">=</span> <span class="p">[</span><span class="mf">1.0</span><span class="p">]</span> <span class="o">*</span> <span class="n">n_qubits</span> <span class="o">+</span> <span class="p">[</span><span class="mi">1</span><span class="n">j</span><span class="p">]</span> <span class="o">*</span> <span class="n">n_qubits</span>
+        <span class="n">coeffs</span> <span class="o">=</span> <span class="n">factor</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">coeffs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sparse_pauli_op</span> <span class="o">=</span> <span class="n">SparsePauliOp</span><span class="p">(</span><span class="n">pauli_table</span><span class="p">,</span> <span class="n">coeffs</span><span class="o">=</span><span class="n">coeffs</span><span class="p">)</span>
+
+<div class="viewcode-block" id="SecondQuantizedOperators.transform"><a class="viewcode-back" href="../../../../fd_greens.qiskit_ver.main.operators.html#fd_greens.qiskit_ver.main.operators.SecondQuantizedOperators.transform">[docs]</a>    <span class="k">def</span> <span class="nf">transform</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">transform_func</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">PauliOperator</span><span class="p">],</span> <span class="n">PauliOperator</span><span class="p">]</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Transforms the set of second quantized operators by Z2 symmetries.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sparse_pauli_op</span> <span class="o">=</span> <span class="n">transform_func</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sparse_pauli_op</span><span class="p">)</span></div>
+        <span class="c1"># print(self.sparse_pauli_op.table.to_labels(), self.sparse_pauli_op.coeffs)</span>
+
+<div class="viewcode-block" id="SecondQuantizedOperators.get_pauli_dict"><a class="viewcode-back" href="../../../../fd_greens.qiskit_ver.main.operators.html#fd_greens.qiskit_ver.main.operators.SecondQuantizedOperators.get_pauli_dict">[docs]</a>    <span class="k">def</span> <span class="nf">get_pauli_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">SparsePauliOp</span><span class="p">,</span> <span class="n">SparsePauliOp</span><span class="p">]]:</span>
+        <span class="sd">&quot;&quot;&quot;Returns a dictionary of the second quantized operators.&quot;&quot;&quot;</span>
+        <span class="n">dic</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n_qubits</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">i</span> <span class="o">%</span> <span class="mi">2</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">dic</span><span class="p">[(</span><span class="n">i</span> <span class="o">//</span> <span class="mi">2</span><span class="p">,</span> <span class="s2">&quot;u&quot;</span><span class="p">)]</span> <span class="o">=</span> <span class="p">(</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">sparse_pauli_op</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">sparse_pauli_op</span><span class="p">[</span><span class="n">i</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_qubits</span><span class="p">]</span>
+                <span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">dic</span><span class="p">[(</span><span class="n">i</span> <span class="o">//</span> <span class="mi">2</span><span class="p">,</span> <span class="s2">&quot;d&quot;</span><span class="p">)]</span> <span class="o">=</span> <span class="p">(</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">sparse_pauli_op</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">sparse_pauli_op</span><span class="p">[</span><span class="n">i</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_qubits</span><span class="p">]</span>
+                <span class="p">)</span>
+        <span class="k">return</span> <span class="n">dic</span></div></div>
+
+
+<div class="viewcode-block" id="ChargeOperators"><a class="viewcode-back" href="../../../../fd_greens.qiskit_ver.main.operators.html#fd_greens.qiskit_ver.main.operators.ChargeOperators">[docs]</a><span class="k">class</span> <span class="nc">ChargeOperators</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;A class to store U01 and U10 for calculating charge-charge response functions.&quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">n_qubits</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Initializes a ChargeOperators object.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            The number of qubits in the charge operators.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">n_qubits</span> <span class="o">=</span> <span class="n">n_qubits</span>
+
+        <span class="n">labels</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;I&quot;</span> <span class="o">*</span> <span class="n">n_qubits</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_qubits</span><span class="p">)]</span>
+        <span class="n">labels</span> <span class="o">+=</span> <span class="p">[</span><span class="s2">&quot;I&quot;</span> <span class="o">*</span> <span class="p">(</span><span class="n">n_qubits</span> <span class="o">-</span> <span class="n">i</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;Z&quot;</span> <span class="o">+</span> <span class="s2">&quot;I&quot;</span> <span class="o">*</span> <span class="n">i</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_qubits</span><span class="p">)]</span>
+        <span class="n">pauli_table</span> <span class="o">=</span> <span class="n">PauliTable</span><span class="o">.</span><span class="n">from_labels</span><span class="p">(</span><span class="n">labels</span><span class="p">)</span>
+        <span class="n">coeffs</span> <span class="o">=</span> <span class="p">[</span><span class="mf">1.0</span><span class="p">]</span> <span class="o">*</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">n_qubits</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sparse_pauli_op</span> <span class="o">=</span> <span class="n">SparsePauliOp</span><span class="p">(</span><span class="n">pauli_table</span><span class="p">,</span> <span class="n">coeffs</span><span class="o">=</span><span class="n">coeffs</span><span class="p">)</span>
+
+<div class="viewcode-block" id="ChargeOperators.transform"><a class="viewcode-back" href="../../../../fd_greens.qiskit_ver.main.operators.html#fd_greens.qiskit_ver.main.operators.ChargeOperators.transform">[docs]</a>    <span class="k">def</span> <span class="nf">transform</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">transform_func</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">PauliOperator</span><span class="p">],</span> <span class="n">PauliOperator</span><span class="p">]</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Transforms the set of second quantized operators by Z2 symmetries.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sparse_pauli_op</span> <span class="o">=</span> <span class="n">transform_func</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sparse_pauli_op</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="ChargeOperators.get_pauli_dict"><a class="viewcode-back" href="../../../../fd_greens.qiskit_ver.main.operators.html#fd_greens.qiskit_ver.main.operators.ChargeOperators.get_pauli_dict">[docs]</a>    <span class="k">def</span> <span class="nf">get_pauli_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">SparsePauliOp</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;Returns a dictionary of the charge U operators.&quot;&quot;&quot;</span>
+        <span class="c1"># for i in range(self.n_qubits):</span>
+        <span class="c1">#     if i % 2 == 0:</span>
+        <span class="c1">#         dic[(i // 2, &#39;u&#39;)] = self.sparse_pauli_op[i]</span>
+        <span class="c1">#     else:</span>
+        <span class="c1">#         dic[(i // 2, &#39;d&#39;)] = self.sparse_pauli_op[i]</span>
+
+        <span class="n">dic</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n_qubits</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">i</span> <span class="o">%</span> <span class="mi">2</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">dic</span><span class="p">[(</span><span class="n">i</span> <span class="o">//</span> <span class="mi">2</span><span class="p">,</span> <span class="s2">&quot;u&quot;</span><span class="p">)]</span> <span class="o">=</span> <span class="p">(</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">sparse_pauli_op</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">sparse_pauli_op</span><span class="p">[</span><span class="n">i</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_qubits</span><span class="p">]</span>
+                <span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">dic</span><span class="p">[(</span><span class="n">i</span> <span class="o">//</span> <span class="mi">2</span><span class="p">,</span> <span class="s2">&quot;d&quot;</span><span class="p">)]</span> <span class="o">=</span> <span class="p">(</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">sparse_pauli_op</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">sparse_pauli_op</span><span class="p">[</span><span class="n">i</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_qubits</span><span class="p">]</span>
+                <span class="p">)</span>
+        <span class="k">return</span> <span class="n">dic</span></div></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Shi-Ning Sun.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

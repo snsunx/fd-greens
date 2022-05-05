@@ -5,5 +5,5 @@ from .circuit_utils import *
 from .helpers import *
 from .plot_utils import *
 from .process_utils import *
-from .interface_utils import *
-from .transpilation import C0C0iXGate, C0C0iX
+from .circuit_string_converter import *
+from .transpilation import *

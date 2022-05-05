@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>fd_greens.cirq_ver.main.ground_state_solver &mdash; fd-greens 0.0.1 documentation</title>
+      <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../../../" id="documentation_options" src="../../../../_static/documentation_options.js"></script>
+        <script src="../../../../_static/jquery.js"></script>
+        <script src="../../../../_static/underscore.js"></script>
+        <script src="../../../../_static/doctools.js"></script>
+    <script src="../../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../../../../index.html" class="icon icon-home"> fd-greens
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../modules.html">fd-greens</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../index.html">fd-greens</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="../../../index.html">Module code</a> &raquo;</li>
+      <li>fd_greens.cirq_ver.main.ground_state_solver</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for fd_greens.cirq_ver.main.ground_state_solver</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">===============================================================</span>
+<span class="sd">Ground State Solver (:mod:`fd_greens.main.ground_state_solver`)</span>
+<span class="sd">===============================================================</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Sequence</span><span class="p">,</span> <span class="n">List</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">h5py</span>
+<span class="kn">import</span> <span class="nn">cirq</span>
+<span class="kn">import</span> <span class="nn">json</span>
+
+<span class="kn">from</span> <span class="nn">.molecular_hamiltonian</span> <span class="kn">import</span> <span class="n">MolecularHamiltonian</span>
+<span class="kn">from</span> <span class="nn">.z2symmetries</span> <span class="kn">import</span> <span class="n">transform_4q_pauli</span>
+<span class="kn">from</span> <span class="nn">..utils</span> <span class="kn">import</span> <span class="n">write_hdf5</span><span class="p">,</span> <span class="n">decompose_1q_gate</span><span class="p">,</span> <span class="n">unitary_equal</span><span class="p">,</span> <span class="n">CircuitStringConverter</span>
+
+
+<div class="viewcode-block" id="GroundStateSolver"><a class="viewcode-back" href="../../../../fd_greens.cirq_ver.main.ground_state_solver.html#fd_greens.cirq_ver.main.ground_state_solver.GroundStateSolver">[docs]</a><span class="k">class</span> <span class="nc">GroundStateSolver</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Ground state solver.&quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">h</span><span class="p">:</span> <span class="n">MolecularHamiltonian</span><span class="p">,</span> <span class="n">qubits</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">cirq</span><span class="o">.</span><span class="n">Qid</span><span class="p">],</span> <span class="n">h5fname</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;lih&quot;</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Initializes a ``GroudStateSolver`` object.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            h: The molecular Hamiltonian object.</span>
+<span class="sd">            qubits: The qubits on which the ground state is prepared.</span>
+<span class="sd">            h5fname: The hdf5 file name.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">h</span> <span class="o">=</span> <span class="n">h</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">qubits</span> <span class="o">=</span> <span class="n">qubits</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">h_op</span> <span class="o">=</span> <span class="n">transform_4q_pauli</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">h</span><span class="o">.</span><span class="n">qiskit_op</span><span class="p">,</span> <span class="n">init_state</span><span class="o">=</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">h5fname</span> <span class="o">=</span> <span class="n">h5fname</span> <span class="o">+</span> <span class="s2">&quot;.h5&quot;</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">energy</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ansatz</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">circuit_string_converter</span> <span class="o">=</span> <span class="n">CircuitStringConverter</span><span class="p">(</span><span class="n">qubits</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_run_exact</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Calculates the ground state using exact two-qubit gate decomposition.&quot;&quot;&quot;</span>
+        <span class="c1"># Solve for the eigenvalue and eigenvectors of the Hamiltonian. The energy is the smallest</span>
+        <span class="c1"># eigenvalue. The ansatz is prepared by the unitary with the lowest eigenvector as the first</span>
+        <span class="c1"># column and the rest filled in randomly. The matrix after going through a QR factorization</span>
+        <span class="c1"># and a KAK decomposition is assigned as the ansatz.</span>
+        <span class="n">e</span><span class="p">,</span> <span class="n">v</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">eigh</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">h_op</span><span class="o">.</span><span class="n">to_matrix</span><span class="p">())</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">energy</span> <span class="o">=</span> <span class="n">e</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="c1"># v0 = [ 0.6877791696238387+0j, 0.07105690514886635+0j, 0.07105690514886635+0j, -0.7189309050895454+0j]</span>
+        <span class="n">v0</span> <span class="o">=</span> <span class="n">v</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">][</span><span class="nb">abs</span><span class="p">(</span><span class="n">v</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">])</span> <span class="o">&gt;</span> <span class="mf">1e-8</span><span class="p">]</span>
+        <span class="n">U</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">v0</span><span class="p">,</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">]])</span><span class="o">.</span><span class="n">T</span>
+        <span class="n">U</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">qr</span><span class="p">(</span><span class="n">U</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+
+        <span class="n">operations_AB</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_AB_operations</span><span class="p">(</span><span class="n">U</span><span class="p">)</span>
+        <span class="n">operations_M_swapped</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_magic_basis_operations</span><span class="p">(</span><span class="n">swapped</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">operations_M_conjugate</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_magic_basis_operations</span><span class="p">(</span><span class="n">conjugate</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+        <span class="n">all_operations</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">operations_M_swapped</span>
+            <span class="o">+</span> <span class="p">[</span><span class="n">cirq</span><span class="o">.</span><span class="n">rz</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">)(</span><span class="bp">self</span><span class="o">.</span><span class="n">qubits</span><span class="p">[</span><span class="mi">0</span><span class="p">])]</span>
+            <span class="o">+</span> <span class="n">operations_AB</span>
+            <span class="o">+</span> <span class="n">operations_M_conjugate</span>
+        <span class="p">)</span>
+        <span class="c1"># print(&quot;M conj T\n&quot;, cirq.unitary(cirq.Circuit(operations_M_conjugate)))</span>
+        <span class="n">circuit</span> <span class="o">=</span> <span class="n">cirq</span><span class="o">.</span><span class="n">Circuit</span><span class="p">(</span><span class="n">all_operations</span><span class="p">)</span>
+
+        <span class="k">assert</span> <span class="n">unitary_equal</span><span class="p">(</span><span class="n">cirq</span><span class="o">.</span><span class="n">unitary</span><span class="p">(</span><span class="n">circuit</span><span class="p">),</span> <span class="n">U</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ansatz</span> <span class="o">=</span> <span class="n">circuit</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Ground state energy is </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">energy</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2"> eV&quot;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_get_AB_operations</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">U</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">cirq</span><span class="o">.</span><span class="n">Operation</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;Returns the operations of :math:`A\otimes B` in :math:`O(4)` gate decomposition.</span>
+
+<span class="sd">        This function uses Theorem 2 of Vatan and Williams, Phys. Rev. A 69, 032315 (2004) to </span>
+<span class="sd">        decomposes a two-qubit unitary in :math:`O(4)` into a tensor product of two single-qubit</span>
+<span class="sd">        unitaries. </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">assert</span> <span class="n">U</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="mi">4</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">qubits</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span>
+
+        <span class="n">M</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span>
+            <span class="p">[[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="n">j</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="n">j</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="n">j</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="n">j</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">]]</span>
+        <span class="p">)</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+        <span class="n">IZ</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">kron</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="mi">2</span><span class="p">),</span> <span class="n">cirq</span><span class="o">.</span><span class="n">unitary</span><span class="p">(</span><span class="n">cirq</span><span class="o">.</span><span class="n">Z</span><span class="p">))</span>
+        <span class="n">SWAP</span> <span class="o">=</span> <span class="n">cirq</span><span class="o">.</span><span class="n">unitary</span><span class="p">(</span><span class="n">cirq</span><span class="o">.</span><span class="n">SWAP</span><span class="p">)</span>
+        <span class="n">U1</span> <span class="o">=</span> <span class="n">M</span> <span class="o">@</span> <span class="n">U</span> <span class="o">@</span> <span class="n">M</span><span class="o">.</span><span class="n">conj</span><span class="p">()</span><span class="o">.</span><span class="n">T</span> <span class="o">@</span> <span class="n">IZ</span> <span class="o">@</span> <span class="n">SWAP</span>
+
+        <span class="n">U_reshaped</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([])</span>
+
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">2</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">2</span><span class="p">):</span>
+                <span class="n">U_sub</span> <span class="o">=</span> <span class="n">U1</span><span class="p">[</span><span class="mi">2</span> <span class="o">*</span> <span class="n">i</span> <span class="p">:</span> <span class="mi">2</span> <span class="o">*</span> <span class="p">(</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)][:,</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">j</span> <span class="p">:</span> <span class="mi">2</span> <span class="o">*</span> <span class="p">(</span><span class="n">j</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)]</span>
+                <span class="n">U_sub_flat</span> <span class="o">=</span> <span class="n">U_sub</span><span class="o">.</span><span class="n">flatten</span><span class="p">()</span>
+                <span class="n">U_reshaped</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">hstack</span><span class="p">((</span><span class="n">U_reshaped</span><span class="p">,</span> <span class="n">U_sub_flat</span><span class="p">))</span>
+
+        <span class="n">U_reshaped</span> <span class="o">=</span> <span class="n">U_reshaped</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="mi">4</span><span class="p">)</span>
+        <span class="n">u</span><span class="p">,</span> <span class="n">s</span><span class="p">,</span> <span class="n">vd</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">svd</span><span class="p">(</span><span class="n">U_reshaped</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">s</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="n">np</span><span class="o">.</span><span class="n">count_nonzero</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">s</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mf">1e-8</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span>
+
+        <span class="n">A</span> <span class="o">=</span> <span class="n">u</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">s</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="n">B</span> <span class="o">=</span> <span class="n">vd</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">s</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="k">assert</span> <span class="n">unitary_equal</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">kron</span><span class="p">(</span><span class="n">A</span><span class="p">,</span> <span class="n">B</span><span class="p">),</span> <span class="n">U1</span><span class="p">)</span>
+
+        <span class="n">operations_A</span> <span class="o">=</span> <span class="n">decompose_1q_gate</span><span class="p">(</span><span class="n">A</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">qubits</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="n">operations_B</span> <span class="o">=</span> <span class="n">decompose_1q_gate</span><span class="p">(</span><span class="n">B</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">qubits</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+        <span class="n">operations</span> <span class="o">=</span> <span class="n">operations_A</span> <span class="o">+</span> <span class="n">operations_B</span>
+        <span class="k">return</span> <span class="n">operations</span>
+
+    <span class="k">def</span> <span class="nf">_get_magic_basis_operations</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">swapped</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">conjugate</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">cirq</span><span class="o">.</span><span class="n">Circuit</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Returns the operations of the magic basis matrix.</span>
+
+<span class="sd">        The magic basis matrix decomposition is given in Fig. 1 of Vatan and Williams, </span>
+<span class="sd">        Phys. Rev. A 69, 032315 (2004), which is</span>
+
+<span class="sd">        .. math::</span>
+<span class="sd">        </span>
+<span class="sd">            (H\otimes I) CZ (H\otimes H) (S\otimes S)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">operations</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="n">cirq</span><span class="o">.</span><span class="n">S</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">qubits</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span>
+            <span class="n">cirq</span><span class="o">.</span><span class="n">S</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">qubits</span><span class="p">[</span><span class="mi">1</span><span class="p">]),</span>
+            <span class="n">cirq</span><span class="o">.</span><span class="n">H</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">qubits</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span>
+            <span class="n">cirq</span><span class="o">.</span><span class="n">H</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">qubits</span><span class="p">[</span><span class="mi">1</span><span class="p">]),</span>
+            <span class="n">cirq</span><span class="o">.</span><span class="n">CZ</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">qubits</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">qubits</span><span class="p">[</span><span class="mi">1</span><span class="p">]),</span>
+        <span class="p">]</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">swapped</span><span class="p">:</span>
+            <span class="n">operations</span> <span class="o">+=</span> <span class="p">[</span><span class="n">cirq</span><span class="o">.</span><span class="n">H</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">qubits</span><span class="p">[</span><span class="mi">0</span><span class="p">])]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">operations</span> <span class="o">+=</span> <span class="p">[</span><span class="n">cirq</span><span class="o">.</span><span class="n">H</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">qubits</span><span class="p">[</span><span class="mi">1</span><span class="p">])]</span>
+
+        <span class="k">if</span> <span class="n">conjugate</span><span class="p">:</span>
+            <span class="n">operations</span> <span class="o">=</span> <span class="p">[</span><span class="n">cirq</span><span class="o">.</span><span class="n">inverse</span><span class="p">(</span><span class="n">op</span><span class="p">)</span> <span class="k">for</span> <span class="n">op</span> <span class="ow">in</span> <span class="n">operations</span><span class="p">[::</span><span class="o">-</span><span class="mi">1</span><span class="p">]]</span>
+
+        <span class="k">return</span> <span class="n">operations</span>
+
+    <span class="k">def</span> <span class="nf">_save_data</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Saves ground state energy and ground state ansatz to hdf5 file.&quot;&quot;&quot;</span>
+        <span class="n">h5file</span> <span class="o">=</span> <span class="n">h5py</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">h5fname</span><span class="p">,</span> <span class="s2">&quot;r+&quot;</span><span class="p">)</span>
+        <span class="n">qtrl_strings</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">circuit_string_converter</span><span class="o">.</span><span class="n">convert_circuit_to_strings</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ansatz</span><span class="p">)</span>
+
+        <span class="n">write_hdf5</span><span class="p">(</span><span class="n">h5file</span><span class="p">,</span> <span class="s2">&quot;gs&quot;</span><span class="p">,</span> <span class="s2">&quot;energy&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">energy</span><span class="p">)</span>
+        <span class="n">write_hdf5</span><span class="p">(</span><span class="n">h5file</span><span class="p">,</span> <span class="s2">&quot;gs&quot;</span><span class="p">,</span> <span class="s2">&quot;ansatz&quot;</span><span class="p">,</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">qtrl_strings</span><span class="p">))</span>
+
+        <span class="n">h5file</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+
+<div class="viewcode-block" id="GroundStateSolver.run"><a class="viewcode-back" href="../../../../fd_greens.cirq_ver.main.ground_state_solver.html#fd_greens.cirq_ver.main.ground_state_solver.GroundStateSolver.run">[docs]</a>    <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Runs the ground-state calculation with exact two-qubit gate decomposition.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_run_exact</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_save_data</span><span class="p">()</span></div></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Shi-Ning Sun.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

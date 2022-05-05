@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>fd_greens.qiskit_ver.utils.general_utils &mdash; fd-greens 0.0.1 documentation</title>
+      <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../../../" id="documentation_options" src="../../../../_static/documentation_options.js"></script>
+        <script src="../../../../_static/jquery.js"></script>
+        <script src="../../../../_static/underscore.js"></script>
+        <script src="../../../../_static/doctools.js"></script>
+    <script src="../../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../../../../index.html" class="icon icon-home"> fd-greens
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../modules.html">fd-greens</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../index.html">fd-greens</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="../../../index.html">Module code</a> &raquo;</li>
+      <li>fd_greens.qiskit_ver.utils.general_utils</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for fd_greens.qiskit_ver.utils.general_utils</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">========================================================</span>
+<span class="sd">General Utilities (:mod:`fd_greens.utils.general_utils`)</span>
+<span class="sd">========================================================</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">h5py</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">Optional</span><span class="p">,</span>
+    <span class="n">Union</span><span class="p">,</span>
+    <span class="n">Iterable</span><span class="p">,</span>
+    <span class="n">List</span><span class="p">,</span>
+    <span class="n">Tuple</span><span class="p">,</span>
+    <span class="n">Sequence</span><span class="p">,</span>
+    <span class="n">Mapping</span><span class="p">,</span>
+    <span class="n">Any</span><span class="p">,</span>
+    <span class="n">Callable</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span> <span class="nn">itertools</span> <span class="kn">import</span> <span class="n">product</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+
+<span class="kn">from</span> <span class="nn">qiskit</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">QuantumCircuit</span><span class="p">,</span>
+    <span class="n">QuantumRegister</span><span class="p">,</span>
+    <span class="n">ClassicalRegister</span><span class="p">,</span>
+    <span class="n">Aer</span><span class="p">,</span>
+    <span class="n">execute</span><span class="p">,</span>
+    <span class="n">IBMQ</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span> <span class="nn">qiskit.utils</span> <span class="kn">import</span> <span class="n">QuantumInstance</span>
+<span class="kn">from</span> <span class="nn">qiskit.circuit</span> <span class="kn">import</span> <span class="n">Instruction</span><span class="p">,</span> <span class="n">Qubit</span><span class="p">,</span> <span class="n">Clbit</span>
+<span class="kn">from</span> <span class="nn">qiskit.opflow</span> <span class="kn">import</span> <span class="n">PauliSumOp</span>
+<span class="kn">from</span> <span class="nn">qiskit.result</span> <span class="kn">import</span> <span class="n">Result</span><span class="p">,</span> <span class="n">Counts</span>
+<span class="kn">import</span> <span class="nn">scipy</span>
+
+<span class="kn">from</span> <span class="nn">.circuit_utils</span> <span class="kn">import</span> <span class="n">remove_instructions</span><span class="p">,</span> <span class="n">create_circuit_from_inst_tups</span>
+
+<span class="n">QubitLike</span> <span class="o">=</span> <span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">Qubit</span><span class="p">]</span>
+<span class="n">ClbitLike</span> <span class="o">=</span> <span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">Clbit</span><span class="p">]</span>
+<span class="n">InstructionTuple</span> <span class="o">=</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">Instruction</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="n">QubitLike</span><span class="p">],</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="n">ClbitLike</span><span class="p">]]]</span>
+<span class="n">QuantumCircuitLike</span> <span class="o">=</span> <span class="n">Union</span><span class="p">[</span><span class="n">QuantumCircuit</span><span class="p">,</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">InstructionTuple</span><span class="p">]]</span>
+<span class="n">AnsatzFunction</span> <span class="o">=</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">float</span><span class="p">]],</span> <span class="n">QuantumCircuit</span><span class="p">]</span>
+
+
+<div class="viewcode-block" id="get_tomography_labels"><a class="viewcode-back" href="../../../../fd_greens.qiskit_ver.utils.general_utils.html#fd_greens.qiskit_ver.utils.general_utils.get_tomography_labels">[docs]</a><span class="k">def</span> <span class="nf">get_tomography_labels</span><span class="p">(</span><span class="n">n_qubits</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+    <span class="sd">&quot;&quot;&quot;Returns the tomography labels on a certain number of qubits.&quot;&quot;&quot;</span>
+    <span class="n">tomo_labels</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">product</span><span class="p">(</span><span class="s2">&quot;xyz&quot;</span><span class="p">,</span> <span class="n">repeat</span><span class="o">=</span><span class="n">n_qubits</span><span class="p">)]</span>
+    <span class="k">return</span> <span class="n">tomo_labels</span></div>
+
+
+<div class="viewcode-block" id="get_statevector"><a class="viewcode-back" href="../../../../fd_greens.qiskit_ver.utils.general_utils.html#fd_greens.qiskit_ver.utils.general_utils.get_statevector">[docs]</a><span class="k">def</span> <span class="nf">get_statevector</span><span class="p">(</span><span class="n">circ_like</span><span class="p">:</span> <span class="n">QuantumCircuitLike</span><span class="p">,</span> <span class="n">reverse</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Returns the statevector of a circuit.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        circ_like: The circuit or instruction tuples on which the state is to be obtained.</span>
+<span class="sd">        reverse: Whether qubit order is reversed.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        statevector: The statevector array of the circuit.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">circ_like</span><span class="p">,</span> <span class="n">QuantumCircuit</span><span class="p">):</span>
+        <span class="n">circ</span> <span class="o">=</span> <span class="n">circ_like</span>
+    <span class="k">else</span><span class="p">:</span>  <span class="c1"># instruction tuples</span>
+        <span class="n">circ</span> <span class="o">=</span> <span class="n">create_circuit_from_inst_tups</span><span class="p">(</span><span class="n">circ_like</span><span class="p">)</span>
+
+    <span class="n">backend</span> <span class="o">=</span> <span class="n">Aer</span><span class="o">.</span><span class="n">get_backend</span><span class="p">(</span><span class="s2">&quot;statevector_simulator&quot;</span><span class="p">)</span>
+    <span class="n">job</span> <span class="o">=</span> <span class="n">execute</span><span class="p">(</span><span class="n">circ</span><span class="p">,</span> <span class="n">backend</span><span class="p">)</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="n">job</span><span class="o">.</span><span class="n">result</span><span class="p">()</span>
+    <span class="n">statevector</span> <span class="o">=</span> <span class="n">result</span><span class="o">.</span><span class="n">get_statevector</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">reverse</span><span class="p">:</span>
+        <span class="n">statevector</span> <span class="o">=</span> <span class="n">reverse_qubit_order</span><span class="p">(</span><span class="n">statevector</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">statevector</span></div>
+
+
+<div class="viewcode-block" id="get_unitary"><a class="viewcode-back" href="../../../../fd_greens.qiskit_ver.utils.general_utils.html#fd_greens.qiskit_ver.utils.general_utils.get_unitary">[docs]</a><span class="k">def</span> <span class="nf">get_unitary</span><span class="p">(</span><span class="n">circ_like</span><span class="p">:</span> <span class="n">QuantumCircuitLike</span><span class="p">,</span> <span class="n">reverse</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Returns the unitary of a circuit.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        circ_like: The circuit or instruction tuples on which the unitary is to be obtained.</span>
+<span class="sd">        reverse: Whether qubit order is reversed.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        unitary: The unitary array of the circuit.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">circ_like</span> <span class="o">=</span> <span class="n">remove_instructions</span><span class="p">(</span><span class="n">circ_like</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;barrier&quot;</span><span class="p">,</span> <span class="s2">&quot;measure&quot;</span><span class="p">])</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">circ_like</span><span class="p">,</span> <span class="n">QuantumCircuit</span><span class="p">):</span>
+        <span class="n">circ</span> <span class="o">=</span> <span class="n">circ_like</span>
+    <span class="k">else</span><span class="p">:</span>  <span class="c1"># instruction tuples</span>
+        <span class="n">circ</span> <span class="o">=</span> <span class="n">create_circuit_from_inst_tups</span><span class="p">(</span><span class="n">circ_like</span><span class="p">)</span>
+
+    <span class="n">backend</span> <span class="o">=</span> <span class="n">Aer</span><span class="o">.</span><span class="n">get_backend</span><span class="p">(</span><span class="s2">&quot;unitary_simulator&quot;</span><span class="p">)</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="n">execute</span><span class="p">(</span><span class="n">circ</span><span class="p">,</span> <span class="n">backend</span><span class="p">)</span><span class="o">.</span><span class="n">result</span><span class="p">()</span>
+    <span class="n">unitary</span> <span class="o">=</span> <span class="n">result</span><span class="o">.</span><span class="n">get_unitary</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">reverse</span><span class="p">:</span>
+        <span class="n">unitary</span> <span class="o">=</span> <span class="n">reverse_qubit_order</span><span class="p">(</span><span class="n">unitary</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">unitary</span></div>
+
+
+<div class="viewcode-block" id="get_overlap"><a class="viewcode-back" href="../../../../fd_greens.qiskit_ver.utils.general_utils.html#fd_greens.qiskit_ver.utils.general_utils.get_overlap">[docs]</a><span class="k">def</span> <span class="nf">get_overlap</span><span class="p">(</span><span class="n">state1</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">state2</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Returns the overlap of two states in either statevector or density matrix form.</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        state1: A 1D or 2D numpy array corresponding to the first state.</span>
+<span class="sd">        state2: A 1D or 2D numpy array corresponding to the second state.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        overlap: The overlap between the two states.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># If both state1 and state2 are statevectors, return |&lt;state1|state2&gt;|^2.</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">state1</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">state2</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="n">overlap</span> <span class="o">=</span> <span class="nb">abs</span><span class="p">(</span><span class="n">state1</span><span class="o">.</span><span class="n">conj</span><span class="p">()</span> <span class="o">@</span> <span class="n">state2</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span>
+    <span class="c1"># If state1 is a statevector and state2 is a density matrix,</span>
+    <span class="c1"># return Re(&lt;state1|state2|state1&gt;).</span>
+    <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">state1</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">state2</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+        <span class="n">overlap</span> <span class="o">=</span> <span class="p">(</span><span class="n">state1</span><span class="o">.</span><span class="n">conj</span><span class="p">()</span> <span class="o">@</span> <span class="n">state2</span> <span class="o">@</span> <span class="n">state1</span><span class="p">)</span><span class="o">.</span><span class="n">real</span>
+    <span class="c1"># If state1 is a density matrix and state2 is a statevector,</span>
+    <span class="c1"># return Re(&lt;state2|state1|state2&gt;).</span>
+    <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">state1</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">state2</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="n">overlap</span> <span class="o">=</span> <span class="p">(</span><span class="n">state2</span><span class="o">.</span><span class="n">conj</span><span class="p">()</span> <span class="o">@</span> <span class="n">state1</span> <span class="o">@</span> <span class="n">state2</span><span class="p">)</span><span class="o">.</span><span class="n">real</span>
+    <span class="c1"># If both state1 and state2 are density matries, return Re(&lt;state1|state2&gt;).</span>
+    <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">state1</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">state2</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+        <span class="n">overlap</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">trace</span><span class="p">(</span><span class="n">state1</span><span class="o">.</span><span class="n">conj</span><span class="p">()</span><span class="o">.</span><span class="n">T</span> <span class="o">@</span> <span class="n">state2</span><span class="p">)</span><span class="o">.</span><span class="n">real</span>
+    <span class="k">return</span> <span class="n">overlap</span></div>
+
+
+<div class="viewcode-block" id="reverse_qubit_order"><a class="viewcode-back" href="../../../../fd_greens.qiskit_ver.utils.general_utils.html#fd_greens.qiskit_ver.utils.general_utils.reverse_qubit_order">[docs]</a><span class="k">def</span> <span class="nf">reverse_qubit_order</span><span class="p">(</span><span class="n">arr</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Reverses qubit order in a 1D or 2D array.</span>
+
+<span class="sd">    This is because Qiskit uses big endian order and </span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        arr: The 1D or 2D array on which the qubit order is to be reversed.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">       arr: The 1D or 2D array after qubit order is reversed.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">arr</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="c1"># Extract the dimension and number of qubits.</span>
+        <span class="n">dim</span> <span class="o">=</span> <span class="n">arr</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">n_qubits</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">log2</span><span class="p">(</span><span class="n">dim</span><span class="p">))</span>
+
+        <span class="c1"># Reshape to a length 2^N array, transpose the indices and then reshape back.</span>
+        <span class="n">arr</span> <span class="o">=</span> <span class="n">arr</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">*</span><span class="p">([</span><span class="mi">2</span><span class="p">]</span> <span class="o">*</span> <span class="n">n_qubits</span><span class="p">))</span>
+        <span class="n">arr</span> <span class="o">=</span> <span class="n">arr</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="o">*</span><span class="nb">range</span><span class="p">(</span><span class="n">n_qubits</span><span class="p">)[::</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+        <span class="n">arr</span> <span class="o">=</span> <span class="n">arr</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">dim</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">arr</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+        <span class="c1"># Extract the dimension and number of qubits.</span>
+        <span class="k">assert</span> <span class="n">arr</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="n">arr</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">dim</span> <span class="o">=</span> <span class="n">arr</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">n_qubits</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">log2</span><span class="p">(</span><span class="n">dim</span><span class="p">))</span>
+
+        <span class="c1"># Reshape to a dim 2^N by 2^N array, transpose the indices and then reshape back.</span>
+        <span class="kn">from</span> <span class="nn">itertools</span> <span class="kn">import</span> <span class="n">chain</span>
+
+        <span class="n">arr</span> <span class="o">=</span> <span class="n">arr</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">*</span><span class="p">([</span><span class="mi">2</span><span class="p">]</span> <span class="o">*</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">n_qubits</span><span class="p">))</span>
+        <span class="n">arr</span> <span class="o">=</span> <span class="n">arr</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span>
+            <span class="o">*</span><span class="n">chain</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="n">n_qubits</span><span class="p">)[::</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_qubits</span><span class="p">,</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">n_qubits</span><span class="p">)[::</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+        <span class="p">)</span>
+        <span class="n">arr</span> <span class="o">=</span> <span class="n">arr</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">dim</span><span class="p">,</span> <span class="n">dim</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span>
+            <span class="s2">&quot;Reversing qubit order of array with more&quot;</span>
+            <span class="s2">&quot;than two dimensions is not implemented.&quot;</span>
+        <span class="p">)</span>
+    <span class="k">return</span> <span class="n">arr</span></div>
+
+
+<div class="viewcode-block" id="counts_dict_to_arr"><a class="viewcode-back" href="../../../../fd_greens.qiskit_ver.utils.general_utils.html#fd_greens.qiskit_ver.utils.general_utils.counts_dict_to_arr">[docs]</a><span class="k">def</span> <span class="nf">counts_dict_to_arr</span><span class="p">(</span>
+    <span class="n">counts</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">Counts</span><span class="p">,</span> <span class="nb">dict</span><span class="p">],</span> <span class="n">n_qubits</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Converts bitstring counts from qiskit.result.Counts form to np.ndarray form.</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        counts: Bitstring counts either in Counts form or in dict form.</span>
+<span class="sd">        n_qubits: The number of qubits. If not passed in, will be extracted </span>
+<span class="sd">            from the bitstring counts.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        arr: A numpy array corresponding to the bitstring counts.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Convert counts from Counts form to dict form and extract the number of qubits.</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">counts</span><span class="p">,</span> <span class="n">Counts</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">n_qubits</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">n_qubits</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">counts</span><span class="o">.</span><span class="n">keys</span><span class="p">())[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="n">counts</span> <span class="o">=</span> <span class="n">counts</span><span class="o">.</span><span class="n">int_raw</span>
+    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">counts</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">n_qubits</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="kn">from</span> <span class="nn">math</span> <span class="kn">import</span> <span class="n">ceil</span>
+
+            <span class="n">n_qubits</span> <span class="o">=</span> <span class="n">ceil</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">log2</span><span class="p">(</span><span class="nb">max</span><span class="p">(</span><span class="n">counts</span><span class="o">.</span><span class="n">keys</span><span class="p">())))</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;counts must be of type Counts or dict.&quot;</span><span class="p">)</span>
+
+    <span class="n">arr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="mi">2</span> <span class="o">**</span> <span class="n">n_qubits</span><span class="p">,))</span>
+    <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">val</span> <span class="ow">in</span> <span class="n">counts</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="n">arr</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">val</span>
+    <span class="k">return</span> <span class="n">arr</span></div>
+
+
+<div class="viewcode-block" id="circuit_equal"><a class="viewcode-back" href="../../../../fd_greens.qiskit_ver.utils.general_utils.html#fd_greens.qiskit_ver.utils.general_utils.circuit_equal">[docs]</a><span class="k">def</span> <span class="nf">circuit_equal</span><span class="p">(</span>
+    <span class="n">circ1</span><span class="p">:</span> <span class="n">QuantumCircuitLike</span><span class="p">,</span> <span class="n">circ2</span><span class="p">:</span> <span class="n">QuantumCircuitLike</span><span class="p">,</span> <span class="n">init_state_0</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Checks if two circuits are equivalent.</span>
+
+<span class="sd">    The two circuits are equivalent either when the unitaries are equal up to a phase or </span>
+<span class="sd">    when the statevectors with initial state all 0 are equal up to a phase.</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        circ1: The first cicuit.</span>
+<span class="sd">        circ2: The second circuit.</span>
+<span class="sd">        init_state_0: Whether to assume the initial state is the all 0 state. Default to True.</span>
+<span class="sd">        </span>
+<span class="sd">    Returns:</span>
+<span class="sd">        is_equal: Whether the two circuits are equivalent.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># If the circuits are in instruction tuple form.</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">circ1</span><span class="p">,</span> <span class="n">QuantumCircuit</span><span class="p">):</span>
+        <span class="n">circ1</span> <span class="o">=</span> <span class="n">create_circuit_from_inst_tups</span><span class="p">(</span><span class="n">circ1</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">circ2</span><span class="p">,</span> <span class="n">QuantumCircuit</span><span class="p">):</span>
+        <span class="n">circ2</span> <span class="o">=</span> <span class="n">create_circuit_from_inst_tups</span><span class="p">(</span><span class="n">circ2</span><span class="p">)</span>
+    <span class="n">uni1</span> <span class="o">=</span> <span class="n">get_unitary</span><span class="p">(</span><span class="n">circ1</span><span class="p">)</span>
+    <span class="n">uni2</span> <span class="o">=</span> <span class="n">get_unitary</span><span class="p">(</span><span class="n">circ2</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="n">uni1</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="n">uni2</span><span class="o">.</span><span class="n">shape</span>
+    <span class="c1"># print(&#39;uni1\n&#39;, uni1)</span>
+    <span class="c1"># print(&#39;uni2\n&#39;, uni2)</span>
+    <span class="n">is_equal</span> <span class="o">=</span> <span class="n">unitary_equal</span><span class="p">(</span><span class="n">uni1</span><span class="p">,</span> <span class="n">uni2</span><span class="p">,</span> <span class="n">init_state_0</span><span class="o">=</span><span class="n">init_state_0</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">is_equal</span></div>
+
+
+<div class="viewcode-block" id="unitary_equal"><a class="viewcode-back" href="../../../../fd_greens.qiskit_ver.utils.general_utils.html#fd_greens.qiskit_ver.utils.general_utils.unitary_equal">[docs]</a><span class="k">def</span> <span class="nf">unitary_equal</span><span class="p">(</span>
+    <span class="n">uni1</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">uni2</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">init_state_0</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Checks if two unitaries are equal up to a phase factor.</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        uni1: The first unitary.</span>
+<span class="sd">        uni2: The second unitary.</span>
+<span class="sd">        init_state_0: If set to True, only consider equality on the first column </span>
+<span class="sd">            corresponding to the all 0 state.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        is_equal: Whether the two unitaries are equal up to a phase.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">init_state_0</span><span class="p">:</span>
+        <span class="n">vec1</span> <span class="o">=</span> <span class="n">uni1</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span>
+        <span class="n">vec2</span> <span class="o">=</span> <span class="n">uni2</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span>
+        <span class="n">ind</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">vec1</span><span class="p">))</span>
+        <span class="k">if</span> <span class="nb">abs</span><span class="p">(</span><span class="n">vec2</span><span class="p">[</span><span class="n">ind</span><span class="p">])</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">False</span>
+        <span class="n">phase1</span> <span class="o">=</span> <span class="n">vec1</span><span class="p">[</span><span class="n">ind</span><span class="p">]</span> <span class="o">/</span> <span class="nb">abs</span><span class="p">(</span><span class="n">vec1</span><span class="p">[</span><span class="n">ind</span><span class="p">])</span>
+        <span class="n">phase2</span> <span class="o">=</span> <span class="n">vec2</span><span class="p">[</span><span class="n">ind</span><span class="p">]</span> <span class="o">/</span> <span class="nb">abs</span><span class="p">(</span><span class="n">vec2</span><span class="p">[</span><span class="n">ind</span><span class="p">])</span>
+        <span class="n">vec1</span> <span class="o">/=</span> <span class="n">phase1</span>
+        <span class="n">vec2</span> <span class="o">/=</span> <span class="n">phase2</span>
+        <span class="n">is_equal</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">allclose</span><span class="p">(</span><span class="n">vec1</span><span class="p">,</span> <span class="n">vec2</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">ind</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">uni1</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span>
+        <span class="k">if</span> <span class="nb">abs</span><span class="p">(</span><span class="n">uni2</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="n">ind</span><span class="p">])</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">False</span>
+        <span class="n">phase1</span> <span class="o">=</span> <span class="n">uni1</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="n">ind</span><span class="p">]</span> <span class="o">/</span> <span class="nb">abs</span><span class="p">(</span><span class="n">uni1</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="n">ind</span><span class="p">])</span>
+        <span class="n">phase2</span> <span class="o">=</span> <span class="n">uni2</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="n">ind</span><span class="p">]</span> <span class="o">/</span> <span class="nb">abs</span><span class="p">(</span><span class="n">uni2</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="n">ind</span><span class="p">])</span>
+        <span class="n">uni1</span> <span class="o">/=</span> <span class="n">phase1</span>
+        <span class="n">uni2</span> <span class="o">/=</span> <span class="n">phase2</span>
+        <span class="n">is_equal</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">allclose</span><span class="p">(</span><span class="n">uni1</span><span class="p">,</span> <span class="n">uni2</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">is_equal</span></div>
+
+
+<div class="viewcode-block" id="get_itoffoli_matrix"><a class="viewcode-back" href="../../../../fd_greens.qiskit_ver.utils.general_utils.html#fd_greens.qiskit_ver.utils.general_utils.get_itoffoli_matrix">[docs]</a><span class="k">def</span> <span class="nf">get_itoffoli_matrix</span><span class="p">(</span><span class="n">reverse</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Returns the iToffoli gate matrix.</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        reverse: Whether the gate is in reverse qubit order. Default to True.</span>
+<span class="sd">    </span>
+<span class="sd">    Returns:</span>
+<span class="sd">        mat: The iToffoli gate matrix.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">mat</span> <span class="o">=</span> <span class="n">scipy</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">block_diag</span><span class="p">([[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="n">j</span><span class="p">],</span> <span class="p">[</span><span class="mi">1</span><span class="n">j</span><span class="p">,</span> <span class="mi">0</span><span class="p">]],</span> <span class="n">np</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="mi">6</span><span class="p">))</span>
+    <span class="k">if</span> <span class="n">reverse</span><span class="p">:</span>
+        <span class="n">mat</span> <span class="o">=</span> <span class="n">reverse_qubit_order</span><span class="p">(</span><span class="n">mat</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">mat</span></div>
+
+
+<div class="viewcode-block" id="get_ccz_matrix"><a class="viewcode-back" href="../../../../fd_greens.qiskit_ver.utils.general_utils.html#fd_greens.qiskit_ver.utils.general_utils.get_ccz_matrix">[docs]</a><span class="k">def</span> <span class="nf">get_ccz_matrix</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Returns the CCZ gate matrix.</span>
+<span class="sd">    </span>
+<span class="sd">    Returns:</span>
+<span class="sd">        mat: The CCZ gate matrix.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">mat</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">diag</span><span class="p">([</span><span class="mi">1</span><span class="p">]</span> <span class="o">*</span> <span class="mi">7</span> <span class="o">+</span> <span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+    <span class="k">return</span> <span class="n">mat</span></div>
+
+
+<div class="viewcode-block" id="vqe_minimize"><a class="viewcode-back" href="../../../../fd_greens.qiskit_ver.utils.general_utils.html#fd_greens.qiskit_ver.utils.general_utils.vqe_minimize">[docs]</a><span class="k">def</span> <span class="nf">vqe_minimize</span><span class="p">(</span>
+    <span class="n">h_op</span><span class="p">:</span> <span class="n">PauliSumOp</span><span class="p">,</span>
+    <span class="n">ansatz_func</span><span class="p">:</span> <span class="n">AnsatzFunction</span><span class="p">,</span>
+    <span class="n">init_params</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">float</span><span class="p">],</span>
+    <span class="n">q_instance</span><span class="p">:</span> <span class="n">QuantumInstance</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="n">QuantumCircuit</span><span class="p">]:</span>
+    <span class="sd">&quot;&quot;&quot;Minimizes the energy of a Hamiltonian using VQE.</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        h_op: The Hamiltonian operator.</span>
+<span class="sd">        ansatz_func: The ansatz function for VQE.</span>
+<span class="sd">        init_params: Initial guess parameters.</span>
+<span class="sd">        q_instance: The quantum instance for executing the circuits.</span>
+<span class="sd">    </span>
+<span class="sd">    Returns:</span>
+<span class="sd">        energy: The VQE ground state energy.</span>
+<span class="sd">        ansatz: The VQE ground state ansatz.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">obj_func_sv</span><span class="p">(</span><span class="n">params</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;VQE objective function for statevector simulator.&quot;&quot;&quot;</span>
+        <span class="n">ansatz</span> <span class="o">=</span> <span class="n">ansatz_func</span><span class="p">(</span><span class="n">params</span><span class="p">)</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="n">q_instance</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">ansatz</span><span class="p">)</span>
+        <span class="n">psi</span> <span class="o">=</span> <span class="n">result</span><span class="o">.</span><span class="n">get_statevector</span><span class="p">()</span>
+        <span class="n">energy</span> <span class="o">=</span> <span class="n">psi</span><span class="o">.</span><span class="n">conj</span><span class="p">()</span><span class="o">.</span><span class="n">T</span> <span class="o">@</span> <span class="n">h_op</span><span class="o">.</span><span class="n">to_matrix</span><span class="p">()</span> <span class="o">@</span> <span class="n">psi</span>
+        <span class="k">return</span> <span class="n">energy</span><span class="o">.</span><span class="n">real</span>
+
+    <span class="k">def</span> <span class="nf">obj_func_qasm</span><span class="p">(</span><span class="n">params</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;VQE objective function for QASM simulator and hardware.&quot;&quot;&quot;</span>
+        <span class="c1"># This function assumes the Hamiltonian only has the terms</span>
+        <span class="c1"># II, IZ, ZI, ZZ, IX, ZX, XI, XZ, YY.</span>
+        <span class="n">shots</span> <span class="o">=</span> <span class="n">q_instance</span><span class="o">.</span><span class="n">run_config</span><span class="o">.</span><span class="n">shots</span>
+
+        <span class="n">label_coeff_list</span> <span class="o">=</span> <span class="n">h_op</span><span class="o">.</span><span class="n">primitive</span><span class="o">.</span><span class="n">to_list</span><span class="p">()</span>
+        <span class="n">label_coeff_dict</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">label_coeff_list</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;II&quot;</span><span class="p">,</span> <span class="s2">&quot;IZ&quot;</span><span class="p">,</span> <span class="s2">&quot;ZI&quot;</span><span class="p">,</span> <span class="s2">&quot;ZZ&quot;</span><span class="p">,</span> <span class="s2">&quot;IX&quot;</span><span class="p">,</span> <span class="s2">&quot;ZX&quot;</span><span class="p">,</span> <span class="s2">&quot;XI&quot;</span><span class="p">,</span> <span class="s2">&quot;XZ&quot;</span><span class="p">,</span> <span class="s2">&quot;YY&quot;</span><span class="p">]:</span>
+            <span class="k">if</span> <span class="n">key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">label_coeff_dict</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+                <span class="n">label_coeff_dict</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.0</span>
+
+        <span class="n">energy</span> <span class="o">=</span> <span class="n">label_coeff_dict</span><span class="p">[</span><span class="s2">&quot;II&quot;</span><span class="p">]</span>
+
+        <span class="c1"># Measure in ZZ basis</span>
+        <span class="n">ansatz</span> <span class="o">=</span> <span class="n">ansatz_func</span><span class="p">(</span><span class="n">params</span><span class="p">)</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="n">ansatz</span><span class="o">.</span><span class="n">measure_all</span><span class="p">()</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="n">q_instance</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">ansatz</span><span class="p">)</span>
+        <span class="n">counts</span> <span class="o">=</span> <span class="n">result</span><span class="o">.</span><span class="n">get_counts</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;00&quot;</span><span class="p">,</span> <span class="s2">&quot;01&quot;</span><span class="p">,</span> <span class="s2">&quot;10&quot;</span><span class="p">,</span> <span class="s2">&quot;11&quot;</span><span class="p">]:</span>
+            <span class="k">if</span> <span class="n">key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">counts</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+                <span class="n">counts</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">energy</span> <span class="o">+=</span> <span class="p">(</span>
+            <span class="n">label_coeff_dict</span><span class="p">[</span><span class="s2">&quot;IZ&quot;</span><span class="p">]</span>
+            <span class="o">*</span> <span class="p">(</span><span class="n">counts</span><span class="p">[</span><span class="s2">&quot;00&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="n">counts</span><span class="p">[</span><span class="s2">&quot;10&quot;</span><span class="p">]</span> <span class="o">-</span> <span class="n">counts</span><span class="p">[</span><span class="s2">&quot;01&quot;</span><span class="p">]</span> <span class="o">-</span> <span class="n">counts</span><span class="p">[</span><span class="s2">&quot;11&quot;</span><span class="p">])</span>
+            <span class="o">/</span> <span class="n">shots</span>
+        <span class="p">)</span>
+        <span class="n">energy</span> <span class="o">+=</span> <span class="p">(</span>
+            <span class="n">label_coeff_dict</span><span class="p">[</span><span class="s2">&quot;ZI&quot;</span><span class="p">]</span>
+            <span class="o">*</span> <span class="p">(</span><span class="n">counts</span><span class="p">[</span><span class="s2">&quot;00&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="n">counts</span><span class="p">[</span><span class="s2">&quot;01&quot;</span><span class="p">]</span> <span class="o">-</span> <span class="n">counts</span><span class="p">[</span><span class="s2">&quot;10&quot;</span><span class="p">]</span> <span class="o">-</span> <span class="n">counts</span><span class="p">[</span><span class="s2">&quot;11&quot;</span><span class="p">])</span>
+            <span class="o">/</span> <span class="n">shots</span>
+        <span class="p">)</span>
+        <span class="n">energy</span> <span class="o">+=</span> <span class="p">(</span>
+            <span class="n">label_coeff_dict</span><span class="p">[</span><span class="s2">&quot;ZZ&quot;</span><span class="p">]</span>
+            <span class="o">*</span> <span class="p">(</span><span class="n">counts</span><span class="p">[</span><span class="s2">&quot;00&quot;</span><span class="p">]</span> <span class="o">-</span> <span class="n">counts</span><span class="p">[</span><span class="s2">&quot;01&quot;</span><span class="p">]</span> <span class="o">-</span> <span class="n">counts</span><span class="p">[</span><span class="s2">&quot;10&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="n">counts</span><span class="p">[</span><span class="s2">&quot;11&quot;</span><span class="p">])</span>
+            <span class="o">/</span> <span class="n">shots</span>
+        <span class="p">)</span>
+
+        <span class="c1"># Measure in ZX basis</span>
+        <span class="n">ansatz</span> <span class="o">=</span> <span class="n">ansatz_func</span><span class="p">(</span><span class="n">params</span><span class="p">)</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="n">ansatz</span><span class="o">.</span><span class="n">h</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+        <span class="n">ansatz</span><span class="o">.</span><span class="n">measure_all</span><span class="p">()</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="n">q_instance</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">ansatz</span><span class="p">)</span>
+        <span class="n">counts</span> <span class="o">=</span> <span class="n">result</span><span class="o">.</span><span class="n">get_counts</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;00&quot;</span><span class="p">,</span> <span class="s2">&quot;01&quot;</span><span class="p">,</span> <span class="s2">&quot;10&quot;</span><span class="p">,</span> <span class="s2">&quot;11&quot;</span><span class="p">]:</span>
+            <span class="k">if</span> <span class="n">key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">counts</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+                <span class="n">counts</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">energy</span> <span class="o">+=</span> <span class="p">(</span>
+            <span class="n">label_coeff_dict</span><span class="p">[</span><span class="s2">&quot;IX&quot;</span><span class="p">]</span>
+            <span class="o">*</span> <span class="p">(</span><span class="n">counts</span><span class="p">[</span><span class="s2">&quot;00&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="n">counts</span><span class="p">[</span><span class="s2">&quot;10&quot;</span><span class="p">]</span> <span class="o">-</span> <span class="n">counts</span><span class="p">[</span><span class="s2">&quot;01&quot;</span><span class="p">]</span> <span class="o">-</span> <span class="n">counts</span><span class="p">[</span><span class="s2">&quot;11&quot;</span><span class="p">])</span>
+            <span class="o">/</span> <span class="n">shots</span>
+        <span class="p">)</span>
+        <span class="n">energy</span> <span class="o">+=</span> <span class="p">(</span>
+            <span class="n">label_coeff_dict</span><span class="p">[</span><span class="s2">&quot;ZX&quot;</span><span class="p">]</span>
+            <span class="o">*</span> <span class="p">(</span><span class="n">counts</span><span class="p">[</span><span class="s2">&quot;00&quot;</span><span class="p">]</span> <span class="o">-</span> <span class="n">counts</span><span class="p">[</span><span class="s2">&quot;01&quot;</span><span class="p">]</span> <span class="o">-</span> <span class="n">counts</span><span class="p">[</span><span class="s2">&quot;10&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="n">counts</span><span class="p">[</span><span class="s2">&quot;11&quot;</span><span class="p">])</span>
+            <span class="o">/</span> <span class="n">shots</span>
+        <span class="p">)</span>
+
+        <span class="c1"># Measure in XZ basis</span>
+        <span class="n">ansatz</span> <span class="o">=</span> <span class="n">ansatz_func</span><span class="p">(</span><span class="n">params</span><span class="p">)</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="n">ansatz</span><span class="o">.</span><span class="n">h</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">ansatz</span><span class="o">.</span><span class="n">measure_all</span><span class="p">()</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="n">q_instance</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">ansatz</span><span class="p">)</span>
+        <span class="n">counts</span> <span class="o">=</span> <span class="n">result</span><span class="o">.</span><span class="n">get_counts</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;00&quot;</span><span class="p">,</span> <span class="s2">&quot;01&quot;</span><span class="p">,</span> <span class="s2">&quot;10&quot;</span><span class="p">,</span> <span class="s2">&quot;11&quot;</span><span class="p">]:</span>
+            <span class="k">if</span> <span class="n">key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">counts</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+                <span class="n">counts</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">energy</span> <span class="o">+=</span> <span class="p">(</span>
+            <span class="n">label_coeff_dict</span><span class="p">[</span><span class="s2">&quot;XI&quot;</span><span class="p">]</span>
+            <span class="o">*</span> <span class="p">(</span><span class="n">counts</span><span class="p">[</span><span class="s2">&quot;00&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="n">counts</span><span class="p">[</span><span class="s2">&quot;01&quot;</span><span class="p">]</span> <span class="o">-</span> <span class="n">counts</span><span class="p">[</span><span class="s2">&quot;10&quot;</span><span class="p">]</span> <span class="o">-</span> <span class="n">counts</span><span class="p">[</span><span class="s2">&quot;11&quot;</span><span class="p">])</span>
+            <span class="o">/</span> <span class="n">shots</span>
+        <span class="p">)</span>
+        <span class="n">energy</span> <span class="o">+=</span> <span class="p">(</span>
+            <span class="n">label_coeff_dict</span><span class="p">[</span><span class="s2">&quot;XZ&quot;</span><span class="p">]</span>
+            <span class="o">*</span> <span class="p">(</span><span class="n">counts</span><span class="p">[</span><span class="s2">&quot;00&quot;</span><span class="p">]</span> <span class="o">-</span> <span class="n">counts</span><span class="p">[</span><span class="s2">&quot;01&quot;</span><span class="p">]</span> <span class="o">-</span> <span class="n">counts</span><span class="p">[</span><span class="s2">&quot;10&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="n">counts</span><span class="p">[</span><span class="s2">&quot;11&quot;</span><span class="p">])</span>
+            <span class="o">/</span> <span class="n">shots</span>
+        <span class="p">)</span>
+
+        <span class="c1"># Measure in YY basis</span>
+        <span class="n">ansatz</span> <span class="o">=</span> <span class="n">ansatz_func</span><span class="p">(</span><span class="n">params</span><span class="p">)</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="n">ansatz</span><span class="o">.</span><span class="n">rx</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">/</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+        <span class="n">ansatz</span><span class="o">.</span><span class="n">rx</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">/</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="n">ansatz</span><span class="o">.</span><span class="n">measure_all</span><span class="p">()</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="n">q_instance</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">ansatz</span><span class="p">)</span>
+        <span class="n">counts</span> <span class="o">=</span> <span class="n">result</span><span class="o">.</span><span class="n">get_counts</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;00&quot;</span><span class="p">,</span> <span class="s2">&quot;01&quot;</span><span class="p">,</span> <span class="s2">&quot;10&quot;</span><span class="p">,</span> <span class="s2">&quot;11&quot;</span><span class="p">]:</span>
+            <span class="k">if</span> <span class="n">key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">counts</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+                <span class="n">counts</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">energy</span> <span class="o">+=</span> <span class="p">(</span>
+            <span class="n">label_coeff_dict</span><span class="p">[</span><span class="s2">&quot;YY&quot;</span><span class="p">]</span>
+            <span class="o">*</span> <span class="p">(</span><span class="n">counts</span><span class="p">[</span><span class="s2">&quot;00&quot;</span><span class="p">]</span> <span class="o">-</span> <span class="n">counts</span><span class="p">[</span><span class="s2">&quot;01&quot;</span><span class="p">]</span> <span class="o">-</span> <span class="n">counts</span><span class="p">[</span><span class="s2">&quot;10&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="n">counts</span><span class="p">[</span><span class="s2">&quot;11&quot;</span><span class="p">])</span>
+            <span class="o">/</span> <span class="n">shots</span>
+        <span class="p">)</span>
+
+        <span class="n">energy</span> <span class="o">=</span> <span class="n">energy</span><span class="o">.</span><span class="n">real</span>
+        <span class="k">return</span> <span class="n">energy</span>
+
+    <span class="k">if</span> <span class="n">q_instance</span><span class="o">.</span><span class="n">backend</span><span class="o">.</span><span class="n">name</span><span class="p">()</span> <span class="o">==</span> <span class="s2">&quot;statevector_simulator&quot;</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;STATEVECTOR&quot;</span><span class="p">)</span>
+        <span class="n">obj_func</span> <span class="o">=</span> <span class="n">obj_func_sv</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">obj_func</span> <span class="o">=</span> <span class="n">obj_func_qasm</span>
+    <span class="n">res</span> <span class="o">=</span> <span class="n">minimize</span><span class="p">(</span><span class="n">obj_func</span><span class="p">,</span> <span class="n">x0</span><span class="o">=</span><span class="n">init_params</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s2">&quot;L-BFGS-B&quot;</span><span class="p">)</span>
+    <span class="n">energy</span> <span class="o">=</span> <span class="n">res</span><span class="o">.</span><span class="n">fun</span>
+    <span class="n">ansatz</span> <span class="o">=</span> <span class="n">ansatz_func</span><span class="p">(</span><span class="n">res</span><span class="o">.</span><span class="n">x</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;-&quot;</span> <span class="o">*</span> <span class="mi">80</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;in vqe_minimize&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;energy =&quot;</span><span class="p">,</span> <span class="n">energy</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;ansatz =&quot;</span><span class="p">,</span> <span class="n">ansatz</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">inst</span><span class="p">,</span> <span class="n">qargs</span><span class="p">,</span> <span class="n">cargs</span> <span class="ow">in</span> <span class="n">ansatz</span><span class="o">.</span><span class="n">data</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">inst</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">inst</span><span class="o">.</span><span class="n">params</span><span class="p">,</span> <span class="n">qargs</span><span class="p">)</span>
+    <span class="k">with</span> <span class="n">np</span><span class="o">.</span><span class="n">printoptions</span><span class="p">(</span><span class="n">precision</span><span class="o">=</span><span class="mi">15</span><span class="p">):</span>
+        <span class="n">psi</span> <span class="o">=</span> <span class="n">get_statevector</span><span class="p">(</span><span class="n">ansatz</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">psi</span><span class="p">)</span>
+
+    <span class="n">h</span> <span class="o">=</span> <span class="n">get_lih_hamiltonian</span><span class="p">(</span><span class="mf">5.0</span><span class="p">)</span>
+    <span class="n">h_arr</span> <span class="o">=</span> <span class="n">transform_4q_pauli</span><span class="p">(</span><span class="n">h</span><span class="o">.</span><span class="n">qiskit_op</span><span class="p">,</span> <span class="n">init_state</span><span class="o">=</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">])</span><span class="o">.</span><span class="n">to_matrix</span><span class="p">()</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">psi</span><span class="o">.</span><span class="n">conj</span><span class="p">()</span><span class="o">.</span><span class="n">T</span> <span class="o">@</span> <span class="n">h_arr</span> <span class="o">@</span> <span class="n">psi</span><span class="p">)</span>
+
+    <span class="n">e</span><span class="p">,</span> <span class="n">v</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">eigh</span><span class="p">(</span><span class="n">h_arr</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">e</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">v</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">])</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;-&quot;</span> <span class="o">*</span> <span class="mi">80</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">energy</span><span class="p">,</span> <span class="n">ansatz</span></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Shi-Ning Sun.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

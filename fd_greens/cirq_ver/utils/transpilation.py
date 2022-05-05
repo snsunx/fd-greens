@@ -1,9 +1,11 @@
-from typing import Optional
+"""
+=============================================================
+Transpilation (:mod:`fd_greens.cirq_ver.utils.transpilation`)
+=============================================================
+"""
 
 import numpy as np
-
 import cirq
-from qiskit import QuantumCircuit
 
 from .general_utils import circuit_equal
 
@@ -43,7 +45,7 @@ C0C0iX = C0C0iXGate()
 
 
 def convert_ccz_to_c0ixc0(circuit: cirq.Circuit) -> cirq.Circuit:
-    """Converts CCZ to C0iXC0 on a Cirq circuit.
+    """Converts CCZ to C0iXC0 in a Cirq circuit.
     
     Args:
         circuit: The circuit to be converted.
@@ -89,8 +91,8 @@ def convert_ccz_to_c0ixc0(circuit: cirq.Circuit) -> cirq.Circuit:
     return circuit_new
 
 
-def convert_swap_to_cz(circuit: QuantumCircuit) -> QuantumCircuit:
-    """Converts SWAP to CZ on a Cirq circuit.
+def convert_swap_to_cz(circuit: cirq.Circuit) -> cirq.Circuit:
+    """Converts SWAP to CZ in a Cirq circuit.
     
     Args:
         circuit: The circuit to be converted.
@@ -118,6 +120,38 @@ def convert_swap_to_cz(circuit: QuantumCircuit) -> QuantumCircuit:
         else:
             circuit_new.insert(0, op)
             convert_swap = True
+
+    assert circuit_equal(circuit, circuit_new)
+    return circuit_new
+
+
+def convert_phxz_to_xpi2(circuit: cirq.Circuit) -> cirq.Circuit:
+    """Converts PhasedXZGate to X(pi/2) and virtual Z gates.
+    
+    Args:
+        circuit: The circuit to be converted.
+        
+    Returns:
+        circuit_new: The circuit after conversion.
+    """
+    circuit_new = cirq.Circuit()
+    for op in list(circuit.all_operations()):
+        if isinstance(op.gate, cirq.PhasedXZGate):
+            a = op.gate.axis_phase_exponent
+            x = op.gate.x_exponent
+            z = op.gate.z_exponent
+            q = op.qubits[0]
+            circuit_new.append(
+                [
+                    cirq.ZPowGate(exponent=-a - 0.5)(q),
+                    cirq.XPowGate(exponent=0.5)(q),
+                    cirq.ZPowGate(exponent=1.0 - x)(q),
+                    cirq.XPowGate(exponent=0.5)(q),
+                    cirq.ZPowGate(exponent=a + z - 0.5)(q),
+                ],
+            )
+        else:
+            circuit_new.append(op)
 
     assert circuit_equal(circuit, circuit_new)
     return circuit_new

@@ -12,5 +12,5 @@ Subpackages
 .. toctree::
    :maxdepth: 4
 
-   fd_greens.main
-   fd_greens.utils
+   fd_greens.cirq_ver
+   fd_greens.qiskit_ver

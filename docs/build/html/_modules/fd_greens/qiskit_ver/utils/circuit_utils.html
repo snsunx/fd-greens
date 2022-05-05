@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>fd_greens.qiskit_ver.utils.circuit_utils &mdash; fd-greens 0.0.1 documentation</title>
+      <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../../../" id="documentation_options" src="../../../../_static/documentation_options.js"></script>
+        <script src="../../../../_static/jquery.js"></script>
+        <script src="../../../../_static/underscore.js"></script>
+        <script src="../../../../_static/doctools.js"></script>
+    <script src="../../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../../../../index.html" class="icon icon-home"> fd-greens
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../modules.html">fd-greens</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../index.html">fd-greens</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="../../../index.html">Module code</a> &raquo;</li>
+      <li>fd_greens.qiskit_ver.utils.circuit_utils</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for fd_greens.qiskit_ver.utils.circuit_utils</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">========================================================</span>
+<span class="sd">Circuit Utilities (:mod:`fd_greens.utils.circuit_utils`)</span>
+<span class="sd">========================================================</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">Iterable</span><span class="p">,</span> <span class="n">Union</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Sequence</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">h5py</span>
+
+<span class="kn">from</span> <span class="nn">qiskit</span> <span class="kn">import</span> <span class="n">QuantumCircuit</span><span class="p">,</span> <span class="n">QuantumRegister</span><span class="p">,</span> <span class="n">ClassicalRegister</span>
+<span class="kn">from</span> <span class="nn">qiskit.utils</span> <span class="kn">import</span> <span class="n">QuantumInstance</span>
+<span class="kn">from</span> <span class="nn">qiskit.circuit</span> <span class="kn">import</span> <span class="n">Instruction</span><span class="p">,</span> <span class="n">Qubit</span><span class="p">,</span> <span class="n">Clbit</span>
+<span class="kn">from</span> <span class="nn">qiskit.opflow</span> <span class="kn">import</span> <span class="n">PauliSumOp</span>
+
+
+<span class="n">QubitLike</span> <span class="o">=</span> <span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">Qubit</span><span class="p">]</span>
+<span class="n">ClbitLike</span> <span class="o">=</span> <span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">Clbit</span><span class="p">]</span>
+<span class="n">InstructionTuple</span> <span class="o">=</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">Instruction</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="n">QubitLike</span><span class="p">],</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="n">ClbitLike</span><span class="p">]]]</span>
+<span class="n">QuantumCircuitLike</span> <span class="o">=</span> <span class="n">Union</span><span class="p">[</span><span class="n">QuantumCircuit</span><span class="p">,</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">InstructionTuple</span><span class="p">]]</span>
+
+
+<div class="viewcode-block" id="remove_instructions_in_circuit"><a class="viewcode-back" href="../../../../fd_greens.qiskit_ver.utils.circuit_utils.html#fd_greens.qiskit_ver.utils.circuit_utils.remove_instructions_in_circuit">[docs]</a><span class="k">def</span> <span class="nf">remove_instructions_in_circuit</span><span class="p">(</span>
+    <span class="n">circ_like</span><span class="p">:</span> <span class="n">QuantumCircuitLike</span><span class="p">,</span> <span class="n">instructions</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">QuantumCircuitLike</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Removes certain instructions in a circuit.</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        circ_like: The circuit or instruction tuples on which certain instructions are removed.</span>
+<span class="sd">        instructions: An iterable of strings representing instruction names.</span>
+<span class="sd">        </span>
+<span class="sd">    Returns:</span>
+<span class="sd">        circ_new:  new circuit on which certain instructions are removed.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">circ_like</span><span class="p">,</span> <span class="n">QuantumCircuit</span><span class="p">):</span>
+        <span class="n">inst_tups</span> <span class="o">=</span> <span class="n">circ_like</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">inst_tups</span> <span class="o">=</span> <span class="n">circ_like</span>
+    <span class="n">qreg</span><span class="p">,</span> <span class="n">creg</span> <span class="o">=</span> <span class="n">get_registers_in_inst_tups</span><span class="p">(</span><span class="n">inst_tups</span><span class="p">)</span>
+    <span class="c1"># qreg = circ.qregs[0] if circ.qregs != [] else None</span>
+    <span class="c1"># creg = circ.cregs[0] if circ.cregs != [] else None</span>
+
+    <span class="n">inst_tups_new</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">inst_tup</span> <span class="ow">in</span> <span class="n">inst_tups</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">inst_tup</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">instructions</span><span class="p">:</span>
+            <span class="n">inst_tups_new</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">inst_tup</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">circ_like</span><span class="p">,</span> <span class="n">QuantumCircuit</span><span class="p">):</span>
+        <span class="n">circ_new</span> <span class="o">=</span> <span class="n">create_circuit_from_inst_tups</span><span class="p">(</span><span class="n">inst_tups_new</span><span class="p">,</span> <span class="n">qreg</span><span class="o">=</span><span class="n">qreg</span><span class="p">,</span> <span class="n">creg</span><span class="o">=</span><span class="n">creg</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">circ_new</span> <span class="o">=</span> <span class="n">inst_tups_new</span>
+    <span class="k">return</span> <span class="n">circ_new</span></div>
+
+
+<span class="n">remove_instructions</span> <span class="o">=</span> <span class="n">remove_instructions_in_circuit</span>
+
+
+<div class="viewcode-block" id="get_registers_in_circuit"><a class="viewcode-back" href="../../../../fd_greens.qiskit_ver.utils.circuit_utils.html#fd_greens.qiskit_ver.utils.circuit_utils.get_registers_in_circuit">[docs]</a><span class="k">def</span> <span class="nf">get_registers_in_circuit</span><span class="p">(</span>
+    <span class="n">circ_like</span><span class="p">:</span> <span class="n">QuantumCircuitLike</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">Optional</span><span class="p">[</span><span class="n">QuantumRegister</span><span class="p">],</span> <span class="n">Optional</span><span class="p">[</span><span class="n">ClassicalRegister</span><span class="p">]]:</span>
+    <span class="sd">&quot;&quot;&quot;Returns the quantum and classical registers from a circuit. </span>
+<span class="sd">    </span>
+<span class="sd">    Qubits and classical bits can be specified either as Qubit/Clbit instances or as </span>
+<span class="sd">    integers in the circuit. New instances of QuantumRegister and ClassicalRegister will</span>
+<span class="sd">    be created with name &#39;q&#39; and &#39;c&#39;. If the quantum or classical register is found, it is </span>
+<span class="sd">    returned as None.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        circ_like: The instruction tuples from which qreg and creg are extracted.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        qreg: The quantum register in the instruction tuples.</span>
+<span class="sd">        creg: The classical register in the instruction tuples.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Extract the instruction tuples from the circuit.</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">circ_like</span><span class="p">,</span> <span class="n">QuantumCircuit</span><span class="p">):</span>
+        <span class="n">inst_tups</span> <span class="o">=</span> <span class="n">circ_like</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">inst_tups</span> <span class="o">=</span> <span class="n">circ_like</span>
+
+    <span class="c1"># Find the number of qubits and number of classical bits in the circuit.</span>
+    <span class="n">n_qubits</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">n_clbits</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">for</span> <span class="n">inst_tup</span> <span class="ow">in</span> <span class="n">inst_tups</span><span class="p">:</span>
+        <span class="n">_</span><span class="p">,</span> <span class="n">qargs</span><span class="p">,</span> <span class="n">cargs</span> <span class="o">=</span> <span class="n">inst_tup</span>
+        <span class="k">if</span> <span class="n">qargs</span> <span class="o">!=</span> <span class="p">[]:</span>
+            <span class="c1"># Take the largest index in the qargs.</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">qargs</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="nb">int</span><span class="p">):</span>  <span class="c1"># int</span>
+                <span class="n">max_q</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">qargs</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>  <span class="c1"># Qubit</span>
+                <span class="n">max_q</span> <span class="o">=</span> <span class="nb">max</span><span class="p">([</span><span class="n">q</span><span class="o">.</span><span class="n">_index</span> <span class="k">for</span> <span class="n">q</span> <span class="ow">in</span> <span class="n">qargs</span><span class="p">])</span>
+            <span class="c1"># If max qubit index is larger than n_qubits, update n_qubits.</span>
+            <span class="k">if</span> <span class="n">max_q</span> <span class="o">+</span> <span class="mi">1</span> <span class="o">&gt;</span> <span class="n">n_qubits</span><span class="p">:</span>
+                <span class="n">n_qubits</span> <span class="o">=</span> <span class="n">max_q</span> <span class="o">+</span> <span class="mi">1</span>
+        <span class="k">if</span> <span class="n">cargs</span> <span class="o">!=</span> <span class="p">[]:</span>
+            <span class="c1"># Take the largest index in the cargs.</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">cargs</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="nb">int</span><span class="p">):</span>  <span class="c1"># int</span>
+                <span class="n">max_c</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">cargs</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>  <span class="c1"># Qubit</span>
+                <span class="n">max_c</span> <span class="o">=</span> <span class="nb">max</span><span class="p">([</span><span class="n">c</span><span class="o">.</span><span class="n">_index</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">cargs</span><span class="p">])</span>
+            <span class="c1"># If max classical bit index is larger than n_clbits, update n_clbits.</span>
+            <span class="k">if</span> <span class="n">max_c</span> <span class="o">+</span> <span class="mi">1</span> <span class="o">&gt;</span> <span class="n">n_clbits</span><span class="p">:</span>
+                <span class="n">n_clbits</span> <span class="o">=</span> <span class="n">max_c</span> <span class="o">+</span> <span class="mi">1</span>
+
+    <span class="c1"># Create new qreg with number of qubits and creg with number of classical bits</span>
+    <span class="c1"># as in the original circuit.</span>
+    <span class="k">if</span> <span class="n">n_qubits</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">qreg</span> <span class="o">=</span> <span class="n">QuantumRegister</span><span class="p">(</span><span class="n">n_qubits</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;q&quot;</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">qreg</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="k">if</span> <span class="n">n_clbits</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">creg</span> <span class="o">=</span> <span class="n">ClassicalRegister</span><span class="p">(</span><span class="n">n_clbits</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;c&quot;</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">creg</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="k">return</span> <span class="n">qreg</span><span class="p">,</span> <span class="n">creg</span></div>
+
+
+<span class="n">get_registers_in_inst_tups</span> <span class="o">=</span> <span class="n">get_registers_in_circuit</span>
+
+
+<div class="viewcode-block" id="create_circuit_from_inst_tups"><a class="viewcode-back" href="../../../../fd_greens.qiskit_ver.utils.circuit_utils.html#fd_greens.qiskit_ver.utils.circuit_utils.create_circuit_from_inst_tups">[docs]</a><span class="k">def</span> <span class="nf">create_circuit_from_inst_tups</span><span class="p">(</span>
+    <span class="n">inst_tups</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">InstructionTuple</span><span class="p">],</span>
+    <span class="n">qreg</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">QuantumRegister</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">creg</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">ClassicalRegister</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">QuantumCircuit</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Creates a circuit from instruction tuples.</span>
+
+<span class="sd">    The arguments in qargs and cargs should be specified as integers. If specified as Qubit/Clbits </span>
+<span class="sd">    bound to specific QuantumRegister/ClassicalRegisters, either both qreg and creg are specified, </span>
+<span class="sd">    or the new qargs and cargs are bound to new QuantumRegister/ClassicalRegisters with names &#39;q&#39;</span>
+<span class="sd">    and &#39;c&#39;.</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        inst_tups: Instruction tuples from which the circuit is to be constructed.</span>
+<span class="sd">        qreg: The quantum register in the circuit. If not passed in,</span>
+<span class="sd">            will be a new QuantumRegister with name &#39;q&#39;.</span>
+<span class="sd">        creg: The classical register in the circuit. If not passed in,</span>
+<span class="sd">            will be a new ClassicalRegister with name &#39;c&#39;.</span>
+<span class="sd">        </span>
+<span class="sd">    Returns:</span>
+<span class="sd">    	circ: A circuit constructed from the instruction tuples.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Obtain the quantum register and classical register in the instruction tuples,</span>
+    <span class="c1"># and create a QuantumCircuit with them.</span>
+    <span class="k">if</span> <span class="n">qreg</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">creg</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">qreg</span><span class="p">,</span> <span class="n">creg</span> <span class="o">=</span> <span class="n">get_registers_in_inst_tups</span><span class="p">(</span><span class="n">inst_tups</span><span class="p">)</span>
+    <span class="n">regs</span> <span class="o">=</span> <span class="p">[</span><span class="n">reg</span> <span class="k">for</span> <span class="n">reg</span> <span class="ow">in</span> <span class="p">[</span><span class="n">qreg</span><span class="p">,</span> <span class="n">creg</span><span class="p">]</span> <span class="k">if</span> <span class="n">reg</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">]</span>
+    <span class="n">circ</span> <span class="o">=</span> <span class="n">QuantumCircuit</span><span class="p">(</span><span class="o">*</span><span class="n">regs</span><span class="p">)</span>
+
+    <span class="k">for</span> <span class="n">inst</span><span class="p">,</span> <span class="n">qargs</span><span class="p">,</span> <span class="n">cargs</span> <span class="ow">in</span> <span class="n">inst_tups</span><span class="p">:</span>
+        <span class="c1"># If arguments of qargs and cargs are specified as Qubit/Clbits,</span>
+        <span class="c1"># convert them to integers since they are not neccesarily the same</span>
+        <span class="c1"># as the qreg and creg extracted using get_registers_in_inst_tups.</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">qargs</span> <span class="o">=</span> <span class="p">[</span><span class="n">q</span><span class="o">.</span><span class="n">_index</span> <span class="k">for</span> <span class="n">q</span> <span class="ow">in</span> <span class="n">qargs</span><span class="p">]</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="k">pass</span>
+        <span class="n">circ</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">inst</span><span class="p">,</span> <span class="n">qargs</span><span class="p">,</span> <span class="n">cargs</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">circ</span></div>
+
+
+<div class="viewcode-block" id="split_circuit_across_barriers"><a class="viewcode-back" href="../../../../fd_greens.qiskit_ver.utils.circuit_utils.html#fd_greens.qiskit_ver.utils.circuit_utils.split_circuit_across_barriers">[docs]</a><span class="k">def</span> <span class="nf">split_circuit_across_barriers</span><span class="p">(</span><span class="n">circ</span><span class="p">:</span> <span class="n">QuantumCircuit</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="n">InstructionTuple</span><span class="p">]]:</span>
+    <span class="sd">&quot;&quot;&quot;Splits a circuit into instruction tuples across barriers.</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        circ: A circuit to be split across barriers.</span>
+<span class="sd">        </span>
+<span class="sd">    Returns:</span>
+<span class="sd">        inst_tups_all: The instruction tuples corresponding to all subcircuits.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">inst_tups</span> <span class="o">=</span> <span class="n">circ</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    <span class="n">inst_tups_all</span> <span class="o">=</span> <span class="p">[]</span>  <span class="c1"># all inst_tups_single</span>
+    <span class="n">inst_tups_single</span> <span class="o">=</span> <span class="p">[]</span>  <span class="c1"># temporary variable to hold inst_tups_all components</span>
+
+    <span class="c1"># Split when encoutering a barrier</span>
+    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">inst_tup</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">inst_tups</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">inst_tup</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="s2">&quot;barrier&quot;</span><span class="p">:</span>  <span class="c1"># append and start a new inst_tups_single</span>
+            <span class="n">inst_tups_all</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">inst_tups_single</span><span class="p">)</span>
+            <span class="n">inst_tups_single</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">elif</span> <span class="n">i</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="n">inst_tups</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">:</span>  <span class="c1"># append and stop</span>
+            <span class="n">inst_tups_single</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">inst_tup</span><span class="p">)</span>
+            <span class="n">inst_tups_all</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">inst_tups_single</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>  <span class="c1"># just append</span>
+            <span class="n">inst_tups_single</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">inst_tup</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">inst_tups_all</span></div>
+
+
+<div class="viewcode-block" id="measure_operator"><a class="viewcode-back" href="../../../../fd_greens.qiskit_ver.utils.circuit_utils.html#fd_greens.qiskit_ver.utils.circuit_utils.measure_operator">[docs]</a><span class="k">def</span> <span class="nf">measure_operator</span><span class="p">(</span>
+    <span class="n">circ</span><span class="p">:</span> <span class="n">QuantumCircuit</span><span class="p">,</span>
+    <span class="n">op</span><span class="p">:</span> <span class="n">PauliSumOp</span><span class="p">,</span>
+    <span class="n">q_instance</span><span class="p">:</span> <span class="n">QuantumInstance</span><span class="p">,</span>
+    <span class="n">anc_state</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="p">[],</span>
+    <span class="n">qreg</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">QuantumRegister</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Measures an operator on a circuit.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        circ: The circuit to be measured.</span>
+<span class="sd">        op: The operator to be measured.</span>
+<span class="sd">        q_instance: The QuantumInstance on which to execute the circuit.</span>
+<span class="sd">        anc_state: A sequence of integers indicating the ancilla states.</span>
+<span class="sd">        qreg: The quantum register on which the operator is measured.</span>
+<span class="sd">    </span>
+<span class="sd">    Returns:</span>
+<span class="sd">        value: The value of the operator on the circuit.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">qreg</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">qreg</span> <span class="o">=</span> <span class="n">circ</span><span class="o">.</span><span class="n">qregs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">n_qubits</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">qreg</span><span class="p">)</span>
+    <span class="n">n_anc</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">anc_state</span><span class="p">)</span>
+    <span class="n">n_sys</span> <span class="o">=</span> <span class="n">n_qubits</span> <span class="o">-</span> <span class="n">n_anc</span>
+
+    <span class="n">circ_list</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">term</span> <span class="ow">in</span> <span class="n">op</span><span class="p">:</span>
+        <span class="n">label</span> <span class="o">=</span> <span class="n">term</span><span class="o">.</span><span class="n">primitive</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">to_labels</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span>
+
+        <span class="c1"># Create circuit for measuring this Pauli string</span>
+        <span class="n">circ_meas</span> <span class="o">=</span> <span class="n">circ</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="n">creg</span> <span class="o">=</span> <span class="n">ClassicalRegister</span><span class="p">(</span><span class="n">n_qubits</span><span class="p">)</span>
+        <span class="n">circ_meas</span><span class="o">.</span><span class="n">add_register</span><span class="p">(</span><span class="n">creg</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_anc</span><span class="p">):</span>
+            <span class="n">circ_meas</span><span class="o">.</span><span class="n">measure</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">i</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_sys</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">label</span><span class="p">[</span><span class="n">n_sys</span> <span class="o">-</span> <span class="mi">1</span> <span class="o">-</span> <span class="n">i</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;X&quot;</span><span class="p">:</span>
+                <span class="n">circ_meas</span><span class="o">.</span><span class="n">h</span><span class="p">(</span><span class="n">qreg</span><span class="p">[</span><span class="n">i</span> <span class="o">+</span> <span class="n">n_anc</span><span class="p">])</span>
+                <span class="n">circ_meas</span><span class="o">.</span><span class="n">measure</span><span class="p">(</span><span class="n">qreg</span><span class="p">[</span><span class="n">i</span> <span class="o">+</span> <span class="n">n_anc</span><span class="p">],</span> <span class="n">creg</span><span class="p">[</span><span class="n">i</span> <span class="o">+</span> <span class="n">n_anc</span><span class="p">])</span>
+            <span class="k">elif</span> <span class="n">label</span><span class="p">[</span><span class="n">n_sys</span> <span class="o">-</span> <span class="mi">1</span> <span class="o">-</span> <span class="n">i</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;Y&quot;</span><span class="p">:</span>
+                <span class="n">circ_meas</span><span class="o">.</span><span class="n">rx</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">/</span> <span class="mi">2</span><span class="p">,</span> <span class="n">qreg</span><span class="p">[</span><span class="n">i</span> <span class="o">+</span> <span class="n">n_anc</span><span class="p">])</span>
+                <span class="n">circ_meas</span><span class="o">.</span><span class="n">measure</span><span class="p">(</span><span class="n">qreg</span><span class="p">[</span><span class="n">i</span> <span class="o">+</span> <span class="n">n_anc</span><span class="p">],</span> <span class="n">creg</span><span class="p">[</span><span class="n">i</span> <span class="o">+</span> <span class="n">n_anc</span><span class="p">])</span>
+            <span class="k">elif</span> <span class="n">label</span><span class="p">[</span><span class="n">n_sys</span> <span class="o">-</span> <span class="mi">1</span> <span class="o">-</span> <span class="n">i</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;Z&quot;</span><span class="p">:</span>
+                <span class="n">circ_meas</span><span class="o">.</span><span class="n">measure</span><span class="p">(</span><span class="n">qreg</span><span class="p">[</span><span class="n">i</span> <span class="o">+</span> <span class="n">n_anc</span><span class="p">],</span> <span class="n">creg</span><span class="p">[</span><span class="n">i</span> <span class="o">+</span> <span class="n">n_anc</span><span class="p">])</span>
+
+        <span class="n">circ_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">circ_meas</span><span class="p">)</span>
+
+    <span class="n">result</span> <span class="o">=</span> <span class="n">q_instance</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">circ_list</span><span class="p">)</span>
+    <span class="n">counts_list</span> <span class="o">=</span> <span class="n">result</span><span class="o">.</span><span class="n">get_counts</span><span class="p">()</span>
+
+    <span class="n">value</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">counts</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">counts_list</span><span class="p">):</span>
+        <span class="c1"># print(&#39;counts =&#39;, counts)</span>
+        <span class="n">coeff</span> <span class="o">=</span> <span class="n">op</span><span class="o">.</span><span class="n">primitive</span><span class="o">.</span><span class="n">coeffs</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+        <span class="n">counts_new</span> <span class="o">=</span> <span class="n">counts</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+
+        <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">val</span> <span class="ow">in</span> <span class="n">counts</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">key_list</span> <span class="o">=</span> <span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="n">c</span><span class="p">)</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="nb">reversed</span><span class="p">(</span><span class="n">key</span><span class="p">))]</span>
+            <span class="n">key_anc</span> <span class="o">=</span> <span class="n">key_list</span><span class="p">[:</span><span class="n">n_anc</span><span class="p">]</span>
+            <span class="n">key_sys</span> <span class="o">=</span> <span class="n">key_list</span><span class="p">[</span><span class="n">n_anc</span><span class="p">:]</span>
+            <span class="k">if</span> <span class="n">key_anc</span> <span class="o">!=</span> <span class="n">anc_state</span><span class="p">:</span>
+                <span class="k">del</span> <span class="n">counts_new</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
+
+        <span class="n">shots</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">counts_new</span><span class="o">.</span><span class="n">values</span><span class="p">())</span>
+        <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">val</span> <span class="ow">in</span> <span class="n">counts_new</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">key_list</span> <span class="o">=</span> <span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="n">c</span><span class="p">)</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="nb">reversed</span><span class="p">(</span><span class="n">key</span><span class="p">))]</span>
+            <span class="n">key_anc</span> <span class="o">=</span> <span class="n">key_list</span><span class="p">[:</span><span class="n">n_anc</span><span class="p">]</span>
+            <span class="n">key_sys</span> <span class="o">=</span> <span class="n">key_list</span><span class="p">[</span><span class="n">n_anc</span><span class="p">:]</span>
+            <span class="k">if</span> <span class="nb">sum</span><span class="p">(</span><span class="n">key_sys</span><span class="p">)</span> <span class="o">%</span> <span class="mi">2</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">value</span> <span class="o">+=</span> <span class="n">coeff</span> <span class="o">*</span> <span class="n">val</span> <span class="o">/</span> <span class="n">shots</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">value</span> <span class="o">-=</span> <span class="n">coeff</span> <span class="o">*</span> <span class="n">val</span> <span class="o">/</span> <span class="n">shots</span>
+    <span class="k">return</span> <span class="n">value</span></div>
+
+
+<div class="viewcode-block" id="get_circuit_depth"><a class="viewcode-back" href="../../../../fd_greens.qiskit_ver.utils.circuit_utils.html#fd_greens.qiskit_ver.utils.circuit_utils.get_circuit_depth">[docs]</a><span class="k">def</span> <span class="nf">get_circuit_depth</span><span class="p">(</span><span class="n">h5fname</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">circ_label</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Returns the circuit depth of a circuit saved in an HDF5 file.</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        h5fname: Name of the HDF5 file in which the circuit is saved.</span>
+<span class="sd">        circ_label: The circuit label.</span>
+<span class="sd">        </span>
+<span class="sd">    Returns:</span>
+<span class="sd">        depth: The circuit depth.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">h5file</span> <span class="o">=</span> <span class="n">h5py</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="n">h5fname</span> <span class="o">+</span> <span class="s2">&quot;.h5&quot;</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">)</span>
+    <span class="n">dset</span> <span class="o">=</span> <span class="n">h5file</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;circ</span><span class="si">{</span><span class="n">circ_label</span><span class="si">}</span><span class="s2">/transpiled&quot;</span><span class="p">]</span>
+    <span class="n">circ</span> <span class="o">=</span> <span class="n">QuantumCircuit</span><span class="o">.</span><span class="n">from_qasm_str</span><span class="p">(</span><span class="n">dset</span><span class="p">[()]</span><span class="o">.</span><span class="n">decode</span><span class="p">())</span>
+    <span class="n">depth</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">circ</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">depth</span></div>
+
+
+<div class="viewcode-block" id="get_n_2q_gates"><a class="viewcode-back" href="../../../../fd_greens.qiskit_ver.utils.circuit_utils.html#fd_greens.qiskit_ver.utils.circuit_utils.get_n_2q_gates">[docs]</a><span class="k">def</span> <span class="nf">get_n_2q_gates</span><span class="p">(</span><span class="n">h5fname</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">circ_label</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Returns the number of 2q gates in a circuit saved in an HDF5 file.</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        h5fname: Name of the HDF5 file in which the circuit is saved.</span>
+<span class="sd">        circ_label: The circuit label.</span>
+<span class="sd">    </span>
+<span class="sd">    Returns:</span>
+<span class="sd">        count: Number of two-qubit gates in the circuit.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">h5file</span> <span class="o">=</span> <span class="n">h5py</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="n">h5fname</span> <span class="o">+</span> <span class="s2">&quot;.h5&quot;</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">)</span>
+    <span class="n">dset</span> <span class="o">=</span> <span class="n">h5file</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;circ</span><span class="si">{</span><span class="n">circ_label</span><span class="si">}</span><span class="s2">/transpiled&quot;</span><span class="p">]</span>
+    <span class="n">qasm_str</span> <span class="o">=</span> <span class="n">dset</span><span class="p">[()]</span><span class="o">.</span><span class="n">decode</span><span class="p">()</span>
+    <span class="n">circ</span> <span class="o">=</span> <span class="n">QuantumCircuit</span><span class="o">.</span><span class="n">from_qasm_str</span><span class="p">(</span><span class="n">qasm_str</span><span class="p">)</span>
+    <span class="n">count</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">for</span> <span class="n">_</span><span class="p">,</span> <span class="n">qargs</span><span class="p">,</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">circ</span><span class="o">.</span><span class="n">data</span><span class="p">:</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">qargs</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="n">count</span> <span class="o">+=</span> <span class="mi">1</span>
+    <span class="k">return</span> <span class="n">count</span></div>
+
+
+<div class="viewcode-block" id="get_n_3q_gates"><a class="viewcode-back" href="../../../../fd_greens.qiskit_ver.utils.circuit_utils.html#fd_greens.qiskit_ver.utils.circuit_utils.get_n_3q_gates">[docs]</a><span class="k">def</span> <span class="nf">get_n_3q_gates</span><span class="p">(</span><span class="n">h5fname</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">circ_label</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Returns the number of 3q gates in a circuit saved in an HDF5 file.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        h5fname: Name of the HDF5 file in which the circuit is saved.</span>
+<span class="sd">        circ_label: The circuit label.</span>
+<span class="sd">    </span>
+<span class="sd">    Returns:</span>
+<span class="sd">        count: Number of three-qubit gates in the circuit.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">h5file</span> <span class="o">=</span> <span class="n">h5py</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="n">h5fname</span> <span class="o">+</span> <span class="s2">&quot;.h5&quot;</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">)</span>
+    <span class="n">dset</span> <span class="o">=</span> <span class="n">h5file</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;circ</span><span class="si">{</span><span class="n">circ_label</span><span class="si">}</span><span class="s2">/transpiled&quot;</span><span class="p">]</span>
+    <span class="n">qasm_str</span> <span class="o">=</span> <span class="n">dset</span><span class="p">[()]</span><span class="o">.</span><span class="n">decode</span><span class="p">()</span>
+    <span class="n">circ</span> <span class="o">=</span> <span class="n">QuantumCircuit</span><span class="o">.</span><span class="n">from_qasm_str</span><span class="p">(</span><span class="n">qasm_str</span><span class="p">)</span>
+    <span class="n">count</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">for</span> <span class="n">_</span><span class="p">,</span> <span class="n">qargs</span><span class="p">,</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">circ</span><span class="o">.</span><span class="n">data</span><span class="p">:</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">qargs</span><span class="p">)</span> <span class="o">==</span> <span class="mi">3</span><span class="p">:</span>
+            <span class="n">count</span> <span class="o">+=</span> <span class="mi">1</span>
+    <span class="k">return</span> <span class="n">count</span></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Shi-Ning Sun.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

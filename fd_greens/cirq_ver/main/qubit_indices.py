@@ -13,12 +13,12 @@ QubitIndicesData = Sequence[Union[int, str, Sequence[int]]]
 
 
 class QubitIndices:
-    """A class to handle qubit indices in str, int and list forms."""
+    """A class to handle qubit indices in ``str``, ``int`` and ``list`` forms."""
 
     def __init__(
         self, qubit_inds_data: QubitIndicesData, n_qubits: Optional[int] = None
     ) -> None:
-        """Initializes a QubitIndices object. 
+        """Initializes a ``QubitIndices`` object. 
         
         Each qubit index can be represented in three forms: str, int or list forms. For example, 
         '110', [0, 1, 1] and 6 refer to the same qubit index. Note that the indices in str or int 

@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Qubit Indices (fd_greens.main.qubit_indices) &mdash; fd-greens 0.0.1 documentation</title>
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Response Function (fd_greens.main.response_function)" href="fd_greens.qiskit_ver.main.response_function.html" />
+    <link rel="prev" title="Parameters (fd_greens.main.params)" href="fd_greens.qiskit_ver.main.params.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="index.html" class="icon icon-home"> fd-greens
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">fd-greens</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="fd_greens.html">fd_greens package</a><ul class="current">
+<li class="toctree-l3 current"><a class="reference internal" href="fd_greens.html#subpackages">Subpackages</a><ul class="current">
+<li class="toctree-l4"><a class="reference internal" href="fd_greens.cirq_ver.html">fd_greens.cirq_ver package</a></li>
+<li class="toctree-l4 current"><a class="reference internal" href="fd_greens.qiskit_ver.html">fd_greens.qiskit_ver package</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">fd-greens</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="modules.html">fd-greens</a> &raquo;</li>
+          <li><a href="fd_greens.html">fd_greens package</a> &raquo;</li>
+          <li><a href="fd_greens.qiskit_ver.html">fd_greens.qiskit_ver package</a> &raquo;</li>
+          <li><a href="fd_greens.qiskit_ver.main.html">fd_greens.qiskit_ver.main package</a> &raquo;</li>
+      <li>Qubit Indices (<code class="xref py py-mod docutils literal notranslate"><span class="pre">fd_greens.main.qubit_indices</span></code>)</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/fd_greens.qiskit_ver.main.qubit_indices.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <span class="target" id="module-fd_greens.qiskit_ver.main.qubit_indices"></span><section id="qubit-indices-fd-greens-main-qubit-indices">
+<h1>Qubit Indices (<code class="xref py py-mod docutils literal notranslate"><span class="pre">fd_greens.main.qubit_indices</span></code>)<a class="headerlink" href="#qubit-indices-fd-greens-main-qubit-indices" title="Permalink to this headline"></a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="fd_greens.qiskit_ver.main.qubit_indices.QubitIndices">
+<em class="property"><span class="pre">class</span> </em><span class="sig-name descname"><span class="pre">QubitIndices</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">qubit_inds_data</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span> </span><span class="pre">str</span><span class="p"><span class="pre">,</span> </span><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_qubits</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/fd_greens/qiskit_ver/main/qubit_indices.html#QubitIndices"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#fd_greens.qiskit_ver.main.qubit_indices.QubitIndices" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>A class to handle qubit indices in str, int and list forms.</p>
+<p>Initializes a QubitIndices object.</p>
+<p>Each qubit index can be represented in three forms: str, int or list forms. For example,
+‘110’, [0, 1, 1] and 6 refer to the same qubit index. Note that the indices in str or int
+form follows Qiskit qubit order, but in list form follows normal qubit order.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>qubit_inds_data</strong> – A sequence of qubit indices in string, integer or list form.</p></li>
+<li><p><strong>n_qubits</strong> – The number padded zeroes when the input is in int form. If the input is in
+str or list form this is not needed.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="fd_greens.qiskit_ver.main.qubit_indices.QubitIndices.insert_ancilla">
+<span class="sig-name descname"><span class="pre">insert_ancilla</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">qind_anc</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span> </span><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">loc</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#fd_greens.qiskit_ver.main.qubit_indices.QubitIndices" title="fd_greens.qiskit_ver.main.qubit_indices.QubitIndices"><span class="pre">fd_greens.qiskit_ver.main.qubit_indices.QubitIndices</span></a></span></span><a class="reference internal" href="_modules/fd_greens/qiskit_ver/main/qubit_indices.html#QubitIndices.insert_ancilla"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#fd_greens.qiskit_ver.main.qubit_indices.QubitIndices.insert_ancilla" title="Permalink to this definition"></a></dt>
+<dd><p>Inserts ancilla qubit indices into a QubitIndices object.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>qind_anc</strong> – The ancilla qubit states in string or list form.</p></li>
+<li><p><strong>loc</strong> – Location of the ancilla indices. Default to the first few locations.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>The new qubit indices with ancilla qubits.</strong></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="fd_greens.qiskit_ver.main.qubit_indices.QubitIndices.copy">
+<span class="sig-name descname"><span class="pre">copy</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#fd_greens.qiskit_ver.main.qubit_indices.QubitIndices" title="fd_greens.qiskit_ver.main.qubit_indices.QubitIndices"><span class="pre">fd_greens.qiskit_ver.main.qubit_indices.QubitIndices</span></a></span></span><a class="reference internal" href="_modules/fd_greens/qiskit_ver/main/qubit_indices.html#QubitIndices.copy"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#fd_greens.qiskit_ver.main.qubit_indices.QubitIndices.copy" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="fd_greens.qiskit_ver.main.qubit_indices.QubitIndices.int_form">
+<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">int_form</span></span><em class="property"><span class="pre">:</span> <span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#fd_greens.qiskit_ver.main.qubit_indices.QubitIndices.int_form" title="Permalink to this definition"></a></dt>
+<dd><p>Returns the int form of the qubit indices.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="fd_greens.qiskit_ver.main.qubit_indices.QubitIndices.list_form">
+<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">list_form</span></span><em class="property"><span class="pre">:</span> <span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#fd_greens.qiskit_ver.main.qubit_indices.QubitIndices.list_form" title="Permalink to this definition"></a></dt>
+<dd><p>Returns the list form of the qubit indices.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="fd_greens.qiskit_ver.main.qubit_indices.QubitIndices.str_form">
+<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">str_form</span></span><em class="property"><span class="pre">:</span> <span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#fd_greens.qiskit_ver.main.qubit_indices.QubitIndices.str_form" title="Permalink to this definition"></a></dt>
+<dd><p>Returns the str form of the qubit indices.</p>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="fd_greens.qiskit_ver.main.params.html" class="btn btn-neutral float-left" title="Parameters (fd_greens.main.params)" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="fd_greens.qiskit_ver.main.response_function.html" class="btn btn-neutral float-right" title="Response Function (fd_greens.main.response_function)" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Shi-Ning Sun.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

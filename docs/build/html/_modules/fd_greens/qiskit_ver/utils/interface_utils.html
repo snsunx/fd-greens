@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>fd_greens.qiskit_ver.utils.interface_utils &mdash; fd-greens 0.0.1 documentation</title>
+      <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../../../" id="documentation_options" src="../../../../_static/documentation_options.js"></script>
+        <script src="../../../../_static/jquery.js"></script>
+        <script src="../../../../_static/underscore.js"></script>
+        <script src="../../../../_static/doctools.js"></script>
+    <script src="../../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../../../../index.html" class="icon icon-home"> fd-greens
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../modules.html">fd-greens</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../index.html">fd-greens</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="../../../index.html">Module code</a> &raquo;</li>
+      <li>fd_greens.qiskit_ver.utils.interface_utils</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for fd_greens.qiskit_ver.utils.interface_utils</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">============================================================</span>
+<span class="sd">Interface Utilities (:mod:`fd_greens.utils.interface_utils`)</span>
+<span class="sd">============================================================</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span> <span class="nn">re</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">List</span>
+<span class="kn">import</span> <span class="nn">json</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">qiskit</span> <span class="kn">import</span> <span class="n">QuantumCircuit</span>
+<span class="kn">from</span> <span class="nn">qiskit.circuit</span> <span class="kn">import</span> <span class="n">Gate</span><span class="p">,</span> <span class="n">Qubit</span>
+<span class="kn">from</span> <span class="nn">qiskit.extensions</span> <span class="kn">import</span> <span class="n">RXGate</span><span class="p">,</span> <span class="n">RYGate</span><span class="p">,</span> <span class="n">RZGate</span><span class="p">,</span> <span class="n">CZGate</span><span class="p">,</span> <span class="n">CPhaseGate</span>
+
+<span class="kn">from</span> <span class="nn">..main.params</span> <span class="kn">import</span> <span class="n">C0C0iXGate</span>
+<span class="kn">from</span> <span class="nn">.circuit_utils</span> <span class="kn">import</span> <span class="n">create_circuit_from_inst_tups</span><span class="p">,</span> <span class="n">remove_instructions_in_circuit</span>
+<span class="kn">from</span> <span class="nn">.general_utils</span> <span class="kn">import</span> <span class="n">circuit_equal</span>
+
+
+<div class="viewcode-block" id="qstr_to_qargs"><a class="viewcode-back" href="../../../../fd_greens.qiskit_ver.utils.interface_utils.html#fd_greens.qiskit_ver.utils.interface_utils.qstr_to_qargs">[docs]</a><span class="k">def</span> <span class="nf">qstr_to_qargs</span><span class="p">(</span><span class="n">qstr</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">offset</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">4</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]:</span>
+    <span class="sd">&quot;&quot;&quot;Qtrl qargs string to Qiskit qargs.</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        qstr: The qtrl qargs string, e.g. &quot;Q6&quot;, &quot;C5T6&quot;.</span>
+<span class="sd">        offset: The offset of the qubits on the Berkeley device. Default to 4.</span>
+<span class="sd">    </span>
+<span class="sd">    Returns:</span>
+<span class="sd">        qargs: The Qiskit qargs object.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">qargs</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">findall</span><span class="p">(</span><span class="s2">&quot;(\d)&quot;</span><span class="p">,</span> <span class="n">qstr</span><span class="p">)</span>
+    <span class="n">qargs</span> <span class="o">=</span> <span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">-</span> <span class="n">offset</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">qargs</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">qargs</span></div>
+
+
+<div class="viewcode-block" id="qargs_to_qstr"><a class="viewcode-back" href="../../../../fd_greens.qiskit_ver.utils.interface_utils.html#fd_greens.qiskit_ver.utils.interface_utils.qargs_to_qstr">[docs]</a><span class="k">def</span> <span class="nf">qargs_to_qstr</span><span class="p">(</span><span class="n">qargs</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Qubit</span><span class="p">],</span> <span class="n">gate</span><span class="p">:</span> <span class="n">Gate</span><span class="p">,</span> <span class="n">offset</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">4</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Qiskit qargs to qtrl qargs string.</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        qargs: A Qiskit qargs object.</span>
+<span class="sd">        gate: A quantum gate.</span>
+<span class="sd">        offset: Index of the first qubit in use on the Berkeley device.</span>
+<span class="sd">    </span>
+<span class="sd">    Returns:</span>
+<span class="sd">        qstr: The qtrl qargs string.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">assert</span> <span class="n">gate</span><span class="o">.</span><span class="n">name</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;rx&quot;</span><span class="p">,</span> <span class="s2">&quot;rz&quot;</span><span class="p">,</span> <span class="s2">&quot;cz&quot;</span><span class="p">,</span> <span class="s2">&quot;cp&quot;</span><span class="p">,</span> <span class="s2">&quot;c0c0ix&quot;</span><span class="p">]</span>
+    <span class="k">if</span> <span class="n">gate</span><span class="o">.</span><span class="n">name</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;rx&quot;</span><span class="p">,</span> <span class="s2">&quot;rz&quot;</span><span class="p">]:</span>
+        <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">qargs</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span>
+        <span class="n">qstr</span> <span class="o">=</span> <span class="s2">&quot;Q&quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">qargs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">_index</span> <span class="o">+</span> <span class="n">offset</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">gate</span><span class="o">.</span><span class="n">name</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;cz&quot;</span><span class="p">,</span> <span class="s2">&quot;cp&quot;</span><span class="p">]:</span>
+        <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">qargs</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span>
+        <span class="n">qnum</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">reversed</span><span class="p">([</span><span class="n">q</span><span class="o">.</span><span class="n">_index</span> <span class="o">+</span> <span class="n">offset</span> <span class="k">for</span> <span class="n">q</span> <span class="ow">in</span> <span class="n">qargs</span><span class="p">]))</span>
+        <span class="n">qstr</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;C</span><span class="si">{</span><span class="n">qnum</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s2">T</span><span class="si">{</span><span class="n">qnum</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span>
+    <span class="k">elif</span> <span class="n">gate</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="s2">&quot;c0c0ix&quot;</span><span class="p">:</span>
+        <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">qargs</span><span class="p">)</span> <span class="o">==</span> <span class="mi">3</span>
+        <span class="n">qnum</span> <span class="o">=</span> <span class="p">[</span><span class="n">q</span><span class="o">.</span><span class="n">_index</span> <span class="o">+</span> <span class="n">offset</span> <span class="k">for</span> <span class="n">q</span> <span class="ow">in</span> <span class="n">qargs</span><span class="p">]</span>
+        <span class="n">qstr</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;C</span><span class="si">{</span><span class="n">qnum</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s2">C</span><span class="si">{</span><span class="n">qnum</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="si">}</span><span class="s2">T</span><span class="si">{</span><span class="n">qnum</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">qstr</span><span class="si">=}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">qstr</span></div>
+
+
+<div class="viewcode-block" id="gstr_to_gate"><a class="viewcode-back" href="../../../../fd_greens.qiskit_ver.utils.interface_utils.html#fd_greens.qiskit_ver.utils.interface_utils.gstr_to_gate">[docs]</a><span class="k">def</span> <span class="nf">gstr_to_gate</span><span class="p">(</span><span class="n">gstr</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Gate</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;qtrl gate string to Qiskit gate.</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        gstr: A qtrl gate string.</span>
+<span class="sd">        </span>
+<span class="sd">    Returns:</span>
+<span class="sd">        gate: The Qiskit gate corresponding to the qtrl gate string. </span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">re</span><span class="o">.</span><span class="n">findall</span><span class="p">(</span><span class="s2">&quot;\d+&quot;</span><span class="p">,</span> <span class="n">gstr</span><span class="p">)</span> <span class="o">==</span> <span class="p">[]:</span>
+        <span class="k">if</span> <span class="n">gstr</span> <span class="o">==</span> <span class="s2">&quot;CZ&quot;</span><span class="p">:</span>
+            <span class="n">gate</span> <span class="o">=</span> <span class="n">CZGate</span><span class="p">()</span>
+        <span class="k">elif</span> <span class="n">gstr</span> <span class="o">==</span> <span class="s2">&quot;CS&quot;</span><span class="p">:</span>
+            <span class="n">gate</span> <span class="o">=</span> <span class="n">CPhaseGate</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">/</span> <span class="mi">2</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">gstr</span> <span class="o">==</span> <span class="s2">&quot;CSD&quot;</span><span class="p">:</span>
+            <span class="n">gate</span> <span class="o">=</span> <span class="n">CPhaseGate</span><span class="p">(</span><span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">/</span> <span class="mi">2</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">gstr</span> <span class="o">==</span> <span class="s2">&quot;TOF&quot;</span><span class="p">:</span>
+            <span class="n">gate</span> <span class="o">=</span> <span class="n">C0C0iXGate</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">gname</span> <span class="o">=</span> <span class="n">gstr</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">angle</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">gstr</span><span class="p">[</span><span class="mi">1</span><span class="p">:])</span> <span class="o">/</span> <span class="mi">180</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span>
+        <span class="k">if</span> <span class="n">gname</span> <span class="o">==</span> <span class="s2">&quot;X&quot;</span><span class="p">:</span>
+            <span class="n">gate</span> <span class="o">=</span> <span class="n">RXGate</span><span class="p">(</span><span class="n">angle</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">gname</span> <span class="o">==</span> <span class="s2">&quot;Y&quot;</span><span class="p">:</span>
+            <span class="n">gate</span> <span class="o">=</span> <span class="n">RYGate</span><span class="p">(</span><span class="n">angle</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">gname</span> <span class="o">==</span> <span class="s2">&quot;Z&quot;</span><span class="p">:</span>
+            <span class="n">gate</span> <span class="o">=</span> <span class="n">RZGate</span><span class="p">(</span><span class="n">angle</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">gate</span></div>
+
+
+<div class="viewcode-block" id="gate_to_gstr"><a class="viewcode-back" href="../../../../fd_greens.qiskit_ver.utils.interface_utils.html#fd_greens.qiskit_ver.utils.interface_utils.gate_to_gstr">[docs]</a><span class="k">def</span> <span class="nf">gate_to_gstr</span><span class="p">(</span><span class="n">gate</span><span class="p">:</span> <span class="n">Gate</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Qiskit gate to qtrl gate string.</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        gate: A Qiskit gate.</span>
+<span class="sd">        </span>
+<span class="sd">    Returns:</span>
+<span class="sd">        gstr: The qtrl gate string corresponding to the Qiskit gate.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">assert</span> <span class="n">gate</span><span class="o">.</span><span class="n">name</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;rx&quot;</span><span class="p">,</span> <span class="s2">&quot;rz&quot;</span><span class="p">,</span> <span class="s2">&quot;cz&quot;</span><span class="p">,</span> <span class="s2">&quot;cp&quot;</span><span class="p">,</span> <span class="s2">&quot;c0c0ix&quot;</span><span class="p">]</span>
+    <span class="k">if</span> <span class="n">gate</span><span class="o">.</span><span class="n">name</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;rx&quot;</span><span class="p">,</span> <span class="s2">&quot;rz&quot;</span><span class="p">]:</span>
+        <span class="n">gname</span> <span class="o">=</span> <span class="n">gate</span><span class="o">.</span><span class="n">name</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span>
+        <span class="n">angle</span> <span class="o">=</span> <span class="n">gate</span><span class="o">.</span><span class="n">params</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="mi">180</span>
+        <span class="n">gstr</span> <span class="o">=</span> <span class="n">gname</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">angle</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">gate</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="s2">&quot;cz&quot;</span><span class="p">:</span>
+        <span class="n">gstr</span> <span class="o">=</span> <span class="s2">&quot;CZ&quot;</span>
+    <span class="k">elif</span> <span class="n">gate</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="s2">&quot;cp&quot;</span><span class="p">:</span>
+        <span class="k">if</span> <span class="nb">abs</span><span class="p">(</span><span class="n">gate</span><span class="o">.</span><span class="n">params</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">/</span> <span class="mi">2</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mf">1e-8</span><span class="p">:</span>
+            <span class="n">gstr</span> <span class="o">=</span> <span class="s2">&quot;CS&quot;</span>
+        <span class="k">elif</span> <span class="nb">abs</span><span class="p">(</span><span class="n">gate</span><span class="o">.</span><span class="n">params</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">/</span> <span class="mi">2</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mf">1e-8</span><span class="p">:</span>
+            <span class="n">gstr</span> <span class="o">=</span> <span class="s2">&quot;CSD&quot;</span>
+    <span class="k">elif</span> <span class="n">gate</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="s2">&quot;c0c0ix&quot;</span><span class="p">:</span>
+        <span class="n">gstr</span> <span class="o">=</span> <span class="s2">&quot;TOF&quot;</span>
+    <span class="k">return</span> <span class="n">gstr</span></div>
+
+
+<div class="viewcode-block" id="qtrl_strings_to_qiskit_circuit"><a class="viewcode-back" href="../../../../fd_greens.qiskit_ver.utils.interface_utils.html#fd_greens.qiskit_ver.utils.interface_utils.qtrl_strings_to_qiskit_circuit">[docs]</a><span class="k">def</span> <span class="nf">qtrl_strings_to_qiskit_circuit</span><span class="p">(</span><span class="n">qtrl_strs</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]])</span> <span class="o">-&gt;</span> <span class="n">QuantumCircuit</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Converts qtrl strings to a Qiskit circuit.</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        qtrl_strings: A list of qtrl strings.</span>
+<span class="sd">        </span>
+<span class="sd">    Returns:</span>
+<span class="sd">        circ: A Qiskit circuit corresponding to the qtrl strings.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># TODO: Now implemented as a list. Should be a list of lists.</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">qtrl_strs</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="nb">list</span><span class="p">):</span>
+        <span class="n">qtrl_strs</span> <span class="o">=</span> <span class="p">[</span><span class="n">y</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">qtrl_strs</span> <span class="k">for</span> <span class="n">y</span> <span class="ow">in</span> <span class="n">x</span><span class="p">]</span>
+    <span class="n">inst_tups</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">qtrl_strs</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">s</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;Q&quot;</span><span class="p">:</span>
+            <span class="n">qstr</span><span class="p">,</span> <span class="n">gstr</span> <span class="o">=</span> <span class="n">s</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;/&quot;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">gstr</span><span class="p">,</span> <span class="n">qstr</span> <span class="o">=</span> <span class="n">s</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;/&quot;</span><span class="p">)</span>
+        <span class="n">qargs</span> <span class="o">=</span> <span class="n">qstr_to_qargs</span><span class="p">(</span><span class="n">qstr</span><span class="p">)</span>
+        <span class="n">gate</span> <span class="o">=</span> <span class="n">gstr_to_gate</span><span class="p">(</span><span class="n">gstr</span><span class="p">)</span>
+        <span class="n">inst_tups</span> <span class="o">+=</span> <span class="p">[(</span><span class="n">gate</span><span class="p">,</span> <span class="n">qargs</span><span class="p">,</span> <span class="p">[])]</span>
+
+    <span class="n">circ</span> <span class="o">=</span> <span class="n">create_circuit_from_inst_tups</span><span class="p">(</span><span class="n">inst_tups</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">circ</span></div>
+
+
+<div class="viewcode-block" id="qiskit_circuit_to_qtrl_strings"><a class="viewcode-back" href="../../../../fd_greens.qiskit_ver.utils.interface_utils.html#fd_greens.qiskit_ver.utils.interface_utils.qiskit_circuit_to_qtrl_strings">[docs]</a><span class="k">def</span> <span class="nf">qiskit_circuit_to_qtrl_strings</span><span class="p">(</span><span class="n">circ</span><span class="p">:</span> <span class="n">QuantumCircuit</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+    <span class="sd">&quot;&quot;&quot;Converts a Qiskit circuit to qtrl strings.</span>
+
+<span class="sd">    The only gates that can be converted are ``&quot;rx&quot;``, ``&quot;rz&quot;``, ``&quot;cz&quot;``,</span>
+<span class="sd">    ``&quot;cp&quot;``, ``&quot;c0c0ix&quot;``.</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        circ: A Qiskit circuit.</span>
+<span class="sd">        </span>
+<span class="sd">    Returns:</span>
+<span class="sd">        qtrl_strs: The qtrl strings corresponding to the Qiskit circuit.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">circ</span> <span class="o">=</span> <span class="n">remove_instructions_in_circuit</span><span class="p">(</span><span class="n">circ</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;measure&quot;</span><span class="p">,</span> <span class="s2">&quot;barrier&quot;</span><span class="p">])</span>
+    <span class="n">qtrl_strs</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="k">for</span> <span class="n">gate</span><span class="p">,</span> <span class="n">qargs</span><span class="p">,</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">circ</span><span class="o">.</span><span class="n">data</span><span class="p">:</span>
+        <span class="c1"># print(f&quot;{gate.name=}&quot;)</span>
+        <span class="n">gstr</span> <span class="o">=</span> <span class="n">gate_to_gstr</span><span class="p">(</span><span class="n">gate</span><span class="p">)</span>
+        <span class="n">qstr</span> <span class="o">=</span> <span class="n">qargs_to_qstr</span><span class="p">(</span><span class="n">qargs</span><span class="p">,</span> <span class="n">gate</span><span class="p">)</span>
+        <span class="c1"># print(gstr, qstr)</span>
+        <span class="k">if</span> <span class="n">gate</span><span class="o">.</span><span class="n">name</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;rx&quot;</span><span class="p">,</span> <span class="s2">&quot;rz&quot;</span><span class="p">]:</span>
+            <span class="n">qtrl_str</span> <span class="o">=</span> <span class="n">qstr</span> <span class="o">+</span> <span class="s2">&quot;/&quot;</span> <span class="o">+</span> <span class="n">gstr</span>
+        <span class="k">elif</span> <span class="n">gate</span><span class="o">.</span><span class="n">name</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;cz&quot;</span><span class="p">,</span> <span class="s2">&quot;cp&quot;</span><span class="p">,</span> <span class="s2">&quot;c0c0ix&quot;</span><span class="p">]:</span>
+            <span class="n">qtrl_str</span> <span class="o">=</span> <span class="n">gstr</span> <span class="o">+</span> <span class="s2">&quot;/&quot;</span> <span class="o">+</span> <span class="n">qstr</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;The gate </span><span class="si">{</span><span class="n">gate</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2"> is not valid when converting to qtrl string.&quot;</span>
+            <span class="p">)</span>
+        <span class="n">qtrl_strs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">qtrl_str</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">qtrl_strs</span></div>
+
+
+<div class="viewcode-block" id="qiskit_circuit_to_qasm_string"><a class="viewcode-back" href="../../../../fd_greens.qiskit_ver.utils.interface_utils.html#fd_greens.qiskit_ver.utils.interface_utils.qiskit_circuit_to_qasm_string">[docs]</a><span class="k">def</span> <span class="nf">qiskit_circuit_to_qasm_string</span><span class="p">(</span><span class="n">circ</span><span class="p">:</span> <span class="n">QuantumCircuit</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Converts a circuit to a QASM string.</span>
+<span class="sd">    </span>
+<span class="sd">    This function is required to transpile circuits that contain C0C0iX and CCZ gates. </span>
+<span class="sd">    The ``QuantumCircuit.qasm()`` method in Qiskit does not implement these gates.</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        circ: The circuit to be transformed to a QASM string.</span>
+<span class="sd">    </span>
+<span class="sd">    Returns:</span>
+<span class="sd">        qasm_str: The QASM string of the circuit.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># The header of the QASM string.</span>
+    <span class="n">qasm_str</span> <span class="o">=</span> <span class="s1">&#39;OPENQASM 2.0;</span><span class="se">\n</span><span class="s1">include &quot;qelib1.inc&quot;;</span><span class="se">\n</span><span class="s1">&#39;</span>
+
+    <span class="c1"># Define 3q gates c0c0ix and ccz, since these are not defined in the standard library.</span>
+    <span class="n">qasm_str</span> <span class="o">+=</span> <span class="p">(</span>
+        <span class="s2">&quot;gate c0c0ix p0,p1,p2 {x p0; x p1; ccx p0,p1,p2; cp(pi/2) p0,p1; x p0; x p1;}</span><span class="se">\n</span><span class="s2">&quot;</span>
+    <span class="p">)</span>
+    <span class="n">qasm_str</span> <span class="o">+=</span> <span class="s2">&quot;gate ccz p0,p1,p2 {h p2; ccx p0,p1,p2; h p2;}</span><span class="se">\n</span><span class="s2">&quot;</span>
+
+    <span class="c1"># Define quantum and classical registers.</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">circ</span><span class="o">.</span><span class="n">qregs</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">circ</span><span class="o">.</span><span class="n">qregs</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">==</span> <span class="mi">1</span>
+        <span class="n">n_qubits</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">circ</span><span class="o">.</span><span class="n">qregs</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="n">qasm_str</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">&quot;qreg q[</span><span class="si">{</span><span class="n">n_qubits</span><span class="si">}</span><span class="s2">];</span><span class="se">\n</span><span class="s2">&quot;</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">circ</span><span class="o">.</span><span class="n">cregs</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">circ</span><span class="o">.</span><span class="n">cregs</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span>
+        <span class="n">n_clbits</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">circ</span><span class="o">.</span><span class="n">cregs</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="n">qasm_str</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">&quot;creg c[</span><span class="si">{</span><span class="n">n_clbits</span><span class="si">}</span><span class="s2">];</span><span class="se">\n</span><span class="s2">&quot;</span>
+
+    <span class="k">for</span> <span class="n">inst</span><span class="p">,</span> <span class="n">qargs</span><span class="p">,</span> <span class="n">cargs</span> <span class="ow">in</span> <span class="n">circ</span><span class="o">.</span><span class="n">data</span><span class="p">:</span>
+        <span class="c1"># Build instruction string, quantum register string and</span>
+        <span class="c1"># optionally classical register string.</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">inst</span><span class="o">.</span><span class="n">params</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="ow">and</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">inst</span><span class="o">.</span><span class="n">params</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
+            <span class="c1"># 1q or 2q gate with parameters</span>
+            <span class="n">params_str</span> <span class="o">=</span> <span class="s2">&quot;,&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="nb">str</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">inst</span><span class="o">.</span><span class="n">params</span><span class="p">])</span>
+            <span class="n">inst_str</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">inst</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">(</span><span class="si">{</span><span class="n">params_str</span><span class="si">}</span><span class="s2">)&quot;</span>
+        <span class="k">else</span><span class="p">:</span>  <span class="c1"># 1q, 2q gate without parameters, 3q gate, measure or barrier</span>
+            <span class="n">inst_str</span> <span class="o">=</span> <span class="n">inst</span><span class="o">.</span><span class="n">name</span>
+        <span class="n">qargs_inds</span> <span class="o">=</span> <span class="p">[</span><span class="n">q</span><span class="o">.</span><span class="n">_index</span> <span class="k">for</span> <span class="n">q</span> <span class="ow">in</span> <span class="n">qargs</span><span class="p">]</span>
+        <span class="n">qargs_str</span> <span class="o">=</span> <span class="s2">&quot;,&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="sa">f</span><span class="s2">&quot;q[</span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2">]&quot;</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">qargs_inds</span><span class="p">])</span>
+        <span class="k">if</span> <span class="n">cargs</span> <span class="o">!=</span> <span class="p">[]:</span>
+            <span class="n">cargs_inds</span> <span class="o">=</span> <span class="p">[</span><span class="n">c</span><span class="o">.</span><span class="n">_index</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">cargs</span><span class="p">]</span>
+            <span class="n">cargs_str</span> <span class="o">=</span> <span class="s2">&quot;,&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="sa">f</span><span class="s2">&quot;c[</span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2">]&quot;</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">cargs_inds</span><span class="p">])</span>
+
+        <span class="c1"># Only measure requires a `inst qargs -&gt; cargs` format. All the other gates</span>
+        <span class="c1"># follow the same `inst qargs` format.</span>
+        <span class="k">if</span> <span class="n">inst</span><span class="o">.</span><span class="n">name</span> <span class="ow">in</span> <span class="p">[</span>
+            <span class="s2">&quot;rz&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;rx&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;ry&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;h&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;x&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;p&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;u3&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;cz&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;swap&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;cp&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;barrier&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;c0c0ix&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;ccz&quot;</span><span class="p">,</span>
+        <span class="p">]:</span>
+            <span class="n">qasm_str</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">inst_str</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">qargs_str</span><span class="si">}</span><span class="s2">;</span><span class="se">\n</span><span class="s2">&quot;</span>
+        <span class="k">elif</span> <span class="n">inst</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="s2">&quot;measure&quot;</span><span class="p">:</span>
+            <span class="n">qasm_str</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">inst_str</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">qargs_str</span><span class="si">}</span><span class="s2"> -&gt; </span><span class="si">{</span><span class="n">cargs_str</span><span class="si">}</span><span class="s2">;</span><span class="se">\n</span><span class="s2">&quot;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Instruction </span><span class="si">{</span><span class="n">inst</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2"> cannot be converted to QASM string.&quot;</span>
+            <span class="p">)</span>
+
+    <span class="c1"># Temporary check statement.</span>
+    <span class="n">circ_new</span> <span class="o">=</span> <span class="n">QuantumCircuit</span><span class="o">.</span><span class="n">from_qasm_str</span><span class="p">(</span><span class="n">qasm_str</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="n">circuit_equal</span><span class="p">(</span><span class="n">circ</span><span class="p">,</span> <span class="n">circ_new</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">qasm_str</span></div>
+
+
+<div class="viewcode-block" id="convert_circuit_to_string"><a class="viewcode-back" href="../../../../fd_greens.qiskit_ver.utils.interface_utils.html#fd_greens.qiskit_ver.utils.interface_utils.convert_circuit_to_string">[docs]</a><span class="k">def</span> <span class="nf">convert_circuit_to_string</span><span class="p">(</span><span class="n">circ</span><span class="p">:</span> <span class="n">QuantumCircuit</span><span class="p">,</span> <span class="n">kind</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Converts a circuit to its qtrl or qasm string form.</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        circ: A circuit to be converted to a string.</span>
+<span class="sd">        kind: The type of output string, ``&quot;qtrl&quot;`` or ``&quot;qasm&quot;``.</span>
+<span class="sd">    </span>
+<span class="sd">    Returns:</span>
+<span class="sd">        string: The string created from the circuit.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">assert</span> <span class="n">kind</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;qtrl&quot;</span><span class="p">,</span> <span class="s2">&quot;qasm&quot;</span><span class="p">]</span>
+    <span class="k">if</span> <span class="n">kind</span> <span class="o">==</span> <span class="s2">&quot;qtrl&quot;</span><span class="p">:</span>
+        <span class="n">string</span> <span class="o">=</span> <span class="n">qiskit_circuit_to_qtrl_strings</span><span class="p">(</span><span class="n">circ</span><span class="p">)</span>
+        <span class="n">string</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">string</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">string</span> <span class="o">=</span> <span class="n">qiskit_circuit_to_qasm_string</span><span class="p">(</span><span class="n">circ</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">string</span></div>
+
+
+<div class="viewcode-block" id="convert_string_to_circuit"><a class="viewcode-back" href="../../../../fd_greens.qiskit_ver.utils.interface_utils.html#fd_greens.qiskit_ver.utils.interface_utils.convert_string_to_circuit">[docs]</a><span class="k">def</span> <span class="nf">convert_string_to_circuit</span><span class="p">(</span><span class="n">string</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">kind</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">QuantumCircuit</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Converts a qtrl or qasm string to its circuit form.</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        string: A qtrl or qasm string to be converted to a circuit.</span>
+<span class="sd">        kind: The type of input string, ``&quot;qtrl&quot;`` or ``&quot;qasm&quot;``.</span>
+<span class="sd">    </span>
+<span class="sd">    Returns:</span>
+<span class="sd">        circ: The circuit created from the string.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">assert</span> <span class="n">kind</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;qtrl&quot;</span><span class="p">,</span> <span class="s2">&quot;qasm&quot;</span><span class="p">]</span>
+    <span class="k">if</span> <span class="n">kind</span> <span class="o">==</span> <span class="s2">&quot;qtrl&quot;</span><span class="p">:</span>
+        <span class="n">qtrl_strs</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">string</span><span class="p">)</span>
+        <span class="n">circ</span> <span class="o">=</span> <span class="n">qtrl_strings_to_qiskit_circuit</span><span class="p">(</span><span class="n">qtrl_strs</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">qasm_str</span> <span class="o">=</span> <span class="n">string</span><span class="o">.</span><span class="n">decode</span><span class="p">()</span>
+        <span class="n">circ</span> <span class="o">=</span> <span class="n">QuantumCircuit</span><span class="o">.</span><span class="n">from_qasm_str</span><span class="p">(</span><span class="n">qasm_str</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">circ</span></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Shi-Ning Sun.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
