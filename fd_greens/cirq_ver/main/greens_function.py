@@ -32,6 +32,145 @@ class GreensFunction:
         self.n_orb = self.B_e.shape[0]
         self.e_orb = h5file[f"amp/e_orb{suffix}"]
 
+    def _process_diagonal_results(self) -> None:
+        """Post-processes diagonal transition amplitude results."""
+        h5file = h5py.File(self.h5fname, "r+")
+
+        for m in range(self.n_orb):  # 0, 1
+            if self.method == "exact":
+                psi = h5file[f"circ{m}{self.spin}/transpiled"].attrs[
+                    f"psi{self.suffix}"
+                ]
+                for key in self.keys_diag:
+                    # print('key =', key)
+                    psi[abs(psi) < 1e-8] = 0.0
+                    # print('psi =', psi)
+                    psi_key = self.qinds_tot_diag[key](psi)
+                    # print('psi_key =', psi_key)
+                    # print('states[key] =', self.states[key])
+
+                    # Obtain the B matrix elements by computing the overlaps.
+                    self.B[key][m, m] = np.abs(self.states[key].conj().T @ psi_key) ** 2
+                    if self.verbose:
+                        print(f"B[{key}][{m}, {m}] = {self.B[key][m, m]}")
+
+            elif self.method == "tomo":
+                for key, qind in zip(self.keys_diag, self.qinds_anc_diag):
+                    # Stack counts_arr over all tomography labels together. The procedure is to
+                    # first extract the raw counts_arr, slice the counts array to the specific
+                    # label, and then stack the counts_arr_label to counts_arr_key.
+                    counts_arr_key = np.array([])
+                    for tomo_label in self.tomo_labels:
+                        counts_arr = h5file[f"circ{m}{self.spin}/{tomo_label}"].attrs[
+                            f"counts{self.suffix}"
+                        ]
+                        start = int("".join([str(i) for i in qind])[::-1], 2)
+                        counts_arr_label = counts_arr[start :: 2 ** self.n_anc_diag]
+                        counts_arr_label = counts_arr_label / np.sum(counts_arr)
+                        counts_arr_key = np.hstack((counts_arr_key, counts_arr_label))
+
+                    # Obtain the density matrix from tomography. Slice the density matrix
+                    # based on whether we are considering 'e' or 'h' on the system qubits.
+                    rho = np.linalg.lstsq(basis_matrix, counts_arr_key)[0]
+                    rho = rho.reshape(2 ** self.n_sys, 2 ** self.n_sys, order="F")
+                    rho = self.qinds_sys[key](rho)
+
+                    # Obtain the B matrix elements by computing the overlaps between
+                    # the density matrix and the states from EHStatesSolver.
+                    self.B[key][m, m] = [
+                        get_overlap(self.states[key][:, i], rho)
+                        for i in range(self.n_states[key])
+                    ]
+                    if self.verbose:
+                        print(f"B[{key}][{m}, {m}] = {self.B[key][m, m]}")
+
+        h5file.close()
+
+    def _process_off_diagonal_results(self) -> None:
+        """Post-processes off-diagonal transition amplitude results."""
+        h5file = h5py.File(self.h5fname, "r+")
+
+        if self.method == "exact":
+            psi = h5file[f"circ01{self.spin}/transpiled"].attrs[f"psi{self.suffix}"]
+            # print("psi norm^2 =", np.linalg.norm(psi) ** 2)
+            l = []
+            for i, x in enumerate(psi):
+                if abs(x) > 1e-8:
+                    l.append(f"{int(bin(i)[2:]):04}")
+            # print('nonzero indices =', l)
+
+            for key in self.keys_off_diag:
+                qinds = self.qinds_tot_off_diag[key]
+                # print("qinds =", qinds)
+                psi_key = qinds(psi)
+                # print("psi_key norm^2 =", np.linalg.norm(psi_key) ** 2)
+
+                # Obtain the D matrix elements by computing the overlaps.
+                self.D[key][0, 1] = self.D[key][1, 0] = (
+                    abs(self.states[key[0]].conj().T @ psi_key) ** 2
+                )
+                if self.verbose:
+                    print(f"D[{key}][0, 1] =", self.D[key][0, 1])
+
+        elif self.method == "tomo":
+            for key, qind in zip(self.keys_off_diag, self.qinds_anc_off_diag):
+                # Stack counts_arr over all tomography labels together. The procedure is to
+                # first extract the raw counts_arr, slice the counts array to the specific
+                # label, and then stack the counts_arr_label to counts_arr_key.
+                counts_arr_key = np.array([])
+                for tomo_label in self.tomo_labels:
+                    counts_arr = h5file[f"circ01{self.spin}/{tomo_label}"].attrs[
+                        f"counts{self.suffix}"
+                    ]
+                    start = int("".join([str(i) for i in qind])[::-1], 2)
+                    counts_arr_label = counts_arr[
+                        start :: 2 ** self.n_anc_off_diag
+                    ]  # 4 is because 2 ** 2
+                    counts_arr_label = counts_arr_label / np.sum(counts_arr)
+                    counts_arr_key = np.hstack((counts_arr_key, counts_arr_label))
+
+                # Obtain the density matrix from tomography. Slice the density matrix
+                # based on whether we are considering 'e' or 'h' on the system qubits.
+                rho = np.linalg.lstsq(basis_matrix, counts_arr_key)[0]
+                rho = rho.reshape(2 ** self.n_sys, 2 ** self.n_sys, order="F")
+                rho = self.qinds_sys[key[0]](rho)
+
+                # Obtain the D matrix elements by computing the overlaps between
+                # the density matrix and the states from EHStatesSolver.
+                self.D[key][0, 1] = self.D[key][1, 0] = [
+                    get_overlap(self.states[key[0]][:, i], rho)
+                    for i in range(self.n_states[key[0]])
+                ]
+                if self.verbose:
+                    print(f"D[{key}][0, 1] =", self.D[key][0, 1])
+
+        # Unpack D values to B values based on Eq. (18) of Kosugi and Matsushita 2020.
+        for key in self.keys_diag:
+            self.B[key][0, 1] = self.B[key][1, 0] = np.exp(-1j * np.pi / 4) * (
+                self.D[key + "p"][0, 1] - self.D[key + "m"][0, 1]
+            ) + np.exp(1j * np.pi / 4) * (
+                self.D[key + "p"][1, 0] - self.D[key + "m"][1, 0]
+            )
+            if self.verbose:
+                print(f"B[{key}][0, 1] =", self.B[key][0, 1])
+
+        h5file.close()
+
+    def _save_data(self) -> None:
+        """Saves transition amplitudes data to HDF5 file."""
+        h5file = h5py.File(self.h5fname, "r+")
+
+        # Saves B_e and B_h.
+        write_hdf5(h5file, "amp", f"B_e{self.suffix}", self.B["e"])
+        write_hdf5(h5file, "amp", f"B_h{self.suffix}", self.B["h"])
+
+        # Saves orbital energies for calculating the self-energy.
+        e_orb = np.diag(self.h.molecule.orbital_energies)
+        act_inds = self.h.act_inds
+        write_hdf5(h5file, "amp", f"e_orb{self.suffix}", e_orb[act_inds][:, act_inds])
+
+        h5file.close()
+        
     @property
     def density_matrix(self) -> np.ndarray:
         """The density matrix obtained from the transition amplitudes."""

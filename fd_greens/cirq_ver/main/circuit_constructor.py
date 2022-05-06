@@ -13,8 +13,6 @@ import numpy as np
 import cirq
 from qiskit.quantum_info import SparsePauliOp
 
-from fd_greens.cirq_ver.utils import tomography_utils
-
 
 class CircuitConstructor:
     """Constructor of transition amplitude circuits."""
@@ -157,6 +155,8 @@ class CircuitConstructor:
 
         return circuit
 
+    build_diagonal_circuit = build_diagonal
+
     def build_off_diagonal(
         self, first_pauli_op: SparsePauliOp, second_pauli_op: SparsePauliOp
     ) -> cirq.Circuit:
@@ -209,6 +209,8 @@ class CircuitConstructor:
         circuit.append(cirq.H(self.qubits[0]))
         circuit.append(cirq.H(self.qubits[1]))
         return circuit
+
+    build_off_diagonal_circuit = build_off_diagonal
 
     @staticmethod
     def build_tomography_circuits(

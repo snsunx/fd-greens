@@ -44,8 +44,8 @@ class C0C0iXGate(cirq.ThreeQubitGate):
 C0C0iX = C0C0iXGate()
 
 
-def convert_ccz_to_c0ixc0(circuit: cirq.Circuit) -> cirq.Circuit:
-    """Converts CCZs to C0iXC0s in a Cirq circuit.
+def convert_ccz_to_c0c0ix(circuit: cirq.Circuit) -> cirq.Circuit:
+    """Converts CCZs to C0C0iXs in a Cirq circuit.
     
     Args:
         circuit: The circuit to be converted.
@@ -54,8 +54,6 @@ def convert_ccz_to_c0ixc0(circuit: cirq.Circuit) -> cirq.Circuit:
         circuit_new: The new circuit after conversion.
     """
     circuit_new = cirq.Circuit()
-    print(circuit[:10])
-    print(circuit[10:])
 
     count = 0
     for moment in circuit.moments:
@@ -89,9 +87,6 @@ def convert_ccz_to_c0ixc0(circuit: cirq.Circuit) -> cirq.Circuit:
             else:
                 circuit_new.append(op)
 
-    print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
-    print(circuit_new[:10])
-    print(circuit_new[10:])
     assert circuit_equal(circuit, circuit_new, False)
     return circuit_new
 
@@ -131,7 +126,7 @@ def convert_swap_to_cz(circuit: cirq.Circuit) -> cirq.Circuit:
 
 
 def convert_phxz_to_xpi2(circuit: cirq.Circuit) -> cirq.Circuit:
-    """Converts PhasedXZGate to X(pi/2) and virtual Z gates.
+    """Converts ``PhasedXZGate``s to X(pi/2) gates and virtual Z gates.
     
     Args:
         circuit: The circuit to be converted.
@@ -173,7 +168,7 @@ def transpile_into_berkeley_gates(circuit: cirq.Circuit) -> cirq.Circuit:
     """
     circuit_new = circuit.copy()
     # Three-qubit transpilation
-    # circuit_new = convert_ccz_to_c0ixc0(circuit)
+    # circuit_new = convert_ccz_to_c0c0ix(circuit)
 
     # Two-qubit transpilation
     circuit_new = convert_swap_to_cz(circuit_new)

@@ -144,6 +144,9 @@ class CircuitStringConverter:
                 gate = op.gate
                 qubits = op.qubits
 
+                if isinstance(op.gate, cirq.MeasurementGate):
+                    continue
+
                 gstr = self._gate_to_gstr(gate)
                 qstr = self._qubits_to_qstr(qubits)
 

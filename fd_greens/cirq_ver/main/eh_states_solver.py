@@ -18,21 +18,16 @@ from ..utils import write_hdf5
 
 
 class EHStatesSolver:
-    """A class to calculate and store information of (N±1)-electron states."""
+    """(N±1)-electron states solver."""
 
     def __init__(
-        self,
-        h: MolecularHamiltonian,
-        q_instance: Optional[QuantumInstance] = None,
-        spin: str = "d",
-        h5fname: str = "lih",
+        self, h: MolecularHamiltonian, spin: str = "d", h5fname: str = "lih"
     ) -> None:
         """Initializes an ``EHStatesSolver`` object.
         
         Args:
             h: The molecular Hamiltonian.
-            q_instance: The quantum instance for (N±1)-electron state calculation.
-            spin: A character indicating whether up spins (``'u'``) or down spins (``'d'``) are included.
+            spin: A character indicating whether up (``'u'``) or down spins (``'d'``) are included.
             h5fname: The HDF5 file name.
         """
         assert spin in ["u", "d"]
@@ -46,11 +41,6 @@ class EHStatesSolver:
             "e": transform_4q_indices(e_inds[self.spin]),
             "h": transform_4q_indices(h_inds[self.hspin]),
         }
-
-        if q_instance is None:
-            self.q_instance = QuantumInstance(Aer.get_backend("statevector_simulator"))
-        else:
-            self.q_instance = q_instance
         self.h5fname = h5fname + ".h5"
 
         self.energies_e = None

@@ -19,7 +19,9 @@ from typing import (
 )
 from itertools import product
 from copy import deepcopy
+from collections import Counter
 
+import math
 import numpy as np
 import cirq
 from qiskit import (
@@ -300,3 +302,19 @@ def decompose_1q_gate(U: np.ndarray, qubit: cirq.Qid) -> List[cirq.Operation]:
 
     assert unitary_equal(cirq.Circuit(operations).unitary(), U)
     return operations
+
+def histogram_to_array(histogram: Counter, n_qubits: Optional[int] = None) -> np.ndarray:
+    """Converts a Cirq histogram to a numpy array."""
+    if n_qubits is None:
+        keys = histogram.keys()
+        inds = []
+        for key in keys:
+            ind = int(''.join([str(i) for i in key]), 2)
+            inds.append(ind + 1)
+        n_qubits = math.ceil(math.log2(max(inds)))
+            
+    arr = np.zeros((2 ** n_qubits,))
+    for key, val in histogram.items():
+        ind = int(''.join([str(i) for i in key]), 2)
+        arr[ind] = val
+    return arr
