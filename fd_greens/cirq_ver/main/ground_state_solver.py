@@ -79,7 +79,6 @@ class GroundStateSolver:
         unitaries. 
         """
         assert U.shape == (4, 4)
-        assert len(self.qubits) == 2
 
         M = np.array(
             [[1, 1j, 0, 0], [0, 0, 1j, 1], [0, 0, 1j, -1], [1, -1j, 0, 0]]

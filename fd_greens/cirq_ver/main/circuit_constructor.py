@@ -4,13 +4,16 @@ Circuit Constructor (:mod:`fd_greens.cirq_ver.main.circuit_constructor`)
 ========================================================================
 """
 
-from typing import Sequence, Optional
+from itertools import product
+from typing import Mapping, Sequence, Optional, Tuple
 from cmath import polar
 
 import numpy as np
 
 import cirq
 from qiskit.quantum_info import SparsePauliOp
+
+from fd_greens.cirq_ver.utils import tomography_utils
 
 
 class CircuitConstructor:
@@ -135,8 +138,8 @@ class CircuitConstructor:
 
         # Copy the ansatz circuit with offset 1.
         circuit = cirq.Circuit()
-        for pauli_op in self.ansatz.all_operations():
-            circuit.append(pauli_op.gate(*[q + 1 for q in pauli_op.qubits]))
+        for op in self.ansatz.all_operations():
+            circuit.append(op.gate(*[q + 1 for q in op.qubits]))
 
         # Append Hadamard gate on the ancilla at the beginning.
         circuit.append(cirq.H(self.qubits[0]))
@@ -206,3 +209,44 @@ class CircuitConstructor:
         circuit.append(cirq.H(self.qubits[0]))
         circuit.append(cirq.H(self.qubits[1]))
         return circuit
+
+    @staticmethod
+    def build_tomography_circuits(
+        circuit: cirq.Circuit, qubits: Sequence[cirq.Qid], append_measure: bool = True
+    ) -> Mapping[str, cirq.Circuit]:
+        """Constructs tomography circuits on a given circuit.
+        
+        Args:
+            circuit: The circuit to be tomographed.
+            qubits: The qubits to be tomographed.
+            append_measure: Whether to append measurement gates.
+        
+        Returns:
+            tomography_circuits: A dictionary with tomography labels as keys and tomography 
+                circuits as values."""
+        tomography_labels = ["".join(x) for x in product("xyz", repeat=len(qubits))]
+        tomography_circuits = dict()
+
+        # TODO: Take swap gates into account.
+        for label in tomography_labels:
+            tomography_circuit = circuit.copy()
+            for q, s in zip(qubits, label):
+                if s == "x":
+                    tomography_circuit.append(
+                        [
+                            cirq.ZPowGate(exponent=0.5)(q),
+                            cirq.XPowGate(exponent=0.5)(q),
+                            cirq.ZPowGate(exponent=0.5)(q),
+                        ]
+                    )
+                elif s == "y":
+                    tomography_circuit.append(
+                        [cirq.XPowGate(exponent=0.5)(q), cirq.ZPowGate(exponent=0.5)(q)]
+                    )
+
+                if append_measure:
+                    tomography_circuit.append(cirq.measure(q))
+
+            tomography_circuits[label] = tomography_circuit
+
+        return tomography_circuits

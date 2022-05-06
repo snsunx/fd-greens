@@ -264,6 +264,8 @@ def unitary_equal(
         vec1 /= phase1
         vec2 /= phase2
         is_equal = np.allclose(vec1, vec2)
+        if not is_equal:
+            print("The difference is ", np.linalg.norm(vec1 - vec2))
     else:
         # Obtain the phase from the first row.
         ind = np.argmax(np.abs(uni1[0]))

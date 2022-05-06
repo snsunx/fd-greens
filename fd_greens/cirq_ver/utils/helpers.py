@@ -64,3 +64,14 @@ def get_quantum_instance(type_str: str) -> QuantumInstance:
             shots=10000,
         )
     return q_instance
+
+def print_information(amp_solver) -> None:
+
+    print("----- Printing out physical quantities -----")
+    print(f"Number of electrons is {amp_solver.n_elec}")
+    print(f"Number of orbitals is {amp_solver.n_orb}")
+    print(f"Number of occupied orbitals is {amp_solver.n_occ}")
+    print(f"Number of virtual orbitals is {amp_solver.n_vir}")
+    print(f"Number of (N+1)-electron states is {amp_solver.n_e}")
+    print(f"Number of (N-1)-electron states is {amp_solver.n_h}")
+    print("--------------------------------------------")

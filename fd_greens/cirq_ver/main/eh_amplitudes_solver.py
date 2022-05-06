@@ -8,11 +8,13 @@ from typing import Optional, Sequence
 from functools import partial
 
 import h5py
+import json
 import numpy as np
 from scipy.special import binom
 
-from qiskit import QuantumCircuit, Aer
-from qiskit.utils import QuantumInstance
+import cirq
+
+from fd_greens.cirq_ver.utils.circuit_string_converter import CircuitStringConverter
 
 from .qubit_indices import e_inds, h_inds
 from .molecular_hamiltonian import MolecularHamiltonian
@@ -20,7 +22,6 @@ from .operators import SecondQuantizedOperators
 from .z2symmetries import transform_4q_pauli, transform_4q_indices
 from .circuit_constructor import CircuitConstructor
 
-# from .transpilation_backup import transpile_into_berkeley_gates
 from ..utils import (
     get_overlap,
     counts_dict_to_arr,
@@ -29,6 +30,8 @@ from ..utils import (
     append_tomography_gates,
     append_measurement_gates,
     get_tomography_labels,
+    print_information,
+    transpile_into_berkeley_gates,
 )
 
 np.set_printoptions(precision=6)
@@ -40,10 +43,9 @@ class EHAmplitudesSolver:
     def __init__(
         self,
         h: MolecularHamiltonian,
-        q_instance: Optional[QuantumInstance] = None,
+        qubits: Sequence[cirq.Qid],
         method: str = "exact",
         h5fname: str = "lih",
-        anc: Sequence[int] = [0, 1],
         spin: str = "d",
         suffix: str = "",
         verbose: bool = True,
@@ -52,11 +54,9 @@ class EHAmplitudesSolver:
 
         Args:
             h: The molecular Hamiltonian.
-            q_instance: The quantum instance for executing the circuits.
-            method: The method for calculating the transition amplitudes. Either
+            method: The method for calculating the transition amplitudes. Either 
                 ``"exact"`` or ``"tomo"``.
             h5fname: The HDF5 file name.
-            anc: Indices of the ancilla qubits.
             spin: The spin of the creation and annihilation operators.
             suffix: The suffix for a specific experimental run.
             verbose: Whether to print out information about the calculation.
@@ -66,19 +66,14 @@ class EHAmplitudesSolver:
 
         # Basic variables.
         self.h = h
-        if q_instance is None:
-            self.q_instance = QuantumInstance(Aer.get_backend("statevector_simulator"))
-        else:
-            self.q_instance = q_instance
+        self.qubits = qubits
         self.method = method
-        self.anc = anc
-        self.sys = [i for i in range(4) if i not in anc]  # 4 is hardcoded
         self.spin = spin
         self.hspin = "d" if self.spin == "u" else "u"
         self.suffix = suffix
         self.verbose = verbose
 
-        self.circ_str_type = "qtrl"
+        self.circuits = dict()
 
         # Hardcoded problem parameters.
         self.n_anc_diag = 1
@@ -90,15 +85,22 @@ class EHAmplitudesSolver:
         self._initialize()
 
     def _initialize(self) -> None:
-        """Loads ground state and (N+/-1)-electron states data from hdf5 file."""
-        # Attributes from ground and (N+/-1)-electron state solver.
+        """Loads ground state and (N±1)-electron states data from HDF5 file."""
+        # Attributes from ground and (N±1)-electron state solver.
         h5file = h5py.File(self.h5fname, "r+")
 
-        self.ansatz = QuantumCircuit.from_qasm_str(h5file["gs/ansatz"][()].decode())
+        self.circuit_string_converter = CircuitStringConverter(self.qubits)
+        print(h5file["gs/ansatz"][()])
+
+        strings = json.loads(h5file["gs/ansatz"][()])
+
+        self.ansatz = self.circuit_string_converter.convert_strings_to_circuit(strings)
         self.states = {"e": h5file["es/states_e"][:], "h": h5file["es/states_h"][:]}
+        self.circuit_constructor = CircuitConstructor(self.ansatz, self.qubits)
+
         h5file.close()
 
-        # Number of spatial orbitals and (N+/-1)-electron states.
+        # Number of spatial orbitals and (N±1)-electron states.
         self.n_states = {"e": self.states["e"].shape[1], "h": self.states["h"].shape[1]}
         self.n_elec = self.h.molecule.n_electrons
         self.n_orb = len(self.h.act_inds)
@@ -144,51 +146,37 @@ class EHAmplitudesSolver:
         second_q_ops = SecondQuantizedOperators(self.h.molecule.n_electrons)
         second_q_ops.transform(partial(transform_4q_pauli, init_state=[1, 1]))
         self.pauli_dict = second_q_ops.get_pauli_dict()
-        # for key, val in self.pauli_dict.items():
-        #     print(key, val.coeffs, val.table.to_labels())
 
-        # The circuit constructor and tomography labels.
-        self.constructor = CircuitConstructor(self.ansatz, anc=self.anc)
-        self.tomo_labels = get_tomography_labels(self.n_sys)
-
-        # print("----- Printing out physical quantities -----")
-        # print(f"Number of electrons is {self.n_elec}")
-        # print(f"Number of orbitals is {self.n_orb}")
-        # print(f"Number of occupied orbitals is {self.n_occ}")
-        # print(f"Number of virtual orbitals is {self.n_vir}")
-        # print(f"Number of (N+1)-electron states is {self.n_e}")
-        # print(f"Number of (N-1)-electron states is {self.n_h}")
-        # print("--------------------------------------------")
+        if self.verbose:
+            print_information(self)
 
     def _build_diagonal(self) -> None:
         """Constructs diagonal transition amplitude circuits."""
         h5file = h5py.File(self.h5fname, "r+")
 
         for m in range(self.n_orb):
-            # Build the circuit based on the creation/annihilation operator
-            # and store the QASM string in the HDF5 file.
+            # Build the diagonal circuit based on the creation/annihilation operator.
             a_op = self.pauli_dict[(m, self.spin)]
-
-            # Build the diagonal circuit and save to HDF5 file.
-            circuit = self.constructor.build_diagonal(a_op)
-            # circ_str = convert_circuit_to_string(circ, self.circ_str_type)
-            # write_hdf5(h5file, f"circ{m}{self.spin}", "untranspiled", circ_str)
+            circuit = self.circuit_constructor.build_diagonal(a_op)
 
             # Transpile the circuit and save to HDF5 file.
-            # circ = transpile_into_berkeley_gates(circ, str(m) + self.spin)
-            circuit_str = convert_circuit_to_string(circuit, self.circ_str_type)
-            write_hdf5(h5file, f"circ{m}{self.spin}", "transpiled", circuit_str)
+            circuit = transpile_into_berkeley_gates(circuit)
+            strings = self.circuit_string_converter.convert_circuit_to_strings(circuit)
+            write_hdf5(h5file, f"circ{m}{self.spin}", "transpiled", json.dumps(strings))
+            self.circuits[f"circ{m}{self.spin}"] = circuit
 
             if self.method == "tomo":
-                for tomo_label in self.tomo_labels:
-                    # When using tomography, build circuits with tomography and measurement
-                    # gates appended and store the QASM string in the HDF5 file.
-                    tomo_circuit = append_tomography_gates(circuit, [1, 2], tomo_label)
-                    tomo_circuit = append_measurement_gates(tomo_circuit)
-                    circuit_str = convert_circuit_to_string(
-                        tomo_circuit, self.circuit_str_type
+                tomography_circuits = self.circuit_constructor.build_tomography_circuits(
+                    circuit, self.qubits[1:]
+                )
+
+                for label, tomography_circuit in tomography_circuits.items():
+                    strings = self.circuit_string_converter.convert_circuit_to_strings(
+                        tomography_circuit
                     )
-                    write_hdf5(h5file, f"circ{m}{self.spin}", tomo_label, circuit)
+                    write_hdf5(
+                        h5file, f"circ{m}{self.spin}{label}", json.dumps(strings)
+                    )
 
         h5file.close()
 
@@ -282,29 +270,28 @@ class EHAmplitudesSolver:
         """Constructs off-diagonal transition amplitude circuits."""
         h5file = h5py.File(self.h5fname, "r+")
 
+        # Build the off-diagonal circuit based on the creation/annihilation operators.
         a_op_0 = self.pauli_dict[(0, self.spin)]
         a_op_1 = self.pauli_dict[(1, self.spin)]
-
-        # Build the diagonal circuit and save to HDF5 file.
-        if self.spin == "u":
-            circ = self.constructor.build_off_diagonal(a_op_0, a_op_1)
-        else:
-            circ = self.constructor.build_off_diagonal(a_op_0, a_op_1)
-        # print(set([x[0].name for x in circ]))
-        # circ_str = convert_circuit_to_string(circ, self.circ_str_type)
-        # write_hdf5(h5file, f"circ01{self.spin}", "untranspiled", circ_str)
+        circuit = self.circuit_constructor.build_off_diagonal(a_op_0, a_op_1)
 
         # Transpile the circuit and save to HDF5 file.
-        circ = transpile_into_berkeley_gates(circ, "01" + self.spin)
-        circ_str = convert_circuit_to_string(circ, self.circ_str_type)
-        write_hdf5(h5file, f"circ01{self.spin}", "transpiled", circ_str)
+        circuit = transpile_into_berkeley_gates(circuit)
+        strings = self.circuit_string_converter.convert_circuit_to_strings(circuit)
+        print("strings\n", strings)
+        write_hdf5(h5file, f"circ01{self.spin}", "transpiled", strings)
+        self.circuits[f"circ01{self.spin}"] = circuit
 
         if self.method == "tomo":
-            for tomo_label in self.tomo_labels:
-                tomo_circ = append_tomography_gates(circ, self.sys, tomo_label)
-                tomo_circ = append_measurement_gates(tomo_circ)
-                circ_str = convert_circuit_to_string(tomo_circ, self.circ_str_type)
-                write_hdf5(h5file, f"circ01{self.spin}", tomo_label, circ_str)
+            tomography_circuits = self.circuit_constructor.build_tomography_circuits(
+                circuit, self.qubits[2:]
+            )
+
+            for label, tomography_circuit in tomography_circuits.items():
+                strings = self.circuit_string_converter.convert_circuit_to_strings(
+                    tomography_circuit
+                )
+                write_hdf5(h5file, f"circ01{self.spin}{label}", json.dumps(strings))
 
         h5file.close()
 

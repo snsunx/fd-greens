@@ -45,7 +45,7 @@ C0C0iX = C0C0iXGate()
 
 
 def convert_ccz_to_c0ixc0(circuit: cirq.Circuit) -> cirq.Circuit:
-    """Converts CCZ to C0iXC0 in a Cirq circuit.
+    """Converts CCZs to C0iXC0s in a Cirq circuit.
     
     Args:
         circuit: The circuit to be converted.
@@ -54,6 +54,8 @@ def convert_ccz_to_c0ixc0(circuit: cirq.Circuit) -> cirq.Circuit:
         circuit_new: The new circuit after conversion.
     """
     circuit_new = cirq.Circuit()
+    print(circuit[:10])
+    print(circuit[10:])
 
     count = 0
     for moment in circuit.moments:
@@ -72,7 +74,7 @@ def convert_ccz_to_c0ixc0(circuit: cirq.Circuit) -> cirq.Circuit:
 
                 cs_ops = [
                     cirq.SWAP(qubits[0], qubits[1]),
-                    cirq.CZPowGate(exponent=0.5)(qubits[1], qubits[2]),
+                    cirq.CZPowGate(exponent=-0.5)(qubits[1], qubits[2]),
                     cirq.SWAP(qubits[0], qubits[1]),
                 ]
 
@@ -87,12 +89,15 @@ def convert_ccz_to_c0ixc0(circuit: cirq.Circuit) -> cirq.Circuit:
             else:
                 circuit_new.append(op)
 
-    assert circuit_equal(circuit, circuit_new)
+    print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+    print(circuit_new[:10])
+    print(circuit_new[10:])
+    assert circuit_equal(circuit, circuit_new, False)
     return circuit_new
 
 
 def convert_swap_to_cz(circuit: cirq.Circuit) -> cirq.Circuit:
-    """Converts SWAP to CZ in a Cirq circuit.
+    """Converts SWAPs to CZs in a Cirq circuit.
     
     Args:
         circuit: The circuit to be converted.
@@ -121,7 +126,7 @@ def convert_swap_to_cz(circuit: cirq.Circuit) -> cirq.Circuit:
             circuit_new.insert(0, op)
             convert_swap = True
 
-    assert circuit_equal(circuit, circuit_new)
+    assert circuit_equal(circuit, circuit_new, False)
     return circuit_new
 
 
@@ -166,8 +171,9 @@ def transpile_into_berkeley_gates(circuit: cirq.Circuit) -> cirq.Circuit:
     Returns:
         circuit_new: The new circuit after transpilation.
     """
+    circuit_new = circuit.copy()
     # Three-qubit transpilation
-    circuit_new = convert_ccz_to_c0ixc0(circuit)
+    # circuit_new = convert_ccz_to_c0ixc0(circuit)
 
     # Two-qubit transpilation
     circuit_new = convert_swap_to_cz(circuit_new)
