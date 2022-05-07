@@ -25,10 +25,6 @@ from .z2symmetries import transform_4q_pauli, transform_4q_indices
 from .circuit_constructor import CircuitConstructor
 
 from ..utils import (
-    get_overlap,
-    counts_dict_to_arr,
-    write_hdf5,
-    basis_matrix,
     print_information,
     transpile_into_berkeley_gates,
     histogram_to_array
@@ -91,14 +87,11 @@ class EHAmplitudesSolver:
         h5file = h5py.File(self.h5fname, "r+")
 
         self.circuit_string_converter = CircuitStringConverter(self.qubits)
-        print(h5file["gs/ansatz"][()])
 
-        strings = json.loads(h5file["gs/ansatz"][()])
-
-        self.ansatz = self.circuit_string_converter.convert_strings_to_circuit(strings)
+        qtrl_strings = json.loads(h5file["gs/ansatz"][()])
+        self.ansatz = self.circuit_string_converter.convert_strings_to_circuit(qtrl_strings)
         self.states = {"e": h5file["es/states_e"][:], "h": h5file["es/states_h"][:]}
         self.circuit_constructor = CircuitConstructor(self.ansatz, self.qubits)
-
         h5file.close()
 
         # Number of spatial orbitals and (N±1)-electron states.
@@ -175,6 +168,7 @@ class EHAmplitudesSolver:
 
             # Execute the circuit and store the statevector in the HDF5 file.
             state_vector = cirq.sim.final_state_vector(circuit)
+            state_vector[abs(state_vector) < 1e-8] = 0.0
             dset_transpiled.attrs[f"psi{self.suffix}"] = state_vector
 
             if self.method == "tomo":

@@ -9,7 +9,11 @@ from typing import Union, Sequence, Optional
 
 import h5py
 import numpy as np
+from itertools import product
 
+from fd_greens.cirq_ver.utils import tomography_utils
+
+from ..utils import write_hdf5, get_overlap, basis_matrix 
 
 class GreensFunction:
     """A class to calculate frequency-domain Green's function."""
@@ -37,52 +41,49 @@ class GreensFunction:
         h5file = h5py.File(self.h5fname, "r+")
 
         for m in range(self.n_orb):  # 0, 1
+            circuit_label = f"circ{m}/transpiled"
             if self.method == "exact":
-                psi = h5file[f"circ{m}{self.spin}/transpiled"].attrs[
-                    f"psi{self.suffix}"
-                ]
-                for key in self.keys_diag:
-                    # print('key =', key)
-                    psi[abs(psi) < 1e-8] = 0.0
-                    # print('psi =', psi)
-                    psi_key = self.qinds_tot_diag[key](psi)
-                    # print('psi_key =', psi_key)
-                    # print('states[key] =', self.states[key])
+                state_vector = h5file[circuit_label].attrs[f"psi{self.suffix}"]
+                for subscript in ["e", "h"]:
+                    state_vector_subscript = self.qubit_indices_dict[subscript](state_vector)
 
                     # Obtain the B matrix elements by computing the overlaps.
-                    self.B[key][m, m] = np.abs(self.states[key].conj().T @ psi_key) ** 2
+                    # TODO: Can change this to get_overlap.
+                    self.B[subscript][m, m] = np.abs(self.states[subscript].conj().T @ state_vector_subscript) ** 2
                     if self.verbose:
-                        print(f"B[{key}][{m}, {m}] = {self.B[key][m, m]}")
+                        print(f"B[{subscript}][{m}, {m}] = {self.B[subscript][m, m]}")
 
             elif self.method == "tomo":
-                for key, qind in zip(self.keys_diag, self.qinds_anc_diag):
+                for subscript in ["e", "h"]:
+                    # , qind in zip(self.keys_diag, self.qinds_anc_diag):
                     # Stack counts_arr over all tomography labels together. The procedure is to
                     # first extract the raw counts_arr, slice the counts array to the specific
                     # label, and then stack the counts_arr_label to counts_arr_key.
+                    tomography_labels = [''.join(x) for x in product("xyz", repeat=2)]
                     counts_arr_key = np.array([])
-                    for tomo_label in self.tomo_labels:
-                        counts_arr = h5file[f"circ{m}{self.spin}/{tomo_label}"].attrs[
-                            f"counts{self.suffix}"
-                        ]
-                        start = int("".join([str(i) for i in qind])[::-1], 2)
-                        counts_arr_label = counts_arr[start :: 2 ** self.n_anc_diag]
+                    qubit_indices_subscript = self.qubit_indices_dict[subscript]
+
+                    for tomography_label in tomography_labels:
+                        counts_arr = h5file[f"{circuit_label}/{tomography_label}"].attrs[f"counts{self.suffix}"]
+                        start_index = int("".join([str(i) for i in qubit_indices_subscript.ancilla])[::-1], 2)
+                        counts_arr_label = counts_arr[start_index :: 2 ** self.n_anc_diag ]
                         counts_arr_label = counts_arr_label / np.sum(counts_arr)
                         counts_arr_key = np.hstack((counts_arr_key, counts_arr_label))
 
                     # Obtain the density matrix from tomography. Slice the density matrix
                     # based on whether we are considering 'e' or 'h' on the system qubits.
-                    rho = np.linalg.lstsq(basis_matrix, counts_arr_key)[0]
-                    rho = rho.reshape(2 ** self.n_sys, 2 ** self.n_sys, order="F")
-                    rho = self.qinds_sys[key](rho)
+                    density_matrix = np.linalg.lstsq(basis_matrix, counts_arr_key)[0]
+                    density_matrix = density_matrix.reshape(2 ** self.n_sys, 2 ** self.n_sys, order="F")
+                    density_matrix = qubit_indices_subscript.system(density_matrix)
 
                     # Obtain the B matrix elements by computing the overlaps between
                     # the density matrix and the states from EHStatesSolver.
-                    self.B[key][m, m] = [
-                        get_overlap(self.states[key][:, i], rho)
-                        for i in range(self.n_states[key])
+                    self.B[subscript][m, m] = [
+                        get_overlap(self.states[subscript][:, i], density_matrix)
+                        for i in range(self.n_states[subscript])
                     ]
                     if self.verbose:
-                        print(f"B[{key}][{m}, {m}] = {self.B[key][m, m]}")
+                        print(f"B[{subscript}][{m}, {m}] = {self.B[subscript][m, m]}")
 
         h5file.close()
 
@@ -170,7 +171,7 @@ class GreensFunction:
         write_hdf5(h5file, "amp", f"e_orb{self.suffix}", e_orb[act_inds][:, act_inds])
 
         h5file.close()
-        
+
     @property
     def density_matrix(self) -> np.ndarray:
         """The density matrix obtained from the transition amplitudes."""
