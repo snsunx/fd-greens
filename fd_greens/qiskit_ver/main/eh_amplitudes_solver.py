@@ -120,7 +120,7 @@ class EHAmplitudesSolver:
         self.qinds_tot_diag = dict()
         for key, qind in zip(self.keys_diag, self.qinds_anc_diag):
             self.qinds_tot_diag[key] = self.qinds_sys[key].insert_ancilla(qind)
-            print('qinds_tot_diag', key, self.qinds_tot_diag[key].list_form)
+            print(key, self.qinds_tot_diag[key].list_form)
 
         # Build qubit indices for off-diagonal circuits.
         self.keys_off_diag = ["ep", "em", "hp", "hm"]
@@ -128,7 +128,7 @@ class EHAmplitudesSolver:
         self.qinds_tot_off_diag = dict()
         for key, qind in zip(self.keys_off_diag, self.qinds_anc_off_diag):
             self.qinds_tot_off_diag[key] = self.qinds_sys[key[0]].insert_ancilla(qind)
-            print('qinds_tot_off_diag', key, self.qinds_tot_off_diag[key].list_form)
+            print(key, self.qinds_tot_off_diag[key].list_form)
 
         exit()
 
