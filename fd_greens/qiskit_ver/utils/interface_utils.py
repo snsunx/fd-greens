@@ -56,7 +56,7 @@ def qargs_to_qstr(qargs: List[Qubit], gate: Gate, offset: int = 4) -> str:
         assert len(qargs) == 3
         qnum = [q._index + offset for q in qargs]
         qstr = f"C{qnum[0]}C{qnum[1]}T{qnum[2]}"
-    print(f"{qstr=}")
+    # print(f"{qstr=}")
     return qstr
 
 

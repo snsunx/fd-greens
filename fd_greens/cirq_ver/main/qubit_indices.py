@@ -4,6 +4,8 @@ Qubit Indices (:mod:`fd_greens.main.qubit_indices`)
 ===================================================
 """
 
+from typing import Mapping, Iterable, Tuple
+
 import copy
 import numpy as np
 from typing import Union, Sequence, List, Optional
@@ -70,6 +72,37 @@ class QubitIndices:
         """Returns a ``QubitIndices`` object of the ancilla qubit indices."""
         return self.__class__([[]], ancilla_indices=self.ancilla_indices)
 
+class QubitIndicesTransformer:
+    """Qubit indices transformer by Z2 symmetries."""
+
+    def __init__(self, system_indices: Union[List[List[int]], QubitIndices]) -> None:
+        """Initializes a ``QubitIndicesTransformer`` object."""
+        self.system_indices = system_indices
+
+    def cnot(self, control: int, target: int) -> None:
+        """Applies a CNOT operation to qubit indices."""
+        # print(f"{self.qubit_indices.system_indices = }")
+        # print(f"{control = }, {target = }")
+        for qubit_index in self.system_indices:
+            qubit_index[target] = (qubit_index[control] + qubit_index[target]) % 2
+
+    def swap(self, qubit1: int, qubit2: int) -> None:
+        """Applies a SWAP operation to qubit indices."""
+        for qubit_index in self.system_indices:
+            qubit_index[qubit2], qubit_index[qubit1] = qubit_index[qubit1], qubit_index[qubit2]
+
+    def taper(self, *tapered_indices: Iterable[int]) -> None:
+        """Tapers off certain qubit indices."""
+        for i, qubit_index in enumerate(self.system_indices):
+            qubit_index_new = [q for j, q in enumerate(qubit_index) if j not in tapered_indices]
+            self.system_indices[i] = qubit_index_new
+
+    def transform(self, method_indices_pairs: Iterable[Tuple[str, Sequence[int]]]) -> None:
+        """Transforms a ``QubitIndices`` object."""
+        method_dict = {"cnot": self.cnot, "swap": self.swap, "taper": self.taper}
+        for method_key, indices in method_indices_pairs:
+            method_dict[method_key](*indices)
+
 
 """
 # Qubit indices for Green's functions
@@ -85,4 +118,64 @@ singlet_inds = QubitIndices(["0011", "0110", "1001", "1100"])
 triplet_inds = QubitIndices(["0101", "1010"])
 """
 
-eu_inds = ed_inds = hu_inds = hd_inds = e_inds = h_inds = singlet_inds = triplet_inds = None
+e_inds = h_inds = singlet_inds = triplet_inds = None
+
+def get_qubit_indices_dict(
+    n_qubits: int, 
+    spin: str, 
+    method_indices_pairs: Iterable[Tuple[str, Sequence[int]]] = [],
+) -> Mapping[str, QubitIndices]:
+    """Returns the ``QubitIndices`` dictionary of a certain number of qubits and spin.
+    
+    Args:
+        n_qubits: The number of qubits.
+        spin: The spin state of the electron-added states. Either "u" or "d".
+        transform_kwargs: Keyword arguments to be passed to the """
+    assert spin in ["u", "d"]
+
+    def get_electron_index(index):
+        electron_index = [1] * n_qubits
+        electron_index[index] = 0
+        return electron_index
+
+    def get_hole_index(index):
+        hole_index = [0] * n_qubits
+        hole_index[index] = 1
+        return hole_index
+
+    empty_indices = list(range(spin == "u", n_qubits, 2))
+    electron_indices = sorted([get_electron_index(i) for i in empty_indices])
+    QubitIndicesTransformer(electron_indices).transform(method_indices_pairs)
+    hole_indices = sorted([get_hole_index(i) for i in empty_indices])
+    QubitIndicesTransformer(hole_indices).transform(method_indices_pairs)
+
+    # eu_inds = [[1, 0, 1, 1], [1, 1, 1, 0]]
+    # ed_inds = [[0, 1, 1, 1], [1, 1, 0, 1]]
+    # hu_inds = [[0, 0, 1, 0], [1, 0, 0, 0]]
+    # hd_inds = [[0, 0, 0, 1], [0, 1, 0, 0]]
+    # e_inds = {"u": eu_inds, "d": ed_inds}
+    # h_inds = {"u": hu_inds, "d": hd_inds}
+
+    ancilla_indices_dict = {
+        "e": [[1]], "h": [[0]], 
+        "ep": [[1, 0]], "em": [[1, 1]], "hp": [[0, 0]], "hm": [[0, 1]]
+    }
+    system_indices_dict = {"e": electron_indices, "h": hole_indices}
+
+    qubit_indices_dict = dict()
+    for subscript, ancilla_indices in ancilla_indices_dict.items():
+        qubit_indices_dict[subscript] = QubitIndices(system_indices_dict[subscript[0]].copy(), ancilla_indices)
+
+    # qubit_indices_dict["e"] = QubitIndices(e_inds[spin], [[1]])
+    # qubit_indices_dict["h"] = QubitIndices(h_inds[hole_spin], [[0]])
+
+    # qubit_indices_dict["ep"] = QubitIndices(e_inds[spin], [[1, 0]])
+    # qubit_indices_dict["em"] = QubitIndices(e_inds[spin], [[1, 1]])
+    # qubit_indices_dict["hp"] = QubitIndices(h_inds[hole_spin], [[0, 0]])
+    # qubit_indices_dict["hm"] = QubitIndices(h_inds[hole_spin], [[0, 1]])
+
+    return qubit_indices_dict
+
+
+
+    

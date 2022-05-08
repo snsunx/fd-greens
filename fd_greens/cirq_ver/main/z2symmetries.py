@@ -4,18 +4,17 @@ Z2 Symmetry Transformation (:mod:`fd_greens.main.z2_symmetries`)
 ================================================================
 """
 
-from typing import Union, Sequence, Optional
+from typing import Union, Sequence, Optional, Iterable, List
 import numpy as np
 
 # from qiskit import *
 from qiskit.quantum_info import PauliTable, SparsePauliOp
 from qiskit.opflow import PauliSumOp
 
-from .qubit_indices import QubitIndices
-
 PauliOperator = Union[PauliSumOp, SparsePauliOp]
 
 
+#TODO: Write a PauliOperatorTransformer
 def cnot_pauli(pauli_op: PauliOperator, ctrl: int, targ: int) -> PauliOperator:
     """Applies a CNOT operation to the Z2 representation of a Pauli operator.
 
@@ -208,10 +207,10 @@ def transform_4q_pauli(
 
 transform_dict = {"cnot": cnot_pauli, "swap": swap_pauli, "taper": taper_pauli}
 
-
+'''
 def cnot_indices(qubit_inds: QubitIndices, ctrl: int, targ: int) -> QubitIndices:
     """Applies a CNOT operation to qubit indices.
-    
+
     Args:
         qubit_inds: The input QubitIndices object.
         ctrl: Index of the control qubit.
@@ -226,13 +225,13 @@ def cnot_indices(qubit_inds: QubitIndices, ctrl: int, targ: int) -> QubitIndices
         q_ind_new = q_ind.copy()
         q_ind_new[targ] = (q_ind[ctrl] + q_ind[targ]) % 2
         data_list_new.append(q_ind_new)
-    qubit_inds_new = QubitIndices(data_list_new)
-    return qubit_inds_new
+    indices_new = QubitIndices(data_list_new)
+    return indices_new
 
 
 def swap_indices(qubit_inds: QubitIndices, q1: int, q2: int) -> QubitIndices:
     """Applies a SWAP operation to qubit indices.
-    
+
     Args:
         qubit_inds: The input QubitIndices object.
         q1: Index of the first qubit.
@@ -248,49 +247,52 @@ def swap_indices(qubit_inds: QubitIndices, q1: int, q2: int) -> QubitIndices:
         q_ind_new[q2] = q_ind[q1]
         q_ind_new[q1] = q_ind[q2]
         data_list_new.append(q_ind_new)
-    qubit_inds_new = QubitIndices(data_list_new)
-    return qubit_inds_new
+    indices_new = QubitIndices(data_list_new)
+    return indices_new
 
 
 def taper_indices(
     qubit_inds: QubitIndices, inds_tapered: Sequence[int]
 ) -> QubitIndices:
     """Tapers certain qubits off in a QubitIndices object.
-    
+
     Args:
         qubit_inds: The input QubitIndices object.
         inds_tapered: The tapered qubit indices.
-    
+
     Returns:
         The QubitIndices object after tapering.
     """
-    qubit_inds_list = qubit_inds.list_form
-    qubit_inds_list_new = []
-    for q_ind in qubit_inds_list:
+    indices_list = qubit_inds.list_form
+    indices_list_new = []
+    for q_ind in indices_list:
         q_ind_new = [q for i, q in enumerate(q_ind) if i not in inds_tapered]
-        qubit_inds_list_new.append(q_ind_new)
+        indices_list_new.append(q_ind_new)
 
-    qubit_inds_new = QubitIndices(qubit_inds_list_new)
-    return qubit_inds_new
+    indices_new = QubitIndices(indices_list_new)
+    return indices_new
 
 
 def transform_4q_indices(
-    qubit_inds: QubitIndices, swap: bool = True, tapered: bool = True
-) -> QubitIndices:
-    """Transforms 4q qubit indices to 2q qubit indices.
-    
+    indices: List[List[int]], swap: bool = True, tapered: bool = True
+) -> List[List[int]]:
+    """Transforms four-qubit indices to two-qubit indices.
+
     Args:
         qubit_inds: The qubit indices.
         swap: Whether to swap the last two qubits.
         tapered: Whether to taper off the first two qubits.
 
     Returns:
-        The qubit indices after the transformation.
+        indices_new: The qubit indices after the transformation.
     """
-    qubit_inds_new = cnot_indices(qubit_inds, 2, 0)
-    qubit_inds_new = cnot_indices(qubit_inds_new, 3, 1)
+    indices_new = cnot_indices(indices, 2, 0)
+    indices_new = cnot_indices(indices_new, 3, 1)
     if swap:
-        qubit_inds_new = swap_indices(qubit_inds_new, 2, 3)
+        indices_new = swap_indices(indices_new, 2, 3)
     if tapered:
-        qubit_inds_new = taper_indices(qubit_inds_new, [0, 1])
-    return qubit_inds_new
+        indices_new = taper_indices(indices_new, [0, 1])
+    return indices_new
+'''
+
+transform_4q_indices = None

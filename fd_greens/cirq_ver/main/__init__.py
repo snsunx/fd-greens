@@ -6,6 +6,8 @@ from .eh_amplitudes_solver import EHAmplitudesSolver
 from .excited_amplitudes_solver import ExcitedAmplitudesSolver
 from .greens_function import GreensFunction
 from .response_function import ResponseFunction
+from .qubit_indices import *
+from .z2symmetries import *
 
 # Auxiliary scripts.
 # from .ansatze import build_ansatz_gs, build_ansatz_e, build_ansatz_e

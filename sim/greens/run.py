@@ -7,15 +7,15 @@ warnings.filterwarnings("ignore")
 
 import numpy as np
 
-from fd_greens.main import (
+from fd_greens.qiskit_ver.main import (
     GroundStateSolver,
     EHStatesSolver,
     EHAmplitudesSolver,
     GreensFunction,
 )
-from fd_greens.main.ansatze import build_ansatz_gs, build_ansatz_e, build_ansatz_h
-from fd_greens.main.params import HARTREE_TO_EV
-from fd_greens.utils import initialize_hdf5, get_lih_hamiltonian, get_quantum_instance
+from fd_greens.qiskit_ver.main.ansatze import build_ansatz_gs, build_ansatz_e, build_ansatz_h
+from fd_greens.qiskit_ver.main.params import HARTREE_TO_EV
+from fd_greens.qiskit_ver.utils import initialize_hdf5, get_lih_hamiltonian, get_quantum_instance
 
 
 def main_gs():
