@@ -130,8 +130,6 @@ class EHAmplitudesSolver:
             self.qinds_tot_off_diag[key] = self.qinds_sys[key[0]].insert_ancilla(qind)
             print(key, self.qinds_tot_off_diag[key].list_form)
 
-        exit()
-
         # Transition amplitude arrays. The keys of B are 'e' and 'h'.
         # The keys of D are 'ep', 'em', 'hp', 'hm'.
         assert self.n_e == self.n_h  # XXX: This is only for this special case

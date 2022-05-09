@@ -74,11 +74,13 @@ class MolecularHamiltonian:
             self.occ_inds = []
         else:
             self.occ_inds = occ_inds
+        self.occupied_indices = self.occ_inds
 
         if act_inds is None:
             self.act_inds = range(self.molecule.n_orbitals)
         else:
             self.act_inds = act_inds
+        self.active_indices = self.act_inds
 
         self._openfermion_op = None
         self._qiskit_op = None

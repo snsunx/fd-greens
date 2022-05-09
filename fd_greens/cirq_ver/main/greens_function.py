@@ -12,101 +12,84 @@ import h5py
 import numpy as np
 from itertools import product
 
-from fd_greens.cirq_ver.main.qubit_indices import get_qubit_indices_dict
-
+from .parameters import method_indices_pairs
 from .molecular_hamiltonian import MolecularHamiltonian
-from ..utils import write_hdf5, get_overlap, basis_matrix
+from .qubit_indices import get_qubit_indices_dict
+from ..utils import get_overlap, basis_matrix
 
 
 class GreensFunction:
-    """A class to calculate frequency-domain Green's function."""
+    """Frequency-domain Green's function."""
 
     def __init__(
         self,
-        h: MolecularHamiltonian,
+        hamiltonian: MolecularHamiltonian,
         h5fname: str = "lih",
         suffix: str = "",
         spin: str = "d",
         method: str = "exact",
         verbose: bool = True,
     ) -> None:
-        """Initializes a GreensFunction object.
+        """Initializes a ``GreensFunction`` object.
         
         Args:
             h5fname: The HDF5 file name.
             suffix: The suffix for a specific experimental run.
         """
-        self.datfname = h5fname + suffix
-        self.h = h
-        h5file = h5py.File(h5fname + ".h5", "r")
-        self.h5file = h5file
+        self.hamiltonian = hamiltonian
         self.h5fname = h5fname + ".h5"
-        self.energy_gs = h5file["gs/energy"]
-        self.energies_es = dict()
-        self.energies_es["e"] = h5file["es/energies_e"]
-        self.energies_es["h"] = h5file["es/energies_h"]
-        self.verbose = verbose
-        self.method = method
+        self.datfname = h5fname + suffix
         self.suffix = suffix
         self.spin = spin
+        self.method = method
+        self.verbose = verbose
 
-        self.qubit_indices_dict = get_qubit_indices_dict(spin)
+        # TODO: Get this 4 from the Hamiltonian.
+        self.qubit_indices_dict = get_qubit_indices_dict(4, spin, method_indices_pairs)
 
-        e_orb = np.diag(self.h.molecule.orbital_energies)
-        act_inds = self.h.act_inds
+        # TODO: Put e_orb in self_energy.
+        e_orb = np.diag(self.hamiltonian.molecule.orbital_energies)
+        act_inds = self.hamiltonian.act_inds
         self.e_orb = e_orb[act_inds][:, act_inds]
 
-        # Hardcoded problem parameters.
-        self.n_anc_diag = 1
-        self.n_anc_off_diag = 2
+        # TODO: Think about how to handle this.
         self.n_sys = 2
 
-        # Number of spatial orbitals and (N±1)-electron states.
-        self.states = {"e": h5file["es/states_e"][:], "h": h5file["es/states_h"][:]}
-
-        self.n_states = {"e": self.states["e"].shape[1], "h": self.states["h"].shape[1]}
-        self.n_elec = self.h.molecule.n_electrons
-        self.n_orb = len(self.h.act_inds)
-        self.n_occ = self.n_elec // 2 - len(self.h.occ_inds)
-        self.n_vir = self.n_orb - self.n_occ
-        self.n_e = int(binom(2 * self.n_orb, 2 * self.n_occ + 1)) // 2
-        self.n_h = int(binom(2 * self.n_orb, 2 * self.n_occ - 1)) // 2
-
-        self.B = {
-            subscript: np.zeros((self.n_orb, self.n_orb, self.n_e), dtype=complex)
-            for subscript in ["e", "h"]
-        }
-        self.D = {
-            subscript: np.zeros((self.n_orb, self.n_orb, self.n_e), dtype=complex)
-            for subscript in ["ep", "em", "hp", "hm"]
-        }
-        self.h = h
-
-        self.n_orb = self.B["e"].shape[0]
-
+        # Load energies and state vectors from HDF5 file.
+        h5file = h5py.File(h5fname + ".h5", "r")
+        self.energies = {"gs": h5file["gs/energy"][()], 
+                         "e": h5file["es/energies_e"][:], "h": h5file["es/energies_h"][:]}
+        self.state_vectors = {"e": h5file["es/states_e"][:], "h": h5file["es/states_h"][:]}
         h5file.close()
 
-        # self._process_diagonal_results()
+        # Initialize array quantities B, D and G.
+        self.n_states = {"e": self.state_vectors["e"].shape[1], "h": self.state_vectors["h"].shape[1]}
+        self.n_orbitals = len(self.hamiltonian.active_indices)
+        self.B = {subscript: np.zeros((self.n_orbitals, self.n_orbitals, self.n_states[subscript]), dtype=complex)
+                  for subscript in ["e", "h"]}
+        self.D = {subscript: np.zeros((self.n_orbitals, self.n_orbitals, self.n_states[subscript[0]]), dtype=complex)
+                  for subscript in ["ep", "em", "hp", "hm"]}
+        self.G = {subscript: np.zeros((self.n_orbitals, self.n_orbitals), dtype=complex)
+                  for subscript in ["e", "h"]}
+        
+        self._process_diagonal_results()
+        self._process_off_diagonal_results()
 
     def _process_diagonal_results(self) -> None:
         """Post-processes diagonal transition amplitude results."""
         h5file = h5py.File(self.h5fname, "r+")
 
-        for m in range(self.n_orb):  # 0, 1
+        for m in range(self.n_orbitals):
             circuit_label = f"circ{m}{self.spin}/transpiled"
             if self.method == "exact":
                 state_vector = h5file[circuit_label].attrs[f"psi{self.suffix}"]
                 for subscript in ["e", "h"]:
-                    state_vector_subscript = self.qubit_indices_dict[subscript](
-                        state_vector
-                    )
+                    # XXX: I don't thik the ::-1 is correct, but it matches the qiskit implementation.
+                    state_vector_subscript = self.qubit_indices_dict[subscript](state_vector)[::-1]
 
                     # Obtain the B matrix elements by computing the overlaps.
-                    # TODO: Can change this to get_overlap.
-                    self.B[subscript][m, m] = (
-                        np.abs(self.states[subscript].conj().T @ state_vector_subscript)
-                        ** 2
-                    )
+                    self.B[subscript][m, m] = \
+                        np.abs(self.state_vectors[subscript].conj().T @ state_vector_subscript) ** 2
                     if self.verbose:
                         print(f"B[{subscript}][{m}, {m}] = {self.B[subscript][m, m]}")
 
@@ -126,9 +109,7 @@ class GreensFunction:
                         start_index = int(
                             "".join([str(i) for i in qubit_indices.ancilla])[::-1], 2
                         )
-                        counts_arr_label = counts_arr[
-                            start_index :: 2 ** self.n_anc_diag
-                        ]
+                        counts_arr_label = counts_arr[start_index :: 2]
                         counts_arr_label = counts_arr_label / np.sum(counts_arr)
                         counts_arr_key = np.hstack((counts_arr_key, counts_arr_label))
 
@@ -151,77 +132,67 @@ class GreensFunction:
 
         h5file.close()
 
-    '''
     def _process_off_diagonal_results(self) -> None:
         """Post-processes off-diagonal transition amplitude results."""
         h5file = h5py.File(self.h5fname, "r+")
 
-        if self.method == "exact":
-            psi = h5file[f"circ01{self.spin}/transpiled"].attrs[f"psi{self.suffix}"]
-            # print("psi norm^2 =", np.linalg.norm(psi) ** 2)
-            l = []
-            for i, x in enumerate(psi):
-                if abs(x) > 1e-8:
-                    l.append(f"{int(bin(i)[2:]):04}")
-            # print('nonzero indices =', l)
+        for m in range(self.n_orbitals):
+            for n in range(m + 1, self.n_orbitals):
+                circuit_label = f"circ{m}{n}{self.spin}/transpiled"
+                if self.method == "exact":
+                    state_vector = h5file[circuit_label].attrs[f"psi{self.suffix}"]
+                    for subscript in ["ep", "em", "hp", "hm"]:
+                        state_vector_subscript = self.qubit_indices_dict[subscript](state_vector)[::-1]
 
-            for key in self.keys_off_diag:
-                qinds = self.qinds_tot_off_diag[key]
-                # print("qinds =", qinds)
-                psi_key = qinds(psi)
-                # print("psi_key norm^2 =", np.linalg.norm(psi_key) ** 2)
+                        # Obtain the D matrix elements by computing the overlaps.
+                        self.D[subscript][m, n] = self.D[subscript][n, m] = \
+                            np.abs(self.state_vectors[subscript[0]].conj().T @ state_vector_subscript) ** 2
+                        if self.verbose:
+                            print(f"D[{subscript}][{m}, {n}] =", self.D[subscript][m, n])
 
-                # Obtain the D matrix elements by computing the overlaps.
-                self.D[key][0, 1] = self.D[key][1, 0] = (
-                    abs(self.states[key[0]].conj().T @ psi_key) ** 2
-                )
-                if self.verbose:
-                    print(f"D[{key}][0, 1] =", self.D[key][0, 1])
+                elif self.method == "tomo":
+                    for key, qind in zip(self.keys_off_diag, self.qinds_anc_off_diag):
+                        # Stack counts_arr over all tomography labels together. The procedure is to
+                        # first extract the raw counts_arr, slice the counts array to the specific
+                        # label, and then stack the counts_arr_label to counts_arr_key.
+                        counts_arr_key = np.array([])
+                        for tomo_label in self.tomo_labels:
+                            counts_arr = h5file[f"circ01{self.spin}/{tomo_label}"].attrs[
+                                f"counts{self.suffix}"
+                            ]
+                            start = int("".join([str(i) for i in qind])[::-1], 2)
+                            counts_arr_label = counts_arr[
+                                start :: 2 ** 2
+                            ]  # 4 is because 2 ** 2
+                            counts_arr_label = counts_arr_label / np.sum(counts_arr)
+                            counts_arr_key = np.hstack((counts_arr_key, counts_arr_label))
 
-        elif self.method == "tomo":
-            for key, qind in zip(self.keys_off_diag, self.qinds_anc_off_diag):
-                # Stack counts_arr over all tomography labels together. The procedure is to
-                # first extract the raw counts_arr, slice the counts array to the specific
-                # label, and then stack the counts_arr_label to counts_arr_key.
-                counts_arr_key = np.array([])
-                for tomo_label in self.tomo_labels:
-                    counts_arr = h5file[f"circ01{self.spin}/{tomo_label}"].attrs[
-                        f"counts{self.suffix}"
-                    ]
-                    start = int("".join([str(i) for i in qind])[::-1], 2)
-                    counts_arr_label = counts_arr[
-                        start :: 2 ** self.n_anc_off_diag
-                    ]  # 4 is because 2 ** 2
-                    counts_arr_label = counts_arr_label / np.sum(counts_arr)
-                    counts_arr_key = np.hstack((counts_arr_key, counts_arr_label))
+                        # Obtain the density matrix from tomography. Slice the density matrix
+                        # based on whether we are considering 'e' or 'h' on the system qubits.
+                        rho = np.linalg.lstsq(basis_matrix, counts_arr_key)[0]
+                        rho = rho.reshape(2 ** self.n_sys, 2 ** self.n_sys, order="F")
+                        rho = self.qinds_sys[key[0]](rho)
 
-                # Obtain the density matrix from tomography. Slice the density matrix
-                # based on whether we are considering 'e' or 'h' on the system qubits.
-                rho = np.linalg.lstsq(basis_matrix, counts_arr_key)[0]
-                rho = rho.reshape(2 ** self.n_sys, 2 ** self.n_sys, order="F")
-                rho = self.qinds_sys[key[0]](rho)
+                        # Obtain the D matrix elements by computing the overlaps between
+                        # the density matrix and the states from EHStatesSolver.
+                        self.D[subscript][m, n] = self.D[subscript][n, m] = [
+                            get_overlap(self.states[key[0]][:, i], rho)
+                            for i in range(self.n_states[key[0]])
+                        ]
+                        if self.verbose:
+                            print(f"D[{subscript}][{m}, {n}] =", self.D[subscript][m, n])
 
-                # Obtain the D matrix elements by computing the overlaps between
-                # the density matrix and the states from EHStatesSolver.
-                self.D[key][0, 1] = self.D[key][1, 0] = [
-                    get_overlap(self.states[key[0]][:, i], rho)
-                    for i in range(self.n_states[key[0]])
-                ]
-                if self.verbose:
-                    print(f"D[{key}][0, 1] =", self.D[key][0, 1])
-
-        # Unpack D values to B values based on Eq. (18) of Kosugi and Matsushita 2020.
-        for key in self.keys_diag:
-            self.B[key][0, 1] = self.B[key][1, 0] = np.exp(-1j * np.pi / 4) * (
-                self.D[key + "p"][0, 1] - self.D[key + "m"][0, 1]
-            ) + np.exp(1j * np.pi / 4) * (
-                self.D[key + "p"][1, 0] - self.D[key + "m"][1, 0]
-            )
-            if self.verbose:
-                print(f"B[{key}][0, 1] =", self.B[key][0, 1])
+        # Unpack D values to B values according to Eq. (18) of Kosugi and Matsushita 2020.
+        for m in range(self.n_orbitals):
+            for n in range(m + 1, self.n_orbitals):
+                for subscript in ["e", "h"]:
+                    self.B[subscript][m, n] = self.B[subscript][n, m] = \
+                        np.exp(-1j * np.pi / 4) * (self.D[subscript + "p"][m, n] - self.D[subscript + "m"][m, n]) \
+                        + np.exp(1j * np.pi / 4) * (self.D[subscript + "p"][n, m] - self.D[subscript + "m"][n, m])
+                    if self.verbose:
+                        print(f"B[{subscript}][{m}, {n}] =", self.B[subscript][m, n])
 
         h5file.close()
-    '''
 
     @property
     def density_matrix(self) -> np.ndarray:
@@ -237,24 +208,15 @@ class GreensFunction:
             eta: The broadening factor.
         
         Returns:
-            G: The Green's function at given frequency and broadening.
+            G_array: The Green's function at given frequency and broadening.
         """
-        G_dict = {
-            subscript: np.zeros((self.n_orb, self.n_orb), dtype=complex)
-            for subscript in ["e", "h"]
-        }
-
-        for m in range(self.n_orb):
-            for n in range(self.n_orb):
-                G_dict["e"][m, n] = 2 * np.sum(
-                    self.B["e"][m, n]
-                    / (omega + 1j * eta + self.energy_gs - self.energies_es["e"])
-                )
-                G_dict["h"][m, n] = 2 * np.sum(
-                    self.B["h"][m, n]
-                    / (omega + 1j * eta - self.energy_gs + self.energies_es["h"])
-                )
-        G_array = G_dict["e"] + G_dict["h"]
+        for m in range(self.n_orbitals):
+            for n in range(self.n_orbitals):
+                self.G["e"][m, n] = 2 * np.sum(self.B["e"][m, n]
+                    / (omega + 1j * eta + self.energies["gs"] - self.energies["e"]))
+                self.G["h"][m, n] = 2 * np.sum(self.B["h"][m, n]
+                    / (omega + 1j * eta - self.energies["gs"] + self.energies["h"]))
+        G_array = self.G["e"] + self.G["h"]
         return G_array
 
     def spectral_function(
@@ -280,9 +242,7 @@ class GreensFunction:
         if save_data:
             if not os.path.exists("data"):
                 os.makedirs("data")
-            np.savetxt(
-                "data/" + self.datfname + "_A.dat", np.vstack((omegas, A_arrays)).T
-            )
+            np.savetxt("data/" + self.datfname + "_A.dat", np.vstack((omegas, A_arrays)).T)
         else:
             return A_arrays
 
@@ -302,8 +262,8 @@ class GreensFunction:
         TrSigmas = []
         for omega in omegas:
             G = self.greens_function(omega + 1j * eta)
-            G_HF = np.zeros((self.n_orb, self.n_orb), dtype=complex)
-            for i in range(self.n_orb):
+            G_HF = np.zeros((self.n_orbitals, self.n_orbitals), dtype=complex)
+            for i in range(self.n_orbitals):
                 G_HF[i, i] = 1 / (omega - self.e_orb[i, i])
 
             Sigma = np.linalg.pinv(G_HF) - np.linalg.pinv(G)
