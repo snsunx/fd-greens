@@ -22,7 +22,7 @@ HARTREE_TO_EV = 27.211386245988
 
 
 class MolecularHamiltonian:
-    """A class to store a molecular Hamiltonian."""
+    """Molecular Hamiltonian."""
 
     def __init__(
         self,
@@ -32,8 +32,8 @@ class MolecularHamiltonian:
         charge: int = 0,
         name: Optional[str] = None,
         run_pyscf_options: dict = {},
-        occ_inds: Optional[Sequence[int]] = None,
-        act_inds: Optional[Sequence[int]] = None,
+        occupied_indices: Optional[Sequence[int]] = None,
+        active_indices: Optional[Sequence[int]] = None,
         build_ops: bool = True,
     ) -> None:
         """Initializes a ``MolecularHamiltonian`` object.
@@ -45,10 +45,10 @@ class MolecularHamiltonian:
             multiplicity: The spin multiplicity.
             charge: The total molecular charge. Defaults to 0.
             name: The string identifer used for saving and loading cached circuits.
-            run_pyscf_options: A dictionary of keyword arguments passed to the run_pyscf function.
-            occ_inds: A list of spatial orbital indices indicating which orbitals 
+            run_pyscf_options: Keyword arguments passed to the run_pyscf function.
+            occupied_indices: A list of spatial orbital indices indicating which orbitals 
                 should be considered doubly occupied.
-            act_inds: A list of spatial orbital indices indicating which orbitals
+            active_indices: A list of spatial orbital indices indicating which orbitals
                 should be considered active.
         """
         self.geometry = geometry
@@ -70,17 +70,15 @@ class MolecularHamiltonian:
         run_pyscf(molecule)
         self.molecule = molecule
 
-        if occ_inds is None:
-            self.occ_inds = []
+        if occupied_indices is None:
+            self.occupied_indices = []
         else:
-            self.occ_inds = occ_inds
-        self.occupied_indices = self.occ_inds
+            self.occupied_indices = occupied_indices
 
-        if act_inds is None:
-            self.act_inds = range(self.molecule.n_orbitals)
+        if active_indices is None:
+            self.active_indices = range(self.molecule.n_orbitals)
         else:
-            self.act_inds = act_inds
-        self.active_indices = self.act_inds
+            self.active_indices = active_indices
 
         self._openfermion_op = None
         self._qiskit_op = None
@@ -90,10 +88,10 @@ class MolecularHamiltonian:
     def _build_openfermion_operator(self) -> None:
         """A private method for constructing the Openfermion qubit operator
         in QubitOperator form. Called by the ``build`` function."""
-        # if self.occ_inds is None and self.act_inds is None:
-        #     self.act_inds = range(self.molecule.n_orbitals)
+        # if self.occupied_indices is None and self.active_indices is None:
+        #     self.active_indices = range(self.molecule.n_orbitals)
         hamiltonian = self.molecule.get_molecular_hamiltonian(
-            occupied_indices=self.occ_inds, active_indices=self.act_inds
+            occupied_indices=self.occupied_indices, active_indices=self.active_indices
         )
         fermion_op = get_fermion_operator(hamiltonian)
         qubit_op = jordan_wigner(fermion_op)

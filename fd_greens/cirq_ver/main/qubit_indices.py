@@ -115,6 +115,7 @@ def get_qubit_indices_dict(
     n_qubits: int, 
     spin: str, 
     method_indices_pairs: Iterable[Tuple[str, Sequence[int]]] = [],
+    system_only: bool = False,
 ) -> Mapping[str, QubitIndices]:
     """Returns the ``QubitIndices`` dictionary of a certain number of qubits and spin.
     
@@ -139,19 +140,28 @@ def get_qubit_indices_dict(
     empty_indices = list(range(spin == "u", n_qubits, 2))
     electron_indices = sorted([get_electron_index(i) for i in empty_indices])
     hole_indices = sorted([get_hole_index(i) for i in empty_indices])
-
-    # Create dictionaries of ancilla and system indices.
-    ancilla_indices_dict = {
-        "e": [[1]], "h": [[0]], 
-        "ep": [[1, 0]], "em": [[1, 1]], "hp": [[0, 0]], "hm": [[0, 1]]
-    }
     system_indices_dict = {"e": electron_indices, "h": hole_indices}
 
-    # Build the qubit indices for all six subscripts.
     qubit_indices_dict = dict()
-    for subscript, ancilla_indices in ancilla_indices_dict.items():
-        qubit_indices = QubitIndices(copy.deepcopy(system_indices_dict[subscript[0]]), ancilla_indices)
-        qubit_indices.transform(method_indices_pairs)
-        qubit_indices_dict[subscript] = qubit_indices
+    if system_only:
+        print("system only")
+        for subscript, system_indices in system_indices_dict.items():
+            qubit_indices = QubitIndices(system_indices)
+            qubit_indices.transform(method_indices_pairs)
+            qubit_indices_dict[subscript] = qubit_indices
+
+    else:
+        # Create dictionaries of ancilla indices.
+        ancilla_indices_dict = {
+            "e": [[1]], "h": [[0]], 
+            "ep": [[1, 0]], "em": [[1, 1]], "hp": [[0, 0]], "hm": [[0, 1]]
+        }
+
+        # Build the qubit indices for all six subscripts.
+        qubit_indices_dict = dict()
+        for subscript, ancilla_indices in ancilla_indices_dict.items():
+            qubit_indices = QubitIndices(copy.deepcopy(system_indices_dict[subscript[0]]), ancilla_indices)
+            qubit_indices.transform(method_indices_pairs)
+            qubit_indices_dict[subscript] = qubit_indices
 
     return qubit_indices_dict

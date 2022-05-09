@@ -47,11 +47,6 @@ class GreensFunction:
         # TODO: Get this 4 from the Hamiltonian.
         self.qubit_indices_dict = get_qubit_indices_dict(4, spin, method_indices_pairs)
 
-        # TODO: Put e_orb in self_energy.
-        e_orb = np.diag(self.hamiltonian.molecule.orbital_energies)
-        act_inds = self.hamiltonian.act_inds
-        self.e_orb = e_orb[act_inds][:, act_inds]
-
         # TODO: Think about how to handle this.
         self.n_sys = 2
 
@@ -259,12 +254,14 @@ class GreensFunction:
         Returns:
             TrSigmas: Trace of the self-energy.
         """
+        e_orb = self.hamiltonian.molecule.orbital_energies[self.hamiltonian.active_indices]
+
         TrSigmas = []
         for omega in omegas:
             G = self.greens_function(omega + 1j * eta)
             G_HF = np.zeros((self.n_orbitals, self.n_orbitals), dtype=complex)
             for i in range(self.n_orbitals):
-                G_HF[i, i] = 1 / (omega - self.e_orb[i, i])
+                G_HF[i, i] = 1 / (omega - e_orb[i])
 
             Sigma = np.linalg.pinv(G_HF) - np.linalg.pinv(G)
             TrSigmas.append(np.trace(Sigma))

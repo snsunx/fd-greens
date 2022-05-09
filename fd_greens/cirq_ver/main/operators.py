@@ -4,6 +4,7 @@ Operators (:mod:`fd_greens.main.operators`)
 ===========================================
 """
 
+from ast import operator
 from typing import Callable, Tuple, Dict, Union, Sequence, Optional
 import numpy as np
 from qiskit import *
@@ -40,17 +41,15 @@ class SecondQuantizedOperators:
 
     def get_pauli_dict(self) -> Dict[int, Tuple[SparsePauliOp, SparsePauliOp]]:
         """Returns a dictionary of the second quantized operators."""
-        dic = {}
+        operators_dict = {}
         for i in range(self.n_qubits):
             if i % 2 == 0:
-                dic[(i // 2, "u")] = (
-                    self.sparse_pauli_op[i] + self.sparse_pauli_op[i + self.n_qubits]
-                )
+                operators_dict[(i // 2, "u")] = self.sparse_pauli_op[i] + self.sparse_pauli_op[i + self.n_qubits]
             else:
-                dic[(i // 2, "d")] = (
-                    self.sparse_pauli_op[i] + self.sparse_pauli_op[i + self.n_qubits]
-                )
-        return dic
+                operators_dict[(i // 2, "d")] = self.sparse_pauli_op[i] + self.sparse_pauli_op[i + self.n_qubits]
+        return operators_dict
+
+    get_operators_dict = get_pauli_dict
 
 
 class ChargeOperators:

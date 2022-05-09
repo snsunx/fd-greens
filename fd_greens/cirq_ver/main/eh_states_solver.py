@@ -11,9 +11,10 @@ import numpy as np
 from qiskit import Aer
 from qiskit.utils import QuantumInstance
 
+from .parameters import method_indices_pairs
 from .molecular_hamiltonian import MolecularHamiltonian
 from .z2symmetries import transform_4q_pauli, transform_4q_indices
-from .qubit_indices import e_inds, h_inds
+from .qubit_indices import e_inds, get_qubit_indices_dict, h_inds
 from ..utils import write_hdf5
 
 
@@ -21,7 +22,7 @@ class EHStatesSolver:
     """(N±1)-electron states solver."""
 
     def __init__(
-        self, h: MolecularHamiltonian, spin: str = "d", h5fname: str = "lih"
+        self, hamiltonian: MolecularHamiltonian, spin: str = "d", h5fname: str = "lih"
     ) -> None:
         """Initializes an ``EHStatesSolver`` object.
         
@@ -32,15 +33,9 @@ class EHStatesSolver:
         """
         assert spin in ["u", "d"]
 
-        self.h = h
         init_state = [1, 0] if spin == "d" else [0, 1]
-        self.spin = spin
-        self.hspin = "d" if self.spin == "u" else "u"
-        self.h_op = transform_4q_pauli(self.h.qiskit_op, init_state=init_state)
-        self.inds = {
-            "e": transform_4q_indices(e_inds[self.spin]),
-            "h": transform_4q_indices(h_inds[self.hspin]),
-        }
+        self.h_op = transform_4q_pauli(hamiltonian.qiskit_op, init_state=init_state)
+        self.qubit_indices_dict = get_qubit_indices_dict(4, spin, method_indices_pairs, system_only=True)
         self.h5fname = h5fname + ".h5"
 
         self.energies_e = None
@@ -57,8 +52,8 @@ class EHStatesSolver:
             return e, v
 
         h_arr = self.h_op.to_matrix()
-        self.energies_e, self.states_e = eigensolve(h_arr, inds=self.inds["e"]._int)
-        self.energies_h, self.states_h = eigensolve(h_arr, inds=self.inds["h"]._int)
+        self.energies_e, self.states_e = eigensolve(h_arr, inds=self.qubit_indices_dict['e'].int)
+        self.energies_h, self.states_h = eigensolve(h_arr, inds=self.qubit_indices_dict['h'].int)
         # self.states_e = self.states_e
         # self.states_h = self.states_h
         print(f"(N+1)-electron energies are {self.energies_e} eV")

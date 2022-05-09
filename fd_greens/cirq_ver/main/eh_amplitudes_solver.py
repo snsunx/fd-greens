@@ -51,8 +51,7 @@ class EHAmplitudesSolver:
         Args:
             h: The molecular Hamiltonian.
             qubits: Qubits in the circuit.
-            method: The method for calculating the transition amplitudes. Either 
-                ``"exact"`` or ``"tomo"``.
+            method: The method for calculating the transition amplitudes. Either ``'exact'`` or ``'tomo'``.
             h5fname: The HDF5 file name.
             spin: The spin of the creation and annihilation operators.
             suffix: The suffix for a specific experimental run.
@@ -65,84 +64,23 @@ class EHAmplitudesSolver:
         self.h = h
         self.qubits = qubits
         self.method = method
+        self.h5fname = h5fname + ".h5"
         self.spin = spin
-        self.hspin = "d" if self.spin == "u" else "u"
         self.suffix = suffix
         self.verbose = verbose
 
         self.circuits = dict()
-
-        # Hardcoded problem parameters.
-        self.n_anc_diag = 1
-        self.n_anc_off_diag = 2
-        self.n_sys = 2
-
-        # Load data and initialize quantities.
-        self.h5fname = h5fname + ".h5"
-        self._initialize()
-
-    def _initialize(self) -> None:
-        """Loads data and initializes variables."""
-        # Attributes from ground and (N±1)-electron state solver.
-        h5file = h5py.File(self.h5fname, "r+")
-
         self.circuit_string_converter = CircuitStringConverter(self.qubits)
+        h5file = h5py.File(self.h5fname, 'r')
+        with h5py.File(self.h5fname, 'r') as h5file:
+            qtrl_strings = json.loads(h5file["gs/ansatz"][()])
+            ansatz = self.circuit_string_converter.convert_strings_to_circuit(qtrl_strings)
+        self.circuit_constructor = CircuitConstructor(ansatz, self.qubits)
 
-        qtrl_strings = json.loads(h5file["gs/ansatz"][()])
-        self.ansatz = self.circuit_string_converter.convert_strings_to_circuit(qtrl_strings)
-        self.states = {"e": h5file["es/states_e"][:], "h": h5file["es/states_h"][:]}
-        self.circuit_constructor = CircuitConstructor(self.ansatz, self.qubits)
-        h5file.close()
-
-        # Number of spatial orbitals and (N±1)-electron states.
-        self.n_states = {"e": self.states["e"].shape[1], "h": self.states["h"].shape[1]}
-        self.n_elec = self.h.molecule.n_electrons
-        self.n_orb = len(self.h.act_inds)
-        self.n_occ = self.n_elec // 2 - len(self.h.occ_inds)
-        self.n_vir = self.n_orb - self.n_occ
-        self.n_e = int(binom(2 * self.n_orb, 2 * self.n_occ + 1)) // 2
-        self.n_h = int(binom(2 * self.n_orb, 2 * self.n_occ - 1)) // 2
-
-        # Build qubit indices for system qubits.
-        self.qinds_sys = {
-            "e": transform_4q_indices(e_inds[self.spin]),
-            "h": transform_4q_indices(h_inds[self.hspin]),
-        }
-
-        # Build qubit indices for diagonal circuits.
-        self.keys_diag = ["e", "h"]
-        self.qinds_anc_diag = [[1], [0]]
-        self.qinds_tot_diag = dict()
-        for key, qind in zip(self.keys_diag, self.qinds_anc_diag):
-            self.qinds_tot_diag[key] = self.qinds_sys[key].insert_ancilla(qind)
-            # print('qinds_tot_diag', key, self.qinds_tot_diag[key])
-
-        # Build qubit indices for off-diagonal circuits.
-        self.keys_off_diag = ["ep", "em", "hp", "hm"]
-        self.qinds_anc_off_diag = [[1, 0], [1, 1], [0, 0], [0, 1]]
-        self.qinds_tot_off_diag = dict()
-        for key, qind in zip(self.keys_off_diag, self.qinds_anc_off_diag):
-            self.qinds_tot_off_diag[key] = self.qinds_sys[key[0]].insert_ancilla(qind)
-
-        # Transition amplitude arrays. The keys of B are 'e' and 'h'.
-        # The keys of D are 'ep', 'em', 'hp', 'hm'.
-        assert self.n_e == self.n_h  # XXX: This is only for this special case
-        self.B = {
-            key: np.zeros((self.n_orb, self.n_orb, self.n_e), dtype=complex)
-            for key in self.keys_diag
-        }
-        self.D = {
-            key: np.zeros((self.n_orb, self.n_orb, self.n_e), dtype=complex)
-            for key in self.keys_off_diag
-        }
-
-        # Create Pauli dictionaries for the creation/annihilation operators.
-        second_q_ops = SecondQuantizedOperators(self.h.molecule.n_electrons)
-        second_q_ops.transform(partial(transform_4q_pauli, init_state=[1, 1]))
-        self.pauli_dict = second_q_ops.get_pauli_dict()
-
-        if self.verbose:
-            print_information(self)
+        # Create dictionary for the creation/annihilation operators.
+        second_quantized_operators = SecondQuantizedOperators(self.h.molecule.n_electrons)
+        second_quantized_operators.transform(partial(transform_4q_pauli, init_state=[1, 1]))
+        self.operators_dict = second_quantized_operators.get_operators_dict()
 
     def _run_diagonal_circuits(self) -> None:
         """Runs diagonal transition amplitude circuits."""
@@ -155,7 +93,7 @@ class EHAmplitudesSolver:
                 del h5file[f"{circuit_label}/transpiled"]
 
             # Build the diagonal circuit based on the creation/annihilation operator.
-            a_operator = self.pauli_dict[(m, self.spin)]
+            a_operator = self.operators_dict[(m, self.spin)]
             circuit = self.circuit_constructor.build_diagonal_circuit(a_operator)
 
             # Transpile the circuit and save to HDF5 file.
@@ -203,8 +141,8 @@ class EHAmplitudesSolver:
             del h5file[f"{circuit_label}/transpiled"]
 
         # Build the off-diagonal circuit based on the creation/annihilation operators.
-        a_operator_0 = self.pauli_dict[(0, self.spin)]
-        a_operator_1 = self.pauli_dict[(1, self.spin)]
+        a_operator_0 = self.operators_dict[(0, self.spin)]
+        a_operator_1 = self.operators_dict[(1, self.spin)]
         circuit = self.circuit_constructor.build_off_diagonal_circuit(a_operator_0, a_operator_1)
 
         # Transpile the circuit and save to HDF5 file.
@@ -231,7 +169,8 @@ class EHAmplitudesSolver:
                 qtrl_strings = self.circuit_string_converter.convert_circuit_to_strings(
                     tomography_circuit
                 )
-                dset_tomography = h5file.create_dataset(f"{circuit_label}/{tomography_label}", data=json.dumps(qtrl_strings))
+                dset_tomography = h5file.create_dataset(
+                    f"{circuit_label}/{tomography_label}", data=json.dumps(qtrl_strings))
 
                 # Run simulation and save result to HDF5 file.
                 result = cirq.Simulator().run(tomography_circuit)
