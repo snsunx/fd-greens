@@ -14,11 +14,12 @@ import numpy as np
 import cirq
 
 from .molecular_hamiltonian import MolecularHamiltonian
-from .operators import SecondQuantizedOperators
+from .operators import SecondQuantizedOperators1
 from .z2symmetries import transform_4q_pauli
 from .circuit_constructor import CircuitConstructor
 from .circuit_string_converter import CircuitStringConverter
 from .transpilation import transpile_into_berkeley_gates
+from .parameters import method_indices_pairs
 
 from ..utils import histogram_to_array
 
@@ -72,11 +73,15 @@ class EHAmplitudesSolver:
             qtrl_strings = json.loads(h5file["gs/ansatz"][()])
             ansatz = self.circuit_string_converter.convert_strings_to_circuit(qtrl_strings)
         self.circuit_constructor = CircuitConstructor(ansatz, self.qubits)
+        print('ansatz\n')
+        print(ansatz)
 
         # Create dictionary for the creation/annihilation operators.
-        second_quantized_operators = SecondQuantizedOperators(2 * self.n_orbitals)
-        second_quantized_operators.transform(partial(transform_4q_pauli, init_state=[1, 1]))
-        self.operators_dict = second_quantized_operators.get_operators_dict()
+        # second_quantized_operators = SecondQuantizedOperators(2 * self.n_orbitals)
+        # second_quantized_operators.transform(partial(transform_4q_pauli, init_state=[1, 1]))
+        # self.operators_dict = second_quantized_operators.get_operators_dict()
+        self.second_quantized_operators = SecondQuantizedOperators1(self.qubits, self.spin)
+        self.second_quantized_operators.transform(method_indices_pairs)
 
     def _run_diagonal_circuits(self) -> None:
         """Runs diagonal transition amplitude circuits."""
@@ -88,21 +93,24 @@ class EHAmplitudesSolver:
             if f"{circuit_label}/transpiled" in h5file:
                 del h5file[f"{circuit_label}/transpiled"]
 
+
             # Build the diagonal circuit based on the creation/annihilation operator.
-            a_operator = self.operators_dict[(m, self.spin)]
-            circuit = self.circuit_constructor.build_diagonal_circuit(a_operator)
+            circuit = self.circuit_constructor.build_diagonal_circuit(
+                self.second_quantized_operators[2 * m],
+                self.second_quantized_operators[2 * m + 1])
+            print('circuit', m, '\n')
+            print(circuit)
 
             # Transpile the circuit and save to HDF5 file.
             circuit = transpile_into_berkeley_gates(circuit)
             self.circuits[circuit_label] = circuit
             qtrl_strings = self.circuit_string_converter.convert_circuit_to_strings(circuit)
-            dset_transpiled = h5file.create_dataset(
-                f"{circuit_label}/transpiled", data=json.dumps(qtrl_strings)
-            )
+            dset_transpiled = h5file.create_dataset(f"{circuit_label}/transpiled", data=json.dumps(qtrl_strings))
 
             # Execute the circuit and store the statevector in the HDF5 file.
             state_vector = cirq.sim.final_state_vector(circuit)
             state_vector[abs(state_vector) < 1e-8] = 0.0
+            print(f'{len(state_vector) = }')
             dset_transpiled.attrs[f"psi{self.suffix}"] = state_vector
 
             if self.method == "tomo":
@@ -115,8 +123,7 @@ class EHAmplitudesSolver:
                         del h5file[f"{circuit_label}/{tomography_label}"]
                     qtrl_strings = self.circuit_string_converter.convert_circuit_to_strings(tomography_circuit)
                     dset_tomography = h5file.create_dataset(
-                        f"{circuit_label}/{tomography_label}", 
-                        data=json.dumps(qtrl_strings))
+                        f"{circuit_label}/{tomography_label}", data=json.dumps(qtrl_strings))
 
                     result = cirq.Simulator().run(tomography_circuit)
                     histogram = result.multi_measurement_histogram(keys=[str(q) for q in self.qubits[1:3]])
@@ -133,9 +140,11 @@ class EHAmplitudesSolver:
             del h5file[f"{circuit_label}/transpiled"]
 
         # Build the off-diagonal circuit based on the creation/annihilation operators.
-        a_operator_0 = self.operators_dict[(0, self.spin)]
-        a_operator_1 = self.operators_dict[(1, self.spin)]
-        circuit = self.circuit_constructor.build_off_diagonal_circuit(a_operator_0, a_operator_1)
+        circuit = self.circuit_constructor.build_off_diagonal_circuit(
+            self.second_quantized_operators[2 * 0],
+            self.second_quantized_operators[2 * 0 + 1], 
+            self.second_quantized_operators[2 * 1],
+            self.second_quantized_operators[2 * 1 + 1])
 
         # Transpile the circuit and save to HDF5 file.
         circuit = transpile_into_berkeley_gates(circuit)

@@ -16,7 +16,7 @@ from .molecular_hamiltonian import MolecularHamiltonian
 from .z2symmetries import transform_4q_pauli, transform_4q_indices
 
 # from .params import singlet_inds, triplet_inds
-from .ansatze import AnsatzFunction, build_ansatz_e, build_ansatz_h
+# from .ansatze import AnsatzFunction, build_ansatz_e, build_ansatz_h
 
 
 class ExcitedStatesSolver:

@@ -73,13 +73,14 @@ class GreensFunction:
             circuit_label = f"circ{m}{self.spin}/transpiled"
             if self.method == "exact":
                 state_vector = h5file[circuit_label].attrs[f"psi{self.suffix}"]
+                print(f'{state_vector = }')
                 for subscript in ["e", "h"]:
                     # XXX: I don't thik the ::-1 is correct, but it matches the qiskit implementation.
-                    state_vector_subscript = self.qubit_indices_dict[subscript](state_vector)[::-1]
+                    state_vector_subscript = self.qubit_indices_dict[subscript](state_vector)
 
                     # Obtain the B matrix elements by computing the overlaps.
-                    self.B[subscript][m, m] = \
-                        np.abs(self.state_vectors[subscript].conj().T @ state_vector_subscript) ** 2
+                    self.B[subscript][m, m] = np.abs(
+                        self.state_vectors[subscript].conj().T @ state_vector_subscript) ** 2
                     if self.verbose:
                         print(f"B[{subscript}][{m}, {m}] = {self.B[subscript][m, m]}")
 
