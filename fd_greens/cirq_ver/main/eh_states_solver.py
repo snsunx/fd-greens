@@ -8,14 +8,10 @@ from typing import Optional
 import h5py
 import numpy as np
 
-from qiskit import Aer
-from qiskit.utils import QuantumInstance
-
 from .parameters import method_indices_pairs
 from .molecular_hamiltonian import MolecularHamiltonian
-from .z2symmetries import transform_4q_pauli, transform_4q_indices
-from .qubit_indices import e_inds, get_qubit_indices_dict, h_inds
-from ..utils import write_hdf5
+from .z2symmetries import transform_4q_pauli
+from .qubit_indices import get_qubit_indices_dict
 
 
 class EHStatesSolver:
@@ -38,10 +34,8 @@ class EHStatesSolver:
         self.qubit_indices_dict = get_qubit_indices_dict(4, spin, method_indices_pairs, system_only=True)
         self.h5fname = h5fname + ".h5"
 
-        self.energies_e = None
-        self.energies_h = None
-        self.states_e = None
-        self.states_h = None
+        self.energies = dict()
+        self.state_vectors = dict()
 
     def _run_exact(self) -> None:
         """Calculates the exact (N±1)-electron energies and states of the Hamiltonian."""
@@ -52,21 +46,23 @@ class EHStatesSolver:
             return e, v
 
         h_arr = self.h_op.to_matrix()
-        self.energies_e, self.states_e = eigensolve(h_arr, inds=self.qubit_indices_dict['e'].int)
-        self.energies_h, self.states_h = eigensolve(h_arr, inds=self.qubit_indices_dict['h'].int)
-        # self.states_e = self.states_e
-        # self.states_h = self.states_h
-        print(f"(N+1)-electron energies are {self.energies_e} eV")
-        print(f"(N-1)-electron energies are {self.energies_h} eV")
+        self.energies['e'], self.state_vectors['e'] = eigensolve(h_arr, inds=self.qubit_indices_dict['e'].int)
+        self.energies['h'], self.state_vectors['h'] = eigensolve(h_arr, inds=self.qubit_indices_dict['h'].int)
+        print(f"(N+1)-electron energies are {self.energies['e']} eV")
+        print(f"(N-1)-electron energies are {self.energies['h']} eV")
 
     def _save_data(self) -> None:
-        """Saves (N±1)-electron energies and states to HDF5 file."""
+        """Saves (N±1)-electron energies and state vectors to HDF5 file."""
         h5file = h5py.File(self.h5fname, "r+")
 
-        write_hdf5(h5file, "es", "energies_e", self.energies_e)
-        write_hdf5(h5file, "es", "energies_h", self.energies_h)
-        write_hdf5(h5file, "es", "states_e", self.states_e)
-        write_hdf5(h5file, "es", "states_h", self.states_h)
+        for dset_name in ['es/energies_e', 'es/energies_h', 'es/states_e', 'es/states_h']:
+            if dset_name in h5file:
+                del h5file[dset_name]
+        
+        h5file['es/energies_e'] = self.energies['e']
+        h5file['es/energies_h'] = self.energies['h']
+        h5file['es/states_e'] = self.state_vectors['e']
+        h5file['es/states_h'] = self.state_vectors['h']
 
         h5file.close()
 

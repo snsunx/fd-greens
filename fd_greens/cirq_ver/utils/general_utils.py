@@ -47,67 +47,6 @@ QuantumCircuitLike = Union[QuantumCircuit, Iterable[InstructionTuple]]
 AnsatzFunction = Callable[[Sequence[float]], QuantumCircuit]
 
 
-def get_tomography_labels(n_qubits: int) -> List[str]:
-    """Returns the tomography labels on a certain number of qubits.
-    
-    Args:
-        n_qubits: The number of qubits to be tomographed.
-        
-    Returns:
-        tomo_labels: The tomography labels.
-    """
-    tomo_labels = ["".join(x) for x in product("xyz", repeat=n_qubits)]
-    return tomo_labels
-
-
-def get_statevector(circ_like: QuantumCircuitLike, reverse: bool = False) -> np.ndarray:
-    """Returns the statevector of a circuit.
-
-    Args:
-        circ_like: The circuit or instruction tuples on which the state is to be obtained.
-        reverse: Whether qubit order is reversed.
-
-    Returns:
-        statevector: The statevector array of the circuit.
-    """
-    if isinstance(circ_like, QuantumCircuit):
-        circ = circ_like
-    else:  # instruction tuples
-        circ = create_circuit_from_inst_tups(circ_like)
-
-    backend = Aer.get_backend("statevector_simulator")
-    job = execute(circ, backend)
-    result = job.result()
-    statevector = result.get_statevector()
-    if reverse:
-        statevector = reverse_qubit_order(statevector)
-    return statevector
-
-
-def get_unitary(circ_like: QuantumCircuitLike, reverse: bool = False) -> np.ndarray:
-    """Returns the unitary of a circuit.
-
-    Args:
-        circ_like: The circuit or instruction tuples on which the unitary is to be obtained.
-        reverse: Whether qubit order is reversed.
-
-    Returns:
-        unitary: The unitary array of the circuit.
-    """
-    circ_like = remove_instructions(circ_like, ["barrier", "measure"])
-    if isinstance(circ_like, QuantumCircuit):
-        circ = circ_like
-    else:  # instruction tuples
-        circ = create_circuit_from_inst_tups(circ_like)
-
-    backend = Aer.get_backend("unitary_simulator")
-    result = execute(circ, backend).result()
-    unitary = result.get_unitary()
-    if reverse:
-        unitary = reverse_qubit_order(unitary)
-    return unitary
-
-
 def get_overlap(state1: np.ndarray, state2: np.ndarray) -> float:
     """Returns the overlap of two states in either statevector or density matrix form.
     

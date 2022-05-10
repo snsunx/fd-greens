@@ -4,31 +4,23 @@
 ========================================================================================
 """
 
-from itertools import product
 from typing import Optional, Sequence
 from functools import partial
 
 import h5py
 import json
 import numpy as np
-from scipy.special import binom
 
 import cirq
-from fd_greens.cirq_ver.utils import tomography_utils
 
-from fd_greens.cirq_ver.utils.circuit_string_converter import CircuitStringConverter
-
-from .qubit_indices import e_inds, h_inds
 from .molecular_hamiltonian import MolecularHamiltonian
 from .operators import SecondQuantizedOperators
-from .z2symmetries import transform_4q_pauli, transform_4q_indices
+from .z2symmetries import transform_4q_pauli
 from .circuit_constructor import CircuitConstructor
+from .circuit_string_converter import CircuitStringConverter
+from .transpilation import transpile_into_berkeley_gates
 
-from ..utils import (
-    print_information,
-    transpile_into_berkeley_gates,
-    histogram_to_array
-)
+from ..utils import histogram_to_array
 
 np.set_printoptions(precision=6)
 
@@ -62,12 +54,16 @@ class EHAmplitudesSolver:
 
         # Basic variables.
         self.h = h
+        self.hamiltonian = h
         self.qubits = qubits
         self.method = method
         self.h5fname = h5fname + ".h5"
         self.spin = spin
         self.suffix = suffix
         self.verbose = verbose
+
+
+        self.n_orbitals = len(self.hamiltonian.active_indices)
 
         self.circuits = dict()
         self.circuit_string_converter = CircuitStringConverter(self.qubits)
@@ -78,7 +74,7 @@ class EHAmplitudesSolver:
         self.circuit_constructor = CircuitConstructor(ansatz, self.qubits)
 
         # Create dictionary for the creation/annihilation operators.
-        second_quantized_operators = SecondQuantizedOperators(self.h.molecule.n_electrons)
+        second_quantized_operators = SecondQuantizedOperators(2 * self.n_orbitals)
         second_quantized_operators.transform(partial(transform_4q_pauli, init_state=[1, 1]))
         self.operators_dict = second_quantized_operators.get_operators_dict()
 
@@ -86,7 +82,7 @@ class EHAmplitudesSolver:
         """Runs diagonal transition amplitude circuits."""
         h5file = h5py.File(self.h5fname, "r+")
 
-        for m in range(self.n_orb):
+        for m in range(self.n_orbitals):
             # Create circuit label.
             circuit_label = f"circ{m}{self.spin}"
             if f"{circuit_label}/transpiled" in h5file:
@@ -110,18 +106,14 @@ class EHAmplitudesSolver:
             dset_transpiled.attrs[f"psi{self.suffix}"] = state_vector
 
             if self.method == "tomo":
-                tomography_circuits = self.circuit_constructor.build_tomography_circuits(
-                    circuit, self.qubits[1:3]
-                )
+                tomography_circuits = self.circuit_constructor.build_tomography_circuits(circuit, self.qubits[1:3])
 
                 for tomography_label, tomography_circuit in tomography_circuits.items():
                     self.circuits[circuit_label + tomography_label] = tomography_circuit
 
                     if f"{circuit_label}/{tomography_label}" in h5file:
                         del h5file[f"{circuit_label}/{tomography_label}"]
-                    qtrl_strings = self.circuit_string_converter.convert_circuit_to_strings(
-                        tomography_circuit
-                    )
+                    qtrl_strings = self.circuit_string_converter.convert_circuit_to_strings(tomography_circuit)
                     dset_tomography = h5file.create_dataset(
                         f"{circuit_label}/{tomography_label}", 
                         data=json.dumps(qtrl_strings))
@@ -157,18 +149,14 @@ class EHAmplitudesSolver:
 
         # Apply tomography and measurement gates and save to HDF5 file.
         if self.method == "tomo":
-            tomography_circuits = self.circuit_constructor.build_tomography_circuits(
-                circuit, self.qubits[2:4]
-            )
+            tomography_circuits = self.circuit_constructor.build_tomography_circuits(circuit, self.qubits[2:4])
 
             for tomography_label, tomography_circuit in tomography_circuits.items():
                 if f"{circuit_label}/{tomography_label}" in h5file:
                     del h5file[f"{circuit_label}/{tomography_label}"]
 
                 self.circuits[circuit_label + tomography_label] = tomography_circuit
-                qtrl_strings = self.circuit_string_converter.convert_circuit_to_strings(
-                    tomography_circuit
-                )
+                qtrl_strings = self.circuit_string_converter.convert_circuit_to_strings(tomography_circuit)
                 dset_tomography = h5file.create_dataset(
                     f"{circuit_label}/{tomography_label}", data=json.dumps(qtrl_strings))
 
@@ -186,9 +174,12 @@ class EHAmplitudesSolver:
             method: The method to calculate transition amplitudes. Either exact 
                 (``"exact"``) or tomography (``"tomo"``).
         """
+        # TODO: What is the best way to design this method feature.
         assert method in [None, "exact", "tomo"]
 
+        print("Start (N±1)-electron amplitudes solver.")
         if method is not None:
             self.method = method
         self._run_diagonal_circuits()
         self._run_off_diagonal_circuits()
+        print("(N±1)-electron amplitudes solver finshed.")

@@ -44,22 +44,17 @@ class GreensFunction:
         self.method = method
         self.verbose = verbose
 
-        # TODO: Get this 4 from the Hamiltonian.
-        self.qubit_indices_dict = get_qubit_indices_dict(4, spin, method_indices_pairs)
-
-        # TODO: Think about how to handle this.
-        self.n_sys = 2
-
         # Load energies and state vectors from HDF5 file.
-        h5file = h5py.File(h5fname + ".h5", "r")
-        self.energies = {"gs": h5file["gs/energy"][()], 
-                         "e": h5file["es/energies_e"][:], "h": h5file["es/energies_h"][:]}
-        self.state_vectors = {"e": h5file["es/states_e"][:], "h": h5file["es/states_h"][:]}
-        h5file.close()
+        with h5py.File(h5fname + ".h5", "r") as h5file:
+            self.energies = {"gs": h5file["gs/energy"][()], 
+                            "e": h5file["es/energies_e"][:], "h": h5file["es/energies_h"][:]}
+            self.state_vectors = {"e": h5file["es/states_e"][:], "h": h5file["es/states_h"][:]}
 
         # Initialize array quantities B, D and G.
         self.n_states = {"e": self.state_vectors["e"].shape[1], "h": self.state_vectors["h"].shape[1]}
         self.n_orbitals = len(self.hamiltonian.active_indices)
+        self.n_system_qubits = 2 * self.n_orbitals - 2 # XXX: 2 is hardcoded
+        self.qubit_indices_dict = get_qubit_indices_dict(2 * self.n_orbitals, spin, method_indices_pairs)
         self.B = {subscript: np.zeros((self.n_orbitals, self.n_orbitals, self.n_states[subscript]), dtype=complex)
                   for subscript in ["e", "h"]}
         self.D = {subscript: np.zeros((self.n_orbitals, self.n_orbitals, self.n_states[subscript[0]]), dtype=complex)
@@ -112,7 +107,7 @@ class GreensFunction:
                     # based on whether we are considering 'e' or 'h' on the system qubits.
                     density_matrix = np.linalg.lstsq(basis_matrix, counts_arr_key)[0]
                     density_matrix = density_matrix.reshape(
-                        2 ** self.n_sys, 2 ** self.n_sys, order="F"
+                        2 ** self.n_system_qubits, 2 ** self.n_system_qubits, order="F"
                     )
                     density_matrix = qubit_indices.system(density_matrix)
 
@@ -165,7 +160,7 @@ class GreensFunction:
                         # Obtain the density matrix from tomography. Slice the density matrix
                         # based on whether we are considering 'e' or 'h' on the system qubits.
                         rho = np.linalg.lstsq(basis_matrix, counts_arr_key)[0]
-                        rho = rho.reshape(2 ** self.n_sys, 2 ** self.n_sys, order="F")
+                        rho = rho.reshape(2 ** self.n_system_qubits, 2 ** self.n_system_qubits, order="F")
                         rho = self.qinds_sys[key[0]](rho)
 
                         # Obtain the D matrix elements by computing the overlaps between

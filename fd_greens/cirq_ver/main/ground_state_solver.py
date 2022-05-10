@@ -11,11 +11,11 @@ import h5py
 import cirq
 import json
 
-from fd_greens.cirq_ver.utils.transpilation import transpile_into_berkeley_gates
-
 from .molecular_hamiltonian import MolecularHamiltonian
 from .z2symmetries import transform_4q_pauli
-from ..utils import write_hdf5, decompose_1q_gate, unitary_equal, CircuitStringConverter
+from .circuit_string_converter import CircuitStringConverter
+from .transpilation import transpile_into_berkeley_gates
+from ..utils import write_hdf5, decompose_1q_gate, unitary_equal
 
 
 class GroundStateSolver:

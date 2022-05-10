@@ -16,8 +16,6 @@ from openfermion.transforms import jordan_wigner, get_fermion_operator
 from openfermion.linalg import get_sparse_operator
 from openfermionpyscf import run_pyscf
 
-GeometryType = List[Tuple[str, Sequence[Union[int, float]]]]
-
 HARTREE_TO_EV = 27.211386245988
 
 
@@ -26,15 +24,13 @@ class MolecularHamiltonian:
 
     def __init__(
         self,
-        geometry: GeometryType,
+        geometry: List[Tuple[str, Sequence[float]]],
         basis: str,
         multiplicity: int = 1,
         charge: int = 0,
-        name: Optional[str] = None,
         run_pyscf_options: dict = {},
         occupied_indices: Optional[Sequence[int]] = None,
         active_indices: Optional[Sequence[int]] = None,
-        build_ops: bool = True,
     ) -> None:
         """Initializes a ``MolecularHamiltonian`` object.
 
@@ -44,7 +40,6 @@ class MolecularHamiltonian:
             basis: The basis set.
             multiplicity: The spin multiplicity.
             charge: The total molecular charge. Defaults to 0.
-            name: The string identifer used for saving and loading cached circuits.
             run_pyscf_options: Keyword arguments passed to the run_pyscf function.
             occupied_indices: A list of spatial orbital indices indicating which orbitals 
                 should be considered doubly occupied.
@@ -53,14 +48,10 @@ class MolecularHamiltonian:
         """
         self.geometry = geometry
         self.basis = basis
-        if name is None:
-            self.name = "".join([geometry[i][0] for i in range(len(geometry))])
-        else:
-            self.name = name
-
         self.multiplicity = multiplicity
         self.charge = charge
         self.run_pyscf_options = run_pyscf_options
+
         molecule = MolecularData(
             self.geometry,
             self.basis,
@@ -69,21 +60,15 @@ class MolecularHamiltonian:
         )
         run_pyscf(molecule)
         self.molecule = molecule
+        self.n_electrons = molecule.n_electrons
+        self.orbital_energies = molecule.orbital_energies
 
-        if occupied_indices is None:
-            self.occupied_indices = []
-        else:
-            self.occupied_indices = occupied_indices
-
-        if active_indices is None:
-            self.active_indices = range(self.molecule.n_orbitals)
-        else:
-            self.active_indices = active_indices
+        self.occupied_indices = [] if occupied_indices is None else occupied_indices
+        self.active_indices = range(self.molecule.n_orbitals) if active_indices is None else active_indices
 
         self._openfermion_op = None
         self._qiskit_op = None
-        if build_ops:
-            self.build()
+        self._build()
 
     def _build_openfermion_operator(self) -> None:
         """A private method for constructing the Openfermion qubit operator
@@ -128,7 +113,7 @@ class MolecularHamiltonian:
         qubit_op = PauliSumOp(primitive)
         self._qiskit_op = qubit_op * HARTREE_TO_EV
 
-    def build(
+    def _build(
         self, build_openfermion_op: bool = True, build_qiskit_op: bool = True
     ) -> None:
         """Constructs both the Openfermion and the Qiskit qubit operators.
@@ -155,22 +140,3 @@ class MolecularHamiltonian:
         if self._qiskit_op is None:
             self._build_qiskit_operator()
         return self._qiskit_op
-
-    def to_array(self, array_type: str = "ndarray") -> np.ndarray:
-        """Converts the molecular Hamiltonian to an array form.
-
-        Args:
-            array_type: A string indicating the type of the output array.
-
-        Returns:
-            array: The operator in matrix, sparse matrix of ndarray form.
-        """
-        assert array_type in ["sparse", "matrix", "array", "ndarray"]
-        if self._openfermion_op is None:
-            self._build_openfermion_operator()
-        array = get_sparse_operator(self._openfermion_op)
-        if array_type == "matrix":
-            array = array.todense()
-        elif array_type == "array" or array_type == "ndarray":
-            array = array.toarray()
-        return array

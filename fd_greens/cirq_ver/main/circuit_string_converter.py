@@ -135,7 +135,6 @@ class CircuitStringConverter:
         Returns:
             strings: The qtrl strings corresponding to the Cirq circuit.
         """
-        # circ = remove_instructions_in_circuit(circ, ["measure", "barrier"])
         strings = []
 
         for moment in circuit:

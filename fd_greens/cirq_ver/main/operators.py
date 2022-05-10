@@ -4,15 +4,16 @@ Operators (:mod:`fd_greens.main.operators`)
 ===========================================
 """
 
-from ast import operator
-from typing import Callable, Tuple, Dict, Union, Sequence, Optional
+from typing import Callable, Tuple, Dict, Union, Sequence, Optional, List
 import numpy as np
+import cirq
 from qiskit import *
 from qiskit.quantum_info import PauliTable, SparsePauliOp
 from qiskit.opflow import PauliSumOp
 
-PauliOperator = Union[PauliSumOp, SparsePauliOp]
+from .qubit_indices import QubitIndices
 
+PauliOperator = Union[PauliSumOp, SparsePauliOp]
 
 class SecondQuantizedOperators:
     """A class to store the X and Y parts of the creation and annihilation operators."""
@@ -21,7 +22,7 @@ class SecondQuantizedOperators:
         """Initializes a SecondQuantizedOperators object.
         
         Args:
-            n_qubits: The number of qubits in the creation and annihilation operators.
+            n_qubits: The number of qubits in the second quantized operators.
             factor: A multiplication factor for simpler gate implementation.
         """
         self.n_qubits = n_qubits
@@ -50,6 +51,80 @@ class SecondQuantizedOperators:
         return operators_dict
 
     get_operators_dict = get_pauli_dict
+
+class OperatorsBase:
+    """Operators base."""
+
+    def __init__(self) -> None:
+        pass
+
+    def cnot(self, control: int, target: int) -> None:
+        for i, pauli_string in enumerate(self.pauli_strings):
+            self.pauli_strings[i] = pauli_string.conjugated_by(cirq.CNOT(self.qubits[control], self.qubits[target]))
+
+    def swap(self, index1: int, index2: int) -> None:
+        for i, pauli_string in enumerate(self.pauli_strings):
+            self.pauli_strings[i] = pauli_string.conjugated_by(cirq.SWAP(self.qubits[index1], self.qubits[index2]))
+
+    def taper(self, tapered_state, *tapered_indices: Sequence[int]) -> None:
+        """Tapers qubits off the first two qubits, assuming the symmetry operators are both Z."""
+        for i, pauli_string in enumerate(self.pauli_strings):
+            coefficient = pauli_string.coefficient
+            pauli_mask = pauli_string.dense(self.qubits).pauli_mask
+            print(f'{coefficient = }')
+            print(f'{pauli_string.dense(self.qubits) = }')
+            print(f'{tapered_state = }')
+            for state, index in zip(tapered_state, tapered_indices):
+                if pauli_mask[index] == 2:
+                    coefficient *= (-1) ** state * 1j
+                elif pauli_mask[index] == 3:
+                    coefficient *= (-1) ** state
+            print(f'coefficient_new = {coefficient}')
+            print('-' * 80)
+            pauli_mask_new = [pauli_mask[i] for i in range(self.n_qubits) if i not in tapered_indices]
+            self.pauli_strings[i] = cirq.DensePauliString(pauli_mask_new, coefficient=coefficient).sparse()
+
+    def transform(self, method_indices_pairs, tapered_state=None):
+        method_dict = {"cnot": self.cnot, "swap": self.swap, "taper": self.taper}
+        for method_key, indices in method_indices_pairs:
+            if method_key != 'taper':
+                method_dict[method_key](*indices)
+            else:
+                method_dict[method_key](tapered_state, *indices)
+
+
+class SecondQuantizedOperators1(OperatorsBase):
+    """Second quantized operators."""
+
+    def __init__(self, qubits: Sequence[cirq.Qid], spin: str, factor: float = -1.0) -> None:
+        self.qubits = qubits
+        self.n_qubits = len(qubits)
+        self.spin = spin
+
+        self.pauli_strings = []
+        for i in range(self.n_qubits):
+            pauli_string_x = cirq.PauliString([cirq.Z(qubits[j]) for j in range(i)] + [cirq.X(qubits[i])])
+            pauli_string_y = cirq.PauliString([cirq.Z(qubits[j]) for j in range(i)] + [cirq.Y(qubits[i])])
+            self.pauli_strings.append(factor * pauli_string_x)
+            self.pauli_strings.append(factor * 1j * pauli_string_y)
+
+    def transform(self, method_indices_pairs):
+        '''if 'taper' in [t[0] for t in method_indices_pairs]:
+            indices = [1] * (self.n_qubits // 2) + [0] * (self.n_qubits // 2)
+            indices[self.n_qubits // 2 + (self.spin == 'd')] = 1
+            qubit_indices = QubitIndices([indices])
+            qubit_indices.transform(method_indices_pairs)
+            tapered_state = qubit_indices.system_indices[0]
+            # TODO: Should keep track of the symmetry operators as well.
+        else:
+            tapered_state = None
+        '''
+        tapered_state = [1] * (self.n_qubits // 2)
+        OperatorsBase.transform(self, method_indices_pairs, tapered_state=tapered_state)
+
+    @property
+    def operators(self):
+        return
 
 
 class ChargeOperators:
@@ -94,3 +169,33 @@ class ChargeOperators:
                     self.sparse_pauli_op[i] + self.sparse_pauli_op[i + self.n_qubits]
                 )
         return dic
+
+class ChargeOperators1(OperatorsBase):
+    def __init__(self, qubits, spin):
+        self.qubits = qubits
+        self.n_qubits = len(qubits)
+        self.spin = spin
+
+        pauli_strings = []
+        for i in range(self.n_qubits):
+            pauli_string_i = cirq.PauliString()
+            pauli_string_z = cirq.PauliString(cirq.Z(qubits[i]))
+            pauli_strings.append(pauli_string_i)
+            pauli_strings.append(pauli_string_z)
+
+    def transform(self, method_indices_pairs):
+        '''if 'taper' in method_indices_pairs:
+            indices = [1] * (self.n_qubits // 2) + [0] * (self.n_qubits // 2)
+            indices[self.n_qubits // 2 + (self.spin == 'd')] = 1
+            qubit_indices = QubitIndices([indices])
+            qubit_indices.transform(method_indices_pairs)
+            tapered_state = qubit_indices.system_indices[0]
+            # TODO: Should keep track of the symmetry operators as well.
+        '''
+        
+        tapered_state = [1] * (self.n_qubits // 2)
+        OperatorsBase.transform(self, method_indices_pairs, tapered_state=tapered_state)
+
+    @property
+    def operators(self):
+        return

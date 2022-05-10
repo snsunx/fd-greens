@@ -71,24 +71,23 @@ class QubitIndices:
         return self.__class__([[]], ancilla_indices=self.ancilla_indices)
 
     def cnot(self, control: int, target: int) -> None:
-        """Applies a CNOT operation to qubit indices."""
+        """Applies a CNOT transformation to qubit indices."""
         # print(f"{self.system_indices = }")
         # print(f"{control = }, {target = }")
         for qubit_index in self.system_indices:
             qubit_index[target] = (qubit_index[control] + qubit_index[target]) % 2
 
-    def swap(self, qubit1: int, qubit2: int) -> None:
-        """Applies a SWAP operation to qubit indices."""
+    def swap(self, index1: int, index2: int) -> None:
+        """Applies a SWAP transformation to qubit indices."""
         for qubit_index in self.system_indices:
-            qubit_index[qubit2], qubit_index[qubit1] = qubit_index[qubit1], qubit_index[qubit2]
+            qubit_index[index2], qubit_index[index1] = qubit_index[index1], qubit_index[index2]
 
     def taper(self, *tapered_indices: Iterable[int]) -> None:
         """Tapers off certain qubit indices."""
         for i, qubit_index in enumerate(self.system_indices):
-            qubit_index_new = [q for j, q in enumerate(qubit_index) if j not in tapered_indices]
-            self.system_indices[i] = qubit_index_new
+            self.system_indices[i] = [q for j, q in enumerate(qubit_index) if j not in tapered_indices]
 
-    def transform(self, method_indices_pairs) -> None:
+    def transform(self, method_indices_pairs: Iterable[Tuple[str, Sequence[int]]]) -> None:
         """Transforms a ``QubitIndices`` object."""
         method_dict = {"cnot": self.cnot, "swap": self.swap, "taper": self.taper}
         for method_key, indices in method_indices_pairs:
@@ -123,6 +122,10 @@ def get_qubit_indices_dict(
         n_qubits: The number of qubits.
         spin: The spin state of the electron-added states. Either "u" or "d".
         method_indices_pairs: A dictionary of transform methods to indices.
+        system_only: Whether to only build system qubit indices.
+    
+    Returns:
+        qubit_indices_dict: A dictionary from subscripts to qubit indices.
     """
     assert spin in ["u", "d"]
 
@@ -144,7 +147,7 @@ def get_qubit_indices_dict(
 
     qubit_indices_dict = dict()
     if system_only:
-        print("system only")
+        # Build qubit indices only on system indices.
         for subscript, system_indices in system_indices_dict.items():
             qubit_indices = QubitIndices(system_indices)
             qubit_indices.transform(method_indices_pairs)
