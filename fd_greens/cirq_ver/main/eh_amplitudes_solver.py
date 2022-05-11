@@ -31,7 +31,7 @@ class EHAmplitudesSolver:
 
     def __init__(
         self,
-        h: MolecularHamiltonian,
+        hamiltonian: MolecularHamiltonian,
         qubits: Sequence[cirq.Qid],
         method: str = "exact",
         h5fname: str = "lih",
@@ -54,8 +54,7 @@ class EHAmplitudesSolver:
         assert spin in ["u", "d"]
 
         # Basic variables.
-        self.h = h
-        self.hamiltonian = h
+        self.hamiltonian = hamiltonian
         self.qubits = qubits
         self.method = method
         self.h5fname = h5fname + ".h5"
@@ -63,18 +62,14 @@ class EHAmplitudesSolver:
         self.suffix = suffix
         self.verbose = verbose
 
-
         self.n_orbitals = len(self.hamiltonian.active_indices)
 
         self.circuits = dict()
         self.circuit_string_converter = CircuitStringConverter(self.qubits)
-        h5file = h5py.File(self.h5fname, 'r')
         with h5py.File(self.h5fname, 'r') as h5file:
             qtrl_strings = json.loads(h5file["gs/ansatz"][()])
             ansatz = self.circuit_string_converter.convert_strings_to_circuit(qtrl_strings)
         self.circuit_constructor = CircuitConstructor(ansatz, self.qubits)
-        print('ansatz\n')
-        print(ansatz)
 
         # Create dictionary for the creation/annihilation operators.
         # second_quantized_operators = SecondQuantizedOperators(2 * self.n_orbitals)
@@ -98,8 +93,6 @@ class EHAmplitudesSolver:
             circuit = self.circuit_constructor.build_diagonal_circuit(
                 self.second_quantized_operators[2 * m],
                 self.second_quantized_operators[2 * m + 1])
-            print('circuit', m, '\n')
-            print(circuit)
 
             # Transpile the circuit and save to HDF5 file.
             circuit = transpile_into_berkeley_gates(circuit)
@@ -110,11 +103,11 @@ class EHAmplitudesSolver:
             # Execute the circuit and store the statevector in the HDF5 file.
             state_vector = cirq.sim.final_state_vector(circuit)
             state_vector[abs(state_vector) < 1e-8] = 0.0
-            print(f'{len(state_vector) = }')
             dset_transpiled.attrs[f"psi{self.suffix}"] = state_vector
 
             if self.method == "tomo":
                 tomography_circuits = self.circuit_constructor.build_tomography_circuits(circuit, self.qubits[1:3])
+                # XXX: 1:3 is hardcoded
 
                 for tomography_label, tomography_circuit in tomography_circuits.items():
                     self.circuits[circuit_label + tomography_label] = tomography_circuit
@@ -159,6 +152,7 @@ class EHAmplitudesSolver:
         # Apply tomography and measurement gates and save to HDF5 file.
         if self.method == "tomo":
             tomography_circuits = self.circuit_constructor.build_tomography_circuits(circuit, self.qubits[2:4])
+            # XXX: 2:4 is hardcoded
 
             for tomography_label, tomography_circuit in tomography_circuits.items():
                 if f"{circuit_label}/{tomography_label}" in h5file:

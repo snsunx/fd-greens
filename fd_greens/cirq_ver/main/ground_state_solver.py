@@ -12,9 +12,9 @@ import cirq
 import json
 
 from .molecular_hamiltonian import MolecularHamiltonian
-from .z2symmetries import transform_4q_pauli
 from .circuit_string_converter import CircuitStringConverter
 from .transpilation import transpile_into_berkeley_gates
+from .parameters import method_indices_pairs
 from ..utils import write_hdf5, decompose_1q_gate, unitary_equal
 
 
@@ -22,22 +22,20 @@ class GroundStateSolver:
     """Ground state solver."""
 
     def __init__(
-        self, h: MolecularHamiltonian, qubits: Sequence[cirq.Qid], h5fname: str = "lih"
+        self, hamiltonian: MolecularHamiltonian, qubits: Sequence[cirq.Qid], h5fname: str = "lih"
     ) -> None:
         """Initializes a ``GroudStateSolver`` object.
         
         Args:
-            h: The molecular Hamiltonian object.
+            hamiltonian: The molecular Hamiltonian object.
             qubits: The qubits on which the ground state is prepared.
             h5fname: The hdf5 file name.
         """
-        self.h = h
-        self.qubits = qubits
-        self.h_op = transform_4q_pauli(self.h.qiskit_op, init_state=[1, 1])
-        self.h5fname = h5fname + ".h5"
+        self.hamiltonian = hamiltonian
+        self.hamiltonian.transform(method_indices_pairs)
 
-        self.energy = None
-        self.ansatz = None
+        self.qubits = qubits        
+        self.h5fname = h5fname + ".h5"
         self.circuit_string_converter = CircuitStringConverter(qubits)
 
     def _run_exact(self) -> None:
@@ -46,7 +44,7 @@ class GroundStateSolver:
         # eigenvalue. The ansatz is prepared by the unitary with the lowest eigenvector as the first
         # column and the rest filled in randomly. The matrix after going through a QR factorization
         # and a KAK decomposition is assigned as the ansatz.
-        e, v = np.linalg.eigh(self.h_op.to_matrix())
+        e, v = np.linalg.eigh(self.hamiltonian.matrix)
         self.energy = e[0]
         # v0 = [ 0.6877791696238387+0j, 0.07105690514886635+0j, 0.07105690514886635+0j, -0.7189309050895454+0j]
         v0 = v[:, 0][abs(v[:, 0]) > 1e-8]
@@ -97,7 +95,6 @@ class GroundStateSolver:
 
         U_reshaped = U_reshaped.reshape(4, 4)
         u, s, vd = np.linalg.svd(U_reshaped)
-        print(s)
         assert np.count_nonzero(np.abs(s) > 1e-8) == 1
 
         A = u[:, 0].reshape(2, 2) * np.sqrt(s[0])
@@ -142,9 +139,7 @@ class GroundStateSolver:
     def _save_data(self) -> None:
         """Saves ground state energy and ansatz to hdf5 file."""
         h5file = h5py.File(self.h5fname, "r+")
-        qtrl_strings = self.circuit_string_converter.convert_circuit_to_strings(
-            self.ansatz
-        )
+        qtrl_strings = self.circuit_string_converter.convert_circuit_to_strings(self.ansatz)
 
         write_hdf5(h5file, "gs", "energy", self.energy)
         write_hdf5(h5file, "gs", "ansatz", json.dumps(qtrl_strings))

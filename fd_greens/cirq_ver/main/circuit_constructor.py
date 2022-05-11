@@ -37,7 +37,6 @@ class CircuitConstructor:
         """
         assert set(ctrl_states).issubset({0, 1})  # Control states must be 0 or 1
         coeff = dense_pauli_string.coefficient
-        # label = sparse_pauli_op.table.to_labels()[0][::-1]
         pauli_mask = dense_pauli_string.pauli_mask
         print(f'{coeff = }')
         print(f'{pauli_mask = }')
@@ -65,14 +64,12 @@ class CircuitConstructor:
         # 2 control qubits. When the coefficient is not 1, apply a phase gate in the
         # case of 1 control qubit and a controlled phase gate in the case of 2 control qubits.
         if len(ctrl_states) == 1:
-            print(f'{len(ctrl_states) = }')
             if coeff != 1:
                 angle = polar(coeff)[1]
                 operations += [cirq.ZPowGate(exponent=angle / np.pi)(self.qubits[0])]
             if set(pauli_mask) != {0}:
                 operations += [cirq.CZ(self.qubits[0], self.qubits[pivot])]
         elif len(ctrl_states) == 2:
-            print(f'{len(ctrl_states) = }')
             if coeff != 1:
                 angle = polar(coeff)[1]
                 assert angle in [np.pi / 2, np.pi, -np.pi / 2]
