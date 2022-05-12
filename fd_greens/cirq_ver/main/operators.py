@@ -4,7 +4,7 @@ Operators (:mod:`fd_greens.main.operators`)
 ===========================================
 """
 
-from typing import Sequence
+from typing import Sequence, Mapping, Optional
 
 import cirq
 
@@ -15,10 +15,12 @@ class OperatorsBase:
         pass
 
     def cnot(self, control: int, target: int) -> None:
+        """Conjugates Pauli strings by a CNOT operation."""
         for i, pauli_string in enumerate(self.pauli_strings):
             self.pauli_strings[i] = pauli_string.conjugated_by(cirq.CNOT(self.qubits[control], self.qubits[target]))
 
     def swap(self, index1: int, index2: int) -> None:
+        """Conjugates Pauli strings by a SWAP operation."""
         for i, pauli_string in enumerate(self.pauli_strings):
             self.pauli_strings[i] = pauli_string.conjugated_by(cirq.SWAP(self.qubits[index1], self.qubits[index2]))
 
@@ -40,7 +42,11 @@ class OperatorsBase:
             pauli_mask_new = [pauli_mask[i] for i in range(self.n_qubits) if i not in tapered_indices]
             self.pauli_strings[i] = cirq.DensePauliString(pauli_mask_new, coefficient=coefficient).sparse()
 
-    def transform(self, method_indices_pairs, tapered_state=None):
+    def transform(
+        self, method_indices_pairs: Mapping[str, Sequence[int]], 
+        tapered_state: Optional[Sequence[int]] = None
+    ) -> None:
+        """Transforms Pauli strings using given method indices pairs."""
         method_dict = {"cnot": self.cnot, "swap": self.swap, "taper": self.taper}
         for method_key, indices in method_indices_pairs:
             if method_key != 'taper':
@@ -62,6 +68,13 @@ class SecondQuantizedOperators(OperatorsBase):
     """Second quantized operators."""
 
     def __init__(self, qubits: Sequence[cirq.Qid], spin: str, factor: float = -1.0) -> None:
+        """Initializes a ``SecondQuantizedOperators`` object.
+        
+        Args:
+            qubits: Qubits on which the operators act.
+            spin: The spin of the second quantized operators. Either ``'u'`` or ``'d'``.
+            factor: Multiplication factor of the operators for easy gate construction.
+        """
         self.qubits = qubits
         self.n_qubits = len(qubits)
 
@@ -75,14 +88,20 @@ class SecondQuantizedOperators(OperatorsBase):
             self.pauli_strings.append(factor * pauli_string_x)
             self.pauli_strings.append(factor * 1j * pauli_string_y)
 
-    def transform(self, method_indices_pairs):
+    def transform(self, method_indices_pairs: Mapping[str, Sequence[int]]):
+        """Transforms the operators using given method indices pairs."""
         tapered_state = [1] * (self.n_qubits // 2)
         OperatorsBase.transform(self, method_indices_pairs, tapered_state=tapered_state)
 
 class ChargeOperators(OperatorsBase):
     """Charge operators."""
 
-    def __init__(self, qubits):
+    def __init__(self, qubits: Sequence[cirq.Qid]) -> None:
+        """Initializes a ``ChargeOperators`` object.
+        
+        Args:
+            qubits: Qubits on which the operators act.
+        """
         self.qubits = qubits
         self.n_qubits = len(qubits)
 
@@ -93,6 +112,7 @@ class ChargeOperators(OperatorsBase):
             self.pauli_strings.append(pauli_string_i)
             self.pauli_strings.append(pauli_string_z)
 
-    def transform(self, method_indices_pairs):
+    def transform(self, method_indices_pairs: Mapping[str, Sequence[int]]) -> None:
+        """Transforms the operators using given method indices pairs."""
         tapered_state = [1] * (self.n_qubits // 2)
         OperatorsBase.transform(self, method_indices_pairs, tapered_state=tapered_state)

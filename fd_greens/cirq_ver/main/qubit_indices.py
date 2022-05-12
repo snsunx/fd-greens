@@ -17,12 +17,11 @@ class QubitIndices:
     def __init__(self, system_indices: List[List[int]], ancilla_indices: List[List[int]] = [[]]) -> None:
         """Initializes a ``QubitIndices`` object. 
         
-        Each qubit index can be represented in three forms: str, int or list forms. For example, 
-        '110', [0, 1, 1] and 6 refer to the same qubit index. Note that the indices in str or int 
-        form follows Qiskit qubit order, but in list form follows normal qubit order.
+        Example:
+            qubit_indices = QubitIndices([[0, 1], [1, 1]], [[0]])
 
         Args:
-            qubit_inds_data: A sequence of qubit indices in string, integer or list form.
+            system_indices: A sequence of qubit indices in string, integer or list form.
             n_qubits: The number padded zeroes when the input is in int form. If the input is in
                 str or list form this is not needed.
         """
@@ -59,6 +58,10 @@ class QubitIndices:
 
     def __eq__(self, other: "QubitIndices") -> bool:
         return self.str == other.str
+
+    def __iter__(self) -> str:
+        for s in self.str:
+            yield s
 
     @property
     def system(self) -> "QubitIndices":

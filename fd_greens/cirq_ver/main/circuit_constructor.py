@@ -166,7 +166,6 @@ class CircuitConstructor:
             circuit.append(op.gate(*[q + 2 for q in op.qubits]))
 
         # Add Hadamard gates on the ancillas at the beginning.
-        # inst_tups += [(HGate(), [self.anc[0]], []), (HGate(), [self.anc[1]], [])]
         circuit.append(cirq.H(self.qubits[0]))
         circuit.append(cirq.H(self.qubits[1]))
 
@@ -195,7 +194,7 @@ class CircuitConstructor:
 
     @staticmethod
     def build_tomography_circuits(
-        circuit: cirq.Circuit, qubits: Sequence[cirq.Qid], append_measure: bool = True
+        circuit: cirq.Circuit, qubits: Sequence[cirq.Qid], measured_qubits: Optional[Sequence[cirq.Qid]] = None
     ) -> Mapping[str, cirq.Circuit]:
         """Constructs tomography circuits on a given circuit.
         
@@ -205,8 +204,11 @@ class CircuitConstructor:
             append_measure: Whether to append measurement gates.
         
         Returns:
-            tomography_circuits: A dictionary with tomography labels as keys and tomography 
-                circuits as values."""
+            tomography_circuits: A dictionary with tomography labels as keys and tomography circuits as values.
+        """
+        if measured_qubits is None:
+            measured_qubits = qubits
+        
         tomography_labels = ["".join(x) for x in product("xyz", repeat=len(qubits))]
         tomography_circuits = dict()
 
@@ -223,12 +225,10 @@ class CircuitConstructor:
                         ]
                     )
                 elif s == "y":
-                    tomography_circuit.append(
-                        [cirq.XPowGate(exponent=0.5)(q), cirq.ZPowGate(exponent=0.5)(q)]
-                    )
+                    tomography_circuit.append([cirq.XPowGate(exponent=0.5)(q), cirq.ZPowGate(exponent=0.5)(q)])
 
-                if append_measure:
-                    tomography_circuit.append(cirq.measure(q))
+            for q in measured_qubits:
+                tomography_circuit.append(cirq.measure(q))
 
             tomography_circuits[label] = tomography_circuit
 

@@ -33,6 +33,7 @@ class EHAmplitudesSolver:
         hamiltonian: MolecularHamiltonian,
         qubits: Sequence[cirq.Qid],
         method: str = "exact",
+        repetitions: int = 10000,
         h5fname: str = "lih",
         spin: str = "d",
         suffix: str = "",
@@ -44,6 +45,7 @@ class EHAmplitudesSolver:
             h: The molecular Hamiltonian.
             qubits: Qubits in the circuit.
             method: The method for calculating the transition amplitudes. Either ``'exact'`` or ``'tomo'``.
+            repetitions: Number of repetitions used in simulations.
             h5fname: The HDF5 file name.
             spin: The spin of the creation and annihilation operators.
             suffix: The suffix for a specific experimental run.
@@ -56,6 +58,7 @@ class EHAmplitudesSolver:
         self.hamiltonian = hamiltonian
         self.qubits = qubits
         self.method = method
+        self.repetitions = repetitions
         self.h5fname = h5fname + ".h5"
         self.spin = spin
         self.suffix = suffix
@@ -102,7 +105,7 @@ class EHAmplitudesSolver:
             dset_transpiled.attrs[f"psi{self.suffix}"] = state_vector
 
             if self.method == "tomo":
-                tomography_circuits = self.circuit_constructor.build_tomography_circuits(circuit, self.qubits[1:3])
+                tomography_circuits = self.circuit_constructor.build_tomography_circuits(circuit, self.qubits[1:3], self.qubits[:3])
                 # XXX: 1:3 is hardcoded
 
                 for tomography_label, tomography_circuit in tomography_circuits.items():
@@ -114,15 +117,18 @@ class EHAmplitudesSolver:
                     dset_tomography = h5file.create_dataset(
                         f"{circuit_label}/{tomography_label}", data=json.dumps(qtrl_strings))
 
-                    result = cirq.Simulator().run(tomography_circuit)
-                    histogram = result.multi_measurement_histogram(keys=[str(q) for q in self.qubits[1:3]])
-                    dset_tomography.attrs[f"counts{self.suffix}"] = histogram_to_array(histogram)
+                    result = cirq.Simulator().run(tomography_circuit, repetitions=self.repetitions)
+                    histogram = result.multi_measurement_histogram(keys=[str(q) for q in self.qubits[:3]])
+                    dset_tomography.attrs[f"counts{self.suffix}"] = histogram_to_array(histogram, n_qubits=3)
+                    print(f'{histogram_to_array(histogram, n_qubits=3).shape = }')
 
         h5file.close()
 
     def _run_off_diagonal_circuits(self) -> None:
         """Runs off-diagonal transition amplitude circuits."""
         h5file = h5py.File(self.h5fname, "r+")
+
+        # TODO: Take in m and n here.
 
         circuit_label = f"circ01{self.spin}"
         if f"{circuit_label}/transpiled" in h5file:
@@ -147,7 +153,7 @@ class EHAmplitudesSolver:
 
         # Apply tomography and measurement gates and save to HDF5 file.
         if self.method == "tomo":
-            tomography_circuits = self.circuit_constructor.build_tomography_circuits(circuit, self.qubits[2:4])
+            tomography_circuits = self.circuit_constructor.build_tomography_circuits(circuit, self.qubits[2:4], self.qubits[:4])
             # XXX: 2:4 is hardcoded
 
             for tomography_label, tomography_circuit in tomography_circuits.items():
@@ -160,18 +166,19 @@ class EHAmplitudesSolver:
                     f"{circuit_label}/{tomography_label}", data=json.dumps(qtrl_strings))
 
                 # Run simulation and save result to HDF5 file.
-                result = cirq.Simulator().run(tomography_circuit)
-                histogram = result.multi_measurement_histogram(keys=[str(q) for q in self.qubits[2:4]])
-                dset_tomography.attrs[f"counts{self.suffix}"] = histogram_to_array(histogram)
+                result = cirq.Simulator().run(tomography_circuit, repetitions=self.repetitions)
+                histogram = result.multi_measurement_histogram(keys=[str(q) for q in self.qubits[:4]])
+                dset_tomography.attrs[f"counts{self.suffix}"] = histogram_to_array(histogram, n_qubits=4)
+                print(f'{histogram_to_array(histogram, n_qubits=4).shape = }')
+
 
         h5file.close()
 
     def run(self, method: Optional[str] = None) -> None:
         """Runs all transition amplitude circuits.
-        
+
         Args:
-            method: The method to calculate transition amplitudes. Either exact 
-                (``"exact"``) or tomography (``"tomo"``).
+            method: The method to calculate transition amplitudes. Either ``'exact'`` or ``'tomo'``.
         """
         # TODO: What is the best way to design this method feature.
         assert method in [None, "exact", "tomo"]
