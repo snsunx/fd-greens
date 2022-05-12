@@ -38,8 +38,8 @@ class CircuitConstructor:
         assert set(ctrl_states).issubset({0, 1})  # Control states must be 0 or 1
         coeff = dense_pauli_string.coefficient
         pauli_mask = dense_pauli_string.pauli_mask
-        print(f'{coeff = }')
-        print(f'{pauli_mask = }')
+        # print(f'{coeff = }')
+        # print(f'{pauli_mask = }')
 
         operations = []
 
@@ -109,7 +109,7 @@ class CircuitConstructor:
             operations = [cirq.XPowGate(exponent=0.5)(self.qubits[ind])] + operations
             operations = operations + [cirq.XPowGate(exponent=-0.5)(self.qubits[ind])]
 
-        print(f'{operations = }')
+        # print(f'{operations = }')
         return operations
 
     def build_diagonal(

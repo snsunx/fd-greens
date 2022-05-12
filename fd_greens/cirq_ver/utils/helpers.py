@@ -10,24 +10,6 @@ import matplotlib.pyplot as plt
 
 from ..main.molecular_hamiltonian import MolecularHamiltonian
 
-
-def get_lih_hamiltonian(bond_distance: float) -> MolecularHamiltonian:
-    """Returns the HOMO-LUMO LiH Hamiltonian with bond length r.
-    
-    Args:
-        bond_distance: The bond length of the molecule in Angstrom.
-    
-    Returns:
-        hamiltonian: The molecular Hamiltonian.
-    """
-    hamiltonian = MolecularHamiltonian(
-        [["Li", (0, 0, 0)], ["H", (0, 0, bond_distance)]], 
-        "sto3g", 
-        occupied_indices=[0],
-        active_indices=[1, 2]
-    )
-    return hamiltonian
-
 def print_information(amp_solver) -> None:
 
     print("----- Printing out physical quantities -----")

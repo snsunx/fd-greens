@@ -17,6 +17,8 @@ from .molecular_hamiltonian import MolecularHamiltonian
 from .qubit_indices import get_qubit_indices_dict
 from ..utils import get_overlap, basis_matrix
 
+from ...qiskit_ver.utils import reverse_qubit_order
+
 
 class GreensFunction:
     """Frequency-domain Green's function."""
@@ -73,7 +75,9 @@ class GreensFunction:
             circuit_label = f"circ{m}{self.spin}/transpiled"
             if self.method == "exact":
                 state_vector = h5file[circuit_label].attrs[f"psi{self.suffix}"]
-                print(f'{state_vector = }')
+                state_vector = reverse_qubit_order(state_vector)
+                # XXX: Able to match Qiskit version, but don't think this is correct.
+                # print(f'{state_vector = }')
                 for subscript in ["e", "h"]:
                     # XXX: I don't thik the ::-1 is correct, but it matches the qiskit implementation.
                     state_vector_subscript = self.qubit_indices_dict[subscript](state_vector)
@@ -132,8 +136,10 @@ class GreensFunction:
                 circuit_label = f"circ{m}{n}{self.spin}/transpiled"
                 if self.method == "exact":
                     state_vector = h5file[circuit_label].attrs[f"psi{self.suffix}"]
+                    state_vector = reverse_qubit_order(state_vector)
+                    # XXX: Able to match Qiskit version, but don't think this is correct.
                     for subscript in ["ep", "em", "hp", "hm"]:
-                        state_vector_subscript = self.qubit_indices_dict[subscript](state_vector)[::-1]
+                        state_vector_subscript = self.qubit_indices_dict[subscript](state_vector)
 
                         # Obtain the D matrix elements by computing the overlaps.
                         self.D[subscript][m, n] = self.D[subscript][n, m] = \

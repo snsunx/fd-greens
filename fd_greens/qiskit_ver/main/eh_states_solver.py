@@ -55,6 +55,8 @@ class EHStatesSolver:
             "e": transform_4q_indices(e_inds[self.spin]),
             "h": transform_4q_indices(h_inds[self.hspin]),
         }
+        print(f'{self.inds =}')
+
 
         self.ansatz_func_e = ansatz_func_e
         self.ansatz_func_h = ansatz_func_h

@@ -5,6 +5,7 @@ Molecular Hamiltonian (:mod:`fd_greens.main.molecular_hamiltonian`)
 """
 
 from typing import Sequence, List, Tuple, Optional
+import copy
 
 import numpy as np
 import cirq
@@ -73,7 +74,10 @@ class MolecularHamiltonian(OperatorsBase):
         if tapered_state is None:
             tapered_state = [1] * (self.n_qubits // 2)
         OperatorsBase.transform(self, method_indices_pairs, tapered_state=tapered_state)
-        
+    
+    def copy(self) -> 'MolecularHamiltonian':
+        return copy.deepcopy(self)
+    
     @property
     def matrix(self) -> np.ndarray:
         return sum(self.pauli_strings).matrix()

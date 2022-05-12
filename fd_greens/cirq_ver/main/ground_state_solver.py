@@ -15,7 +15,7 @@ from .molecular_hamiltonian import MolecularHamiltonian
 from .circuit_string_converter import CircuitStringConverter
 from .transpilation import transpile_into_berkeley_gates
 from .parameters import method_indices_pairs
-from ..utils import write_hdf5, decompose_1q_gate, unitary_equal
+from ..utils import decompose_1q_gate, unitary_equal
 
 
 class GroundStateSolver:
@@ -141,8 +141,12 @@ class GroundStateSolver:
         h5file = h5py.File(self.h5fname, "r+")
         qtrl_strings = self.circuit_string_converter.convert_circuit_to_strings(self.ansatz)
 
-        write_hdf5(h5file, "gs", "energy", self.energy)
-        write_hdf5(h5file, "gs", "ansatz", json.dumps(qtrl_strings))
+        for dset_name in ['gs/energy', 'gs/ansatz']:
+            if dset_name in h5file:
+                del h5file[dset_name]
+        
+        h5file['gs/energy'] = self.energy
+        h5file['gs/ansatz'] = json.dumps(qtrl_strings)
 
         h5file.close()
 

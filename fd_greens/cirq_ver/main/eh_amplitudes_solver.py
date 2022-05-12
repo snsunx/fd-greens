@@ -14,8 +14,7 @@ import numpy as np
 import cirq
 
 from .molecular_hamiltonian import MolecularHamiltonian
-from .operators import SecondQuantizedOperators1
-from .z2symmetries import transform_4q_pauli
+from .operators import SecondQuantizedOperators
 from .circuit_constructor import CircuitConstructor
 from .circuit_string_converter import CircuitStringConverter
 from .transpilation import transpile_into_berkeley_gates
@@ -72,10 +71,7 @@ class EHAmplitudesSolver:
         self.circuit_constructor = CircuitConstructor(ansatz, self.qubits)
 
         # Create dictionary for the creation/annihilation operators.
-        # second_quantized_operators = SecondQuantizedOperators(2 * self.n_orbitals)
-        # second_quantized_operators.transform(partial(transform_4q_pauli, init_state=[1, 1]))
-        # self.operators_dict = second_quantized_operators.get_operators_dict()
-        self.second_quantized_operators = SecondQuantizedOperators1(self.qubits, self.spin)
+        self.second_quantized_operators = SecondQuantizedOperators(self.qubits, self.spin)
         self.second_quantized_operators.transform(method_indices_pairs)
 
     def _run_diagonal_circuits(self) -> None:

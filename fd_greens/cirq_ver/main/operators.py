@@ -58,7 +58,7 @@ class OperatorsBase:
         return dense_pauli_string
 
 
-class SecondQuantizedOperators1(OperatorsBase):
+class SecondQuantizedOperators(OperatorsBase):
     """Second quantized operators."""
 
     def __init__(self, qubits: Sequence[cirq.Qid], spin: str, factor: float = -1.0) -> None:
@@ -79,7 +79,7 @@ class SecondQuantizedOperators1(OperatorsBase):
         tapered_state = [1] * (self.n_qubits // 2)
         OperatorsBase.transform(self, method_indices_pairs, tapered_state=tapered_state)
 
-class ChargeOperators1(OperatorsBase):
+class ChargeOperators(OperatorsBase):
     """Charge operators."""
 
     def __init__(self, qubits):

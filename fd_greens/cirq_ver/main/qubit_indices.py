@@ -39,7 +39,7 @@ class QubitIndices:
             for anc in self.ancilla_indices:
                 self.list.append(anc + sys)
     
-        self.str = [''.join([str(i) for i in l]) for l in self.list]
+        self.str = [''.join([str(i) for i in l[::-1]]) for l in self.list]
         self.int = [int(s, 2) for s in self.str]
 
     def __call__(self, arr: np.ndarray) -> np.ndarray:
