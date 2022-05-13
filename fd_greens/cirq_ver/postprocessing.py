@@ -10,7 +10,7 @@ from itertools import product
 
 import numpy as np
 
-from .general_utils import reverse_qubit_order
+from .utilities import reverse_qubit_order
 
 
 def restrict_to_qubit_subspace(

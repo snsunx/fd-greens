@@ -1,22 +1,10 @@
 """
-========================================================
-General Utilities (:mod:`fd_greens.utils.general_utils`)
-========================================================
+======================================
+Utilities (:mod:`fd_greens.utilities`)
+======================================
 """
 
-import os
-import h5py
-from typing import (
-    Optional,
-    Union,
-    Iterable,
-    List,
-    Tuple,
-    Sequence,
-    Mapping,
-    Any,
-    Callable,
-)
+from typing import Optional
 from itertools import product
 from copy import deepcopy
 from collections import Counter
@@ -24,58 +12,6 @@ from collections import Counter
 import math
 import numpy as np
 import cirq
-from qiskit import (
-    QuantumCircuit,
-    QuantumRegister,
-    ClassicalRegister,
-    Aer,
-    execute,
-    IBMQ,
-)
-from qiskit.utils import QuantumInstance
-from qiskit.circuit import Instruction, Qubit, Clbit
-from qiskit.opflow import PauliSumOp
-from qiskit.result import Result, Counts
-from qiskit.quantum_info import OneQubitEulerDecomposer
-
-from .circuit_utils import remove_instructions, create_circuit_from_inst_tups
-
-QubitLike = Union[int, Qubit]
-ClbitLike = Union[int, Clbit]
-InstructionTuple = Tuple[Instruction, List[QubitLike], Optional[List[ClbitLike]]]
-QuantumCircuitLike = Union[QuantumCircuit, Iterable[InstructionTuple]]
-AnsatzFunction = Callable[[Sequence[float]], QuantumCircuit]
-
-
-def get_overlap(state1: np.ndarray, state2: np.ndarray) -> float:
-    """Returns the overlap of two states in either statevector or density matrix form.
-    
-    Args:
-        state1: A 1D or 2D numpy array corresponding to the first state.
-        state2: A 1D or 2D numpy array corresponding to the second state.
-
-    Returns:
-        overlap: The overlap between the two states.
-    """
-    # If both state1 and state2 are statevectors, return |<state1|state2>|^2.
-    if len(state1.shape) == 1 and len(state2.shape) == 1:
-        overlap = abs(state1.conj() @ state2) ** 2
-
-    # If state1 is a statevector and state2 is a density matrix,
-    # return Re(<state1|state2|state1>).
-    elif len(state1.shape) == 1 and len(state2.shape) == 2:
-        overlap = (state1.conj() @ state2 @ state1).real
-
-    # If state1 is a density matrix and state2 is a statevector,
-    # return Re(<state2|state1|state2>).
-    elif len(state1.shape) == 2 and len(state2.shape) == 1:
-        overlap = (state2.conj() @ state1 @ state2).real
-
-    # If both state1 and state2 are density matries, return Re(<state1|state2>).
-    elif len(state1.shape) == 2 and len(state2.shape) == 2:
-        overlap = np.trace(state1.conj().T @ state2).real
-
-    return overlap
 
 
 def reverse_qubit_order(arr: np.ndarray) -> np.ndarray:
@@ -119,39 +55,6 @@ def reverse_qubit_order(arr: np.ndarray) -> np.ndarray:
         )
     return arr
 
-
-def counts_dict_to_arr(
-    counts: Union[Counts, dict], n_qubits: Optional[int] = None
-) -> np.ndarray:
-    """Converts bitstring counts from ``qiskit.result.Counts`` form to ``np.ndarray`` form.
-    
-    Args:
-        counts: Bitstring counts either in ``Counts`` form or in ``dict`` form.
-        n_qubits: The number of qubits. If not passed in, will be extracted 
-            from the bitstring counts.
-
-    Returns:
-        arr: A numpy array corresponding to the bitstring counts.
-    """
-    # Convert counts from Counts form to dict form and extract the number of qubits.
-    if isinstance(counts, Counts):
-        if n_qubits is None:
-            n_qubits = len(list(counts.keys())[0])
-        counts = counts.int_raw
-    elif isinstance(counts, dict):
-        if n_qubits is None:
-            from math import ceil
-
-            n_qubits = ceil(np.log2(max(counts.keys())))
-    else:
-        raise TypeError("counts must be of type Counts or dict.")
-
-    arr = np.zeros((2 ** n_qubits,))
-    for key, val in counts.items():
-        arr[key] = val
-    return arr
-
-
 def circuit_equal(
     circuit1: cirq.Circuit, circuit2: cirq.Circuit, init_state_0: bool = True
 ) -> bool:
@@ -161,8 +64,8 @@ def circuit_equal(
     when the statevectors with the all 0 initial state are equal up to a phase.
     
     Args:
-        circ1: The first cicuit.
-        circ2: The second circuit.
+        circuit1: The first cicuit.
+        circuit2: The second circuit.
         init_state_0: Whether to assume the initial state is the all 0 state. Default to True.
         
     Returns:
@@ -223,24 +126,6 @@ def unitary_equal(
         is_equal = np.allclose(uni1_copy, uni2_copy)
 
     return is_equal
-
-
-def decompose_1q_gate(U: np.ndarray, qubit: cirq.Qid) -> List[cirq.Operation]:
-    """ZXZXZ decomposition of a single-qubit gate."""
-    decomposer = OneQubitEulerDecomposer("U3")
-    U_decomposed = decomposer(U)
-    theta, phi, lam = U_decomposed[0][0].params
-
-    operations = [
-        cirq.rz(lam - np.pi)(qubit),
-        cirq.rx(np.pi / 2)(qubit),
-        cirq.rz(np.pi - theta)(qubit),
-        cirq.rx(np.pi / 2)(qubit),
-        cirq.rz(phi)(qubit),
-    ]
-
-    assert unitary_equal(cirq.Circuit(operations).unitary(), U)
-    return operations
 
 def histogram_to_array(histogram: Counter, n_qubits: Optional[int] = None) -> np.ndarray:
     """Converts a Cirq histogram to a numpy array."""

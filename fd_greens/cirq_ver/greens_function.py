@@ -14,10 +14,8 @@ from itertools import product
 from .parameters import method_indices_pairs
 from .molecular_hamiltonian import MolecularHamiltonian
 from .qubit_indices import get_qubit_indices_dict
-from ..utils import get_overlap, basis_matrix
-
-from ...qiskit_ver.utils import reverse_qubit_order
-
+from .parameters import basis_matrix
+from .utilities import reverse_qubit_order
 
 class GreensFunction:
     """Frequency-domain Green's function."""
@@ -117,8 +115,9 @@ class GreensFunction:
                     # Obtain the B matrix elements by computing the overlaps between
                     # the density matrix and the state vectors.
                     self.B[subscript][m, m] = [
-                        get_overlap(self.state_vectors[subscript][:, i], density_matrix) 
-                        for i in range(self.n_states[subscript])]
+                        (self.state_vectors[subscript][:, i].conj() @ density_matrix
+                            @ self.state_vectors[subscript][:, i]).real 
+                            for i in range(self.n_states[subscript])]
                     if self.verbose:
                         print(f"B[{subscript}][{m}, {m}] = {self.B[subscript][m, m]}")
 
@@ -176,8 +175,9 @@ class GreensFunction:
                         # Obtain the D matrix elements by computing the overlaps between
                         # the density matrix and the state vectors.
                         self.D[subscript][m, n] = self.D[subscript][n, m] = [
-                            get_overlap(self.state_vectors[subscript[0]][:, i], density_matrix)
-                            for i in range(self.n_states[subscript[0]])]
+                            (self.state_vectors[subscript[0]][:, i].conj() @ density_matrix
+                                @ self.state_vectors[subscript[0]][:, i]).real 
+                                for i in range(self.n_states[subscript[0]])]
                         if self.verbose:
                             print(f"D[{subscript}][{m}, {n}] =", self.D[subscript][m, n])
 

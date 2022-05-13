@@ -7,7 +7,7 @@ Transpilation (:mod:`fd_greens.cirq_ver.utils.transpilation`)
 import numpy as np
 import cirq
 
-from ..utils import circuit_equal
+from .utilities import circuit_equal
 
 
 class C0C0iXGate(cirq.ThreeQubitGate):

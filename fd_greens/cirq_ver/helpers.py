@@ -1,18 +1,44 @@
 """
-==================================================
-Plot Utilities (:mod:`fd_greens.utils.plot_utils`)
-==================================================
+==================================
+Helpers (:mod:`fd_greens.helpers`)
+==================================
 """
 
 import os
-import h5py
 from typing import Sequence, Optional
-import matplotlib.pyplot as plt
-import numpy as np
 from itertools import product
 
+import h5py
+import numpy as np
+import matplotlib.pyplot as plt
 
-def plot_A(
+
+def initialize_hdf5(fname: str = 'lih', mode: str = 'greens') -> None:
+    """Creates an HDF5 file with group names if the file or group names do not exist.
+    
+    Args:
+        fname: The HDF5 file name.
+        mode: Calculation mode. Either ``'greens'`` or ``'resp'``.
+    """
+    h5fname = fname + '.h5'
+    if os.path.exists(h5fname):
+        h5file = h5py.File(h5fname, 'r+')
+    else:
+        h5file = h5py.File(h5fname, 'w')
+
+    group_names = ['gs', 'es', 'amp']
+    if mode == 'greens':
+        group_names += ['circ0u', 'circ1u', 'circ01u', 'circ0d', 'circ1d', 'circ01d']
+    elif mode == 'resp':
+        group_names = ['circ0u', 'circ1u', 'circ0d', 'circ1d',
+                       'circ0u0d', 'circ0u1u', 'circ0u1d', 'circ0d1u', 'circ0d1d', 'circ1u1d']
+        
+    for group_name in group_names:
+        if group_name not in h5file.keys():
+            h5file.create_group(group_name)
+    h5file.close()
+
+def plot_spectral_function(
     h5fnames: Sequence[str],
     suffixes: Sequence[str],
     labels: Sequence[str] = None,
@@ -61,8 +87,10 @@ def plot_A(
         os.makedirs("figs")
     fig.savefig(f"figs/{figname}.png", dpi=300, bbox_inches="tight")
 
+plot_A = plot_spectral_function
 
-def plot_TrS(
+
+def plot_trace_self_energy(
     h5fnames: Sequence[str],
     suffixes: Sequence[str],
     labels: Optional[Sequence[str]] = None,
@@ -112,8 +140,10 @@ def plot_TrS(
         os.makedirs("figs")
     fig.savefig(f"figs/{figname}.png", dpi=300, bbox_inches="tight")
 
+plot_TrS = plot_trace_self_energy
 
-def plot_chi(
+
+def plot_response_function(
     h5fnames: Sequence[str],
     suffixes: Sequence[str],
     labels: Optional[Sequence[str]] = None,
@@ -166,6 +196,8 @@ def plot_chi(
         os.makedirs("figs")
     fig.savefig(f"figs/{figname}{circ_label}.png", dpi=300, bbox_inches="tight")
 
+plot_chi = plot_response_function
+
 
 def plot_counts(
     h5fname: str, counts_name: str, circ_label: str, tomo_label: str, width: float = 0.5
@@ -207,9 +239,5 @@ def plot_counts(
     ax.legend()
     if not os.path.exists("figs"):
         os.makedirs("figs")
-    fig.savefig(
-        f"figs/counts_{h5fname}_{circ_label}{tomo_label}.png",
-        dpi=300,
-        bbox_inches="tight",
-    )
+    fig.savefig(f"figs/counts_{h5fname}_{circ_label}{tomo_label}.png", dpi=300, bbox_inches="tight")
     plt.close(fig)

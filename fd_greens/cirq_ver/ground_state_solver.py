@@ -10,12 +10,13 @@ import numpy as np
 import h5py
 import cirq
 import json
+from qiskit.quantum_info import OneQubitEulerDecomposer
 
 from .molecular_hamiltonian import MolecularHamiltonian
 from .circuit_string_converter import CircuitStringConverter
 from .transpilation import transpile_into_berkeley_gates
 from .parameters import method_indices_pairs
-from ..utils import decompose_1q_gate, unitary_equal
+from .utilities import unitary_equal
 
 
 class GroundStateSolver:
@@ -101,8 +102,8 @@ class GroundStateSolver:
         B = vd[0].reshape(2, 2) * np.sqrt(s[0])
         assert unitary_equal(np.kron(A, B), U1)
 
-        operations_A = decompose_1q_gate(A, self.qubits[0])
-        operations_B = decompose_1q_gate(B, self.qubits[1])
+        operations_A = self._decompose_1q_gate(A, self.qubits[0])
+        operations_B = self._decompose_1q_gate(B, self.qubits[1])
         operations = operations_A + operations_B
         return operations
 
@@ -134,6 +135,24 @@ class GroundStateSolver:
         if conjugate:
             operations = [cirq.inverse(op) for op in operations[::-1]]
 
+        return operations
+
+    # TODO: This should be handled differently.
+    def _decompose_1q_gate(self, unitary: np.ndarray, qubit: cirq.Qid) -> List[cirq.Operation]:
+        """ZXZXZ decomposition of a single-qubit gate."""
+        decomposer = OneQubitEulerDecomposer("U3")
+        unitary_decomposed = decomposer(unitary)
+        theta, phi, lam = unitary_decomposed[0][0].params
+
+        operations = [
+            cirq.rz(lam - np.pi)(qubit),
+            cirq.rx(np.pi / 2)(qubit),
+            cirq.rz(np.pi - theta)(qubit),
+            cirq.rx(np.pi / 2)(qubit),
+            cirq.rz(phi)(qubit),
+        ]
+
+        assert unitary_equal(cirq.Circuit(operations).unitary(), unitary)
         return operations
 
     def _save_data(self) -> None:

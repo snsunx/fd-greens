@@ -19,8 +19,7 @@ from .circuit_constructor import CircuitConstructor
 from .circuit_string_converter import CircuitStringConverter
 from .transpilation import transpile_into_berkeley_gates
 from .parameters import method_indices_pairs
-
-from ..utils import histogram_to_array
+from .utilities import histogram_to_array
 
 np.set_printoptions(precision=6)
 
