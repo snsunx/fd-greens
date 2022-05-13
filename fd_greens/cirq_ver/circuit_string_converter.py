@@ -57,7 +57,7 @@ class CircuitStringConverter:
             elif gstr == "CSD":
                 gate = cirq.CZPowGate(exponent=-0.5)
             elif gstr == "TOF":
-                gate = C0C0iXGate
+                gate = C0C0iXGate()
             else:
                 raise NotImplementedError(
                     "Parameter-free gate can only be CZ, CS, CSD or TOF."
@@ -88,8 +88,12 @@ class CircuitStringConverter:
                 gstr = "CSD"
             else:
                 raise ValueError("CZPowGate must have exponent 1.0, 0.5 or -0.5.")
-        elif isinstance(gate, C0C0iXGate):
+        elif isinstance(gate, C0C0iXGate): # issubclass(gate.__class__, C0C0iXGate):
+            assert isinstance(gate, C0C0iXGate) == (type(gate) is C0C0iXGate)
             gstr = "TOF"
+        elif str(gate) == "SWAP":
+            print("WARNING: SWAP GATE")
+            gstr = "SWAP"
         else:
             raise NotImplementedError(
                 # "The only gates supported are XPowGate, ZPowGate, CZPowGate and C0C0iXGate."
@@ -122,6 +126,7 @@ class CircuitStringConverter:
             # print(f'{gstr = }')
             qubits = self._qstr_to_qubits(qstr)
             gate = self._gstr_to_gate(gstr)
+            # print(f'{qubits = }')
             circuit.append(gate(*qubits))
 
         return circuit
@@ -135,6 +140,7 @@ class CircuitStringConverter:
         Returns:
             strings: The qtrl strings corresponding to the Cirq circuit.
         """
+        print('-' * 80)
         strings = []
 
         for moment in circuit:
@@ -148,6 +154,8 @@ class CircuitStringConverter:
 
                 gstr = self._gate_to_gstr(gate)
                 qstr = self._qubits_to_qstr(qubits)
+                # print(f'{gate = }')
+                # print(f'{gstr = }')
 
                 if len(qubits) == 1:
                     qtrl_str = qstr + "/" + gstr

@@ -241,3 +241,14 @@ def plot_counts(
         os.makedirs("figs")
     fig.savefig(f"figs/counts_{h5fname}_{circ_label}{tomo_label}.png", dpi=300, bbox_inches="tight")
     plt.close(fig)
+
+def print_circuit(circuit) -> None:
+    if True:
+        print(circuit)
+    else:
+        for i in range(len(circuit) // 10):
+            print(circuit[i * 10: (i + 1) * 10], '\n')
+
+    for op in circuit.all_operations():
+        if len(op.qubits) == 3:
+            print(op)

@@ -5,12 +5,10 @@
 """
 
 from typing import Optional, Sequence
-from functools import partial
 
 import h5py
 import json
 import numpy as np
-
 import cirq
 
 from .molecular_hamiltonian import MolecularHamiltonian
@@ -36,19 +34,17 @@ class EHAmplitudesSolver:
         h5fname: str = "lih",
         spin: str = "d",
         suffix: str = "",
-        verbose: bool = True,
     ) -> None:
         """Initializes an ``EHAmplitudesSolver`` object.
 
         Args:
-            h: The molecular Hamiltonian.
+            hamiltonian: The molecular Hamiltonian.
             qubits: Qubits in the circuit.
             method: The method for calculating the transition amplitudes. Either ``'exact'`` or ``'tomo'``.
             repetitions: Number of repetitions used in simulations.
             h5fname: The HDF5 file name.
-            spin: The spin of the creation and annihilation operators.
+            spin: The spin of the second-quantized operators.
             suffix: The suffix for a specific experimental run.
-            verbose: Whether to print out information about the calculation.
         """
         assert method in ["exact", "tomo"]
         assert spin in ["u", "d"]
@@ -61,7 +57,6 @@ class EHAmplitudesSolver:
         self.h5fname = h5fname + ".h5"
         self.spin = spin
         self.suffix = suffix
-        self.verbose = verbose
 
         self.n_orbitals = len(self.hamiltonian.active_indices)
 
@@ -72,7 +67,7 @@ class EHAmplitudesSolver:
             ansatz = self.circuit_string_converter.convert_strings_to_circuit(qtrl_strings)
         self.circuit_constructor = CircuitConstructor(ansatz, self.qubits)
 
-        # Create dictionary for the creation/annihilation operators.
+        # Create dictionary of the second quantized operators.
         self.second_quantized_operators = SecondQuantizedOperators(self.qubits, self.spin)
         self.second_quantized_operators.transform(method_indices_pairs)
 
@@ -87,7 +82,7 @@ class EHAmplitudesSolver:
                 del h5file[f"{circuit_label}/transpiled"]
 
 
-            # Build the diagonal circuit based on the creation/annihilation operator.
+            # Build the diagonal circuit based on the second quantized operator.
             circuit = self.circuit_constructor.build_diagonal_circuit(
                 self.second_quantized_operators[2 * m],
                 self.second_quantized_operators[2 * m + 1])
@@ -104,7 +99,8 @@ class EHAmplitudesSolver:
             dset_transpiled.attrs[f"psi{self.suffix}"] = state_vector
 
             if self.method == "tomo":
-                tomography_circuits = self.circuit_constructor.build_tomography_circuits(circuit, self.qubits[1:3], self.qubits[:3])
+                tomography_circuits = self.circuit_constructor.build_tomography_circuits(
+                    circuit, self.qubits[1:3], self.qubits[:3])
                 # XXX: 1:3 is hardcoded
 
                 for tomography_label, tomography_circuit in tomography_circuits.items():
@@ -143,7 +139,11 @@ class EHAmplitudesSolver:
         # Transpile the circuit and save to HDF5 file.
         circuit = transpile_into_berkeley_gates(circuit)
         self.circuits[circuit_label] = circuit
+        # print(circuit[:10])
+        # print(circuit[10:20])
+        # print(circuit[20:])
         qtrl_strings = self.circuit_string_converter.convert_circuit_to_strings(circuit)
+        # print(qtrl_strings)
         dset_transpiled = h5file.create_dataset(f"{circuit_label}/transpiled", data=json.dumps(qtrl_strings))
 
         # Run simulation and save results to HDF5 file.
@@ -152,7 +152,8 @@ class EHAmplitudesSolver:
 
         # Apply tomography and measurement gates and save to HDF5 file.
         if self.method == "tomo":
-            tomography_circuits = self.circuit_constructor.build_tomography_circuits(circuit, self.qubits[2:4], self.qubits[:4])
+            tomography_circuits = self.circuit_constructor.build_tomography_circuits(
+                circuit, self.qubits[2:4], self.qubits[:4])
             # XXX: 2:4 is hardcoded
 
             for tomography_label, tomography_circuit in tomography_circuits.items():

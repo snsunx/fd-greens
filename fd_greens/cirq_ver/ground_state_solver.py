@@ -30,13 +30,13 @@ class GroundStateSolver:
         Args:
             hamiltonian: The molecular Hamiltonian object.
             qubits: The qubits on which the ground state is prepared.
-            h5fname: The hdf5 file name.
+            h5fname: The HDF5 file name.
         """
         self.hamiltonian = hamiltonian
         self.hamiltonian.transform(method_indices_pairs)
-
         self.qubits = qubits        
         self.h5fname = h5fname + ".h5"
+        
         self.circuit_string_converter = CircuitStringConverter(qubits)
 
     def _run_exact(self) -> None:
