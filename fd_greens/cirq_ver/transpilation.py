@@ -68,14 +68,18 @@ def permute_qubits(circuit: cirq.Circuit) -> cirq.Circuit:
         for op in moment:
             gate = op.gate
             qubits = sorted(list(op.qubits)).copy()
-            n_qubits = len(qubits)
-            if n_qubits > 1 and not is_adjacent(qubits):
+            if len(qubits) > 1 and not is_adjacent(qubits):
+                # print(qubits)
+                print("Warning: Adding SWAP gates")
+                # print('!!!!!!', op)
                 assert gate in [cirq.CZ, cirq.CCZ]
                 # print('old qubits =', qubits)
-                # qubits[-2] + 1 is the new qubit
-                circuit_new.append(cirq.SWAP(qubits[-2] + 1, qubits[-1]))
-                circuit_new.append(gate(*(qubits[:-1] + [qubits[-2] + 1])))
-                circuit_new.append(cirq.SWAP(qubits[-2] + 1, qubits[-1]))
+                qubits_swap = (qubits[-2] + 1, qubits[-1])
+                qubits_new = qubits[:-1] + [qubits[-2] + 1]
+                circuit_new.insert(0, cirq.SWAP(*qubits_swap))
+                circuit_new.append(cirq.SWAP(*qubits_swap))
+                circuit_new.append(gate(*qubits_new))
+                circuit_new.append(cirq.SWAP(*qubits_swap))
                 # print('new qubits =', qubits[:-1] + [qubits[-2] + 1])
                 # print('swap qubits =', [qubits[-2] + 1, qubits[-1]])
             else:
@@ -86,7 +90,7 @@ def permute_qubits(circuit: cirq.Circuit) -> cirq.Circuit:
     # print('-' * 80)
     # print_circuit(circuit_new)
     # print('=' * 80)
-    assert circuit_equal(circuit, circuit_new, False)
+    assert circuit_equal(circuit, circuit_new)
     return circuit_new
 
 def convert_ccz_to_c0c0ix(circuit: cirq.Circuit) -> cirq.Circuit:
@@ -115,17 +119,26 @@ def convert_ccz_to_c0c0ix(circuit: cirq.Circuit) -> cirq.Circuit:
                     cirq.X(qubits[2]),
                 ]
 
-                cs_ops = [
-                    cirq.SWAP(qubits[0], qubits[1]),
-                    cirq.CZPowGate(exponent=-0.5)(qubits[1], qubits[2]),
-                    cirq.SWAP(qubits[0], qubits[1]),
-                ]
+                # SWAP gate without a CZ, equivalent to a iSWAP gate.
+                iswap_ops = [
+                    cirq.XPowGate(exponent=0.5)(qubits[0]), cirq.XPowGate(exponent=0.5)(qubits[1]),
+                    cirq.CZ(qubits[0], qubits[1]),
+                    cirq.XPowGate(exponent=0.5)(qubits[0]), cirq.XPowGate(exponent=0.5)(qubits[1]),
+                    cirq.CZ(qubits[0], qubits[1]),
+                    cirq.XPowGate(exponent=0.5)(qubits[0]), cirq.XPowGate(exponent=0.5)(qubits[1])]
+
+                # Long-range CS gate minus an iSWAP gate.
+                cs_ops = [cirq.CZPowGate(exponent=-0.5)(qubits[1], qubits[2]),
+                          cirq.CZ(qubits[0], qubits[1]),
+                          cirq.SWAP(qubits[0], qubits[1])]
 
                 if count % 2 == 0:
                     circuit_new.append(cizc_ops)
+                    circuit_new.append(iswap_ops)
                     circuit_new.append(cs_ops)
                 else:
-                    circuit_new.append(cs_ops)
+                    circuit_new.append(cs_ops[::-1])
+                    circuit_new.append(iswap_ops)
                     circuit_new.append(cizc_ops)
                 count += 1
 
@@ -137,7 +150,7 @@ def convert_ccz_to_c0c0ix(circuit: cirq.Circuit) -> cirq.Circuit:
     # print('-' * 80)
     # print_circuit(circuit_new)
     # print('=' * 80)
-    assert circuit_equal(circuit, circuit_new, False)
+    assert circuit_equal(circuit, circuit_new)
     return circuit_new
 
 
@@ -148,7 +161,7 @@ def convert_swap_to_cz(circuit: cirq.Circuit) -> cirq.Circuit:
         circuit: The circuit to be converted.
         
     Returns:
-        circuit_new: The circuit after conversion.
+        circuit_new: The new circuit after conversion.
     """
     circuit1 = circuit.copy()
     circuit_new = cirq.Circuit()
@@ -161,16 +174,14 @@ def convert_swap_to_cz(circuit: cirq.Circuit) -> cirq.Circuit:
     for moment in circuit1[::-1]:
         for op in moment:
             if str(op.gate) == "SWAP":
-                # q0, q1 = op.qubits
                 if convert_swap:
                     # TODO: There should be a better way to handle this.
                     for _ in range(3):
                         circuit_new.insert(0, [cirq.XPowGate(exponent=0.5)(op.qubits[0])])
                         circuit_new.insert(0, [cirq.XPowGate(exponent=0.5)(op.qubits[1])])
                         circuit_new.insert(0, cirq.CZ(op.qubits[0], op.qubits[1]))
-                        # cirq.CZ(op.qubits[0], op.qubits[1])
-                    # ] * 3)
                 else:
+                    print("Warning: SWAP gates at the end.")
                     circuit_new.insert(0, op)
             else:
                 circuit_new.insert(0, op)
@@ -191,7 +202,7 @@ def convert_phxz_to_xpi2(circuit: cirq.Circuit) -> cirq.Circuit:
         circuit: The circuit to be converted.
         
     Returns:
-        circuit_new: The circuit after conversion.
+        circuit_new: The new circuit after conversion.
     """
     circuit_new = cirq.Circuit()
     for op in list(circuit.all_operations()):
@@ -229,12 +240,15 @@ def transpile_into_berkeley_gates(circuit: cirq.Circuit) -> cirq.Circuit:
 
     # Qubit permutation
     circuit_new = permute_qubits(circuit_new)
+    cirq.MergeInteractions(allow_partial_czs=False).optimize_circuit(circuit_new)
+    # cirq.merge_single_qubit_gates_into_phxz(circuit_new)
     
     # Three-qubit transpilation
     circuit_new = convert_ccz_to_c0c0ix(circuit_new)
+    # cirq.MergeInteractions(allow_partial_czs=True).optimize_circuit(circuit_new)
 
     # Two-qubit transpilation
-    circuit_new = convert_swap_to_cz(circuit_new[:])
+    # circuit_new = convert_swap_to_cz(circuit_new)
     
     # Single-qubit transpilation
     cirq.merge_single_qubit_gates_into_phxz(circuit_new)

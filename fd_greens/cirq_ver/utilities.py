@@ -4,7 +4,7 @@ Utilities (:mod:`fd_greens.utilities`)
 ======================================
 """
 
-from typing import Optional
+from typing import Optional, Callable
 from itertools import product
 from copy import deepcopy
 from collections import Counter
@@ -142,3 +142,11 @@ def histogram_to_array(histogram: Counter, n_qubits: Optional[int] = None) -> np
         ind = int(''.join([str(i) for i in key]), 2)
         arr[ind] = val
     return arr
+
+def get_gate_counts(circuit: cirq.Circuit, criterion: Callable[[cirq.OP_TREE], bool] = lambda op: True) -> int:
+    """Returns the count of gates satisfying a certain criterion."""
+    count = 0
+    for op in circuit.all_operations():
+        if criterion(op):
+            count += 1
+    return count
