@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>fd_greens.cirq_ver.greens_function &mdash; fd-greens 0.0.1 documentation</title>
+      <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../../../index.html" class="icon icon-home"> fd-greens
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <!-- Local TOC -->
+              <div class="local-toc"></div>
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">fd-greens</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+      <li>fd_greens.cirq_ver.greens_function</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for fd_greens.cirq_ver.greens_function</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">===================================================</span>
+<span class="sd">Green&#39;s Function (:mod:`fd_greens.greens_function`)</span>
+<span class="sd">===================================================</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Sequence</span><span class="p">,</span> <span class="n">Optional</span>
+<span class="kn">from</span> <span class="nn">itertools</span> <span class="kn">import</span> <span class="n">product</span>
+
+<span class="kn">import</span> <span class="nn">h5py</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+
+<span class="kn">from</span> <span class="nn">.parameters</span> <span class="kn">import</span> <span class="n">method_indices_pairs</span>
+<span class="kn">from</span> <span class="nn">.molecular_hamiltonian</span> <span class="kn">import</span> <span class="n">MolecularHamiltonian</span>
+<span class="kn">from</span> <span class="nn">.qubit_indices</span> <span class="kn">import</span> <span class="n">get_qubit_indices_dict</span>
+<span class="kn">from</span> <span class="nn">.parameters</span> <span class="kn">import</span> <span class="n">basis_matrix</span>
+<span class="kn">from</span> <span class="nn">.utilities</span> <span class="kn">import</span> <span class="n">reverse_qubit_order</span>
+
+<div class="viewcode-block" id="GreensFunction"><a class="viewcode-back" href="../../../fd_greens.cirq_ver.greens_function.html#fd_greens.cirq_ver.greens_function.GreensFunction">[docs]</a><span class="k">class</span> <span class="nc">GreensFunction</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Frequency-domain Green&#39;s function.&quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">hamiltonian</span><span class="p">:</span> <span class="n">MolecularHamiltonian</span><span class="p">,</span>
+        <span class="n">h5fname</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;lih&quot;</span><span class="p">,</span>
+        <span class="n">suffix</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
+        <span class="n">spin</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;d&quot;</span><span class="p">,</span>
+        <span class="n">method</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;exact&quot;</span><span class="p">,</span>
+        <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Initializes a ``GreensFunction`` object.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            h5fname: The HDF5 file name.</span>
+<span class="sd">            suffix: The suffix for a specific experimental run.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">hamiltonian</span> <span class="o">=</span> <span class="n">hamiltonian</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">h5fname</span> <span class="o">=</span> <span class="n">h5fname</span> <span class="o">+</span> <span class="s2">&quot;.h5&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">datfname</span> <span class="o">=</span> <span class="n">h5fname</span> <span class="o">+</span> <span class="n">suffix</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">suffix</span> <span class="o">=</span> <span class="n">suffix</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">spin</span> <span class="o">=</span> <span class="n">spin</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">method</span> <span class="o">=</span> <span class="n">method</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">verbose</span> <span class="o">=</span> <span class="n">verbose</span>
+
+        <span class="c1"># Load energies and state vectors from HDF5 file.</span>
+        <span class="k">with</span> <span class="n">h5py</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="n">h5fname</span> <span class="o">+</span> <span class="s2">&quot;.h5&quot;</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">h5file</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">energies</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;gs&quot;</span><span class="p">:</span> <span class="n">h5file</span><span class="p">[</span><span class="s2">&quot;gs/energy&quot;</span><span class="p">][()],</span> 
+                            <span class="s2">&quot;e&quot;</span><span class="p">:</span> <span class="n">h5file</span><span class="p">[</span><span class="s2">&quot;es/energies_e&quot;</span><span class="p">][:],</span> <span class="s2">&quot;h&quot;</span><span class="p">:</span> <span class="n">h5file</span><span class="p">[</span><span class="s2">&quot;es/energies_h&quot;</span><span class="p">][:]}</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">state_vectors</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;e&quot;</span><span class="p">:</span> <span class="n">h5file</span><span class="p">[</span><span class="s2">&quot;es/states_e&quot;</span><span class="p">][:],</span> <span class="s2">&quot;h&quot;</span><span class="p">:</span> <span class="n">h5file</span><span class="p">[</span><span class="s2">&quot;es/states_h&quot;</span><span class="p">][:]}</span>
+
+        <span class="c1"># Initialize array quantities B, D and G.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">n_states</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;e&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">state_vectors</span><span class="p">[</span><span class="s2">&quot;e&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="s2">&quot;h&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">state_vectors</span><span class="p">[</span><span class="s2">&quot;h&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">n_orbitals</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">hamiltonian</span><span class="o">.</span><span class="n">active_indices</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">n_system_qubits</span> <span class="o">=</span> <span class="mi">2</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_orbitals</span> <span class="o">-</span> <span class="nb">len</span><span class="p">(</span><span class="nb">dict</span><span class="p">(</span><span class="n">method_indices_pairs</span><span class="p">)[</span><span class="s1">&#39;taper&#39;</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">qubit_indices_dict</span> <span class="o">=</span> <span class="n">get_qubit_indices_dict</span><span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_orbitals</span><span class="p">,</span> <span class="n">spin</span><span class="p">,</span> <span class="n">method_indices_pairs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">B</span> <span class="o">=</span> <span class="p">{</span><span class="n">subscript</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">n_orbitals</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_orbitals</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_states</span><span class="p">[</span><span class="n">subscript</span><span class="p">]),</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">complex</span><span class="p">)</span>
+                  <span class="k">for</span> <span class="n">subscript</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;e&quot;</span><span class="p">,</span> <span class="s2">&quot;h&quot;</span><span class="p">]}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">D</span> <span class="o">=</span> <span class="p">{</span><span class="n">subscript</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">n_orbitals</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_orbitals</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_states</span><span class="p">[</span><span class="n">subscript</span><span class="p">[</span><span class="mi">0</span><span class="p">]]),</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">complex</span><span class="p">)</span>
+                  <span class="k">for</span> <span class="n">subscript</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;ep&quot;</span><span class="p">,</span> <span class="s2">&quot;em&quot;</span><span class="p">,</span> <span class="s2">&quot;hp&quot;</span><span class="p">,</span> <span class="s2">&quot;hm&quot;</span><span class="p">]}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">G</span> <span class="o">=</span> <span class="p">{</span><span class="n">subscript</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">n_orbitals</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_orbitals</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">complex</span><span class="p">)</span>
+                  <span class="k">for</span> <span class="n">subscript</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;e&quot;</span><span class="p">,</span> <span class="s2">&quot;h&quot;</span><span class="p">]}</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">_process_diagonal_results</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_process_off_diagonal_results</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">_process_diagonal_results</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Post-processes diagonal transition amplitude results.&quot;&quot;&quot;</span>
+        <span class="n">h5file</span> <span class="o">=</span> <span class="n">h5py</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">h5fname</span><span class="p">,</span> <span class="s2">&quot;r+&quot;</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n_orbitals</span><span class="p">):</span>
+            <span class="n">circuit_label</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;circ</span><span class="si">{</span><span class="n">m</span><span class="si">}{</span><span class="bp">self</span><span class="o">.</span><span class="n">spin</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">method</span> <span class="o">==</span> <span class="s2">&quot;exact&quot;</span><span class="p">:</span>
+                <span class="n">state_vector</span> <span class="o">=</span> <span class="n">h5file</span><span class="p">[</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">circuit_label</span><span class="si">}</span><span class="s1">/transpiled&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="sa">f</span><span class="s1">&#39;psi</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">suffix</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">]</span>
+                <span class="n">state_vector</span> <span class="o">=</span> <span class="n">reverse_qubit_order</span><span class="p">(</span><span class="n">state_vector</span><span class="p">)</span>
+                <span class="c1"># XXX: Able to match Qiskit version, but don&#39;t think this is correct.</span>
+                <span class="c1"># print(f&#39;{state_vector = }&#39;)</span>
+                <span class="k">for</span> <span class="n">subscript</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;e&quot;</span><span class="p">,</span> <span class="s2">&quot;h&quot;</span><span class="p">]:</span>
+                    <span class="c1"># XXX: I don&#39;t think the ::-1 is correct, but it matches the qiskit implementation.</span>
+                    <span class="n">state_vector_subscript</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">qubit_indices_dict</span><span class="p">[</span><span class="n">subscript</span><span class="p">](</span><span class="n">state_vector</span><span class="p">)</span>
+
+                    <span class="c1"># Obtain the B matrix elements by computing the overlaps.</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">B</span><span class="p">[</span><span class="n">subscript</span><span class="p">][</span><span class="n">m</span><span class="p">,</span> <span class="n">m</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">state_vectors</span><span class="p">[</span><span class="n">subscript</span><span class="p">]</span><span class="o">.</span><span class="n">conj</span><span class="p">()</span><span class="o">.</span><span class="n">T</span> <span class="o">@</span> <span class="n">state_vector_subscript</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span>
+                    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">verbose</span><span class="p">:</span>
+                        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;B[</span><span class="si">{</span><span class="n">subscript</span><span class="si">}</span><span class="s2">][</span><span class="si">{</span><span class="n">m</span><span class="si">}</span><span class="s2">, </span><span class="si">{</span><span class="n">m</span><span class="si">}</span><span class="s2">] = </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">B</span><span class="p">[</span><span class="n">subscript</span><span class="p">][</span><span class="n">m</span><span class="p">,</span> <span class="n">m</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+            <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">method</span> <span class="o">==</span> <span class="s2">&quot;tomo&quot;</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">subscript</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;e&quot;</span><span class="p">,</span> <span class="s2">&quot;h&quot;</span><span class="p">]:</span>
+                    <span class="c1"># Stack counts_arr over all tomography labels together. The procedure is to</span>
+                    <span class="c1"># first extract the raw counts_arr, slice the counts array to the specific</span>
+                    <span class="c1"># label, and then stack the counts_arr_label to counts_arr_key.</span>
+                    <span class="n">tomography_labels</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">product</span><span class="p">(</span><span class="s2">&quot;xyz&quot;</span><span class="p">,</span> <span class="n">repeat</span><span class="o">=</span><span class="mi">2</span><span class="p">)]</span>
+                    <span class="n">qubit_indices_subscript</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">qubit_indices_dict</span><span class="p">[</span><span class="n">subscript</span><span class="p">]</span>
+
+                    <span class="n">array_subscript</span> <span class="o">=</span> <span class="p">[]</span>
+                    <span class="k">for</span> <span class="n">tomography_label</span> <span class="ow">in</span> <span class="n">tomography_labels</span><span class="p">:</span>
+                        <span class="n">array</span> <span class="o">=</span> <span class="n">h5file</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">circuit_label</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">tomography_label</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;counts</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">suffix</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">]</span>
+                        <span class="n">array</span> <span class="o">=</span> <span class="n">reverse_qubit_order</span><span class="p">(</span><span class="n">array</span><span class="p">)</span> <span class="c1"># XXX: I don&#39;t think qubit order should be reversed.</span>
+                        <span class="c1">#start_index = int(&#39;&#39;.join([str(i) for i in qubit_indices_subscript.ancilla])[::-1], 2)</span>
+                        <span class="n">start_index</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">qubit_indices_subscript</span><span class="o">.</span><span class="n">ancilla</span><span class="o">.</span><span class="n">str</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="mi">2</span><span class="p">)</span>
+                        <span class="n">array_label</span> <span class="o">=</span> <span class="n">array</span><span class="p">[</span><span class="n">start_index</span> <span class="p">::</span> <span class="mi">2</span><span class="p">]</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">array</span><span class="p">)</span>
+                        <span class="c1"># print(f&#39;{len(array_label) = }&#39;)</span>
+                        <span class="n">array_subscript</span> <span class="o">+=</span> <span class="nb">list</span><span class="p">(</span><span class="n">array_label</span><span class="p">)</span>
+                    <span class="c1"># print(f&#39;{len(array_subscript) = }&#39;)</span>
+                    <span class="c1"># print(f&#39;{basis_matrix.shape = }&#39;)</span>
+
+                    <span class="c1"># Obtain the density matrix from tomography. Slice the density matrix</span>
+                    <span class="c1"># based on whether we are considering &#39;e&#39; or &#39;h&#39; on the system qubits.</span>
+                    <span class="n">density_matrix</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">lstsq</span><span class="p">(</span><span class="n">basis_matrix</span><span class="p">,</span> <span class="n">array_subscript</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+                    <span class="n">density_matrix</span> <span class="o">=</span> <span class="n">density_matrix</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span>
+                        <span class="mi">2</span> <span class="o">**</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_system_qubits</span><span class="p">,</span> <span class="mi">2</span> <span class="o">**</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_system_qubits</span><span class="p">,</span> <span class="n">order</span><span class="o">=</span><span class="s1">&#39;F&#39;</span><span class="p">)</span>
+                    <span class="n">density_matrix</span> <span class="o">=</span> <span class="n">qubit_indices_subscript</span><span class="o">.</span><span class="n">system</span><span class="p">(</span><span class="n">density_matrix</span><span class="p">)</span>
+
+                    <span class="c1"># Obtain the B matrix elements by computing the overlaps between</span>
+                    <span class="c1"># the density matrix and the state vectors.</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">B</span><span class="p">[</span><span class="n">subscript</span><span class="p">][</span><span class="n">m</span><span class="p">,</span> <span class="n">m</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span>
+                        <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">state_vectors</span><span class="p">[</span><span class="n">subscript</span><span class="p">][:,</span> <span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">conj</span><span class="p">()</span> <span class="o">@</span> <span class="n">density_matrix</span>
+                            <span class="o">@</span> <span class="bp">self</span><span class="o">.</span><span class="n">state_vectors</span><span class="p">[</span><span class="n">subscript</span><span class="p">][:,</span> <span class="n">i</span><span class="p">])</span><span class="o">.</span><span class="n">real</span> 
+                            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n_states</span><span class="p">[</span><span class="n">subscript</span><span class="p">])]</span>
+                    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">verbose</span><span class="p">:</span>
+                        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;B[</span><span class="si">{</span><span class="n">subscript</span><span class="si">}</span><span class="s2">][</span><span class="si">{</span><span class="n">m</span><span class="si">}</span><span class="s2">, </span><span class="si">{</span><span class="n">m</span><span class="si">}</span><span class="s2">] = </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">B</span><span class="p">[</span><span class="n">subscript</span><span class="p">][</span><span class="n">m</span><span class="p">,</span> <span class="n">m</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+        <span class="n">h5file</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">_process_off_diagonal_results</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Post-processes off-diagonal transition amplitude results.&quot;&quot;&quot;</span>
+        <span class="n">h5file</span> <span class="o">=</span> <span class="n">h5py</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">h5fname</span><span class="p">,</span> <span class="s2">&quot;r+&quot;</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n_orbitals</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">m</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_orbitals</span><span class="p">):</span>
+                <span class="n">circuit_label</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;circ</span><span class="si">{</span><span class="n">m</span><span class="si">}{</span><span class="n">n</span><span class="si">}{</span><span class="bp">self</span><span class="o">.</span><span class="n">spin</span><span class="si">}</span><span class="s2">&quot;</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">method</span> <span class="o">==</span> <span class="s2">&quot;exact&quot;</span><span class="p">:</span>
+                    <span class="n">state_vector</span> <span class="o">=</span> <span class="n">h5file</span><span class="p">[</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">circuit_label</span><span class="si">}</span><span class="s1">/transpiled&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;psi</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">suffix</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">]</span>
+                    <span class="n">state_vector</span> <span class="o">=</span> <span class="n">reverse_qubit_order</span><span class="p">(</span><span class="n">state_vector</span><span class="p">)</span>
+                    <span class="c1"># XXX: Able to match Qiskit version, but don&#39;t think this is correct.</span>
+                    <span class="k">for</span> <span class="n">subscript</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;ep&quot;</span><span class="p">,</span> <span class="s2">&quot;em&quot;</span><span class="p">,</span> <span class="s2">&quot;hp&quot;</span><span class="p">,</span> <span class="s2">&quot;hm&quot;</span><span class="p">]:</span>
+                        <span class="n">state_vector_subscript</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">qubit_indices_dict</span><span class="p">[</span><span class="n">subscript</span><span class="p">](</span><span class="n">state_vector</span><span class="p">)</span>
+
+                        <span class="c1"># Obtain the D matrix elements by computing the overlaps.</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">D</span><span class="p">[</span><span class="n">subscript</span><span class="p">][</span><span class="n">m</span><span class="p">,</span> <span class="n">n</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">D</span><span class="p">[</span><span class="n">subscript</span><span class="p">][</span><span class="n">n</span><span class="p">,</span> <span class="n">m</span><span class="p">]</span> <span class="o">=</span> \
+                            <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">state_vectors</span><span class="p">[</span><span class="n">subscript</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span><span class="o">.</span><span class="n">conj</span><span class="p">()</span><span class="o">.</span><span class="n">T</span> <span class="o">@</span> <span class="n">state_vector_subscript</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span>
+                        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">verbose</span><span class="p">:</span>
+                            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;D[</span><span class="si">{</span><span class="n">subscript</span><span class="si">}</span><span class="s2">][</span><span class="si">{</span><span class="n">m</span><span class="si">}</span><span class="s2">, </span><span class="si">{</span><span class="n">n</span><span class="si">}</span><span class="s2">] =&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">D</span><span class="p">[</span><span class="n">subscript</span><span class="p">][</span><span class="n">m</span><span class="p">,</span> <span class="n">n</span><span class="p">])</span>
+
+                <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">method</span> <span class="o">==</span> <span class="s2">&quot;tomo&quot;</span><span class="p">:</span>
+                    <span class="k">for</span> <span class="n">subscript</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;ep&#39;</span><span class="p">,</span> <span class="s1">&#39;em&#39;</span><span class="p">,</span> <span class="s1">&#39;hp&#39;</span><span class="p">,</span> <span class="s1">&#39;hm&#39;</span><span class="p">]:</span>
+                        <span class="c1"># Stack counts_arr over all tomography labels together. The procedure is to</span>
+                        <span class="c1"># first extract the raw counts_arr, slice the counts array to the specific</span>
+                        <span class="c1"># label, and then stack the counts_arr_label to counts_arr_key.</span>
+                        <span class="n">tomography_labels</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">product</span><span class="p">(</span><span class="s2">&quot;xyz&quot;</span><span class="p">,</span> <span class="n">repeat</span><span class="o">=</span><span class="mi">2</span><span class="p">)]</span>
+                        <span class="n">qubit_indices_subscript</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">qubit_indices_dict</span><span class="p">[</span><span class="n">subscript</span><span class="p">]</span>
+
+                        <span class="n">array_subscript</span> <span class="o">=</span> <span class="p">[]</span>
+                        <span class="k">for</span> <span class="n">tomography_label</span> <span class="ow">in</span> <span class="n">tomography_labels</span><span class="p">:</span>
+                            <span class="n">array</span> <span class="o">=</span> <span class="n">h5file</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">circuit_label</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">tomography_label</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;counts</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">suffix</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">]</span>
+                            <span class="n">array</span> <span class="o">=</span> <span class="n">reverse_qubit_order</span><span class="p">(</span><span class="n">array</span><span class="p">)</span> <span class="c1"># XXX: I don&#39;t think qubit order should be reversed.</span>
+                            <span class="n">start_index</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">qubit_indices_subscript</span><span class="o">.</span><span class="n">ancilla</span><span class="o">.</span><span class="n">str</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="mi">2</span><span class="p">)</span>
+                            <span class="n">array_label</span> <span class="o">=</span> <span class="n">array</span><span class="p">[</span><span class="n">start_index</span> <span class="p">::</span> <span class="mi">2</span> <span class="o">**</span> <span class="mi">2</span><span class="p">]</span>  <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">array</span><span class="p">)</span>
+                            <span class="c1"># print(f&#39;{len(array_label) = }&#39;)</span>
+                            <span class="c1"># counts_arr_label = counts_arr_label / np.sum(counts_arr)</span>
+                            <span class="n">array_subscript</span> <span class="o">+=</span> <span class="nb">list</span><span class="p">(</span><span class="n">array_label</span><span class="p">)</span>
+                                            
+                                            
+                        <span class="c1"># print(f&#39;{len(array_subscript) = }&#39;)</span>
+                        <span class="c1"># print(f&#39;{basis_matrix.shape = }&#39;)</span>
+
+                        <span class="c1"># Obtain the density matrix from tomography. Slice the density matrix</span>
+                        <span class="c1"># based on whether we are considering &#39;e&#39; or &#39;h&#39; on the system qubits.</span>
+                        <span class="n">density_matrix</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">lstsq</span><span class="p">(</span><span class="n">basis_matrix</span><span class="p">,</span> <span class="n">array_subscript</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+                        <span class="n">density_matrix</span> <span class="o">=</span> <span class="n">density_matrix</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span>
+                            <span class="mi">2</span> <span class="o">**</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_system_qubits</span><span class="p">,</span> <span class="mi">2</span> <span class="o">**</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_system_qubits</span><span class="p">,</span> <span class="n">order</span><span class="o">=</span><span class="s2">&quot;F&quot;</span><span class="p">)</span>
+                        <span class="n">density_matrix</span> <span class="o">=</span> <span class="n">qubit_indices_subscript</span><span class="o">.</span><span class="n">system</span><span class="p">(</span><span class="n">density_matrix</span><span class="p">)</span>
+
+                        <span class="c1"># Obtain the D matrix elements by computing the overlaps between</span>
+                        <span class="c1"># the density matrix and the state vectors.</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">D</span><span class="p">[</span><span class="n">subscript</span><span class="p">][</span><span class="n">m</span><span class="p">,</span> <span class="n">n</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">D</span><span class="p">[</span><span class="n">subscript</span><span class="p">][</span><span class="n">n</span><span class="p">,</span> <span class="n">m</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span>
+                            <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">state_vectors</span><span class="p">[</span><span class="n">subscript</span><span class="p">[</span><span class="mi">0</span><span class="p">]][:,</span> <span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">conj</span><span class="p">()</span> <span class="o">@</span> <span class="n">density_matrix</span>
+                                <span class="o">@</span> <span class="bp">self</span><span class="o">.</span><span class="n">state_vectors</span><span class="p">[</span><span class="n">subscript</span><span class="p">[</span><span class="mi">0</span><span class="p">]][:,</span> <span class="n">i</span><span class="p">])</span><span class="o">.</span><span class="n">real</span> 
+                                <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n_states</span><span class="p">[</span><span class="n">subscript</span><span class="p">[</span><span class="mi">0</span><span class="p">]])]</span>
+                        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">verbose</span><span class="p">:</span>
+                            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;D[</span><span class="si">{</span><span class="n">subscript</span><span class="si">}</span><span class="s2">][</span><span class="si">{</span><span class="n">m</span><span class="si">}</span><span class="s2">, </span><span class="si">{</span><span class="n">n</span><span class="si">}</span><span class="s2">] =&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">D</span><span class="p">[</span><span class="n">subscript</span><span class="p">][</span><span class="n">m</span><span class="p">,</span> <span class="n">n</span><span class="p">])</span>
+
+        <span class="c1"># Unpack D values to B values according to Eq. (18) of Kosugi and Matsushita 2020.</span>
+        <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n_orbitals</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">m</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_orbitals</span><span class="p">):</span>
+                <span class="k">for</span> <span class="n">subscript</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;e&quot;</span><span class="p">,</span> <span class="s2">&quot;h&quot;</span><span class="p">]:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">B</span><span class="p">[</span><span class="n">subscript</span><span class="p">][</span><span class="n">m</span><span class="p">,</span> <span class="n">n</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">B</span><span class="p">[</span><span class="n">subscript</span><span class="p">][</span><span class="n">n</span><span class="p">,</span> <span class="n">m</span><span class="p">]</span> <span class="o">=</span> \
+                        <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="n">j</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">/</span> <span class="mi">4</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">D</span><span class="p">[</span><span class="n">subscript</span> <span class="o">+</span> <span class="s2">&quot;p&quot;</span><span class="p">][</span><span class="n">m</span><span class="p">,</span> <span class="n">n</span><span class="p">]</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">D</span><span class="p">[</span><span class="n">subscript</span> <span class="o">+</span> <span class="s2">&quot;m&quot;</span><span class="p">][</span><span class="n">m</span><span class="p">,</span> <span class="n">n</span><span class="p">])</span> \
+                        <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="mi">1</span><span class="n">j</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">/</span> <span class="mi">4</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">D</span><span class="p">[</span><span class="n">subscript</span> <span class="o">+</span> <span class="s2">&quot;p&quot;</span><span class="p">][</span><span class="n">n</span><span class="p">,</span> <span class="n">m</span><span class="p">]</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">D</span><span class="p">[</span><span class="n">subscript</span> <span class="o">+</span> <span class="s2">&quot;m&quot;</span><span class="p">][</span><span class="n">n</span><span class="p">,</span> <span class="n">m</span><span class="p">])</span>
+                    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">verbose</span><span class="p">:</span>
+                        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;B[</span><span class="si">{</span><span class="n">subscript</span><span class="si">}</span><span class="s2">][</span><span class="si">{</span><span class="n">m</span><span class="si">}</span><span class="s2">, </span><span class="si">{</span><span class="n">n</span><span class="si">}</span><span class="s2">] =&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">B</span><span class="p">[</span><span class="n">subscript</span><span class="p">][</span><span class="n">m</span><span class="p">,</span> <span class="n">n</span><span class="p">])</span>
+
+        <span class="n">h5file</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">density_matrix</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;The density matrix obtained from the transition amplitudes.&quot;&quot;&quot;</span>
+        <span class="n">rho</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">B</span><span class="p">[</span><span class="s2">&quot;h&quot;</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">rho</span>
+
+<div class="viewcode-block" id="GreensFunction.greens_function"><a class="viewcode-back" href="../../../fd_greens.cirq_ver.greens_function.html#fd_greens.cirq_ver.greens_function.GreensFunction.greens_function">[docs]</a>    <span class="k">def</span> <span class="nf">greens_function</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">omega</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">eta</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Returns the the Green&#39;s function at given frequency and broadening.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            omega: The frequency at which the Green&#39;s function is calculated.</span>
+<span class="sd">            eta: The broadening factor.</span>
+<span class="sd">        </span>
+<span class="sd">        Returns:</span>
+<span class="sd">            G_array: The Green&#39;s function at given frequency and broadening.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n_orbitals</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n_orbitals</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">G</span><span class="p">[</span><span class="s2">&quot;e&quot;</span><span class="p">][</span><span class="n">m</span><span class="p">,</span> <span class="n">n</span><span class="p">]</span> <span class="o">=</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">B</span><span class="p">[</span><span class="s2">&quot;e&quot;</span><span class="p">][</span><span class="n">m</span><span class="p">,</span> <span class="n">n</span><span class="p">]</span>
+                    <span class="o">/</span> <span class="p">(</span><span class="n">omega</span> <span class="o">+</span> <span class="mi">1</span><span class="n">j</span> <span class="o">*</span> <span class="n">eta</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">energies</span><span class="p">[</span><span class="s2">&quot;gs&quot;</span><span class="p">]</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">energies</span><span class="p">[</span><span class="s2">&quot;e&quot;</span><span class="p">]))</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">G</span><span class="p">[</span><span class="s2">&quot;h&quot;</span><span class="p">][</span><span class="n">m</span><span class="p">,</span> <span class="n">n</span><span class="p">]</span> <span class="o">=</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">B</span><span class="p">[</span><span class="s2">&quot;h&quot;</span><span class="p">][</span><span class="n">m</span><span class="p">,</span> <span class="n">n</span><span class="p">]</span>
+                    <span class="o">/</span> <span class="p">(</span><span class="n">omega</span> <span class="o">+</span> <span class="mi">1</span><span class="n">j</span> <span class="o">*</span> <span class="n">eta</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">energies</span><span class="p">[</span><span class="s2">&quot;gs&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">energies</span><span class="p">[</span><span class="s2">&quot;h&quot;</span><span class="p">]))</span>
+        <span class="n">G_array</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">G</span><span class="p">[</span><span class="s2">&quot;e&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">G</span><span class="p">[</span><span class="s2">&quot;h&quot;</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">G_array</span></div>
+
+<div class="viewcode-block" id="GreensFunction.spectral_function"><a class="viewcode-back" href="../../../fd_greens.cirq_ver.greens_function.html#fd_greens.cirq_ver.greens_function.GreensFunction.spectral_function">[docs]</a>    <span class="k">def</span> <span class="nf">spectral_function</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">omegas</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">float</span><span class="p">],</span> <span class="n">eta</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span> <span class="n">save_data</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;Returns the spectral function at certain frequencies.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            omegas: The frequencies at which the spectral function is calculated.</span>
+<span class="sd">            eta: The broadening factor.</span>
+<span class="sd">            save_data: Whether to save the spectral function to file.</span>
+<span class="sd">        </span>
+<span class="sd">        Returns:</span>
+<span class="sd">            As: The spectral function numpy array.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">A_arrays</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">omega</span> <span class="ow">in</span> <span class="n">omegas</span><span class="p">:</span>
+            <span class="n">G_array</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">greens_function</span><span class="p">(</span><span class="n">omega</span><span class="p">,</span> <span class="n">eta</span><span class="p">)</span>
+            <span class="n">A_array</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">imag</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">trace</span><span class="p">(</span><span class="n">G_array</span><span class="p">))</span>
+            <span class="n">A_arrays</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">A_array</span><span class="p">)</span>
+        <span class="n">A_arrays</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">A_arrays</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">save_data</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="s2">&quot;data&quot;</span><span class="p">):</span>
+                <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="s2">&quot;data&quot;</span><span class="p">)</span>
+            <span class="n">np</span><span class="o">.</span><span class="n">savetxt</span><span class="p">(</span><span class="s2">&quot;data/&quot;</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">datfname</span> <span class="o">+</span> <span class="s2">&quot;_A.dat&quot;</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">vstack</span><span class="p">((</span><span class="n">omegas</span><span class="p">,</span> <span class="n">A_arrays</span><span class="p">))</span><span class="o">.</span><span class="n">T</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">A_arrays</span></div>
+
+<div class="viewcode-block" id="GreensFunction.self_energy"><a class="viewcode-back" href="../../../fd_greens.cirq_ver.greens_function.html#fd_greens.cirq_ver.greens_function.GreensFunction.self_energy">[docs]</a>    <span class="k">def</span> <span class="nf">self_energy</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">omegas</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">float</span><span class="p">],</span> <span class="n">eta</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span> <span class="n">save_data</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;Returns the trace of self-energy at frequency omega.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            omegas: The frequencies at which the spectral function is calculated.</span>
+<span class="sd">            eta: The imaginary part, i.e. broadening factor.</span>
+<span class="sd">            save_data: Whether to save the spectral function to file.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            TrSigmas: Trace of the self-energy.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">e_orb</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">hamiltonian</span><span class="o">.</span><span class="n">molecule</span><span class="o">.</span><span class="n">orbital_energies</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">hamiltonian</span><span class="o">.</span><span class="n">active_indices</span><span class="p">]</span>
+
+        <span class="n">TrSigmas</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">omega</span> <span class="ow">in</span> <span class="n">omegas</span><span class="p">:</span>
+            <span class="n">G</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">greens_function</span><span class="p">(</span><span class="n">omega</span> <span class="o">+</span> <span class="mi">1</span><span class="n">j</span> <span class="o">*</span> <span class="n">eta</span><span class="p">)</span>
+            <span class="n">G_HF</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">n_orbitals</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_orbitals</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">complex</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n_orbitals</span><span class="p">):</span>
+                <span class="n">G_HF</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">/</span> <span class="p">(</span><span class="n">omega</span> <span class="o">-</span> <span class="n">e_orb</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+
+            <span class="n">Sigma</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">pinv</span><span class="p">(</span><span class="n">G_HF</span><span class="p">)</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">pinv</span><span class="p">(</span><span class="n">G</span><span class="p">)</span>
+            <span class="n">TrSigmas</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">trace</span><span class="p">(</span><span class="n">Sigma</span><span class="p">))</span>
+        <span class="n">TrSigmas</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">TrSigmas</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">save_data</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="s2">&quot;data&quot;</span><span class="p">):</span>
+                <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="s2">&quot;data&quot;</span><span class="p">)</span>
+            <span class="n">np</span><span class="o">.</span><span class="n">savetxt</span><span class="p">(</span>
+                <span class="s2">&quot;data/&quot;</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">datfname</span> <span class="o">+</span> <span class="s2">&quot;_TrS.dat&quot;</span><span class="p">,</span>
+                <span class="n">np</span><span class="o">.</span><span class="n">vstack</span><span class="p">((</span><span class="n">omegas</span><span class="p">,</span> <span class="n">TrSigmas</span><span class="o">.</span><span class="n">real</span><span class="p">,</span> <span class="n">TrSigmas</span><span class="o">.</span><span class="n">imag</span><span class="p">))</span><span class="o">.</span><span class="n">T</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">TrSigmas</span></div></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Shi-Ning Sun.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

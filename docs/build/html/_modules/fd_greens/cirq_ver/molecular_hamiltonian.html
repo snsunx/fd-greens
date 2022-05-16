@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>fd_greens.cirq_ver.molecular_hamiltonian &mdash; fd-greens 0.0.1 documentation</title>
+      <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../../../index.html" class="icon icon-home"> fd-greens
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <!-- Local TOC -->
+              <div class="local-toc"></div>
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">fd-greens</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+      <li>fd_greens.cirq_ver.molecular_hamiltonian</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for fd_greens.cirq_ver.molecular_hamiltonian</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">==============================================================</span>
+<span class="sd">Molecular Hamiltonian (:mod:`fd_greens.molecular_hamiltonian`)</span>
+<span class="sd">==============================================================</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Sequence</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">Optional</span>
+<span class="kn">import</span> <span class="nn">copy</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">cirq</span>
+<span class="kn">from</span> <span class="nn">openfermion</span> <span class="kn">import</span> <span class="n">MolecularData</span>
+<span class="kn">from</span> <span class="nn">openfermion.transforms</span> <span class="kn">import</span> <span class="n">jordan_wigner</span><span class="p">,</span> <span class="n">get_fermion_operator</span>
+<span class="kn">from</span> <span class="nn">openfermionpyscf</span> <span class="kn">import</span> <span class="n">run_pyscf</span>
+
+<span class="kn">from</span> <span class="nn">.operators</span> <span class="kn">import</span> <span class="n">OperatorsBase</span>
+
+<span class="n">HARTREE_TO_EV</span> <span class="o">=</span> <span class="mf">27.211386245988</span>
+
+
+<div class="viewcode-block" id="MolecularHamiltonian"><a class="viewcode-back" href="../../../fd_greens.cirq_ver.molecular_hamiltonian.html#fd_greens.cirq_ver.molecular_hamiltonian.MolecularHamiltonian">[docs]</a><span class="k">class</span> <span class="nc">MolecularHamiltonian</span><span class="p">(</span><span class="n">OperatorsBase</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Molecular Hamiltonian.&quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">qubits</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">cirq</span><span class="o">.</span><span class="n">Qid</span><span class="p">],</span>
+        <span class="n">geometry</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">float</span><span class="p">]]],</span>
+        <span class="n">basis</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">multiplicity</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+        <span class="n">charge</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
+        <span class="n">run_pyscf_options</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="p">{},</span>
+        <span class="n">occupied_indices</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">active_indices</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Initializes a ``MolecularHamiltonian`` object.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            geometry: The coordinates of all atoms in the molecule, e.g. ``[[&#39;Li&#39;, (0, 0, 0)], [&#39;H&#39;, (0, 0, 1.6)]]``.</span>
+<span class="sd">            basis: The basis set.</span>
+<span class="sd">            multiplicity: The spin multiplicity. Defaults to 1.</span>
+<span class="sd">            charge: The total molecular charge. Defaults to 0.</span>
+<span class="sd">            run_pyscf_options: Keyword arguments passed to the run_pyscf function.</span>
+<span class="sd">            occupied_indices: A list of indices for occupied orbitals.</span>
+<span class="sd">            active_indices: A list of indices for active orbitals.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">qubits</span> <span class="o">=</span> <span class="n">qubits</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">n_qubits</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">qubits</span><span class="p">)</span>
+
+        <span class="n">molecule</span> <span class="o">=</span> <span class="n">MolecularData</span><span class="p">(</span><span class="n">geometry</span><span class="p">,</span> <span class="n">basis</span><span class="p">,</span> <span class="n">multiplicity</span><span class="o">=</span><span class="n">multiplicity</span><span class="p">,</span> <span class="n">charge</span><span class="o">=</span><span class="n">charge</span><span class="p">)</span>
+        <span class="n">run_pyscf</span><span class="p">(</span><span class="n">molecule</span><span class="p">,</span> <span class="o">**</span><span class="n">run_pyscf_options</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">n_electrons</span> <span class="o">=</span> <span class="n">molecule</span><span class="o">.</span><span class="n">n_electrons</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">orbital_energies</span> <span class="o">=</span> <span class="n">molecule</span><span class="o">.</span><span class="n">orbital_energies</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">occupied_indices</span> <span class="o">=</span> <span class="p">[]</span> <span class="k">if</span> <span class="n">occupied_indices</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">occupied_indices</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">active_indices</span> <span class="o">=</span> <span class="nb">range</span><span class="p">(</span><span class="n">molecule</span><span class="o">.</span><span class="n">n_orbitals</span><span class="p">)</span> <span class="k">if</span> <span class="n">active_indices</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">active_indices</span>
+
+        <span class="n">hamiltonian</span> <span class="o">=</span> <span class="n">molecule</span><span class="o">.</span><span class="n">get_molecular_hamiltonian</span><span class="p">(</span>
+            <span class="n">occupied_indices</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">occupied_indices</span><span class="p">,</span> <span class="n">active_indices</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">active_indices</span><span class="p">)</span>
+        <span class="n">fermion_operator</span> <span class="o">=</span> <span class="n">get_fermion_operator</span><span class="p">(</span><span class="n">hamiltonian</span><span class="p">)</span>
+        <span class="n">qubit_operator</span> <span class="o">=</span> <span class="n">jordan_wigner</span><span class="p">(</span><span class="n">fermion_operator</span><span class="p">)</span> <span class="o">*</span> <span class="n">HARTREE_TO_EV</span>
+        <span class="n">qubit_operator</span><span class="o">.</span><span class="n">compress</span><span class="p">()</span>
+
+        <span class="n">pauli_dict</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;X&#39;</span><span class="p">:</span> <span class="n">cirq</span><span class="o">.</span><span class="n">X</span><span class="p">,</span> <span class="s1">&#39;Y&#39;</span><span class="p">:</span> <span class="n">cirq</span><span class="o">.</span><span class="n">Y</span><span class="p">,</span> <span class="s1">&#39;Z&#39;</span><span class="p">:</span> <span class="n">cirq</span><span class="o">.</span><span class="n">Z</span><span class="p">}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pauli_strings</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">qubit_operator</span><span class="o">.</span><span class="n">terms</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">pauli_string</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">value</span><span class="p">)</span> <span class="o">*</span> <span class="n">cirq</span><span class="o">.</span><span class="n">PauliString</span><span class="p">()</span>
+            <span class="k">for</span> <span class="n">index</span><span class="p">,</span> <span class="n">symbol</span> <span class="ow">in</span> <span class="n">key</span><span class="p">:</span>
+                <span class="n">pauli_string</span> <span class="o">*=</span> <span class="n">pauli_dict</span><span class="p">[</span><span class="n">symbol</span><span class="p">](</span><span class="n">qubits</span><span class="p">[</span><span class="n">index</span><span class="p">])</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">pauli_strings</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">pauli_string</span><span class="p">)</span>
+
+<div class="viewcode-block" id="MolecularHamiltonian.transform"><a class="viewcode-back" href="../../../fd_greens.cirq_ver.molecular_hamiltonian.html#fd_greens.cirq_ver.molecular_hamiltonian.MolecularHamiltonian.transform">[docs]</a>    <span class="k">def</span> <span class="nf">transform</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">method_indices_pairs</span><span class="p">,</span> <span class="n">tapered_state</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">tapered_state</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">tapered_state</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">*</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n_qubits</span> <span class="o">//</span> <span class="mi">2</span><span class="p">)</span>
+        <span class="n">OperatorsBase</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">method_indices_pairs</span><span class="p">,</span> <span class="n">tapered_state</span><span class="o">=</span><span class="n">tapered_state</span><span class="p">)</span></div>
+    
+<div class="viewcode-block" id="MolecularHamiltonian.copy"><a class="viewcode-back" href="../../../fd_greens.cirq_ver.molecular_hamiltonian.html#fd_greens.cirq_ver.molecular_hamiltonian.MolecularHamiltonian.copy">[docs]</a>    <span class="k">def</span> <span class="nf">copy</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;MolecularHamiltonian&#39;</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span></div>
+    
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">matrix</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+        <span class="k">return</span> <span class="nb">sum</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pauli_strings</span><span class="p">)</span><span class="o">.</span><span class="n">matrix</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="get_lih_hamiltonian"><a class="viewcode-back" href="../../../fd_greens.cirq_ver.molecular_hamiltonian.html#fd_greens.cirq_ver.molecular_hamiltonian.get_lih_hamiltonian">[docs]</a><span class="k">def</span> <span class="nf">get_lih_hamiltonian</span><span class="p">(</span><span class="n">bond_distance</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MolecularHamiltonian</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Returns the HOMO-LUMO LiH Hamiltonian with bond length r.</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        bond_distance: The bond length of the molecule in Angstrom.</span>
+<span class="sd">    </span>
+<span class="sd">    Returns:</span>
+<span class="sd">        hamiltonian: The molecular Hamiltonian.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">hamiltonian</span> <span class="o">=</span> <span class="n">MolecularHamiltonian</span><span class="p">(</span>
+        <span class="n">cirq</span><span class="o">.</span><span class="n">LineQubit</span><span class="o">.</span><span class="n">range</span><span class="p">(</span><span class="mi">4</span><span class="p">),</span>
+        <span class="p">[[</span><span class="s2">&quot;Li&quot;</span><span class="p">,</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">)],</span> <span class="p">[</span><span class="s2">&quot;H&quot;</span><span class="p">,</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">bond_distance</span><span class="p">)]],</span> 
+        <span class="s2">&quot;sto3g&quot;</span><span class="p">,</span> 
+        <span class="n">occupied_indices</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+        <span class="n">active_indices</span><span class="o">=</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">])</span>
+    <span class="k">return</span> <span class="n">hamiltonian</span></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Shi-Ning Sun.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

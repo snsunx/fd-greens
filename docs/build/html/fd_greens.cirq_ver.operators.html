@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Operators (fd_greens.operators) &mdash; fd-greens 0.0.1 documentation</title>
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="index.html" class="icon icon-home"> fd-greens
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <!-- Local TOC -->
+              <div class="local-toc"><ul>
+<li><a class="reference internal" href="#">Operators (<code class="xref py py-mod docutils literal notranslate"><span class="pre">fd_greens.operators</span></code>)</a></li>
+</ul>
+</div>
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">fd-greens</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
+      <li>Operators (<code class="xref py py-mod docutils literal notranslate"><span class="pre">fd_greens.operators</span></code>)</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/fd_greens.cirq_ver.operators.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <span class="target" id="module-fd_greens.cirq_ver.operators"></span><section id="operators-fd-greens-operators">
+<h1>Operators (<code class="xref py py-mod docutils literal notranslate"><span class="pre">fd_greens.operators</span></code>)<a class="headerlink" href="#operators-fd-greens-operators" title="Permalink to this headline"></a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="fd_greens.cirq_ver.operators.OperatorsBase">
+<em class="property"><span class="pre">class</span> </em><span class="sig-name descname"><span class="pre">OperatorsBase</span></span><a class="reference internal" href="_modules/fd_greens/cirq_ver/operators.html#OperatorsBase"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#fd_greens.cirq_ver.operators.OperatorsBase" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Operators base.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="fd_greens.cirq_ver.operators.OperatorsBase.cnot">
+<span class="sig-name descname"><span class="pre">cnot</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">control</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/fd_greens/cirq_ver/operators.html#OperatorsBase.cnot"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#fd_greens.cirq_ver.operators.OperatorsBase.cnot" title="Permalink to this definition"></a></dt>
+<dd><p>Conjugates Pauli strings by a CNOT operation.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="fd_greens.cirq_ver.operators.OperatorsBase.swap">
+<span class="sig-name descname"><span class="pre">swap</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">index1</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">index2</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/fd_greens/cirq_ver/operators.html#OperatorsBase.swap"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#fd_greens.cirq_ver.operators.OperatorsBase.swap" title="Permalink to this definition"></a></dt>
+<dd><p>Conjugates Pauli strings by a SWAP operation.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="fd_greens.cirq_ver.operators.OperatorsBase.taper">
+<span class="sig-name descname"><span class="pre">taper</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">tapered_state</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">tapered_indices</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/fd_greens/cirq_ver/operators.html#OperatorsBase.taper"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#fd_greens.cirq_ver.operators.OperatorsBase.taper" title="Permalink to this definition"></a></dt>
+<dd><p>Tapers qubits off the first two qubits, assuming the symmetry operators are both Z.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="fd_greens.cirq_ver.operators.OperatorsBase.transform">
+<span class="sig-name descname"><span class="pre">transform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">method_indices_pairs</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Mapping</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span> </span><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tapered_state</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/fd_greens/cirq_ver/operators.html#OperatorsBase.transform"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#fd_greens.cirq_ver.operators.OperatorsBase.transform" title="Permalink to this definition"></a></dt>
+<dd><p>Transforms Pauli strings using given method indices pairs.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="fd_greens.cirq_ver.operators.SecondQuantizedOperators">
+<em class="property"><span class="pre">class</span> </em><span class="sig-name descname"><span class="pre">SecondQuantizedOperators</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">qubits</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">cirq.ops.raw_types.Qid</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">spin</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">factor</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">float</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">-</span> <span class="pre">1.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/fd_greens/cirq_ver/operators.html#SecondQuantizedOperators"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#fd_greens.cirq_ver.operators.SecondQuantizedOperators" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#fd_greens.cirq_ver.operators.OperatorsBase" title="fd_greens.cirq_ver.operators.OperatorsBase"><code class="xref py py-class docutils literal notranslate"><span class="pre">fd_greens.cirq_ver.operators.OperatorsBase</span></code></a></p>
+<p>Second quantized operators.</p>
+<p>Initializes a <code class="docutils literal notranslate"><span class="pre">SecondQuantizedOperators</span></code> object.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>qubits</strong> – Qubits on which the operators act.</p></li>
+<li><p><strong>spin</strong> – The spin of the second quantized operators. Either <code class="docutils literal notranslate"><span class="pre">'u'</span></code> or <code class="docutils literal notranslate"><span class="pre">'d'</span></code>.</p></li>
+<li><p><strong>factor</strong> – Multiplication factor of the operators for easy gate construction.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="fd_greens.cirq_ver.operators.SecondQuantizedOperators.transform">
+<span class="sig-name descname"><span class="pre">transform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">method_indices_pairs</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Mapping</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span> </span><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/fd_greens/cirq_ver/operators.html#SecondQuantizedOperators.transform"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#fd_greens.cirq_ver.operators.SecondQuantizedOperators.transform" title="Permalink to this definition"></a></dt>
+<dd><p>Transforms the operators using given method indices pairs.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="fd_greens.cirq_ver.operators.ChargeOperators">
+<em class="property"><span class="pre">class</span> </em><span class="sig-name descname"><span class="pre">ChargeOperators</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">qubits</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">cirq.ops.raw_types.Qid</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/fd_greens/cirq_ver/operators.html#ChargeOperators"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#fd_greens.cirq_ver.operators.ChargeOperators" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#fd_greens.cirq_ver.operators.OperatorsBase" title="fd_greens.cirq_ver.operators.OperatorsBase"><code class="xref py py-class docutils literal notranslate"><span class="pre">fd_greens.cirq_ver.operators.OperatorsBase</span></code></a></p>
+<p>Charge operators.</p>
+<p>Initializes a <code class="docutils literal notranslate"><span class="pre">ChargeOperators</span></code> object.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>qubits</strong> – Qubits on which the operators act.</p>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="fd_greens.cirq_ver.operators.ChargeOperators.transform">
+<span class="sig-name descname"><span class="pre">transform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">method_indices_pairs</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Mapping</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span> </span><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/fd_greens/cirq_ver/operators.html#ChargeOperators.transform"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#fd_greens.cirq_ver.operators.ChargeOperators.transform" title="Permalink to this definition"></a></dt>
+<dd><p>Transforms the operators using given method indices pairs.</p>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Shi-Ning Sun.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

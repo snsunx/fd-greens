@@ -44,8 +44,6 @@ class CircuitStringConverter:
         return qstring
 
     def _gstring_to_gate(self, gstring: str) -> cirq.Gate:
-        """Qtrl gate string to Cirq gate."""
-
         if re.findall("\d+", gstring) == []:  # No parameter, multi-qubit gate
             if gstring == "CZ":
                 gate = cirq.CZ
@@ -71,7 +69,6 @@ class CircuitStringConverter:
         return gate
 
     def _gate_to_gstring(self, gate: cirq.Gate) -> str:
-        """Cirq gate to qtrl gate string."""
         # print(f'{gate = }')
         if isinstance(gate, (cirq.XPowGate, cirq.ZPowGate)):
             gname = gate.__class__.__name__[0]
@@ -100,13 +97,31 @@ class CircuitStringConverter:
         return gstring
 
     def convert_strings_to_circuit(self, qtrl_strings: List[List[str]]) -> cirq.Circuit:
-        """Converts qtrl strings to a Qiskit circuit.
-        
+        """Converts Qtrl strings to a Cirq circuit.
+
+        Example: ::
+
+            import sys
+            sys.path.append('path/to/fd_greens')
+
+            import h5py
+            import json
+            import cirq
+
+            from fd_greens import CircuitStringConverter
+
+            qubits = cirq.LineQubit.range(4)
+            converter = CircuitStringConverter(qubits)
+
+            h5file = h5py.File('lih_3A.h5', 'r')
+            qtrl_strings = json.loads(h5file['circ0d/transpiled'][()])
+            circuit = converter.convert_strings_to_circuit(qtrl_strings)
+
         Args:
             qtrl_strings: Qtrl strings.
             
         Returns:
-            circuit: A Cirq circuit corresponding to the qtrl strings.
+            circuit: A Cirq circuit corresponding to the Qtrl strings. 
         """
         # Flatten the qtrl strings if they are not flat.
         # if isinstance(qtrl_strings[0], list):

@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Utilities (fd_greens.utilities) &mdash; fd-greens 0.0.1 documentation</title>
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="index.html" class="icon icon-home"> fd-greens
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <!-- Local TOC -->
+              <div class="local-toc"><ul>
+<li><a class="reference internal" href="#">Utilities (<code class="xref py py-mod docutils literal notranslate"><span class="pre">fd_greens.utilities</span></code>)</a></li>
+</ul>
+</div>
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">fd-greens</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
+      <li>Utilities (<code class="xref py py-mod docutils literal notranslate"><span class="pre">fd_greens.utilities</span></code>)</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/fd_greens.cirq_ver.utilities.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <span class="target" id="module-fd_greens.cirq_ver.utilities"></span><section id="utilities-fd-greens-utilities">
+<h1>Utilities (<code class="xref py py-mod docutils literal notranslate"><span class="pre">fd_greens.utilities</span></code>)<a class="headerlink" href="#utilities-fd-greens-utilities" title="Permalink to this headline"></a></h1>
+<dl class="py function">
+<dt class="sig sig-object py" id="fd_greens.cirq_ver.utilities.reverse_qubit_order">
+<span class="sig-name descname"><span class="pre">reverse_qubit_order</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">arr</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">numpy.ndarray</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">numpy.ndarray</span></span></span><a class="reference internal" href="_modules/fd_greens/cirq_ver/utilities.html#reverse_qubit_order"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#fd_greens.cirq_ver.utilities.reverse_qubit_order" title="Permalink to this definition"></a></dt>
+<dd><p>Reverses qubit order in a 1D or 2D array.</p>
+<p>This is because Qiskit uses big endian order and most other packages use small endian order.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>arr</strong> – The 1D or 2D array on which the qubit order is to be reversed.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>arr</strong> – The 1D or 2D array after qubit order is reversed.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="fd_greens.cirq_ver.utilities.circuit_equal">
+<span class="sig-name descname"><span class="pre">circuit_equal</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">circuit1</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">cirq.circuits.circuit.Circuit</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">circuit2</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">cirq.circuits.circuit.Circuit</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">init_state_0</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">bool</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="reference internal" href="_modules/fd_greens/cirq_ver/utilities.html#circuit_equal"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#fd_greens.cirq_ver.utilities.circuit_equal" title="Permalink to this definition"></a></dt>
+<dd><p>Checks if two circuits are equivalent.</p>
+<p>The two circuits are equivalent either when the unitaries are equal up to a phase or
+when the statevectors with the all 0 initial state are equal up to a phase.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>circuit1</strong> – The first cicuit.</p></li>
+<li><p><strong>circuit2</strong> – The second circuit.</p></li>
+<li><p><strong>init_state_0</strong> – Whether to assume the initial state is the all 0 state. Default to True.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>is_equal</strong> – Whether the two circuits are equivalent.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="fd_greens.cirq_ver.utilities.unitary_equal">
+<span class="sig-name descname"><span class="pre">unitary_equal</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">uni1</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">numpy.ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">uni2</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">numpy.ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">init_state_0</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">bool</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="reference internal" href="_modules/fd_greens/cirq_ver/utilities.html#unitary_equal"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#fd_greens.cirq_ver.utilities.unitary_equal" title="Permalink to this definition"></a></dt>
+<dd><p>Checks if two unitaries are equal up to a phase factor.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>uni1</strong> – The first unitary.</p></li>
+<li><p><strong>uni2</strong> – The second unitary.</p></li>
+<li><p><strong>init_state_0</strong> – If set to True, only consider equality on the first column
+corresponding to the all 0 state.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>is_equal</strong> – Whether the two unitaries are equal up to a phase.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="fd_greens.cirq_ver.utilities.histogram_to_array">
+<span class="sig-name descname"><span class="pre">histogram_to_array</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">histogram</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">collections.Counter</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_qubits</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">numpy.ndarray</span></span></span><a class="reference internal" href="_modules/fd_greens/cirq_ver/utilities.html#histogram_to_array"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#fd_greens.cirq_ver.utilities.histogram_to_array" title="Permalink to this definition"></a></dt>
+<dd><p>Converts a Cirq histogram to a numpy array.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="fd_greens.cirq_ver.utilities.get_gate_counts">
+<span class="sig-name descname"><span class="pre">get_gate_counts</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="pre">circuit:</span> <span class="pre">cirq.circuits.circuit.Circuit,</span> <span class="pre">criterion:</span> <span class="pre">Callable[[Union[cirq.ops.raw_types.Operation,</span> <span class="pre">cirq.ops.op_tree.OpTree]],</span> <span class="pre">bool]</span> <span class="pre">=</span> <span class="pre">&lt;function</span> <span class="pre">&lt;lambda&gt;&gt;</span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">int</span></span></span><a class="reference internal" href="_modules/fd_greens/cirq_ver/utilities.html#get_gate_counts"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#fd_greens.cirq_ver.utilities.get_gate_counts" title="Permalink to this definition"></a></dt>
+<dd><p>Returns the count of gates satisfying a certain criterion.</p>
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Shi-Ning Sun.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
