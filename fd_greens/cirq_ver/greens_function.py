@@ -1,15 +1,15 @@
 """
-========================================================
-Green's Function (:mod:`fd_greens.main.greens_function`)
-========================================================
+===================================================
+Green's Function (:mod:`fd_greens.greens_function`)
+===================================================
 """
 
 import os
-from typing import Union, Sequence, Optional
+from typing import Sequence, Optional
+from itertools import product
 
 import h5py
 import numpy as np
-from itertools import product
 
 from .parameters import method_indices_pairs
 from .molecular_hamiltonian import MolecularHamiltonian
@@ -76,7 +76,7 @@ class GreensFunction:
                 # XXX: Able to match Qiskit version, but don't think this is correct.
                 # print(f'{state_vector = }')
                 for subscript in ["e", "h"]:
-                    # XXX: I don't thik the ::-1 is correct, but it matches the qiskit implementation.
+                    # XXX: I don't think the ::-1 is correct, but it matches the qiskit implementation.
                     state_vector_subscript = self.qubit_indices_dict[subscript](state_vector)
 
                     # Obtain the B matrix elements by computing the overlaps.
@@ -96,7 +96,7 @@ class GreensFunction:
                     array_subscript = []
                     for tomography_label in tomography_labels:
                         array = h5file[f"{circuit_label}/{tomography_label}"].attrs[f"counts{self.suffix}"]
-                        array = reverse_qubit_order(array) # XXX
+                        array = reverse_qubit_order(array) # XXX: I don't think qubit order should be reversed.
                         #start_index = int(''.join([str(i) for i in qubit_indices_subscript.ancilla])[::-1], 2)
                         start_index = int(qubit_indices_subscript.ancilla.str[0], 2)
                         array_label = array[start_index :: 2] / np.sum(array)
@@ -154,7 +154,7 @@ class GreensFunction:
                         array_subscript = []
                         for tomography_label in tomography_labels:
                             array = h5file[f"{circuit_label}/{tomography_label}"].attrs[f"counts{self.suffix}"]
-                            array = reverse_qubit_order(array) # XXX
+                            array = reverse_qubit_order(array) # XXX: I don't think qubit order should be reversed.
                             start_index = int(qubit_indices_subscript.ancilla.str[0], 2)
                             array_label = array[start_index :: 2 ** 2]  / np.sum(array)
                             # print(f'{len(array_label) = }')

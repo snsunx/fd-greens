@@ -1,7 +1,7 @@
 """
-=====================================================================
-(N±1)-Electron States Solver (:mod:`fd_greens.main.eh_states_solver`)
-=====================================================================
+================================================================
+(N±1)-Electron States Solver (:mod:`fd_greens.eh_states_solver`)
+================================================================
 """
 
 import h5py
@@ -34,7 +34,7 @@ class EHStatesSolver:
         
         self.qubit_indices_dict = get_qubit_indices_dict(
             2 * len(self.hamiltonian.active_indices), spin, method_indices_pairs, system_only=True)
-        print(f'{self.qubit_indices_dict =}')
+        # print(f'{self.qubit_indices_dict =}')
 
         self.energies = dict()
         self.state_vectors = dict()

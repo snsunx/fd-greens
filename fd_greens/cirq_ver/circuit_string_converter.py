@@ -1,7 +1,7 @@
 """
-========================
-Circuit String Converter
-========================
+====================================================================
+Circuit String Converter (:mod:`fd_greens.circuit_string_converter`)
+====================================================================
 """
 
 import re
@@ -109,23 +109,25 @@ class CircuitStringConverter:
             circuit: A Cirq circuit corresponding to the qtrl strings.
         """
         # Flatten the qtrl strings if they are not flat.
-        if isinstance(qtrl_strings[0], list):
-            qtrl_strings = [y for x in qtrl_strings for y in x]
+        # if isinstance(qtrl_strings[0], list):
+        #     qtrl_strings = [y for x in qtrl_strings for y in x]
         circuit = cirq.Circuit()
 
         # Iterate over each qtrl string. The qstr, gstr order depends on whether
         # the gate is 1q or multi-q gate.
-        for string in qtrl_strings:
-            if string[0] == "Q":  # single-qubit gate
-                qstring, gstring = string.split("/")
-            else:  # multi-qubit gate
-                gstring, qstring = string.split("/")
-            # print(f'{qstr = }')
-            # print(f'{gstr = }')
-            qubits = self._qstring_to_qubits(qstring)
-            gate = self._gstring_to_gate(gstring)
-            # print(f'{qubits = }')
-            circuit.append(gate(*qubits))
+        for strings_moment in qtrl_strings:
+            ops_moment = []
+            for string in strings_moment:
+                if string[0] == "Q":  # single-qubit gate
+                    qstring, gstring = string.split("/")
+                else:  # multi-qubit gate
+                    gstring, qstring = string.split("/")
+                # print(f'{qstr = }')
+                # print(f'{gstr = }')
+                qubits = self._qstring_to_qubits(qstring)
+                gate = self._gstring_to_gate(gstring)
+                ops_moment.append(gate(*qubits))
+            circuit.append(cirq.Moment(ops_moment))
 
         return circuit
 
@@ -146,8 +148,8 @@ class CircuitStringConverter:
                 gate = op.gate
                 qubits = op.qubits
 
-                # Don't append measurement gates.
-                if isinstance(op.gate, cirq.MeasurementGate):
+                # Ignore identity and measurement gates.
+                if isinstance(op.gate, (cirq.IdentityGate, cirq.MeasurementGate)):
                     continue
 
                 gstring = self._gate_to_gstring(gate)
@@ -160,5 +162,8 @@ class CircuitStringConverter:
                 else:
                     qtrl_string = gstring + "/" + qstring
                 strings_moment.append(qtrl_string)
-            qtrl_strings.append(strings_moment)
+            
+            if strings_moment != []:
+                qtrl_strings.append(strings_moment)
+            
         return qtrl_strings

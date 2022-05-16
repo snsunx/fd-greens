@@ -1,7 +1,7 @@
 """
-===========================================
-Operators (:mod:`fd_greens.main.operators`)
-===========================================
+======================================
+Operators (:mod:`fd_greens.operators`)
+======================================
 """
 
 from typing import Sequence, Mapping, Optional

@@ -1,7 +1,7 @@
 """
-===================================================================
-Molecular Hamiltonian (:mod:`fd_greens.main.molecular_hamiltonian`)
-===================================================================
+==============================================================
+Molecular Hamiltonian (:mod:`fd_greens.molecular_hamiltonian`)
+==============================================================
 """
 
 from typing import Sequence, List, Tuple, Optional
@@ -37,13 +37,11 @@ class MolecularHamiltonian(OperatorsBase):
         Args:
             geometry: The coordinates of all atoms in the molecule, e.g. ``[['Li', (0, 0, 0)], ['H', (0, 0, 1.6)]]``.
             basis: The basis set.
-            multiplicity: The spin multiplicity.
+            multiplicity: The spin multiplicity. Defaults to 1.
             charge: The total molecular charge. Defaults to 0.
             run_pyscf_options: Keyword arguments passed to the run_pyscf function.
-            occupied_indices: A list of spatial orbital indices indicating which orbitals 
-                should be considered doubly occupied.
-            active_indices: A list of spatial orbital indices indicating which orbitals
-                should be considered active.
+            occupied_indices: A list of indices for occupied orbitals.
+            active_indices: A list of indices for active orbitals.
         """
         self.qubits = qubits
         self.n_qubits = len(qubits)

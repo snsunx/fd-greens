@@ -20,32 +20,30 @@ class QubitIndices:
             qubit_indices = QubitIndices([[0, 1], [1, 1]], [[0]])
 
         Args:
-            system_indices: A sequence of qubit indices in string, integer or list form.
-            n_qubits: The number padded zeroes when the input is in int form. If the input is in
-                str or list form this is not needed.
+            system_indices: A sequence of system qubits indices.
+            ancilla_indices: A sequence of ancilla qubit indices.
         """
-
         self.system_indices = system_indices
         self.ancilla_indices = ancilla_indices
         self._build()
 
     def _build(self) -> None:
-        """Builds str, int and list forms of the qubit indices."""
-
+        # Builds str, int and list forms of the qubit indices.
         self.list = []
         for sys in self.system_indices:
             for anc in self.ancilla_indices:
                 self.list.append(anc + sys)
     
+        # XXX: I don't think [::-1] is correct here.
         self.str = [''.join([str(i) for i in l[::-1]]) for l in self.list]
         self.int = [int(s, 2) for s in self.str]
 
-    def __call__(self, arr: np.ndarray) -> np.ndarray:
+    def __call__(self, array: np.ndarray) -> np.ndarray:
         """Slices a 1D or 2D array by the qubit indices."""
-        if len(arr.shape) == 1:
-            return arr[self.int]
-        elif len(arr.shape) == 2:
-            return arr[self.int][:, self.int]
+        if len(array.shape) == 1:
+            return array[self.int]
+        elif len(array.shape) == 2:
+            return array[self.int][:, self.int]
         else:
             raise TypeError("The input array must be a 1D or 2D array.")
 
@@ -108,7 +106,7 @@ def get_qubit_indices_dict(
     
     Args:
         n_qubits: The number of qubits.
-        spin: The spin state of the electron-added states. Either "u" or "d".
+        spin: The spin state of the electron-added states. Either ``'u'`` or ``'d'``.
         method_indices_pairs: A dictionary of transform methods to indices.
         system_only: Whether to only build system qubit indices.
     
@@ -140,7 +138,6 @@ def get_qubit_indices_dict(
             qubit_indices = QubitIndices(system_indices)
             qubit_indices.transform(method_indices_pairs)
             qubit_indices_dict[subscript] = qubit_indices
-
     else:
         # Create dictionaries of ancilla indices.
         ancilla_indices_dict = {

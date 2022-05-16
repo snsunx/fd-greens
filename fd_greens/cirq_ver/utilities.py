@@ -5,11 +5,10 @@ Utilities (:mod:`fd_greens.utilities`)
 """
 
 from typing import Optional, Callable
-from itertools import product
 from copy import deepcopy
 from collections import Counter
-
 import math
+
 import numpy as np
 import cirq
 
@@ -17,7 +16,7 @@ import cirq
 def reverse_qubit_order(arr: np.ndarray) -> np.ndarray:
     """Reverses qubit order in a 1D or 2D array.
 
-    This is because Qiskit uses big endian order and 
+    This is because Qiskit uses big endian order and most other packages use small endian order.
 
     Args:
         arr: The 1D or 2D array on which the qubit order is to be reversed.

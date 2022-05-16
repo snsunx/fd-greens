@@ -110,24 +110,21 @@ def convert_ccz_to_c0c0ix(circuit: cirq.Circuit) -> cirq.Circuit:
             if op.gate.__str__() == "CCZ":
                 qubits = op.qubits
                 cizc_ops = [
-                    cirq.X(qubits[0]),
-                    cirq.H(qubits[1]),
-                    cirq.X(qubits[2]),
+                    cirq.X(qubits[0]), cirq.H(qubits[1]), cirq.X(qubits[2]),
                     C0C0iX(qubits[0], qubits[2], qubits[1]),
-                    cirq.X(qubits[0]),
-                    cirq.H(qubits[1]),
-                    cirq.X(qubits[2]),
+                    cirq.X(qubits[0]), cirq.H(qubits[1]), cirq.X(qubits[2]),
                 ]
 
-                # SWAP gate without a CZ, equivalent to a iSWAP gate.
+                # SWAP gate without a CZ, equivalent to an iSWAP gate.
                 iswap_ops = [
                     cirq.XPowGate(exponent=0.5)(qubits[0]), cirq.XPowGate(exponent=0.5)(qubits[1]),
                     cirq.CZ(qubits[0], qubits[1]),
                     cirq.XPowGate(exponent=0.5)(qubits[0]), cirq.XPowGate(exponent=0.5)(qubits[1]),
                     cirq.CZ(qubits[0], qubits[1]),
-                    cirq.XPowGate(exponent=0.5)(qubits[0]), cirq.XPowGate(exponent=0.5)(qubits[1])]
+                    cirq.XPowGate(exponent=0.5)(qubits[0]), cirq.XPowGate(exponent=0.5)(qubits[1])
+                ]
 
-                # Long-range CS gate minus an iSWAP gate.
+                # Long-range CS gate without an iSWAP gate.
                 cs_ops = [cirq.CZPowGate(exponent=-0.5)(qubits[1], qubits[2]),
                           cirq.CZ(qubits[0], qubits[1]),
                           cirq.SWAP(qubits[0], qubits[1])]
@@ -211,15 +208,31 @@ def convert_phxz_to_xpi2(circuit: cirq.Circuit) -> cirq.Circuit:
             x = op.gate.x_exponent
             z = op.gate.z_exponent
             q = op.qubits[0]
-            circuit_new.append(
-                [
-                    cirq.ZPowGate(exponent=-a - 0.5)(q),
-                    cirq.XPowGate(exponent=0.5)(q),
-                    cirq.ZPowGate(exponent=1.0 - x)(q),
-                    cirq.XPowGate(exponent=0.5)(q),
-                    cirq.ZPowGate(exponent=a + z - 0.5)(q),
-                ],
-            )
+
+            # Build an array consisting of the exponents of the three Z gates.
+            # If the middle exponent is 0.5, 1.0 or 1.5, the gate sequence can be simplified to Z or ZXZ.
+            # Otherwise the gate sequence is ZXZXZ.
+            exponents = np.array([-a - 0.5, 1.0 - x, a + z - 0.5]) % 2
+            if np.any(np.abs(np.array([0.5, 1.0, 1.5]) - exponents[1]) < 1e-8):
+            # if abs((1.0 - x) % 2 - 0.5) < 1e-8 or abs((1.0 - x) % 2 - 1.0) < 1e-8 or abs((1.0 - x) % 2 - 1.5) < 1e-8:
+                if abs(exponents[1] - 1.0) < 1e-8:
+                    circuit_new.append(cirq.ZPowGate(exponent=np.sum(exponents) % 2)(q))
+                    circuit_new.append(cirq.I(q))
+                    circuit_new.append(cirq.I(q))
+                    circuit_new.append(cirq.I(q))
+                    circuit_new.append(cirq.I(q))
+                else:
+                    circuit_new.append(cirq.ZPowGate(exponent=np.sum(exponents[:2]) % 2)(q))
+                    circuit_new.append(cirq.XPowGate(exponent=0.5)(q))
+                    circuit_new.append(cirq.ZPowGate(exponent=np.sum(exponents[1:]) % 2)(q))
+                    circuit_new.append(cirq.I(q))
+                    circuit_new.append(cirq.I(q))
+            else:
+                circuit_new.append(cirq.ZPowGate(exponent=exponents[0])(q))
+                circuit_new.append(cirq.XPowGate(exponent=0.5)(q))
+                circuit_new.append(cirq.ZPowGate(exponent=exponents[1])(q))
+                circuit_new.append(cirq.XPowGate(exponent=0.5)(q))
+                circuit_new.append(cirq.ZPowGate(exponent=exponents[2])(q))
         else:
             circuit_new.append(op)
 
@@ -238,19 +251,21 @@ def transpile_into_berkeley_gates(circuit: cirq.Circuit) -> cirq.Circuit:
     """
     circuit_new = circuit.copy()
 
-    # Qubit permutation
+    # Qubit permutation.
     circuit_new = permute_qubits(circuit_new)
     cirq.MergeInteractions(allow_partial_czs=False).optimize_circuit(circuit_new)
     # cirq.merge_single_qubit_gates_into_phxz(circuit_new)
     
-    # Three-qubit transpilation
+    # Three-qubit transpilation.
     circuit_new = convert_ccz_to_c0c0ix(circuit_new)
-    # cirq.MergeInteractions(allow_partial_czs=True).optimize_circuit(circuit_new)
+    cirq.MergeInteractions(allow_partial_czs=True).optimize_circuit(circuit_new)
 
-    # Two-qubit transpilation
-    # circuit_new = convert_swap_to_cz(circuit_new)
+    # Two-qubit transpilation.
+    circuit_new = convert_swap_to_cz(circuit_new)
     
-    # Single-qubit transpilation
+    # Single-qubit transpilation.
+    cirq.MergeSingleQubitGates().optimize_circuit(circuit_new)
+    cirq.DropEmptyMoments().optimize_circuit(circuit_new)
     cirq.merge_single_qubit_gates_into_phxz(circuit_new)
     circuit_new = convert_phxz_to_xpi2(circuit_new)
     return circuit_new
