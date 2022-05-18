@@ -8,7 +8,7 @@ import h5py
 import numpy as np
 
 from .molecular_hamiltonian import MolecularHamiltonian
-from .qubit_indices import get_qubit_indices_dict
+from .qubit_indices import QubitIndices
 from .parameters import method_indices_pairs
 
 
@@ -32,9 +32,16 @@ class EHStatesSolver:
         self.hamiltonian.transform(method_indices_pairs, tapered_state=tapered_state)
         self.h5fname = h5fname + ".h5"
         
-        self.qubit_indices_dict = get_qubit_indices_dict(
+        # self.qubit_indices_dict = get_qubit_indices_dict(
+        #     2 * len(self.hamiltonian.active_indices), spin, method_indices_pairs, system_only=True)
+        # for key, val in self.qubit_indices_dict.items():
+        #     print(key, val)
+        # print('-' * 80)
+
+        self.qubit_indices_dict = QubitIndices.get_eh_qubit_indices_dict(
             2 * len(self.hamiltonian.active_indices), spin, method_indices_pairs, system_only=True)
-        # print(f'{self.qubit_indices_dict =}')
+        # for key, val in self.qubit_indices_dict.items():
+        #     print(key, val)
 
         self.energies = dict()
         self.state_vectors = dict()

@@ -13,7 +13,7 @@ import numpy as np
 
 from .parameters import method_indices_pairs
 from .molecular_hamiltonian import MolecularHamiltonian
-from .qubit_indices import get_qubit_indices_dict
+from .qubit_indices import QubitIndices
 from .parameters import basis_matrix
 from .utilities import reverse_qubit_order
 
@@ -53,7 +53,10 @@ class GreensFunction:
         self.n_states = {"e": self.state_vectors["e"].shape[1], "h": self.state_vectors["h"].shape[1]}
         self.n_orbitals = len(self.hamiltonian.active_indices)
         self.n_system_qubits = 2 * self.n_orbitals - len(dict(method_indices_pairs)['taper'])
-        self.qubit_indices_dict = get_qubit_indices_dict(2 * self.n_orbitals, spin, method_indices_pairs)
+        # self.qubit_indices_dict = get_qubit_indices_dict(2 * self.n_orbitals, spin, method_indices_pairs)
+
+        self.qubit_indices_dict = QubitIndices.get_eh_qubit_indices_dict(
+            2 * len(self.hamiltonian.active_indices), spin, method_indices_pairs)
         self.B = {subscript: np.zeros((self.n_orbitals, self.n_orbitals, self.n_states[subscript]), dtype=complex)
                   for subscript in ["e", "h"]}
         self.D = {subscript: np.zeros((self.n_orbitals, self.n_orbitals, self.n_states[subscript[0]]), dtype=complex)
