@@ -10,23 +10,30 @@ from typing import Sequence
 import h5py
 import numpy as np
 
+from fd_greens.cirq_ver.molecular_hamiltonian import MolecularHamiltonian
+
 
 class ResponseFunction:
     """A class to calculate frequency-domain charge-charge response function."""
 
-    def __init__(self, h5fname: str = "lih", suffix: str = "") -> None:
+    def __init__(
+        self,
+        hamiltonian: MolecularHamiltonian,
+        h5fname: str = 'lih',
+        suffix: str = '',
+        method: str = 'exact') -> None:
         """Initializes a ResponseFunction object.
         
         Args:
             h5fname: The HDF5 file name.
             suffix: The suffix for a specific experimental run.
         """
+        
         self.datfname = h5fname + suffix
         h5file = h5py.File(h5fname + ".h5", "r")
         self.energy_gs = h5file["gs/energy"]
         self.energies_s = h5file["es/energies_s"]
         # self.energies_t = h5file['es/energies_t']
-        # self.energies_exc = np.hstack((self.energies_s, self.energies_t))
         self.N = h5file[f"amp/N{suffix}"]
 
     def response_function(

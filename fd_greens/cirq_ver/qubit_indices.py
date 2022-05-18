@@ -4,6 +4,7 @@ Qubit Indices (:mod:`fd_greens.qubit_indices`)
 ==============================================
 """
 
+from itertools import combinations
 from typing import Mapping, Iterable, Tuple, Sequence, List
 
 import copy
@@ -113,23 +114,37 @@ def get_qubit_indices_dict(
     Returns:
         qubit_indices_dict: A dictionary from subscripts to qubit indices.
     """
-    assert spin in ["u", "d"]
+    assert spin in ['u', 'd']
+    
+    def get_indices(states):
+        assert states in ['e', 'h']
 
-    def get_electron_index(index):
-        electron_index = [1] * n_qubits
-        electron_index[index] = 0
-        return electron_index
+        # Construct up/down orbital indices and number of up/down electrons.
+        up_orbitals = range(0, n_qubits, 2)
+        down_orbitals = range(1, n_qubits, 2)
+        n_up_electrons = n_qubits // 4 - (states == 'h') + (spin == 'u')
+        n_down_electrons = n_qubits // 4 - (states == 'h') + (spin == 'd')
+        
+        # Construct up/down occupied locations.
+        if states == 'e':
+            up_locations = [list(x) for x in combinations(up_orbitals, n_up_electrons)]
+            down_locations = [list(x) for x in combinations(down_orbitals,  n_down_electrons)]
+        else:
+            up_locations = [list(x) for x in combinations(up_orbitals, n_down_electrons)]
+            down_locations = [list(x) for x in combinations(down_orbitals,  n_up_electrons)]
+        all_locations = [x + y for x in up_locations for y in down_locations]
+        
+        # Construct and return the qubit indices.
+        indices = []
+        for location in all_locations:
+            indices.append([1 if i in location else 0 for i in range(n_qubits)])
+        return indices
 
-    def get_hole_index(index):
-        hole_index = [0] * n_qubits
-        hole_index[index] = 1
-        return hole_index
-
-    # Create indices of electron- and hole-added states.
-    empty_indices = list(range(spin == "u", n_qubits, 2))
-    electron_indices = sorted([get_electron_index(i) for i in empty_indices])
-    hole_indices = sorted([get_hole_index(i) for i in empty_indices])
-    system_indices_dict = {"e": electron_indices, "h": hole_indices}
+    electron_indices = sorted(get_indices('e'))
+    hole_indices = sorted(get_indices('h'))
+    system_indices_dict = {'e': electron_indices, 'h': hole_indices}
+    print(f'{electron_indices = }')
+    print(f'{hole_indices = }')
 
     qubit_indices_dict = dict()
     if system_only:
@@ -152,4 +167,52 @@ def get_qubit_indices_dict(
             qubit_indices.transform(method_indices_pairs)
             qubit_indices_dict[subscript] = qubit_indices
 
+    return qubit_indices_dict
+
+def get_excited_qubit_indices_dict(n_qubits: int, method_indices_pairs: Iterable[Tuple[str, Sequence[int]]] = [],
+    system_only: bool = False) -> Mapping[str, QubitIndices]:
+
+    def get_indices(states):
+        assert states in ['s', 't']
+
+        # Construct up/down orbital indices and number of up/down electrons.
+        up_orbitals = range(0, n_qubits, 2)
+        down_orbitals = range(1, n_qubits, 2)
+        n_up_electrons = n_qubits // 4 + (states == 't')
+        n_down_electrons = n_qubits // 4 - (states == 't')
+        
+        # Construct up/down occupied locations.
+        up_locations = [list(x) for x in combinations(up_orbitals, n_up_electrons)]
+        down_locations = [list(x) for x in combinations(down_orbitals,  n_down_electrons)]
+        all_locations = [x + y for x in up_locations for y in down_locations]
+        if states == 't':
+            up_locations = [list(x) for x in combinations(up_orbitals, n_down_electrons)]
+            down_locations = [list(x) for x in combinations(down_orbitals,  n_up_electrons)]
+            all_locations += [x + y for x in up_locations for y in down_locations]
+        
+        # Construct and return the qubit indices.
+        indices = []
+        for location in all_locations:
+            indices.append([1 if i in location else 0 for i in range(n_qubits)])
+        return indices
+
+    singlet_indices = get_indices('s')
+    triplet_indices = get_indices('t')
+    system_indices = {'s': singlet_indices, 't': triplet_indices}
+    print(f'{singlet_indices = }')
+    print(f'{triplet_indices = }')
+    exit()
+
+    if system_only:
+        qubit_indices = QubitIndices(system_indices)
+
+    else:
+        ancilla_indices_dict = {'n': [[1]], 'np': [[1, 0]], 'nm': [[1, 1]]}
+
+        qubit_indices_dict = dict()
+        for subscript, ancilla_indices in ancilla_indices_dict.items():
+            qubit_indices = QubitIndices(copy.deepcopy(system_indices, ancilla_indices))
+            qubit_indices.transform(method_indices_pairs)
+            qubit_indices_dict[subscript] = qubit_indices
+    
     return qubit_indices_dict

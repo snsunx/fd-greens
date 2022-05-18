@@ -25,7 +25,7 @@ class EHStatesSolver:
             spin: A character indicating whether up (``'u'``) or down spins (``'d'``) are included.
             h5fname: The HDF5 file name.
         """
-        assert spin in ["u", "d"]
+        assert spin in ['u', 'd']
 
         self.hamiltonian = hamiltonian
         tapered_state = [0, 1] if spin == 'd' else [1, 0] # XXX: reversed from Qiskit, but don't know if it's right.
