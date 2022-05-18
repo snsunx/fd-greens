@@ -38,8 +38,9 @@ class EHStatesSolver:
         #     print(key, val)
         # print('-' * 80)
 
+        n_qubits = 2 * len(self.hamiltonian.active_indices)
         self.qubit_indices_dict = QubitIndices.get_eh_qubit_indices_dict(
-            2 * len(self.hamiltonian.active_indices), spin, method_indices_pairs, system_only=True)
+            n_qubits, spin, method_indices_pairs, system_only=True)
         # for key, val in self.qubit_indices_dict.items():
         #     print(key, val)
 

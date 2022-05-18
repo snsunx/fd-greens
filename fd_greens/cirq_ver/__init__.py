@@ -1,7 +1,7 @@
 # Main scripts.
 from .ground_state_solver import GroundStateSolver
 from .eh_states_solver import EHStatesSolver
-# from .excited_states_solver import ExcitedStatesSolver
+from .excited_states_solver import ExcitedStatesSolver
 from .eh_amplitudes_solver import EHAmplitudesSolver
 # from .excited_amplitudes_solver import ExcitedAmplitudesSolver
 from .greens_function import GreensFunction
