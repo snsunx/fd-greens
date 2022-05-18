@@ -23,7 +23,7 @@ np.set_printoptions(precision=6)
 
 
 class EHAmplitudesSolver:
-    """Transition amplitudes between ground state and (N±1)-electron states."""
+    """Solver for transition amplitudes between ground state and (N±1)-electron states."""
 
     def __init__(
         self,
@@ -88,9 +88,6 @@ class EHAmplitudesSolver:
                 self.second_quantized_operators[2 * m + 1])
 
             # Transpile the circuit and save to HDF5 file.
-            # print('=' * 80)
-            # print(circuit)
-            # print('=' * 80)
             circuit = transpile_into_berkeley_gates(circuit)
             self.circuits[circuit_label] = circuit
             qtrl_strings = self.circuit_string_converter.convert_circuit_to_strings(circuit)
@@ -171,7 +168,6 @@ class EHAmplitudesSolver:
                         result = cirq.Simulator().run(tomography_circuit, repetitions=self.repetitions)
                         histogram = result.multi_measurement_histogram(keys=[str(q) for q in self.qubits[:4]])
                         dset_tomography.attrs[f"counts{self.suffix}"] = histogram_to_array(histogram, n_qubits=4)
-                        # print(f'{histogram_to_array(histogram, n_qubits=4).shape = }')
 
 
         h5file.close()

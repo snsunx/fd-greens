@@ -60,7 +60,8 @@ class OperatorsBase:
     def __getitem__(self, m):
         pauli_string = self.pauli_strings[m]
         # max_index = max(pauli_string._qubit_pauli_map.keys()).x
-        dense_pauli_string = pauli_string.dense(self.qubits[:2]) # XXX: 2 is hardcoded
+        max_index = self.n_qubits - self.n_tapered # TODO: Maybe this can be in the parent class init method.
+        dense_pauli_string = pauli_string.dense(self.qubits[:max_index]) # XXX: 2 is hardcoded
         return dense_pauli_string
 
 
@@ -77,6 +78,7 @@ class SecondQuantizedOperators(OperatorsBase):
         """
         self.qubits = qubits
         self.n_qubits = len(qubits)
+        self.n_tapered = 0
 
         self.pauli_strings = []
         for i in range(self.n_qubits // 2):
@@ -90,7 +92,7 @@ class SecondQuantizedOperators(OperatorsBase):
 
     def transform(self, method_indices_pairs: Mapping[str, Sequence[int]]):
         """Transforms the operators using given method indices pairs."""
-        tapered_state = [1] * (self.n_qubits // 2)
+        tapered_state = [1] * (self.n_qubits // 2) # XXX: Is n_qubits // 2 correct?
         OperatorsBase.transform(self, method_indices_pairs, tapered_state=tapered_state)
 
 class ChargeOperators(OperatorsBase):
@@ -104,6 +106,7 @@ class ChargeOperators(OperatorsBase):
         """
         self.qubits = qubits
         self.n_qubits = len(qubits)
+        self.n_tapered = 0
 
         self.pauli_strings = []
         for i in range(self.n_qubits):
@@ -114,5 +117,6 @@ class ChargeOperators(OperatorsBase):
 
     def transform(self, method_indices_pairs: Mapping[str, Sequence[int]]) -> None:
         """Transforms the operators using given method indices pairs."""
-        tapered_state = [1] * (self.n_qubits // 2)
+        tapered_state = [1] * (self.n_qubits // 2) # XXX: Is n_qubits // 2 correct?
+        self.n_tapered = len(tapered_state)
         OperatorsBase.transform(self, method_indices_pairs, tapered_state=tapered_state)
