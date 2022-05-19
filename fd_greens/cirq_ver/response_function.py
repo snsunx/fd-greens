@@ -11,12 +11,12 @@ from typing import Sequence
 import h5py
 import numpy as np
 
-from fd_greens.cirq_ver.utilities import reverse_qubit_order
-
 from .molecular_hamiltonian import MolecularHamiltonian
 from .qubit_indices import QubitIndices
 from .parameters import method_indices_pairs, basis_matrix
+from .utilities import reverse_qubit_order
 
+np.set_printoptions(precision=6)
 
 class ResponseFunction:
     """Frequency-domain charge-charge response function."""
@@ -46,13 +46,9 @@ class ResponseFunction:
 
         with h5py.File(self.h5fname, 'r') as h5file:
             self.energies = {'gs': h5file['gs/energy'][()],
-                             'n': h5file['es/energies_s'][:]}
-                             # 't': h5file['es/energies_t'][:]}
+                             'n': h5file['es/energies'][:]}
+            self.state_vectors = {'n': h5file['es/states'][:]}
 
-            self.state_vectors = {'n': h5file['es/states_s'][:]}
-                                  # 't': h5file['es/states_t'][:]}
-
-        # self.n_states = {'s': self.state_vectors['s'].shape[1], 't': self.state_vectors['t'].shape[1]}
         self.n_states = {'n': self.state_vectors['n'].shape[1]}
         self.n_orbitals = len(hamiltonian.active_indices)
         self.orbital_labels = list(product(range(self.n_orbitals), ['u', 'd']))
@@ -130,7 +126,8 @@ class ResponseFunction:
                         state_vector = reverse_qubit_order(state_vector) # XXX
                         state_vector = qubit_indices(state_vector)
 
-                        self.T[subscript][i, j] = np.abs(state_vectors_exact.conj().T @ state_vector) ** 2
+                        self.T[subscript][i, j] = self.T[subscript][j, i] = np.abs(
+                            state_vectors_exact.conj().T @ state_vector) ** 2
 
                     elif self.method == 'tomo':
                         tomography_labels = [''.join(x) for x in product('xyz', repeat=2)]
@@ -147,8 +144,7 @@ class ResponseFunction:
                         density_matrix = density_matrix.reshape(
                             2 ** self.n_system_qubits, 2 ** self.n_system_qubits, order='F')
                         density_matrix = qubit_indices.system(density_matrix)
-
-                        self.T[subscript][i, j] = [
+                        self.T[subscript][i, j] = self.T[subscript][j, i] = [
                             (state_vectors_exact[:, k].conj() @ density_matrix @ state_vectors_exact[:, k]).real
                             for k in range(self.n_states[subscript])]
 
@@ -158,11 +154,13 @@ class ResponseFunction:
         # Unpack T values to N values based on Eq. (18) of Kosugi and Matsushita 2021.
         for subscript in ['n']:
             for i in range(2 * self.n_orbitals):
-                for j in range(i + 1, self.n_orbitals):
+                for j in range(i + 1, 2 * self.n_orbitals):
                     self.N[subscript][i, j] = self.N[subscript][j, i] = \
-                        np.exp(-1j * np.pi / 4) * (self.T[subscript + "p"][i, j] - self.T[subscript + "m"][i, j]) \
-                        + np.exp(1j * np.pi / 4) * (self.T[subscript + "p"][j, i] - self.T[subscript + "m"][j, i])
-                    print(f"N[{subscript}][{i}, {j}] =", self.N[subscript][i, j])
+                        np.exp(-1j * np.pi / 4) * (self.T[subscript + 'p'][i, j] - self.T[subscript + 'm'][i, j]) \
+                        + np.exp(1j * np.pi / 4) * (self.T[subscript + 'p'][j, i] - self.T[subscript + 'm'][j, i])
+                    
+                    if self.verbose:
+                        print(f"N[{subscript}][{i}, {j}] =", self.N[subscript][i, j])
 
         h5file.close()
 

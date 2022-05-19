@@ -7,21 +7,20 @@ N-Electron States Solver (:mod:`fd_greens.excited_states_solver`)
 import h5py
 import numpy as np
 
-from fd_greens.cirq_ver.qubit_indices import QubitIndices
-
 from .molecular_hamiltonian import MolecularHamiltonian
 from .parameters import method_indices_pairs
+from .qubit_indices import QubitIndices
 
 
 class ExcitedStatesSolver:
-    """A class to calculate and store information of excited states."""
+    """N-electron excited states solver."""
 
     def __init__(
         self,
         hamiltonian: MolecularHamiltonian,
         h5fname: str = "lih",
-    ):
-        """Initializes a EHStatesSolver object.
+    ) -> None:
+        """Initializes a ``EHStatesSolver`` object.
         
         Args:
             hamiltonian: The molecular Hamiltonian.
@@ -33,38 +32,30 @@ class ExcitedStatesSolver:
 
         n_qubits = 2 * len(self.hamiltonian.active_indices)
         self.qubit_indices_dict = QubitIndices.get_excited_qubit_indices_dict(
-            n_qubits, method_indices_pairs, True)
+            n_qubits, method_indices_pairs, system_only=True)
 
-        self.energies = dict()
-        self.state_vectors = dict()
-
-        self.h5fname = h5fname + ".h5"
+        self.energies = None
+        self.state_vectors = None
 
     def _run_exact(self):
         def eigensolve(arr, inds):
             arr = arr[inds][:, inds]
             e, v = np.linalg.eigh(arr)
-            return e, v
+            return e[1:], v[:, 1:]
 
-        self.energies['s'], self.state_vectors['s'] = eigensolve(
-            self.hamiltonian.matrix, self.qubit_indices_dict['s'].int)
-        self.energies['t'], self.state_vectors['t'] = eigensolve(
-            self.hamiltonian.matrix, self.qubit_indices_dict['t'].int)
-        print(f"Singlet excited-state energies are {self.energies['s']} eV")
-        print(f"Triplet excited state energies are {self.energies['t']} eV")
+        self.energies, self.state_vectors = eigensolve(self.hamiltonian.matrix, self.qubit_indices_dict['n'].int)
+        print(f"Singlet excited-state energies are {self.energies} eV")
 
     def _save_data(self):
         """Saves N-electron excited-state energies and states to hdf5 file."""
         h5file = h5py.File(self.h5fname, "r+")
 
-        for dset_name in ['es/energies_s', 'es/energies_t', 'es/states_s', 'es_states_t']:
+        for dset_name in ['es/energies', 'es/states']:
             if dset_name in h5file:
                 del h5file[dset_name]
 
-        h5file['es/energies_s'] = self.energies['s']
-        h5file['es/energies_t'] = self.energies['t']
-        h5file['es/states_s'] = self.state_vectors['s']
-        h5file['es/states_t'] = self.state_vectors['t']
+        h5file['es/energies'] = self.energies
+        h5file['es/states'] = self.state_vectors
 
         h5file.close()
 

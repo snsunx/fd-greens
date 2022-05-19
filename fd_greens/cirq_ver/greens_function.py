@@ -17,6 +17,9 @@ from .qubit_indices import QubitIndices
 from .parameters import basis_matrix
 from .utilities import reverse_qubit_order
 
+
+np.set_printoptions(precision=6)
+
 class GreensFunction:
     """Frequency-domain Green's function."""
 

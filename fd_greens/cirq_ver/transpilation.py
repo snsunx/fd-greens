@@ -209,12 +209,11 @@ def convert_phxz_to_xpi2(circuit: cirq.Circuit) -> cirq.Circuit:
             z = op.gate.z_exponent
             q = op.qubits[0]
 
-            # Build an array consisting of the exponents of the three Z gates.
-            # If the middle exponent is 0.5, 1.0 or 1.5, the gate sequence can be simplified to Z or ZXZ.
-            # Otherwise the gate sequence is ZXZXZ.
+            # Build an array consisting of the exponents of the three Z gates. 
+            # The generic gate sequence is ZXZXZ, but if the middle exponent is 1.0, the gate sequence is Z;
+            # if the middle exponent is 0.5 or 1.5, the gate sequence is ZXZ.
             exponents = np.array([-a - 0.5, 1.0 - x, a + z - 0.5]) % 2
             if np.any(np.abs(np.array([0.5, 1.0, 1.5]) - exponents[1]) < 1e-8):
-            # if abs((1.0 - x) % 2 - 0.5) < 1e-8 or abs((1.0 - x) % 2 - 1.0) < 1e-8 or abs((1.0 - x) % 2 - 1.5) < 1e-8:
                 if abs(exponents[1] - 1.0) < 1e-8:
                     circuit_new.append(cirq.ZPowGate(exponent=np.sum(exponents) % 2)(q))
                     circuit_new.append(cirq.I(q))
@@ -256,14 +255,14 @@ def transpile_into_berkeley_gates(circuit: cirq.Circuit) -> cirq.Circuit:
     cirq.MergeInteractions(allow_partial_czs=False).optimize_circuit(circuit_new)
     # cirq.merge_single_qubit_gates_into_phxz(circuit_new)
     
-    # Three-qubit transpilation.
+    # Three-qubit gate transpilation.
     circuit_new = convert_ccz_to_c0c0ix(circuit_new)
     cirq.MergeInteractions(allow_partial_czs=True).optimize_circuit(circuit_new)
 
-    # Two-qubit transpilation.
+    # Two-qubit gate transpilation.
     circuit_new = convert_swap_to_cz(circuit_new)
     
-    # Single-qubit transpilation.
+    # Single-qubit gate transpilation.
     cirq.MergeSingleQubitGates().optimize_circuit(circuit_new)
     cirq.DropEmptyMoments().optimize_circuit(circuit_new)
     cirq.merge_single_qubit_gates_into_phxz(circuit_new)

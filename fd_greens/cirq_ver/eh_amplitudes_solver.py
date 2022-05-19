@@ -19,8 +19,6 @@ from .transpilation import transpile_into_berkeley_gates
 from .parameters import method_indices_pairs
 from .utilities import histogram_to_array
 
-np.set_printoptions(precision=6)
-
 
 class EHAmplitudesSolver:
     """Solver for transition amplitudes between ground state and (N±1)-electron states."""

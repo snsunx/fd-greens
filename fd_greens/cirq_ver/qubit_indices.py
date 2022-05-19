@@ -31,7 +31,7 @@ class QubitIndices:
         self._build()
 
     def _build(self) -> None:
-        # Builds str, int and list forms of the qubit indices.
+        """Builds str, int and list forms of the qubit indices."""
         self.list = []
         for sys in self.system_indices:
             for anc in self.ancilla_indices:
@@ -188,8 +188,7 @@ class QubitIndices:
         Returns:
             qubit_indices_dict: A dictionary from subscripts ot qubit indices.
         """
-        system_indices_dict = {'s': QubitIndices._get_indices(n_qubits, 's'),
-                               't': QubitIndices._get_indices(n_qubits, 't')}
+        system_indices_dict = {'n': QubitIndices._get_indices(n_qubits, 's')} # Only singlet states
         
         qubit_indices_dict = dict()
         if system_only:
@@ -200,8 +199,7 @@ class QubitIndices:
         else:
             ancilla_indices_dict = {'n': [[1]], 'np': [[1, 0]], 'nm': [[1, 1]]}
             for subscript, ancilla_indices in ancilla_indices_dict.items():
-                # XXX: 's' is hardcoded.
-                qubit_indices = QubitIndices(copy.deepcopy(system_indices_dict['s']), ancilla_indices)
+                qubit_indices = QubitIndices(copy.deepcopy(system_indices_dict[subscript[0]]), ancilla_indices)
                 qubit_indices.transform(method_indices_pairs)
                 qubit_indices_dict[subscript] = qubit_indices
 
