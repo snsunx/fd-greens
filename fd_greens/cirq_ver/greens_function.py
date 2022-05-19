@@ -26,7 +26,7 @@ class GreensFunction:
     def __init__(
         self,
         hamiltonian: MolecularHamiltonian,
-        h5fname: str = "lih",
+        fname: str = "lih",
         suffix: str = "",
         spin: str = "d",
         method: str = "exact",
@@ -35,33 +35,38 @@ class GreensFunction:
         """Initializes a ``GreensFunction`` object.
         
         Args:
-            h5fname: The HDF5 file name.
+            hamiltonian: The molecular Hamiltonian.
+            fname: The HDF5 file name.
             suffix: The suffix for a specific experimental run.
+            spin: Spin of the second quantized operators. Either ``'u'`` or ``'d'``.
+            method: The method used for calculating the transition amplitudes. Either ``'exact'`` or ``'tomo'``.
+            verbose: Whether to print out transition amplitude values.
         """
+        # Input attributes.
         self.hamiltonian = hamiltonian
-        self.h5fname = h5fname + ".h5"
-        self.datfname = h5fname + suffix
+        self.h5fname = fname + ".h5"
+        self.datfname = fname + suffix
         self.suffix = suffix
         self.spin = spin
         self.method = method
         self.verbose = verbose
 
         # Load energies and state vectors from HDF5 file.
-        with h5py.File(h5fname + ".h5", "r") as h5file:
+        with h5py.File(self.h5fname, "r") as h5file:
             self.energies = {"gs": h5file["gs/energy"][()], 
                              "e": h5file["es/energies_e"][:],
                              "h": h5file["es/energies_h"][:]}
             self.state_vectors = {"e": h5file["es/states_e"][:], 
                                   "h": h5file["es/states_h"][:]}
 
-        # Initialize array quantities B, D and G.
+        # Derived attributes.
         self.n_states = {subscript: self.state_vectors[subscript].shape[1] for subscript in ['e', 'h']}
         self.n_orbitals = len(self.hamiltonian.active_indices)
         self.n_system_qubits = 2 * self.n_orbitals - len(dict(method_indices_pairs)['taper'])
-        # self.qubit_indices_dict = get_qubit_indices_dict(2 * self.n_orbitals, spin, method_indices_pairs)
-
         self.qubit_indices_dict = QubitIndices.get_eh_qubit_indices_dict(
             2 * self.n_orbitals, spin, method_indices_pairs)
+
+        # Initialize array quantities B, D and G.
         self.B = {subscript: np.zeros((self.n_orbitals, self.n_orbitals, self.n_states[subscript]), dtype=complex)
                   for subscript in ["e", "h"]}
         self.D = {subscript: np.zeros((self.n_orbitals, self.n_orbitals, self.n_states[subscript[0]]), dtype=complex)
@@ -170,6 +175,7 @@ class GreensFunction:
 
         h5file.close()
 
+    # TODO: Is this function needed?
     @property
     def density_matrix(self) -> np.ndarray:
         """The density matrix obtained from the transition amplitudes."""
@@ -184,7 +190,7 @@ class GreensFunction:
             eta: The broadening factor.
         
         Returns:
-            G_array: The Green's function at given frequency and broadening.
+            G: The Green's function at given frequency and broadening.
         """
         for m in range(self.n_orbitals):
             for n in range(self.n_orbitals):
@@ -192,13 +198,13 @@ class GreensFunction:
                     / (omega + 1j * eta + self.energies["gs"] - self.energies["e"]))
                 self.G["h"][m, n] = 2 * np.sum(self.B["h"][m, n]
                     / (omega + 1j * eta - self.energies["gs"] + self.energies["h"]))
-        G_array = self.G["e"] + self.G["h"]
-        return G_array
+        G = self.G["e"] + self.G["h"]
+        return G
 
     def spectral_function(
         self, omegas: Sequence[float], eta: float = 0.0, save_data: bool = True
     ) -> Optional[np.ndarray]:
-        """Returns the spectral function at certain frequencies.
+        """Returns the spectral function at given frequencies.
 
         Args:
             omegas: The frequencies at which the spectral function is calculated.
@@ -225,12 +231,12 @@ class GreensFunction:
     def self_energy(
         self, omegas: Sequence[float], eta: float = 0.0, save_data: bool = True
     ) -> Optional[np.ndarray]:
-        """Returns the trace of self-energy at frequency omega.
+        """Returns the trace of self-energy at given frequencies.
 
         Args:
-            omegas: The frequencies at which the spectral function is calculated.
-            eta: The imaginary part, i.e. broadening factor.
-            save_data: Whether to save the spectral function to file.
+            omegas: The frequencies at which the self-energy is calculated.
+            eta: The broadening factor.
+            save_data: Whether to save the self-energy to file.
 
         Returns:
             TrSigmas: Trace of the self-energy.

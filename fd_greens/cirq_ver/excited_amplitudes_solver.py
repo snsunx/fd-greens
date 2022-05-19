@@ -29,7 +29,7 @@ class ExcitedAmplitudesSolver:
         qubits: Sequence[cirq.Qid],
         method: str = "exact",
         repetitions: int = 1000,
-        h5fname: str = "lih",
+        fname: str = "lih",
         suffix: str = "",
     ) -> None:
         """Initializes an ``ExcitedAmplitudesSolver`` object.
@@ -39,7 +39,7 @@ class ExcitedAmplitudesSolver:
             qubits: Qubits in the circuit.
             method: The method for extracting the transition amplitudes.
             repetitions: Number of repetitions used in the simulations.
-            h5fname: The HDF5 file name.
+            fname: The HDF5 file name.
             suffix: The suffix for a specific experimental run.
         """
         assert method in ["exact", "tomo"]
@@ -49,7 +49,7 @@ class ExcitedAmplitudesSolver:
         self.qubits = qubits
         self.method = method
         self.repetitions = repetitions
-        self.h5fname = h5fname + '.h5'
+        self.h5fname = fname + '.h5'
         self.suffix = suffix
 
         # Derived attributes.
@@ -72,8 +72,8 @@ class ExcitedAmplitudesSolver:
         for i in range(2 * self.n_orbitals):
             m, s = self.orbital_labels[i]
             circuit_label = f'circ{m}{s}'
-            if f'{circuit_label}/transpiled' in h5file:
-                del h5file[f'{circuit_label}/transpiled']
+            # if f'{circuit_label}/transpiled' in h5file:
+            #     del h5file[f'{circuit_label}/transpiled']
 
             # Build the diagonal circuit and save to HDF5 file.
             circuit = self.circuit_constructor.build_diagonal_circuit(
@@ -95,8 +95,8 @@ class ExcitedAmplitudesSolver:
                     circuit, self.qubits[1:3], self.qubits[:3]) # XXX: 1:3 is hardcoded
                 
                 for tomography_label, tomography_circuit in tomography_circuits.items():
-                    if f'{circuit_label}/{tomography_label}' in h5file:
-                        del h5file[f'{circuit_label}{tomography_label}']
+                    # if f'{circuit_label}/{tomography_label}' in h5file:
+                    #     del h5file[f'{circuit_label}{tomography_label}']
                     
                     self.circuits[f'{circuit_label}{tomography_label}'] = tomography_circuit
                     qtrl_strings = self.circuit_string_converter.convert_circuit_to_strings(tomography_circuit)
@@ -117,8 +117,8 @@ class ExcitedAmplitudesSolver:
             for j in range(i + 1, 2 * self.n_orbitals):
                 m_, s_ = self.orbital_labels[j]
                 circuit_label = f'circ{m}{s}{m_}{s_}'
-                if f'{circuit_label}/transpiled' in h5file:
-                    del h5file[f'{circuit_label}/transpiled']
+                # if f'{circuit_label}/transpiled' in h5file:
+                #     del h5file[f'{circuit_label}/transpiled']
 
                 # Build the off-diagonal circuit and save to HDF5 file.
                 circuit = self.circuit_constructor.build_off_diagonal(
@@ -139,8 +139,8 @@ class ExcitedAmplitudesSolver:
                     tomography_circuits = self.circuit_constructor.build_tomography_circuits(
                         circuit, self.qubits[2:4], self.qubits[:4]) # XXX: 2:4 is hardcoded
                     for tomography_label, tomography_circuit in tomography_circuits.items():
-                        if f'{circuit_label}/{tomography_label}' in h5file:
-                            del h5file[f'{circuit_label}{tomography_label}']
+                        # if f'{circuit_label}/{tomography_label}' in h5file:
+                        #     del h5file[f'{circuit_label}{tomography_label}']
 
                         self.circuits[f'{circuit_label}{tomography_label}'] = tomography_circuit
                         qtrl_strings = self.circuit_string_converter.convert_circuit_to_strings(tomography_circuit)

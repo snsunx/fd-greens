@@ -8,7 +8,6 @@ from typing import Optional, Sequence
 
 import h5py
 import json
-import numpy as np
 import cirq
 
 from .molecular_hamiltonian import MolecularHamiltonian
@@ -29,7 +28,7 @@ class EHAmplitudesSolver:
         qubits: Sequence[cirq.Qid],
         method: str = "exact",
         repetitions: int = 10000,
-        h5fname: str = "lih",
+        fname: str = "lih",
         spin: str = "d",
         suffix: str = "",
     ) -> None:
@@ -40,8 +39,8 @@ class EHAmplitudesSolver:
             qubits: Qubits in the circuit.
             method: The method for calculating the transition amplitudes. Either ``'exact'`` or ``'tomo'``.
             repetitions: Number of repetitions used in simulations.
-            h5fname: The HDF5 file name.
-            spin: The spin of the second-quantized operators.
+            fname: The HDF5 file name.
+            spin: The spin of the second-quantized operators. Either ``'u'`` or ``'d'``.
             suffix: The suffix for a specific experimental run.
         """
         assert method in ["exact", "tomo"]
@@ -52,7 +51,7 @@ class EHAmplitudesSolver:
         self.qubits = qubits
         self.method = method
         self.repetitions = repetitions
-        self.h5fname = h5fname + ".h5"
+        self.h5fname = fname + ".h5"
         self.spin = spin
         self.suffix = suffix
 
@@ -74,11 +73,10 @@ class EHAmplitudesSolver:
         h5file = h5py.File(self.h5fname, "r+")
 
         for m in range(self.n_orbitals):
-            # Create circuit label.
             circuit_label = f"circ{m}{self.spin}"
-            if f"{circuit_label}/transpiled" in h5file:
-                del h5file[f"{circuit_label}/transpiled"]
-
+            # if f"{circuit_label}/transpiled" in h5file:
+            #     print(f"Deleting {circuit_label}/transpiled")
+            #     del h5file[f"{circuit_label}/transpiled"]
 
             # Build the diagonal circuit based on the second quantized operator.
             circuit = self.circuit_constructor.build_diagonal_circuit(
@@ -103,8 +101,9 @@ class EHAmplitudesSolver:
                 for tomography_label, tomography_circuit in tomography_circuits.items():
                     self.circuits[circuit_label + tomography_label] = tomography_circuit
 
-                    if f"{circuit_label}/{tomography_label}" in h5file:
-                        del h5file[f"{circuit_label}/{tomography_label}"]
+                    # if f"{circuit_label}/{tomography_label}" in h5file:
+                    #     print(f"Deleting {circuit_label}/{tomography_label}")
+                    #     del h5file[f"{circuit_label}/{tomography_label}"]
                     qtrl_strings = self.circuit_string_converter.convert_circuit_to_strings(tomography_circuit)
                     dset_tomography = h5file.create_dataset(
                         f"{circuit_label}/{tomography_label}", data=json.dumps(qtrl_strings))
@@ -124,8 +123,9 @@ class EHAmplitudesSolver:
         for m in range(self.n_orbitals):
             for n in range(m + 1, self.n_orbitals):
                 circuit_label = f"circ{m}{n}{self.spin}"
-                if f"{circuit_label}/transpiled" in h5file:
-                    del h5file[f"{circuit_label}/transpiled"]
+                # if f"{circuit_label}/transpiled" in h5file:
+                #     print(f"Deleting {circuit_label}/transpiled")
+                #     del h5file[f"{circuit_label}/transpiled"]
 
                 # Build the off-diagonal circuit based on the creation/annihilation operators.
                 circuit = self.circuit_constructor.build_off_diagonal_circuit(
@@ -154,8 +154,9 @@ class EHAmplitudesSolver:
                         circuit, self.qubits[2:4], self.qubits[:4]) # XXX: 2:4 is hardcoded
 
                     for tomography_label, tomography_circuit in tomography_circuits.items():
-                        if f"{circuit_label}/{tomography_label}" in h5file:
-                            del h5file[f"{circuit_label}/{tomography_label}"]
+                        # if f"{circuit_label}/{tomography_label}" in h5file:
+                        #     print(f"Deleting {circuit_label}/{tomography_label}")
+                        #     del h5file[f"{circuit_label}/{tomography_label}"]
 
                         self.circuits[circuit_label + tomography_label] = tomography_circuit
                         qtrl_strings = self.circuit_string_converter.convert_circuit_to_strings(tomography_circuit)

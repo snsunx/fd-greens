@@ -23,19 +23,19 @@ class GroundStateSolver:
     """Ground state solver."""
 
     def __init__(
-        self, hamiltonian: MolecularHamiltonian, qubits: Sequence[cirq.Qid], h5fname: str = "lih"
+        self, hamiltonian: MolecularHamiltonian, qubits: Sequence[cirq.Qid], fname: str = "lih"
     ) -> None:
         """Initializes a ``GroudStateSolver`` object.
         
         Args:
             hamiltonian: The molecular Hamiltonian object.
             qubits: The qubits on which the ground state is prepared.
-            h5fname: The HDF5 file name.
+            fname: The HDF5 file name.
         """
         self.hamiltonian = hamiltonian
         self.hamiltonian.transform(method_indices_pairs)
         self.qubits = qubits        
-        self.h5fname = h5fname + ".h5"
+        self.h5fname = fname + ".h5"
         
         self.circuit_string_converter = CircuitStringConverter(qubits)
 
@@ -137,7 +137,7 @@ class GroundStateSolver:
 
         return operations
 
-    # TODO: This should be handled differently.
+    # TODO: This can be deleted and instead use the 
     def _decompose_1q_gate(self, unitary: np.ndarray, qubit: cirq.Qid) -> List[cirq.Operation]:
         """ZXZXZ decomposition of a single-qubit gate."""
         decomposer = OneQubitEulerDecomposer("U3")
@@ -160,9 +160,10 @@ class GroundStateSolver:
         h5file = h5py.File(self.h5fname, "r+")
         qtrl_strings = self.circuit_string_converter.convert_circuit_to_strings(self.ansatz)
 
-        for dset_name in ['gs/energy', 'gs/ansatz']:
-            if dset_name in h5file:
-                del h5file[dset_name]
+        # for dset_name in ['gs/energy', 'gs/ansatz']:
+        #     if dset_name in h5file:
+        #         print(f"Deleting {dset_name}")
+        #         del h5file[dset_name]
         
         h5file['gs/energy'] = self.energy
         h5file['gs/ansatz'] = json.dumps(qtrl_strings)

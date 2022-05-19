@@ -20,17 +20,19 @@ class CircuitStringConverter:
         
         Args:
             qubits: The qubits in the circuit.
-            offset: The index offset on the Berkeley device. Default to 4.
+            offset: The index offset on the Berkeley device. Defaults to 4.
         """
         self.qubits = qubits
         self.offset = offset
 
     def _qstring_to_qubits(self, qstring: str) -> List[cirq.Qid]:
+        """Converts Qtrl qubit string to Cirq qubits."""
         inds = re.findall("(\d)", qstring)
         qubits = [self.qubits[int(x) - self.offset] for x in inds]
         return qubits
 
     def _qubits_to_qstring(self, qubits: Sequence[cirq.Qid]) -> str:
+        """Converts Cirq qubits to Qtrl qubit string."""
         if len(qubits) == 1:
             qstring = "Q" + str(qubits[0].x + self.offset)
         elif len(qubits) == 2:
@@ -44,6 +46,7 @@ class CircuitStringConverter:
         return qstring
 
     def _gstring_to_gate(self, gstring: str) -> cirq.Gate:
+        """Converts Qtrl gate string to Cirq gates."""
         if re.findall("\d+", gstring) == []:  # No parameter, multi-qubit gate
             if gstring == "CZ":
                 gate = cirq.CZ
@@ -56,7 +59,7 @@ class CircuitStringConverter:
             elif gstring == "SWAP":
                 gate = cirq.SWAP
             else:
-                raise NotImplementedError(f"Parameter-free gate can only be CZ, CS, CSD or TOF. Got {gstring}")
+                raise NotImplementedError(f"Parameter-free gate can only be CZ, CS, CSD or TOF. Got {gstring}.")
         else:  # Has parameter, single-qubit gate
             gate_name = gstring[0]
             exponent = float(gstring[1:]) / 180
@@ -69,6 +72,7 @@ class CircuitStringConverter:
         return gate
 
     def _gate_to_gstring(self, gate: cirq.Gate) -> str:
+        """Converts Cirq gates to Qtrl gate string."""
         # print(f'{gate = }')
         if isinstance(gate, (cirq.XPowGate, cirq.ZPowGate)):
             gname = gate.__class__.__name__[0]
@@ -92,14 +96,15 @@ class CircuitStringConverter:
         else:
             raise NotImplementedError(
                 # "The only gates supported are XPowGate, ZPowGate, CZPowGate and C0C0iXGate."
-                f"Conversion of {str(gate)} to qtrl strings is not supported."
+                f"Conversion of {str(gate)} to Qtrl strings is not supported."
             )
         return gstring
 
     def convert_strings_to_circuit(self, qtrl_strings: List[List[str]]) -> cirq.Circuit:
         """Converts Qtrl strings to a Cirq circuit.
 
-        Example: ::
+        The Qtrl strings are saved in HDF5 files. To convert the Qtrl strings saved in ``lih_3A.h5`` to
+        a Cirq circuit, we need to ::
 
             import sys
             sys.path.append('path/to/fd_greens')
@@ -147,13 +152,13 @@ class CircuitStringConverter:
         return circuit
 
     def convert_circuit_to_strings(self, circuit: cirq.Circuit) -> List[List[str]]:
-        """Converts a Cirq circuit to qtrl strings.
+        """Converts a Cirq circuit to Qtrl strings.
         
         Args:
             circuit: A Cirq circuit.
             
         Returns:
-            qtrl_strings: The qtrl strings corresponding to the Cirq circuit.
+            qtrl_strings: The Qtrl strings corresponding to the Cirq circuit.
         """
         qtrl_strings = []
 
@@ -169,8 +174,6 @@ class CircuitStringConverter:
 
                 gstring = self._gate_to_gstring(gate)
                 qstring = self._qubits_to_qstring(qubits)
-                # print(f'{gate = }')
-                # print(f'{gstr = }')
 
                 if len(qubits) == 1:
                     qtrl_string = qstring + "/" + gstring

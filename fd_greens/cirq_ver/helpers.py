@@ -13,36 +13,61 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
-def initialize_hdf5(fname: str = 'lih', mode: str = 'greens') -> None:
-    """Creates an HDF5 file with group names if the file or group names do not exist.
+def initialize_hdf5(
+    fname: str = 'lih',
+    mode: str = 'greens',
+    spin: str = '',
+    n_orbitals: int = 2,
+    overwrite: bool = True
+) -> None:
+    """Initializes an HDF5 file.
     
     Args:
         fname: The HDF5 file name.
         mode: Calculation mode. Either ``'greens'`` or ``'resp'``.
+        spin: Spin of the second-quantized operators.
+        n_orbitals: Number of orbitals. Defaults to 2.
+        overwrite: Whether to overwrite groups if they are found in the HDF5 file.
     """
+    assert mode in ['greens', 'resp']
+    if mode == 'greens':
+        assert spin in ['u', 'd']
+    else:
+        assert spin == ''
+    
     h5fname = fname + '.h5'
     if os.path.exists(h5fname):
         h5file = h5py.File(h5fname, 'r+')
     else:
         h5file = h5py.File(h5fname, 'w')
 
-    group_names = ['gs', 'es', 'amp']
     if mode == 'greens':
-        group_names += ['circ0u', 'circ1u', 'circ01u', 'circ0d', 'circ1d', 'circ01d']
+        orbital_labels = [str(i) for i in range(n_orbitals)]
     elif mode == 'resp':
-        group_names = ['circ0u', 'circ1u', 'circ0d', 'circ1d',
-                       'circ0u0d', 'circ0u1u', 'circ0u1d', 'circ0d1u', 'circ0d1d', 'circ1u1d']
-        
+        orbital_labels = list(product(range(n_orbitals), ['u', 'd']))
+        orbital_labels = [f'{x[0]}{x[1]}' for x in orbital_labels]
+
+    group_names = ['gs', 'es', 'amp']
+    for i in range(len(orbital_labels)):
+        group_names.append(f'circ{orbital_labels[i]}{spin}')
+        for j in range(i + 1, len(orbital_labels)):
+            group_names.append(f'circ{orbital_labels[i]}{orbital_labels[j]}{spin}')
+
     for group_name in group_names:
-        if group_name not in h5file.keys():
+        if group_name in h5file.keys():
+            if overwrite:
+                del h5file[group_name]
+                h5file.create_group(group_name)
+        else:
             h5file.create_group(group_name)
+    
     h5file.close()
 
 def plot_spectral_function(
     h5fnames: Sequence[str],
     suffixes: Sequence[str],
     labels: Sequence[str] = None,
-    annotations=Optional[Sequence[dict]],
+    annotations: Optional[Sequence[dict]] = None,
     linestyles: Optional[Sequence[dict]] = None,
     figname: str = "A",
     text: Optional[str] = None,

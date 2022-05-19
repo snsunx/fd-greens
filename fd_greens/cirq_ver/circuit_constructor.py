@@ -28,6 +28,7 @@ class CircuitConstructor:
     def _get_controlled_gate_operations(
         self, dense_pauli_string: cirq.DensePauliString, control_states: Sequence[int] = [1]
     ) -> List[cirq.Operation]:
+        """Returns the controlled gate operations corresponding to a Pauli string."""
         assert set(control_states).issubset({0, 1})  # Control states must be 0 or 1
         coeffient = dense_pauli_string.coefficient
         pauli_mask = dense_pauli_string.pauli_mask
@@ -210,7 +211,7 @@ class CircuitConstructor:
         tomography_labels = ["".join(x) for x in product("xyz", repeat=len(tomographed_qubits))]
         tomography_circuits = dict()
 
-        # TODO: Take swap gates into account.
+        # TODO: Take swap gates at the end of the circuit into account.
         for label in tomography_labels:
             tomography_circuit = circuit.copy()
             for q, s in zip(tomographed_qubits, label):

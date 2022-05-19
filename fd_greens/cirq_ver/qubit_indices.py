@@ -73,31 +73,32 @@ class QubitIndices:
         """Returns a ``QubitIndices`` object of the ancilla qubit indices."""
         return self.__class__([[]], ancilla_indices=self.ancilla_indices)
 
-    def cnot(self, control: int, target: int) -> None:
+    def _cnot(self, control: int, target: int) -> None:
         """Applies a CNOT transformation to qubit indices."""
         # print(f"{self.system_indices = }")
         # print(f"{control = }, {target = }")
         for qubit_index in self.system_indices:
             qubit_index[target] = (qubit_index[control] + qubit_index[target]) % 2
 
-    def swap(self, index1: int, index2: int) -> None:
+    def _swap(self, index1: int, index2: int) -> None:
         """Applies a SWAP transformation to qubit indices."""
         for qubit_index in self.system_indices:
             qubit_index[index2], qubit_index[index1] = qubit_index[index1], qubit_index[index2]
 
-    def taper(self, *tapered_indices: Iterable[int]) -> None:
+    def _taper(self, *tapered_indices: Iterable[int]) -> None:
         """Tapers off certain qubit indices."""
         for i, qubit_index in enumerate(self.system_indices):
             self.system_indices[i] = [q for j, q in enumerate(qubit_index) if j not in tapered_indices]
 
     def transform(self, method_indices_pairs: Iterable[Tuple[str, Sequence[int]]]) -> None:
         """Transforms a ``QubitIndices`` object."""
-        method_dict = {"cnot": self.cnot, "swap": self.swap, "taper": self.taper}
+        method_dict = {"cnot": self._cnot, "swap": self._swap, "taper": self._taper}
         for method_key, indices in method_indices_pairs:
             method_dict[method_key](*indices)
         self._build()
 
     def _get_indices(n_qubits: int, states: str, spin: Optional[str] = None) -> List[List[int]]:
+        """Returns the indices of given states and spin."""
         assert states in ['e', 'h', 's', 't']
 
         up_orbitals = range(0, n_qubits, 2)
