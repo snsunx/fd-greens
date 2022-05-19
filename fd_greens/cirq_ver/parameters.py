@@ -4,6 +4,7 @@ import numpy as np
 
 method_indices_pairs = [("cnot", (2, 0)), ("cnot", (3, 1)), ("swap", (2, 3)), ("taper", (0, 1))]
 
+# TODO: This should be moved to another place.
 # Basis matrix for tomography
 basis_matrix = []
 bases = list(product("xyz", "xyz", "01", "01"))

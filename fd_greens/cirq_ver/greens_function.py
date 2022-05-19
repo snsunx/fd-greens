@@ -46,17 +46,19 @@ class GreensFunction:
         # Load energies and state vectors from HDF5 file.
         with h5py.File(h5fname + ".h5", "r") as h5file:
             self.energies = {"gs": h5file["gs/energy"][()], 
-                            "e": h5file["es/energies_e"][:], "h": h5file["es/energies_h"][:]}
-            self.state_vectors = {"e": h5file["es/states_e"][:], "h": h5file["es/states_h"][:]}
+                             "e": h5file["es/energies_e"][:],
+                             "h": h5file["es/energies_h"][:]}
+            self.state_vectors = {"e": h5file["es/states_e"][:], 
+                                  "h": h5file["es/states_h"][:]}
 
         # Initialize array quantities B, D and G.
-        self.n_states = {"e": self.state_vectors["e"].shape[1], "h": self.state_vectors["h"].shape[1]}
+        self.n_states = {subscript: self.state_vectors[subscript].shape[1] for subscript in ['e', 'h']}
         self.n_orbitals = len(self.hamiltonian.active_indices)
         self.n_system_qubits = 2 * self.n_orbitals - len(dict(method_indices_pairs)['taper'])
         # self.qubit_indices_dict = get_qubit_indices_dict(2 * self.n_orbitals, spin, method_indices_pairs)
 
         self.qubit_indices_dict = QubitIndices.get_eh_qubit_indices_dict(
-            2 * len(self.hamiltonian.active_indices), spin, method_indices_pairs)
+            2 * self.n_orbitals, spin, method_indices_pairs)
         self.B = {subscript: np.zeros((self.n_orbitals, self.n_orbitals, self.n_states[subscript]), dtype=complex)
                   for subscript in ["e", "h"]}
         self.D = {subscript: np.zeros((self.n_orbitals, self.n_orbitals, self.n_states[subscript[0]]), dtype=complex)
@@ -80,7 +82,8 @@ class GreensFunction:
                 # print(f'{state_vector = }')
                 for subscript in ["e", "h"]:
                     # XXX: I don't think the ::-1 is correct, but it matches the qiskit implementation.
-                    state_vector_subscript = self.qubit_indices_dict[subscript](state_vector)
+                    qubit_indices_subscript = self.qubit_indices_dict[subscript]
+                    state_vector_subscript = qubit_indices_subscript(state_vector)
 
                     # Obtain the B matrix elements by computing the overlaps.
                     self.B[subscript][m, m] = np.abs(
@@ -89,14 +92,14 @@ class GreensFunction:
                         print(f"B[{subscript}][{m}, {m}] = {self.B[subscript][m, m]}")
 
             elif self.method == "tomo":
+                tomography_labels = ["".join(x) for x in product("xyz", repeat=2)]
                 for subscript in ["e", "h"]:
                     # Stack counts_arr over all tomography labels together. The procedure is to
                     # first extract the raw counts_arr, slice the counts array to the specific
                     # label, and then stack the counts_arr_label to counts_arr_key.
-                    tomography_labels = ["".join(x) for x in product("xyz", repeat=2)]
                     qubit_indices_subscript = self.qubit_indices_dict[subscript]
-
                     array_subscript = []
+                    
                     for tomography_label in tomography_labels:
                         array = h5file[f"{circuit_label}/{tomography_label}"].attrs[f"counts{self.suffix}"]
                         array = reverse_qubit_order(array) # XXX: I don't think qubit order should be reversed.
@@ -121,6 +124,7 @@ class GreensFunction:
                         (self.state_vectors[subscript][:, i].conj() @ density_matrix
                             @ self.state_vectors[subscript][:, i]).real 
                             for i in range(self.n_states[subscript])]
+                    
                     if self.verbose:
                         print(f"B[{subscript}][{m}, {m}] = {self.B[subscript][m, m]}")
 
@@ -136,8 +140,10 @@ class GreensFunction:
                 if self.method == "exact":
                     state_vector = h5file[f'{circuit_label}/transpiled'].attrs[f"psi{self.suffix}"]
                     state_vector = reverse_qubit_order(state_vector)
-                    # XXX: Able to match Qiskit version, but don't think this is correct.
+                    # XXX: Able to match Qiskit version, but don't think should reverse qubit order.
+
                     for subscript in ["ep", "em", "hp", "hm"]:
+                        state_vectors_exact = self.state_vectors[subscript[0]]
                         state_vector_subscript = self.qubit_indices_dict[subscript](state_vector)
 
                         # Obtain the D matrix elements by computing the overlaps.

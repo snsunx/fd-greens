@@ -5,199 +5,164 @@ Response Function (:mod:`fd_greens.response_function`)
 """
 
 import os
+from itertools import product
 from typing import Sequence
 
 import h5py
 import numpy as np
 
-from fd_greens.cirq_ver.molecular_hamiltonian import MolecularHamiltonian
+from fd_greens.cirq_ver.utilities import reverse_qubit_order
+
+from .molecular_hamiltonian import MolecularHamiltonian
+from .qubit_indices import QubitIndices
+from .parameters import method_indices_pairs, basis_matrix
 
 
 class ResponseFunction:
-    """A class to calculate frequency-domain charge-charge response function."""
+    """Frequency-domain charge-charge response function."""
 
     def __init__(
         self,
         hamiltonian: MolecularHamiltonian,
         h5fname: str = 'lih',
         suffix: str = '',
-        method: str = 'exact') -> None:
-        """Initializes a ResponseFunction object.
+        method: str = 'exact',
+        verbose: bool = True
+    ) -> None:
+        """Initializes a ``ResponseFunction`` object.
         
         Args:
+            hamiltonian: The molecular Hamiltonian.
             h5fname: The HDF5 file name.
             suffix: The suffix for a specific experimental run.
+            method: The method for extracting transition amplitudes.
+            verbose: Whether to print out observable values.
         """
-        
-        self.datfname = h5fname + suffix
-        h5file = h5py.File(h5fname + ".h5", "r")
-        self.energy_gs = h5file["gs/energy"]
-        self.energies_s = h5file["es/energies_s"]
-        # self.energies_t = h5file['es/energies_t']
-        self.N = h5file[f"amp/N{suffix}"]
+        self.hamiltonian = hamiltonian
+        self.h5fname = h5fname + '.h5'
+        self.suffix = suffix
+        self.method = method
+        self.verbose = verbose
 
-    def _initialize(self) -> None:
-        """Initializes physical quantity attributes."""
-        h5file = h5py.File(self.h5fname, "r+")
+        with h5py.File(self.h5fname, 'r') as h5file:
+            self.energies = {'gs': h5file['gs/energy'][()],
+                             'n': h5file['es/energies_s'][:]}
+                             # 't': h5file['es/energies_t'][:]}
 
-        # Occupied and active orbital indices.
-        self.occ_inds = self.h.occ_inds
-        self.act_inds = self.h.act_inds
+            self.state_vectors = {'n': h5file['es/states_s'][:]}
+                                  # 't': h5file['es/states_t'][:]}
 
-        self.qinds_sys = transform_4q_indices(singlet_inds)
+        # self.n_states = {'s': self.state_vectors['s'].shape[1], 't': self.state_vectors['t'].shape[1]}
+        self.n_states = {'n': self.state_vectors['n'].shape[1]}
+        self.n_orbitals = len(hamiltonian.active_indices)
+        self.orbital_labels = list(product(range(self.n_orbitals), ['u', 'd']))
+        self.n_system_qubits = 2 * self.n_orbitals - len(dict(method_indices_pairs)['taper'])
 
-        # self.keys_diag = ['n', 'n_']
-        # self.qinds_anc_diag = [[1], [0]]
-        self.keys_diag = ["n"]
-        self.qinds_anc_diag = [[1]]
-        self.qinds_tot_diag = dict()
-        for key, qind in zip(self.keys_diag, self.qinds_anc_diag):
-            self.qinds_tot_diag[key] = self.qinds_sys.insert_ancilla(qind)
+        self.qubit_indices_dict = QubitIndices.get_excited_qubit_indices_dict(
+            2 * self.n_orbitals, method_indices_pairs)
 
-        # self.keys_off_diag = ['np', 'nm', 'n_p', 'n_m']
-        # self.qinds_anc_off_diag = [[1, 0], [1, 1], [0, 0], [0, 1]]
-        self.keys_off_diag = ["np", "nm"]
-        self.qinds_anc_off_diag = [[1, 0], [1, 1]]
-        self.qinds_tot_off_diag = dict()
-        for key, qind in zip(self.keys_off_diag, self.qinds_anc_off_diag):
-            self.qinds_tot_off_diag[key] = self.qinds_sys.insert_ancilla(qind)
+        self.N = {subscript: np.zeros((2 * self.n_orbitals, 2 * self.n_orbitals, self.n_states[subscript]),
+                    dtype=complex) for subscript in ['n']}
+        self.T = {subscript: np.zeros((2 * self.n_orbitals, 2 * self.n_orbitals, self.n_states[subscript[0]]), 
+                    dtype=complex) for subscript in ['np', 'nm']}
 
-        # Number of spatial orbitals and (N+/-1)-electron states.
-        self.n_elec = self.h.molecule.n_electrons
-        self.ansatz = QuantumCircuit.from_qasm_str(h5file["gs/ansatz"][()].decode())
-        self.energies = h5file["es/energies_s"]
-        self.states = h5file["es/states_s"][:]
-        self.n_states = len(self.energies)
-        self.n_orb = 2  # XXX: Hardcoded
-        # self.n_occ = self.n_elec // 2 - len(self.occ_inds)
-        # self.n_vir = self.n_orb - self.n_occ
+        self._process_diagonal()
+        self._process_off_diagonal()
 
-        # Transition amplitudes arrays. Keys of N are 'n' and 'n_'.
-        # Keys of T are 'np', 'nm', 'n_p', 'n_m'.
-        self.N = defaultdict(
-            lambda: np.zeros(
-                (2 * self.n_orb, 2 * self.n_orb, self.n_states), dtype=complex
-            )
-        )
-        self.T = defaultdict(
-            lambda: np.zeros(
-                (2 * self.n_orb, 2 * self.n_orb, self.n_states), dtype=complex
-            )
-        )
-
-        # Create Pauli dictionaries for operators after symmetry transformation.
-        charge_ops = ChargeOperators(self.n_elec)
-        charge_ops.transform(partial(transform_4q_pauli, init_state=[1, 1]))
-        self.pauli_dict = charge_ops.get_pauli_dict()
-
-        h5file.close()
-
-    def process_diagonal(self) -> None:
+    def _process_diagonal(self) -> None:
         """Post-processes diagonal transition amplitudes circuits."""
-        h5file = h5py.File(self.h5fname, "r+")
-        # for m in range(self.n_orb): # 0, 1
-        #     for s in ['u', 'd']:
-        for _ in [1]:
-            for i in range(4):  # 4 is hardcoded
-                # ms = 2 * m + (s == 'd')
-                m, s = self.orb_labels[i]
-                if self.method == "exact":
-                    psi = h5file[f"circ{m}{s}/transpiled"].attrs[f"psi{self.suffix}"]
-                    for key in self.keys_diag:
-                        psi_key = self.qinds_tot_diag[key](psi)
-                        self.N[key][i, i] = np.abs(self.states.conj().T @ psi_key)
-                        print(f"N[{key}][{i}, {i}] = {self.N[key][i, i]}")
-                else:  # Tomography
-                    for key, qind in zip(self.keys_diag, self.qinds_anc_diag):
-                        # Stack counts_arr over all tomography labels together.
-                        counts_arr_key = np.array([])
-                        for label in self.tomo_labels:
-                            counts_arr = h5file[f"circ{m}{s}/{label}"].attrs[
-                                f"counts{self.suffix}"
-                            ]
-                            start = int("".join([str(k) for k in qind])[::-1], 2)
-                            counts_arr_label = counts_arr[
-                                start::2
-                            ]  # 2 is because 2 ** 1
-                            counts_arr_label = counts_arr_label / np.sum(counts_arr)
-                            counts_arr_key = np.hstack(
-                                (counts_arr_key, counts_arr_label)
-                            )
+        h5file = h5py.File(self.h5fname, 'r+')
+        for i in range(2 * self.n_orbitals):
+            m, s = self.orbital_labels[i]
+            circuit_label = f'circ{m}{s}'
 
-                        # Obtain the density matrix from tomography.
-                        rho = np.linalg.lstsq(basis_matrix, counts_arr_key)[0]
-                        rho = rho.reshape(4, 4, order="F")
-                        rho = self.qinds_sys(rho)
+            for subscript in ['n']:
+                qubit_indices = self.qubit_indices_dict[subscript]
+                state_vectors_exact = self.state_vectors[subscript]
 
-                        self.N[key][i, i] = [
-                            get_overlap(self.states[:, k], rho) for k in range(4)
-                        ]
-                        # XXX: 4 is hardcoded
-                        print(f"N[{key}][{i}, {i}] = {self.N[key][i, i]}")
+                if self.method == 'exact':
+                    state_vector = h5file[f'{circuit_label}/transpiled'].attrs[f'psi{self.suffix}']
+                    state_vector = reverse_qubit_order(state_vector)
+                    state_vector = qubit_indices(state_vector)
+
+                    self.N[subscript][i, i] = np.abs(state_vectors_exact.conj().T @ state_vector) ** 2
+
+                elif self.method == 'tomo':
+                    tomography_labels = [''.join(x) for x in product('xyz', repeat=2)]
+
+                    array = []
+                    for tomography_label in tomography_labels:
+                        array_all = h5file[f"{circuit_label}/{tomography_label}"].attrs[f"counts{self.suffix}"]
+                        array_all = reverse_qubit_order(array_all) # XXX
+                        start_index = int(qubit_indices.ancilla.str[0], 2)
+                        array_label =  array_all[start_index :: 2]  / np.sum(array_all)
+                        array += list(array_label)
+                    
+                    density_matrix = np.linalg.lstsq(basis_matrix, array)[0]
+                    density_matrix = density_matrix(2 ** self.n_system_qubits, 2 ** self.n_system_qubits, order='F')
+                    density_matrix = qubit_indices.system(density_matrix)
+
+                    self.N[subscript][i, i] = [
+                        (state_vectors_exact[:, j].conj() @ density_matrix @ state_vectors_exact[:, j]).real
+                        for j in range(self.n_states[subscript])]
+                
+                if self.verbose:
+                    print(f'N[{subscript}][{i}, {i}] = {self.N[subscript][i, i]}')
 
         h5file.close()
 
-    def process_off_diagonal(self) -> None:
+    def _process_off_diagonal(self) -> None:
         """Post-processes off-diagonal transition amplitude circuits."""
         h5file = h5py.File(self.h5fname, "r+")
 
-        # for m in [0, 1]:
-        #     for s, s_ in [('u', 'd'), ('d', 'u')]:
-        #         ms = 2 * m + (s == 'd')
-        #         ms_ = 2 * m + (s_ == 'd')
-        for i in range(4):
-            m, s = self.orb_labels[i]
-            for j in range(i + 1, 4):
-                m_, s_ = self.orb_labels[j]
-                if self.method == "exact":
-                    psi = h5file[f"circ{m}{s}{m_}{s_}/transpiled"].attrs[
-                        f"psi{self.suffix}"
-                    ]
-                    for key in self.keys_off_diag:
-                        psi_key = self.qinds_tot_off_diag[key](psi)
-                        self.T[key][i, j] = np.abs(self.states.conj().T @ psi_key)
-                        print(f"T[{key}][{i}, {j}] = {self.T[key][i, j]}")
-                else:  # Tomography
-                    for key, qind in zip(self.keys_off_diag, self.qinds_anc_off_diag):
-                        counts_arr_key = np.array([])
-                        for label in self.tomo_labels:
-                            counts_arr = h5file[f"circ{m}{s}{m_}{s_}/{label}"].attrs[
-                                f"counts{self.suffix}"
-                            ]
-                            start = int("".join([str(k) for k in qind])[::-1], 2)
-                            counts_arr_label = counts_arr[
-                                start::4
-                            ]  # 4 is because 2 ** 2
-                            counts_arr_label = counts_arr_label / np.sum(counts_arr)
-                            counts_arr_key = np.hstack(
-                                [counts_arr_key, counts_arr_label]
-                            )
+        for i in range(2 * self.n_orbitals):
+            m, s = self.orbital_labels[i]
+            for j in range(i + 1, 2 * self.n_orbitals):
+                m_, s_ = self.orbital_labels[j]
+                circuit_label = f'circ{m}{s}{m_}{s_}'
 
-                        rho = np.linalg.lstsq(basis_matrix, counts_arr_key)[0]
-                        rho = rho.reshape(4, 4, order="F")
-                        rho = self.qinds_sys(rho)
-                        self.T[key][i, j] = [
-                            get_overlap(self.states[:, k], rho) for k in range(4)
-                        ]  # 4 is hardcoded
-                        print(f"T[{key}][{i}, {j}] = {self.T[key][i, j]}")
+                for subscript in ['np', 'nm']:
+                    qubit_indices = self.qubit_indices_dict[subscript]
+                    state_vectors_exact = self.state_vectors[subscript[0]]
+
+                    if self.method == 'exact':
+                        state_vector = h5file[f'{circuit_label}/transpiled'].attrs[f'psi{self.suffix}']
+                        state_vector = reverse_qubit_order(state_vector) # XXX
+                        state_vector = qubit_indices(state_vector)
+
+                        self.T[subscript][i, j] = np.abs(state_vectors_exact.conj().T @ state_vector) ** 2
+
+                    elif self.method == 'tomo':
+                        tomography_labels = [''.join(x) for x in product('xyz', repeat=2)]
+
+                        array = []
+                        for tomography_label in tomography_labels:
+                            array_all = h5file[f"{circuit_label}/{tomography_label}"].attrs[f"counts{self.suffix}"]
+                            array_all = reverse_qubit_order(array_all) # XXX
+                            start_index = int(qubit_indices.ancilla.str[0], 2)
+                            array_label =  array_all[start_index :: 2 ** 2]  / np.sum(array_all)
+                            array += list(array_label)
+
+                        density_matrix = np.linalg.lstsq(basis_matrix, array)[0]
+                        density_matrix = density_matrix.reshape(
+                            2 ** self.n_system_qubits, 2 ** self.n_system_qubits, order='F')
+                        density_matrix = qubit_indices.system(density_matrix)
+
+                        self.T[subscript][i, j] = [
+                            (state_vectors_exact[:, k].conj() @ density_matrix @ state_vectors_exact[:, k]).real
+                            for k in range(self.n_states[subscript])]
+
+                    if self.verbose:
+                        print(f'T[{subscript}][{i}, {j}] = {self.T[subscript][i, j]}')
 
         # Unpack T values to N values based on Eq. (18) of Kosugi and Matsushita 2021.
-        for key in self.keys_diag:
-            # for ms, ms_ in [(0, 1), (2, 3)]:
-            for i in range(4):
-                for j in range(i + 1, 4):
-                    self.N[key][i, j] = self.N[key][j, i] = np.exp(-1j * np.pi / 4) * (
-                        self.T[key + "p"][i, j] - self.T[key + "m"][i, j]
-                    ) + np.exp(1j * np.pi / 4) * (
-                        self.T[key + "p"][j, i] - self.T[key + "m"][j, i]
-                    )
-                    print(f"N[{key}][{i}, {j}] =", self.N[key][i, j])
-                # self.N[key][2, 3] = self.N[key][2, 3] = \
-                #     np.exp(-1j * np.pi/4) * (self.T[key+'p'][2, 3] - self.T[key+'m'][2, 3]) \
-                #     + np.exp(1j * np.pi/4) * (self.T[key+'p'][3, 2] - self.T[key+'m'][3, 2])
-                # print(f'N[{key}][2, 3] =', self.N[key][2, 3])
-
-            # write_hdf5(h5file, 'amp', f'N{self.suffix}', self.N[key])
+        for subscript in ['n']:
+            for i in range(2 * self.n_orbitals):
+                for j in range(i + 1, self.n_orbitals):
+                    self.N[subscript][i, j] = self.N[subscript][j, i] = \
+                        np.exp(-1j * np.pi / 4) * (self.T[subscript + "p"][i, j] - self.T[subscript + "m"][i, j]) \
+                        + np.exp(1j * np.pi / 4) * (self.T[subscript + "p"][j, i] - self.T[subscript + "m"][j, i])
+                    print(f"N[{subscript}][{i}, {j}] =", self.N[subscript][i, j])
 
         h5file.close()
 
@@ -223,11 +188,11 @@ class ResponseFunction:
                 for lam in [1, 2, 3]:  # [1, 2, 3] is hardcoded
                     chi = np.sum(
                         self.N[2 * i : 2 * (i + 1), 2 * j : 2 * (j + 1), lam]
-                    ) / (omega + 1j * eta - (self.energies_s[lam] - self.energy_gs))
+                    ) / (omega + 1j * eta - (self.energies['s'][lam] - self.energies['gs']))
                     chi += np.sum(
                         self.N[2 * i : 2 * (i + 1), 2 * j : 2 * (j + 1), lam]
                     ).conjugate() / (
-                        -omega - 1j * eta - (self.energies_s[lam] - self.energy_gs)
+                        -omega - 1j * eta - (self.energies['s'][lam] - self.energies['gs'])
                     )
                 chis.append(chi)
             chis = np.array(chis)

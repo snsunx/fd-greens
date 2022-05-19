@@ -69,9 +69,6 @@ class ExcitedAmplitudesSolver:
     def _run_diagonal_circuits(self) -> None:
         """Runs diagonal transition amplitude circuits."""
         h5file = h5py.File(self.h5fname, "r+")
-
-        # for m in range(self.n_orb): # 0, 1
-        #     for s in ['u', 'd']:
         for i in range(2 * self.n_orbitals):
             m, s = self.orbital_labels[i]
             circuit_label = f'circ{m}{s}'
@@ -115,8 +112,6 @@ class ExcitedAmplitudesSolver:
     def _run_off_diagonal_circuits(self) -> None:
         """Constructs off-diagonal excited-state transition amplitude circuits."""
         h5file = h5py.File(self.h5fname, "r+")
-        # for m in range(self.n_orb): # 0, 1
-        #     for s, s_ in [('u', 'd'), ('d', 'u')]:
         for i in range(2 * self.n_orbitals):
             m, s = self.orbital_labels[i]
             for j in range(i + 1, 2 * self.n_orbitals):
