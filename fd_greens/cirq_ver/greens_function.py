@@ -75,59 +75,41 @@ class GreensFunction:
 
         for m in range(self.n_orbitals):
             circuit_label = f"circ{m}{self.spin}"
-            if self.method == "exact":
-                state_vector = h5file[f'{circuit_label}/transpiled'].attrs[f'psi{self.suffix}']
-                state_vector = reverse_qubit_order(state_vector)
-                # XXX: Able to match Qiskit version, but don't think this is correct.
-                # print(f'{state_vector = }')
-                for subscript in ["e", "h"]:
-                    # XXX: I don't think the ::-1 is correct, but it matches the qiskit implementation.
-                    qubit_indices_subscript = self.qubit_indices_dict[subscript]
-                    state_vector_subscript = qubit_indices_subscript(state_vector)
 
-                    # Obtain the B matrix elements by computing the overlaps.
-                    self.B[subscript][m, m] = np.abs(
-                        self.state_vectors[subscript].conj().T @ state_vector_subscript) ** 2
-                    if self.verbose:
-                        print(f"B[{subscript}][{m}, {m}] = {self.B[subscript][m, m]}")
+            for subscript in ['e', 'h']:
+                qubit_indices = self.qubit_indices_dict[subscript]
+                state_vectors_exact = self.state_vectors[subscript]
 
-            elif self.method == "tomo":
-                tomography_labels = ["".join(x) for x in product("xyz", repeat=2)]
-                for subscript in ["e", "h"]:
-                    # Stack counts_arr over all tomography labels together. The procedure is to
-                    # first extract the raw counts_arr, slice the counts array to the specific
-                    # label, and then stack the counts_arr_label to counts_arr_key.
-                    qubit_indices_subscript = self.qubit_indices_dict[subscript]
-                    array_subscript = []
-                    
+                if self.method == 'exact':
+                    state_vector = h5file[f'{circuit_label}/transpiled'].attrs[f'psi{self.suffix}']
+                    state_vector = reverse_qubit_order(state_vector) # XXX
+                    state_vector = qubit_indices(state_vector)
+
+                    self.B[subscript][m, m] = np.abs(state_vectors_exact.conj().T @ state_vector) ** 2
+
+                elif self.method == 'tomo':
+                    tomography_labels = [''.join(x) for x in product('xyz', repeat=2)]
+
+                    array = []
                     for tomography_label in tomography_labels:
                         array = h5file[f"{circuit_label}/{tomography_label}"].attrs[f"counts{self.suffix}"]
-                        array = reverse_qubit_order(array) # XXX: I don't think qubit order should be reversed.
-                        #start_index = int(''.join([str(i) for i in qubit_indices_subscript.ancilla])[::-1], 2)
-                        start_index = int(qubit_indices_subscript.ancilla.str[0], 2)
+                        array = reverse_qubit_order(array) # XXX
+                        start_index = int(qubit_indices.ancilla.str[0], 2)
                         array_label = array[start_index :: 2] / np.sum(array)
-                        # print(f'{len(array_label) = }')
-                        array_subscript += list(array_label)
-                    # print(f'{len(array_subscript) = }')
-                    # print(f'{basis_matrix.shape = }')
+                        array += list(array_label)
 
-                    # Obtain the density matrix from tomography. Slice the density matrix
-                    # based on whether we are considering 'e' or 'h' on the system qubits.
-                    density_matrix = np.linalg.lstsq(basis_matrix, array_subscript)[0]
+                    density_matrix = np.linalg.lstsq(basis_matrix, array)[0]
                     density_matrix = density_matrix.reshape(
                         2 ** self.n_system_qubits, 2 ** self.n_system_qubits, order='F')
-                    density_matrix = qubit_indices_subscript.system(density_matrix)
+                    density_matrix = qubit_indices.system(density_matrix)
 
-                    # Obtain the B matrix elements by computing the overlaps between
-                    # the density matrix and the state vectors.
                     self.B[subscript][m, m] = [
-                        (self.state_vectors[subscript][:, i].conj() @ density_matrix
-                            @ self.state_vectors[subscript][:, i]).real 
-                            for i in range(self.n_states[subscript])]
-                    
-                    if self.verbose:
-                        print(f"B[{subscript}][{m}, {m}] = {self.B[subscript][m, m]}")
+                        (state_vectors_exact[:, i].conj() @ density_matrix @ state_vectors_exact[:, i]).real
+                        for i in range(self.n_states[subscript])]
 
+                if self.verbose:
+                    print(f"B[{subscript}][{m}, {m}] = {self.B[subscript][m, m]}")
+                    
         h5file.close()
 
     def _process_off_diagonal_results(self) -> None:
@@ -137,58 +119,41 @@ class GreensFunction:
         for m in range(self.n_orbitals):
             for n in range(m + 1, self.n_orbitals):
                 circuit_label = f"circ{m}{n}{self.spin}"
-                if self.method == "exact":
-                    state_vector = h5file[f'{circuit_label}/transpiled'].attrs[f"psi{self.suffix}"]
-                    state_vector = reverse_qubit_order(state_vector)
-                    # XXX: Able to match Qiskit version, but don't think should reverse qubit order.
 
-                    for subscript in ["ep", "em", "hp", "hm"]:
-                        state_vectors_exact = self.state_vectors[subscript[0]]
-                        state_vector_subscript = self.qubit_indices_dict[subscript](state_vector)
+                for subscript in ['ep', 'em', 'hp', 'hm']:
+                    qubit_indices = self.qubit_indices_dict[subscript]
+                    state_vectors_exact = self.state_vectors[subscript[0]]
 
-                        # Obtain the D matrix elements by computing the overlaps.
+                    if self.method == 'exact':
+                        state_vector = h5file[f'{circuit_label}/transpiled'].attrs[f"psi{self.suffix}"]
+                        state_vector = reverse_qubit_order(state_vector)
+                        state_vector = qubit_indices(state_vector)
+
                         self.D[subscript][m, n] = self.D[subscript][n, m] = \
-                            np.abs(self.state_vectors[subscript[0]].conj().T @ state_vector_subscript) ** 2
-                        if self.verbose:
-                            print(f"D[{subscript}][{m}, {n}] =", self.D[subscript][m, n])
+                            np.abs(state_vectors_exact.conj().T @ state_vector) ** 2
 
-                elif self.method == "tomo":
-                    for subscript in ['ep', 'em', 'hp', 'hm']:
-                        # Stack counts_arr over all tomography labels together. The procedure is to
-                        # first extract the raw counts_arr, slice the counts array to the specific
-                        # label, and then stack the counts_arr_label to counts_arr_key.
-                        tomography_labels = ["".join(x) for x in product("xyz", repeat=2)]
-                        qubit_indices_subscript = self.qubit_indices_dict[subscript]
+                    elif self.method == 'tomo':
+                        tomography_labels = [''.join(x) for x in product('xyz', repeat=2)]
 
-                        array_subscript = []
+                        array = []
                         for tomography_label in tomography_labels:
                             array = h5file[f"{circuit_label}/{tomography_label}"].attrs[f"counts{self.suffix}"]
-                            array = reverse_qubit_order(array) # XXX: I don't think qubit order should be reversed.
-                            start_index = int(qubit_indices_subscript.ancilla.str[0], 2)
+                            array = reverse_qubit_order(array) # XXX
+                            start_index = int(qubit_indices.ancilla.str[0], 2)
                             array_label = array[start_index :: 2 ** 2]  / np.sum(array)
-                            # print(f'{len(array_label) = }')
-                            # counts_arr_label = counts_arr_label / np.sum(counts_arr)
-                            array_subscript += list(array_label)
-                                            
-                                            
-                        # print(f'{len(array_subscript) = }')
-                        # print(f'{basis_matrix.shape = }')
+                            array += list(array_label)
 
-                        # Obtain the density matrix from tomography. Slice the density matrix
-                        # based on whether we are considering 'e' or 'h' on the system qubits.
-                        density_matrix = np.linalg.lstsq(basis_matrix, array_subscript)[0]
+                        density_matrix = np.linalg.lstsq(basis_matrix, array)[0]
                         density_matrix = density_matrix.reshape(
-                            2 ** self.n_system_qubits, 2 ** self.n_system_qubits, order="F")
-                        density_matrix = qubit_indices_subscript.system(density_matrix)
-
-                        # Obtain the D matrix elements by computing the overlaps between
-                        # the density matrix and the state vectors.
+                            2 ** self.n_system_qubits, 2 ** self.n_system_qubits, order='F')
+                        density_matrix = qubit_indices.system(density_matrix)
+                        
                         self.D[subscript][m, n] = self.D[subscript][n, m] = [
-                            (self.state_vectors[subscript[0]][:, i].conj() @ density_matrix
-                                @ self.state_vectors[subscript[0]][:, i]).real 
-                                for i in range(self.n_states[subscript[0]])]
-                        if self.verbose:
-                            print(f"D[{subscript}][{m}, {n}] =", self.D[subscript][m, n])
+                            (state_vectors_exact[:, i].conj() @ density_matrix @ state_vectors_exact[:, i]).real
+                            for i in range(self.n_states[subscript[0]])]
+
+                    if self.verbose:
+                        print(f"D[{subscript}][{m}, {n}] =", self.D[subscript][m, n])
 
         # Unpack D values to B values according to Eq. (18) of Kosugi and Matsushita 2020.
         for m in range(self.n_orbitals):

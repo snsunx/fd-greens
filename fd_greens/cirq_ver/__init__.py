@@ -1,4 +1,3 @@
-# Main scripts.
 from .ground_state_solver import GroundStateSolver
 from .eh_states_solver import EHStatesSolver
 from .excited_states_solver import ExcitedStatesSolver
@@ -15,8 +14,3 @@ from .circuit_string_converter import CircuitStringConverter
 
 from .utilities import *
 from .helpers import *
-
-
-# Auxiliary scripts.
-# from .ansatze import build_ansatz_gs, build_ansatz_e, build_ansatz_e
-# from .params import HARTREE_TO_EV

@@ -17,7 +17,9 @@ class QubitIndices:
     def __init__(self, system_indices: List[List[int]], ancilla_indices: List[List[int]] = [[]]) -> None:
         """Initializes a ``QubitIndices`` object. 
         
-        Example:
+        For example, if we are considering ``[0, 1]`` and ``[1, 1]`` on the system qubits, and ``[0]`` 
+        on the ancilla, we would initialize an ``QubitIndices`` object as ::
+            
             qubit_indices = QubitIndices([[0, 1], [1, 1]], [[0]])
 
         Args:
