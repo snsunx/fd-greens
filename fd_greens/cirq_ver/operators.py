@@ -14,17 +14,17 @@ class OperatorsBase:
     def __init__(self) -> None:
         pass
 
-    def cnot(self, control: int, target: int) -> None:
+    def _cnot(self, control: int, target: int) -> None:
         """Conjugates Pauli strings by a CNOT operation."""
         for i, pauli_string in enumerate(self.pauli_strings):
             self.pauli_strings[i] = pauli_string.conjugated_by(cirq.CNOT(self.qubits[control], self.qubits[target]))
 
-    def swap(self, index1: int, index2: int) -> None:
+    def _swap(self, index1: int, index2: int) -> None:
         """Conjugates Pauli strings by a SWAP operation."""
         for i, pauli_string in enumerate(self.pauli_strings):
             self.pauli_strings[i] = pauli_string.conjugated_by(cirq.SWAP(self.qubits[index1], self.qubits[index2]))
 
-    def taper(self, tapered_state, *tapered_indices: Sequence[int]) -> None:
+    def _taper(self, tapered_state: Sequence[int], *tapered_indices: Sequence[int]) -> None:
         """Tapers qubits off the first two qubits, assuming the symmetry operators are both Z."""
         for i, pauli_string in enumerate(self.pauli_strings):
             coefficient = pauli_string.coefficient
@@ -43,21 +43,22 @@ class OperatorsBase:
             self.pauli_strings[i] = cirq.DensePauliString(pauli_mask_new, coefficient=coefficient).sparse()
 
     def transform(
-        self, method_indices_pairs: Mapping[str, Sequence[int]], 
+        self, 
+        method_indices_pairs: Mapping[str, Sequence[int]], 
         tapered_state: Optional[Sequence[int]] = None
     ) -> None:
-        """Transforms Pauli strings using given method indices pairs."""
-        method_dict = {"cnot": self.cnot, "swap": self.swap, "taper": self.taper}
+        """Transforms Pauli strings with Z2 symmetries and qubit tapering."""
+        method_dict = {"cnot": self._cnot, "swap": self._swap, "taper": self._taper}
         for method_key, indices in method_indices_pairs:
             if method_key != 'taper':
                 method_dict[method_key](*indices)
             else:
                 method_dict[method_key](tapered_state, *indices)
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self.pauli_strings)
 
-    def __getitem__(self, m):
+    def __getitem__(self, m) -> cirq.DensePauliString:
         pauli_string = self.pauli_strings[m]
         # max_index = max(pauli_string._qubit_pauli_map.keys()).x
         max_index = self.n_qubits - self.n_tapered # TODO: Maybe this can be in the parent class init method.
@@ -72,7 +73,7 @@ class SecondQuantizedOperators(OperatorsBase):
         """Initializes a ``SecondQuantizedOperators`` object.
         
         Args:
-            qubits: Qubits on which the operators act.
+            qubits: Qubits on which the second quantized operators act.
             spin: The spin of the second quantized operators. Either ``'u'`` or ``'d'``.
             factor: Multiplication factor of the operators for easy gate construction.
         """
@@ -90,8 +91,8 @@ class SecondQuantizedOperators(OperatorsBase):
             self.pauli_strings.append(factor * pauli_string_x)
             self.pauli_strings.append(factor * 1j * pauli_string_y)
 
-    def transform(self, method_indices_pairs: Mapping[str, Sequence[int]]):
-        """Transforms the operators using given method indices pairs."""
+    def transform(self, method_indices_pairs: Mapping[str, Sequence[int]]) -> None:
+        """Transforms the second quantized operators with Z2 symmetries and qubit tapering."""
         tapered_state = [1] * (self.n_qubits // 2) # XXX: Is n_qubits // 2 correct?
         OperatorsBase.transform(self, method_indices_pairs, tapered_state=tapered_state)
 
@@ -102,7 +103,7 @@ class ChargeOperators(OperatorsBase):
         """Initializes a ``ChargeOperators`` object.
         
         Args:
-            qubits: Qubits on which the operators act.
+            qubits: Qubits on which the charge operators act.
         """
         self.qubits = qubits
         self.n_qubits = len(qubits)
@@ -116,7 +117,7 @@ class ChargeOperators(OperatorsBase):
             self.pauli_strings.append(pauli_string_z)
 
     def transform(self, method_indices_pairs: Mapping[str, Sequence[int]]) -> None:
-        """Transforms the operators using given method indices pairs."""
+        """Transforms the charge operators with Z2 symmetries and qubit tapering."""
         tapered_state = [1] * (self.n_qubits // 2) # XXX: Is n_qubits // 2 correct?
         self.n_tapered = len(tapered_state)
         OperatorsBase.transform(self, method_indices_pairs, tapered_state=tapered_state)

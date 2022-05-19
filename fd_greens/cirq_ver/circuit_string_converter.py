@@ -91,6 +91,7 @@ class CircuitStringConverter:
             assert isinstance(gate, C0C0iXGate) == (type(gate) is C0C0iXGate)
             gstring = "TOF"
         elif str(gate) == "SWAP":
+            # TODO: This could be raised as warnings.
             print("Warning: SWAP gate converted to Qtrl string.")
             gstring = "SWAP"
         else:

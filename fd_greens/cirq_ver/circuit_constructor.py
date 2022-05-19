@@ -108,7 +108,7 @@ class CircuitConstructor:
 
         return operations
 
-    def build_diagonal(
+    def build_diagonal_circuit(
         self, 
         dense_pauli_string_x: cirq.DensePauliString,
         dense_pauli_string_y: cirq.DensePauliString
@@ -139,9 +139,7 @@ class CircuitConstructor:
 
         return circuit
 
-    build_diagonal_circuit = build_diagonal
-
-    def build_off_diagonal(
+    def build_off_diagonal_circuit(
         self,
         dense_pauli_string_x1: cirq.DensePauliString,
         dense_pauli_string_y1: cirq.DensePauliString,
@@ -186,8 +184,6 @@ class CircuitConstructor:
         # Add Hadamard gates on the ancillas at the end.
         circuit.append([cirq.H(self.qubits[0]), cirq.H(self.qubits[1])])
         return circuit
-
-    build_off_diagonal_circuit = build_off_diagonal
 
     @staticmethod
     def build_tomography_circuits(

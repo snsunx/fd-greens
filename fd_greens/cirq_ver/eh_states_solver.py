@@ -65,11 +65,6 @@ class EHStatesSolver:
     def _save_data(self) -> None:
         """Saves (N±1)-electron energies and state vectors to HDF5 file."""
         h5file = h5py.File(self.h5fname, "r+")
-
-        # for dset_name in ['es/energies_e', 'es/energies_h', 'es/states_e', 'es/states_h']:
-        #     if dset_name in h5file:
-        #         print(f"Deleting {dset_name}")
-        #         del h5file[dset_name]
         
         h5file['es/energies_e'] = self.energies['e']
         h5file['es/energies_h'] = self.energies['h']

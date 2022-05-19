@@ -159,11 +159,6 @@ class GroundStateSolver:
         """Saves ground state energy and ansatz to hdf5 file."""
         h5file = h5py.File(self.h5fname, "r+")
         qtrl_strings = self.circuit_string_converter.convert_circuit_to_strings(self.ansatz)
-
-        # for dset_name in ['gs/energy', 'gs/ansatz']:
-        #     if dset_name in h5file:
-        #         print(f"Deleting {dset_name}")
-        #         del h5file[dset_name]
         
         h5file['gs/energy'] = self.energy
         h5file['gs/ansatz'] = json.dumps(qtrl_strings)

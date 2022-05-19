@@ -67,7 +67,8 @@
 <span class="sd">==============================================</span>
 <span class="sd">&quot;&quot;&quot;</span>
 
-<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Mapping</span><span class="p">,</span> <span class="n">Iterable</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">,</span> <span class="n">List</span>
+<span class="kn">from</span> <span class="nn">itertools</span> <span class="kn">import</span> <span class="n">combinations</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Mapping</span><span class="p">,</span> <span class="n">Iterable</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">,</span> <span class="n">List</span>
 
 <span class="kn">import</span> <span class="nn">copy</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
@@ -79,7 +80,9 @@
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">system_indices</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]],</span> <span class="n">ancilla_indices</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="p">[[]])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;Initializes a ``QubitIndices`` object. </span>
 <span class="sd">        </span>
-<span class="sd">        Example:</span>
+<span class="sd">        For example, if we are considering ``[0, 1]`` and ``[1, 1]`` on the system qubits, and ``[0]`` </span>
+<span class="sd">        on the ancilla, we would initialize an ``QubitIndices`` object as ::</span>
+<span class="sd">            </span>
 <span class="sd">            qubit_indices = QubitIndices([[0, 1], [1, 1]], [[0]])</span>
 
 <span class="sd">        Args:</span>
@@ -91,7 +94,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">_build</span><span class="p">()</span>
 
     <span class="k">def</span> <span class="nf">_build</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="c1"># Builds str, int and list forms of the qubit indices.</span>
+        <span class="sd">&quot;&quot;&quot;Builds str, int and list forms of the qubit indices.&quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">list</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="k">for</span> <span class="n">sys</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">system_indices</span><span class="p">:</span>
             <span class="k">for</span> <span class="n">anc</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">ancilla_indices</span><span class="p">:</span>
@@ -111,6 +114,7 @@
             <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;The input array must be a 1D or 2D array.&quot;</span><span class="p">)</span>
 
 <div class="viewcode-block" id="QubitIndices.copy"><a class="viewcode-back" href="../../../fd_greens.cirq_ver.qubit_indices.html#fd_greens.cirq_ver.qubit_indices.QubitIndices.copy">[docs]</a>    <span class="k">def</span> <span class="nf">copy</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;QubitIndices&quot;</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Returns a copy of itself.&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span></div>
 
     <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
@@ -133,89 +137,140 @@
         <span class="sd">&quot;&quot;&quot;Returns a ``QubitIndices`` object of the ancilla qubit indices.&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">([[]],</span> <span class="n">ancilla_indices</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">ancilla_indices</span><span class="p">)</span>
 
-<div class="viewcode-block" id="QubitIndices.cnot"><a class="viewcode-back" href="../../../fd_greens.cirq_ver.qubit_indices.html#fd_greens.cirq_ver.qubit_indices.QubitIndices.cnot">[docs]</a>    <span class="k">def</span> <span class="nf">cnot</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">control</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">target</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">_cnot</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">control</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">target</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;Applies a CNOT transformation to qubit indices.&quot;&quot;&quot;</span>
         <span class="c1"># print(f&quot;{self.system_indices = }&quot;)</span>
         <span class="c1"># print(f&quot;{control = }, {target = }&quot;)</span>
         <span class="k">for</span> <span class="n">qubit_index</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">system_indices</span><span class="p">:</span>
-            <span class="n">qubit_index</span><span class="p">[</span><span class="n">target</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">qubit_index</span><span class="p">[</span><span class="n">control</span><span class="p">]</span> <span class="o">+</span> <span class="n">qubit_index</span><span class="p">[</span><span class="n">target</span><span class="p">])</span> <span class="o">%</span> <span class="mi">2</span></div>
+            <span class="n">qubit_index</span><span class="p">[</span><span class="n">target</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">qubit_index</span><span class="p">[</span><span class="n">control</span><span class="p">]</span> <span class="o">+</span> <span class="n">qubit_index</span><span class="p">[</span><span class="n">target</span><span class="p">])</span> <span class="o">%</span> <span class="mi">2</span>
 
-<div class="viewcode-block" id="QubitIndices.swap"><a class="viewcode-back" href="../../../fd_greens.cirq_ver.qubit_indices.html#fd_greens.cirq_ver.qubit_indices.QubitIndices.swap">[docs]</a>    <span class="k">def</span> <span class="nf">swap</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">index1</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">index2</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">_swap</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">index1</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">index2</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;Applies a SWAP transformation to qubit indices.&quot;&quot;&quot;</span>
         <span class="k">for</span> <span class="n">qubit_index</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">system_indices</span><span class="p">:</span>
-            <span class="n">qubit_index</span><span class="p">[</span><span class="n">index2</span><span class="p">],</span> <span class="n">qubit_index</span><span class="p">[</span><span class="n">index1</span><span class="p">]</span> <span class="o">=</span> <span class="n">qubit_index</span><span class="p">[</span><span class="n">index1</span><span class="p">],</span> <span class="n">qubit_index</span><span class="p">[</span><span class="n">index2</span><span class="p">]</span></div>
+            <span class="n">qubit_index</span><span class="p">[</span><span class="n">index2</span><span class="p">],</span> <span class="n">qubit_index</span><span class="p">[</span><span class="n">index1</span><span class="p">]</span> <span class="o">=</span> <span class="n">qubit_index</span><span class="p">[</span><span class="n">index1</span><span class="p">],</span> <span class="n">qubit_index</span><span class="p">[</span><span class="n">index2</span><span class="p">]</span>
 
-<div class="viewcode-block" id="QubitIndices.taper"><a class="viewcode-back" href="../../../fd_greens.cirq_ver.qubit_indices.html#fd_greens.cirq_ver.qubit_indices.QubitIndices.taper">[docs]</a>    <span class="k">def</span> <span class="nf">taper</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">tapered_indices</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="nb">int</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">_taper</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">tapered_indices</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="nb">int</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;Tapers off certain qubit indices.&quot;&quot;&quot;</span>
         <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">qubit_index</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">system_indices</span><span class="p">):</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">system_indices</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">q</span> <span class="k">for</span> <span class="n">j</span><span class="p">,</span> <span class="n">q</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">qubit_index</span><span class="p">)</span> <span class="k">if</span> <span class="n">j</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">tapered_indices</span><span class="p">]</span></div>
+            <span class="bp">self</span><span class="o">.</span><span class="n">system_indices</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">q</span> <span class="k">for</span> <span class="n">j</span><span class="p">,</span> <span class="n">q</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">qubit_index</span><span class="p">)</span> <span class="k">if</span> <span class="n">j</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">tapered_indices</span><span class="p">]</span>
 
 <div class="viewcode-block" id="QubitIndices.transform"><a class="viewcode-back" href="../../../fd_greens.cirq_ver.qubit_indices.html#fd_greens.cirq_ver.qubit_indices.QubitIndices.transform">[docs]</a>    <span class="k">def</span> <span class="nf">transform</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">method_indices_pairs</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">int</span><span class="p">]]])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;Transforms a ``QubitIndices`` object.&quot;&quot;&quot;</span>
-        <span class="n">method_dict</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;cnot&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">cnot</span><span class="p">,</span> <span class="s2">&quot;swap&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">swap</span><span class="p">,</span> <span class="s2">&quot;taper&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">taper</span><span class="p">}</span>
+        <span class="n">method_dict</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;cnot&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cnot</span><span class="p">,</span> <span class="s2">&quot;swap&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_swap</span><span class="p">,</span> <span class="s2">&quot;taper&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_taper</span><span class="p">}</span>
         <span class="k">for</span> <span class="n">method_key</span><span class="p">,</span> <span class="n">indices</span> <span class="ow">in</span> <span class="n">method_indices_pairs</span><span class="p">:</span>
             <span class="n">method_dict</span><span class="p">[</span><span class="n">method_key</span><span class="p">](</span><span class="o">*</span><span class="n">indices</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_build</span><span class="p">()</span></div></div>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_build</span><span class="p">()</span></div>
 
-<span class="n">e_inds</span> <span class="o">=</span> <span class="n">h_inds</span> <span class="o">=</span> <span class="n">singlet_inds</span> <span class="o">=</span> <span class="n">triplet_inds</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="k">def</span> <span class="nf">_get_indices</span><span class="p">(</span><span class="n">n_qubits</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">states</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">spin</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]]:</span>
+        <span class="sd">&quot;&quot;&quot;Returns the indices of given states and spin.&quot;&quot;&quot;</span>
+        <span class="c1"># ``states`` should be one of &#39;e&#39; ((N+1)-electron states), &#39;h&#39; ((N-1)-electron states),</span>
+        <span class="c1"># &#39;s&#39; (N-electron singlet states), &#39;t&#39; (N-electron triplet states).</span>
+        <span class="k">assert</span> <span class="n">states</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;e&#39;</span><span class="p">,</span> <span class="s1">&#39;h&#39;</span><span class="p">,</span> <span class="s1">&#39;s&#39;</span><span class="p">,</span> <span class="s1">&#39;t&#39;</span><span class="p">]</span>
 
-<div class="viewcode-block" id="get_qubit_indices_dict"><a class="viewcode-back" href="../../../fd_greens.cirq_ver.qubit_indices.html#fd_greens.cirq_ver.qubit_indices.get_qubit_indices_dict">[docs]</a><span class="k">def</span> <span class="nf">get_qubit_indices_dict</span><span class="p">(</span>
-    <span class="n">n_qubits</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> 
-    <span class="n">spin</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> 
-    <span class="n">method_indices_pairs</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">int</span><span class="p">]]]</span> <span class="o">=</span> <span class="p">[],</span>
-    <span class="n">system_only</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">QubitIndices</span><span class="p">]:</span>
-    <span class="sd">&quot;&quot;&quot;Returns the ``QubitIndices`` dictionary of a certain number of qubits and spin.</span>
-<span class="sd">    </span>
-<span class="sd">    Args:</span>
-<span class="sd">        n_qubits: The number of qubits.</span>
-<span class="sd">        spin: The spin state of the electron-added states. Either ``&#39;u&#39;`` or ``&#39;d&#39;``.</span>
-<span class="sd">        method_indices_pairs: A dictionary of transform methods to indices.</span>
-<span class="sd">        system_only: Whether to only build system qubit indices.</span>
-<span class="sd">    </span>
-<span class="sd">    Returns:</span>
-<span class="sd">        qubit_indices_dict: A dictionary from subscripts to qubit indices.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">assert</span> <span class="n">spin</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;u&quot;</span><span class="p">,</span> <span class="s2">&quot;d&quot;</span><span class="p">]</span>
+        <span class="n">up_orbitals</span> <span class="o">=</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">n_qubits</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+        <span class="n">down_orbitals</span> <span class="o">=</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">n_qubits</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">states</span> <span class="o">==</span> <span class="s1">&#39;e&#39;</span><span class="p">:</span>
+            <span class="n">n_up_electrons</span> <span class="o">=</span> <span class="n">n_qubits</span> <span class="o">//</span> <span class="mi">4</span> <span class="o">+</span> <span class="p">(</span><span class="n">spin</span> <span class="o">==</span> <span class="s1">&#39;u&#39;</span><span class="p">)</span>
+            <span class="n">n_down_electrons</span> <span class="o">=</span> <span class="n">n_qubits</span> <span class="o">//</span> <span class="mi">4</span> <span class="o">+</span> <span class="p">(</span><span class="n">spin</span> <span class="o">==</span> <span class="s1">&#39;d&#39;</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">states</span> <span class="o">==</span> <span class="s1">&#39;h&#39;</span><span class="p">:</span>
+            <span class="n">n_up_electrons</span> <span class="o">=</span> <span class="n">n_qubits</span> <span class="o">//</span> <span class="mi">4</span> <span class="o">-</span> <span class="mi">1</span> <span class="o">+</span> <span class="p">(</span><span class="n">spin</span> <span class="o">==</span> <span class="s1">&#39;d&#39;</span><span class="p">)</span>
+            <span class="n">n_down_electrons</span> <span class="o">=</span> <span class="n">n_qubits</span> <span class="o">//</span> <span class="mi">4</span> <span class="o">-</span> <span class="mi">1</span> <span class="o">+</span> <span class="p">(</span><span class="n">spin</span> <span class="o">==</span> <span class="s1">&#39;u&#39;</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">states</span> <span class="o">==</span> <span class="s1">&#39;s&#39;</span><span class="p">:</span>
+            <span class="n">n_up_electrons</span> <span class="o">=</span> <span class="n">n_qubits</span> <span class="o">//</span> <span class="mi">4</span>
+            <span class="n">n_down_electrons</span> <span class="o">=</span> <span class="n">n_qubits</span> <span class="o">//</span> <span class="mi">4</span>
+        <span class="k">elif</span> <span class="n">states</span> <span class="o">==</span> <span class="s1">&#39;t&#39;</span><span class="p">:</span>
+            <span class="n">n_up_electrons</span> <span class="o">=</span> <span class="n">n_qubits</span> <span class="o">//</span> <span class="mi">4</span> <span class="o">+</span> <span class="mi">1</span>
+            <span class="n">n_down_electrons</span> <span class="o">=</span> <span class="n">n_qubits</span> <span class="o">//</span> <span class="mi">4</span> <span class="o">-</span> <span class="mi">1</span>
 
-    <span class="k">def</span> <span class="nf">get_electron_index</span><span class="p">(</span><span class="n">index</span><span class="p">):</span>
-        <span class="n">electron_index</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">*</span> <span class="n">n_qubits</span>
-        <span class="n">electron_index</span><span class="p">[</span><span class="n">index</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
-        <span class="k">return</span> <span class="n">electron_index</span>
+        <span class="n">up_locations</span> <span class="o">=</span> <span class="p">[</span><span class="nb">list</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">combinations</span><span class="p">(</span><span class="n">up_orbitals</span><span class="p">,</span> <span class="n">n_up_electrons</span><span class="p">)]</span>
+        <span class="n">down_locations</span> <span class="o">=</span> <span class="p">[</span><span class="nb">list</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">combinations</span><span class="p">(</span><span class="n">down_orbitals</span><span class="p">,</span> <span class="n">n_down_electrons</span><span class="p">)]</span>
+        <span class="n">all_locations</span> <span class="o">=</span> <span class="p">[</span><span class="n">x</span> <span class="o">+</span> <span class="n">y</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">up_locations</span> <span class="k">for</span> <span class="n">y</span> <span class="ow">in</span> <span class="n">down_locations</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">states</span> <span class="o">==</span> <span class="s1">&#39;t&#39;</span><span class="p">:</span>
+            <span class="n">up_locations</span> <span class="o">=</span> <span class="p">[</span><span class="nb">list</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">combinations</span><span class="p">(</span><span class="n">up_orbitals</span><span class="p">,</span> <span class="n">n_down_electrons</span><span class="p">)]</span>
+            <span class="n">down_locations</span> <span class="o">=</span> <span class="p">[</span><span class="nb">list</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">combinations</span><span class="p">(</span><span class="n">down_orbitals</span><span class="p">,</span>  <span class="n">n_up_electrons</span><span class="p">)]</span>
+            <span class="n">all_locations</span> <span class="o">+=</span> <span class="p">[</span><span class="n">x</span> <span class="o">+</span> <span class="n">y</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">up_locations</span> <span class="k">for</span> <span class="n">y</span> <span class="ow">in</span> <span class="n">down_locations</span><span class="p">]</span>
 
-    <span class="k">def</span> <span class="nf">get_hole_index</span><span class="p">(</span><span class="n">index</span><span class="p">):</span>
-        <span class="n">hole_index</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">*</span> <span class="n">n_qubits</span>
-        <span class="n">hole_index</span><span class="p">[</span><span class="n">index</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
-        <span class="k">return</span> <span class="n">hole_index</span>
+        <span class="n">indices</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">location</span> <span class="ow">in</span> <span class="n">all_locations</span><span class="p">:</span>
+            <span class="n">indices</span><span class="o">.</span><span class="n">append</span><span class="p">([</span><span class="mi">1</span> <span class="k">if</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">location</span> <span class="k">else</span> <span class="mi">0</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_qubits</span><span class="p">)])</span>
+        <span class="k">return</span> <span class="n">indices</span>
 
-    <span class="c1"># Create indices of electron- and hole-added states.</span>
-    <span class="n">empty_indices</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="n">spin</span> <span class="o">==</span> <span class="s2">&quot;u&quot;</span><span class="p">,</span> <span class="n">n_qubits</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span>
-    <span class="n">electron_indices</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">([</span><span class="n">get_electron_index</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">empty_indices</span><span class="p">])</span>
-    <span class="n">hole_indices</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">([</span><span class="n">get_hole_index</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">empty_indices</span><span class="p">])</span>
-    <span class="n">system_indices_dict</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;e&quot;</span><span class="p">:</span> <span class="n">electron_indices</span><span class="p">,</span> <span class="s2">&quot;h&quot;</span><span class="p">:</span> <span class="n">hole_indices</span><span class="p">}</span>
+<div class="viewcode-block" id="QubitIndices.get_eh_qubit_indices_dict"><a class="viewcode-back" href="../../../fd_greens.cirq_ver.qubit_indices.html#fd_greens.cirq_ver.qubit_indices.QubitIndices.get_eh_qubit_indices_dict">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">get_eh_qubit_indices_dict</span><span class="p">(</span>
+        <span class="n">n_qubits</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">spin</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">method_indices_pairs</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">int</span><span class="p">]]]</span> <span class="o">=</span> <span class="p">[],</span>
+        <span class="n">system_only</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="s1">&#39;QubitIndices&#39;</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;Returns the qubit indices of (N+-1)-electron states.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            n_qubits: Number of qubits.</span>
+<span class="sd">            spin: The spin of the second-quantized operators.</span>
+<span class="sd">            method_indices_pairs: Pairs of Z2 transform methods and indices.</span>
+<span class="sd">            system_only: Whether to return only system qubit indices.</span>
 
-    <span class="n">qubit_indices_dict</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
-    <span class="k">if</span> <span class="n">system_only</span><span class="p">:</span>
-        <span class="c1"># Build qubit indices only on system indices.</span>
-        <span class="k">for</span> <span class="n">subscript</span><span class="p">,</span> <span class="n">system_indices</span> <span class="ow">in</span> <span class="n">system_indices_dict</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
-            <span class="n">qubit_indices</span> <span class="o">=</span> <span class="n">QubitIndices</span><span class="p">(</span><span class="n">system_indices</span><span class="p">)</span>
-            <span class="n">qubit_indices</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">method_indices_pairs</span><span class="p">)</span>
-            <span class="n">qubit_indices_dict</span><span class="p">[</span><span class="n">subscript</span><span class="p">]</span> <span class="o">=</span> <span class="n">qubit_indices</span>
-    <span class="k">else</span><span class="p">:</span>
-        <span class="c1"># Create dictionaries of ancilla indices.</span>
-        <span class="n">ancilla_indices_dict</span> <span class="o">=</span> <span class="p">{</span>
-            <span class="s2">&quot;e&quot;</span><span class="p">:</span> <span class="p">[[</span><span class="mi">1</span><span class="p">]],</span> <span class="s2">&quot;h&quot;</span><span class="p">:</span> <span class="p">[[</span><span class="mi">0</span><span class="p">]],</span> 
-            <span class="s2">&quot;ep&quot;</span><span class="p">:</span> <span class="p">[[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">]],</span> <span class="s2">&quot;em&quot;</span><span class="p">:</span> <span class="p">[[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">]],</span> <span class="s2">&quot;hp&quot;</span><span class="p">:</span> <span class="p">[[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">]],</span> <span class="s2">&quot;hm&quot;</span><span class="p">:</span> <span class="p">[[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">]]</span>
-        <span class="p">}</span>
+<span class="sd">        Returns:</span>
+<span class="sd">            qubits_indices_dict: A dictionary from subscripts to qubit indices.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">system_indices_dict</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;e&#39;</span><span class="p">:</span> <span class="n">QubitIndices</span><span class="o">.</span><span class="n">_get_indices</span><span class="p">(</span><span class="n">n_qubits</span><span class="p">,</span> <span class="s1">&#39;e&#39;</span><span class="p">,</span> <span class="n">spin</span><span class="p">),</span> 
+                               <span class="s1">&#39;h&#39;</span><span class="p">:</span> <span class="n">QubitIndices</span><span class="o">.</span><span class="n">_get_indices</span><span class="p">(</span><span class="n">n_qubits</span><span class="p">,</span> <span class="s1">&#39;h&#39;</span><span class="p">,</span> <span class="n">spin</span><span class="p">)}</span>
 
-        <span class="c1"># Build the qubit indices for all six subscripts.</span>
         <span class="n">qubit_indices_dict</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
-        <span class="k">for</span> <span class="n">subscript</span><span class="p">,</span> <span class="n">ancilla_indices</span> <span class="ow">in</span> <span class="n">ancilla_indices_dict</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
-            <span class="n">qubit_indices</span> <span class="o">=</span> <span class="n">QubitIndices</span><span class="p">(</span><span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">system_indices_dict</span><span class="p">[</span><span class="n">subscript</span><span class="p">[</span><span class="mi">0</span><span class="p">]]),</span> <span class="n">ancilla_indices</span><span class="p">)</span>
-            <span class="n">qubit_indices</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">method_indices_pairs</span><span class="p">)</span>
-            <span class="n">qubit_indices_dict</span><span class="p">[</span><span class="n">subscript</span><span class="p">]</span> <span class="o">=</span> <span class="n">qubit_indices</span>
+        <span class="k">if</span> <span class="n">system_only</span><span class="p">:</span>
+            <span class="c1"># Build qubit indices only on system indices.</span>
+            <span class="k">for</span> <span class="n">subscript</span><span class="p">,</span> <span class="n">system_indices</span> <span class="ow">in</span> <span class="n">system_indices_dict</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                <span class="n">qubit_indices</span> <span class="o">=</span> <span class="n">QubitIndices</span><span class="p">(</span><span class="n">system_indices</span><span class="p">)</span>
+                <span class="n">qubit_indices</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">method_indices_pairs</span><span class="p">)</span>
+                <span class="n">qubit_indices_dict</span><span class="p">[</span><span class="n">subscript</span><span class="p">]</span> <span class="o">=</span> <span class="n">qubit_indices</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># Create dictionaries of ancilla indices.</span>
+            <span class="n">ancilla_indices_dict</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="s2">&quot;e&quot;</span><span class="p">:</span> <span class="p">[[</span><span class="mi">1</span><span class="p">]],</span> <span class="s2">&quot;h&quot;</span><span class="p">:</span> <span class="p">[[</span><span class="mi">0</span><span class="p">]],</span> 
+                <span class="s2">&quot;ep&quot;</span><span class="p">:</span> <span class="p">[[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">]],</span> <span class="s2">&quot;em&quot;</span><span class="p">:</span> <span class="p">[[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">]],</span> <span class="s2">&quot;hp&quot;</span><span class="p">:</span> <span class="p">[[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">]],</span> <span class="s2">&quot;hm&quot;</span><span class="p">:</span> <span class="p">[[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">]]</span>
+            <span class="p">}</span>
 
-    <span class="k">return</span> <span class="n">qubit_indices_dict</span></div>
+            <span class="c1"># Build the qubit indices for all six subscripts.</span>
+            <span class="k">for</span> <span class="n">subscript</span><span class="p">,</span> <span class="n">ancilla_indices</span> <span class="ow">in</span> <span class="n">ancilla_indices_dict</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                <span class="n">qubit_indices</span> <span class="o">=</span> <span class="n">QubitIndices</span><span class="p">(</span><span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">system_indices_dict</span><span class="p">[</span><span class="n">subscript</span><span class="p">[</span><span class="mi">0</span><span class="p">]]),</span> <span class="n">ancilla_indices</span><span class="p">)</span>
+                <span class="n">qubit_indices</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">method_indices_pairs</span><span class="p">)</span>
+                <span class="n">qubit_indices_dict</span><span class="p">[</span><span class="n">subscript</span><span class="p">]</span> <span class="o">=</span> <span class="n">qubit_indices</span>
+
+        <span class="k">return</span> <span class="n">qubit_indices_dict</span></div>
+        
+
+<div class="viewcode-block" id="QubitIndices.get_excited_qubit_indices_dict"><a class="viewcode-back" href="../../../fd_greens.cirq_ver.qubit_indices.html#fd_greens.cirq_ver.qubit_indices.QubitIndices.get_excited_qubit_indices_dict">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">get_excited_qubit_indices_dict</span><span class="p">(</span>
+        <span class="n">n_qubits</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">method_indices_pairs</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">int</span><span class="p">]]],</span>
+        <span class="n">system_only</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="s1">&#39;QubitIndices&#39;</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;Returns the qubit indices of N-electron excited states.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            n_qubits: Number of qubits.</span>
+<span class="sd">            method_indices_pairs: Pairs of Z2 transform methods and indices.</span>
+<span class="sd">            system_only: Whether to return only system qubit indices.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            qubit_indices_dict: A dictionary from subscripts ot qubit indices.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">system_indices_dict</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;n&#39;</span><span class="p">:</span> <span class="n">QubitIndices</span><span class="o">.</span><span class="n">_get_indices</span><span class="p">(</span><span class="n">n_qubits</span><span class="p">,</span> <span class="s1">&#39;s&#39;</span><span class="p">)}</span> <span class="c1"># Only singlet states</span>
+        
+        <span class="n">qubit_indices_dict</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">system_only</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">subscript</span><span class="p">,</span> <span class="n">system_indices</span> <span class="ow">in</span> <span class="n">system_indices_dict</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                <span class="n">qubit_indices</span> <span class="o">=</span> <span class="n">QubitIndices</span><span class="p">(</span><span class="n">system_indices</span><span class="p">)</span>
+                <span class="n">qubit_indices</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">method_indices_pairs</span><span class="p">)</span>
+                <span class="n">qubit_indices_dict</span><span class="p">[</span><span class="n">subscript</span><span class="p">]</span> <span class="o">=</span> <span class="n">qubit_indices</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">ancilla_indices_dict</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;n&#39;</span><span class="p">:</span> <span class="p">[[</span><span class="mi">1</span><span class="p">]],</span> <span class="s1">&#39;np&#39;</span><span class="p">:</span> <span class="p">[[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">]],</span> <span class="s1">&#39;nm&#39;</span><span class="p">:</span> <span class="p">[[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">]]}</span>
+            <span class="k">for</span> <span class="n">subscript</span><span class="p">,</span> <span class="n">ancilla_indices</span> <span class="ow">in</span> <span class="n">ancilla_indices_dict</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                <span class="n">qubit_indices</span> <span class="o">=</span> <span class="n">QubitIndices</span><span class="p">(</span><span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">system_indices_dict</span><span class="p">[</span><span class="n">subscript</span><span class="p">[</span><span class="mi">0</span><span class="p">]]),</span> <span class="n">ancilla_indices</span><span class="p">)</span>
+                <span class="n">qubit_indices</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">method_indices_pairs</span><span class="p">)</span>
+                <span class="n">qubit_indices_dict</span><span class="p">[</span><span class="n">subscript</span><span class="p">]</span> <span class="o">=</span> <span class="n">qubit_indices</span>
+
+        <span class="k">return</span> <span class="n">qubit_indices_dict</span></div></div>
 </pre></div>
 
            </div>

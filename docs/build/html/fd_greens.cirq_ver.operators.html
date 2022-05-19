@@ -72,27 +72,9 @@
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <p>Operators base.</p>
 <dl class="py method">
-<dt class="sig sig-object py" id="fd_greens.cirq_ver.operators.OperatorsBase.cnot">
-<span class="sig-name descname"><span class="pre">cnot</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">control</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/fd_greens/cirq_ver/operators.html#OperatorsBase.cnot"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#fd_greens.cirq_ver.operators.OperatorsBase.cnot" title="Permalink to this definition"></a></dt>
-<dd><p>Conjugates Pauli strings by a CNOT operation.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="fd_greens.cirq_ver.operators.OperatorsBase.swap">
-<span class="sig-name descname"><span class="pre">swap</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">index1</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">index2</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/fd_greens/cirq_ver/operators.html#OperatorsBase.swap"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#fd_greens.cirq_ver.operators.OperatorsBase.swap" title="Permalink to this definition"></a></dt>
-<dd><p>Conjugates Pauli strings by a SWAP operation.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="fd_greens.cirq_ver.operators.OperatorsBase.taper">
-<span class="sig-name descname"><span class="pre">taper</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">tapered_state</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">tapered_indices</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/fd_greens/cirq_ver/operators.html#OperatorsBase.taper"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#fd_greens.cirq_ver.operators.OperatorsBase.taper" title="Permalink to this definition"></a></dt>
-<dd><p>Tapers qubits off the first two qubits, assuming the symmetry operators are both Z.</p>
-</dd></dl>
-
-<dl class="py method">
 <dt class="sig sig-object py" id="fd_greens.cirq_ver.operators.OperatorsBase.transform">
 <span class="sig-name descname"><span class="pre">transform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">method_indices_pairs</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Mapping</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span> </span><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tapered_state</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/fd_greens/cirq_ver/operators.html#OperatorsBase.transform"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#fd_greens.cirq_ver.operators.OperatorsBase.transform" title="Permalink to this definition"></a></dt>
-<dd><p>Transforms Pauli strings using given method indices pairs.</p>
+<dd><p>Transforms Pauli strings with Z2 symmetries and qubit tapering.</p>
 </dd></dl>
 
 </dd></dl>
@@ -106,7 +88,7 @@
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>qubits</strong> – Qubits on which the operators act.</p></li>
+<li><p><strong>qubits</strong> – Qubits on which the second quantized operators act.</p></li>
 <li><p><strong>spin</strong> – The spin of the second quantized operators. Either <code class="docutils literal notranslate"><span class="pre">'u'</span></code> or <code class="docutils literal notranslate"><span class="pre">'d'</span></code>.</p></li>
 <li><p><strong>factor</strong> – Multiplication factor of the operators for easy gate construction.</p></li>
 </ul>
@@ -114,8 +96,8 @@
 </dl>
 <dl class="py method">
 <dt class="sig sig-object py" id="fd_greens.cirq_ver.operators.SecondQuantizedOperators.transform">
-<span class="sig-name descname"><span class="pre">transform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">method_indices_pairs</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Mapping</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span> </span><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/fd_greens/cirq_ver/operators.html#SecondQuantizedOperators.transform"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#fd_greens.cirq_ver.operators.SecondQuantizedOperators.transform" title="Permalink to this definition"></a></dt>
-<dd><p>Transforms the operators using given method indices pairs.</p>
+<span class="sig-name descname"><span class="pre">transform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">method_indices_pairs</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Mapping</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span> </span><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/fd_greens/cirq_ver/operators.html#SecondQuantizedOperators.transform"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#fd_greens.cirq_ver.operators.SecondQuantizedOperators.transform" title="Permalink to this definition"></a></dt>
+<dd><p>Transforms the second quantized operators with Z2 symmetries and qubit tapering.</p>
 </dd></dl>
 
 </dd></dl>
@@ -128,13 +110,13 @@
 <p>Initializes a <code class="docutils literal notranslate"><span class="pre">ChargeOperators</span></code> object.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>qubits</strong> – Qubits on which the operators act.</p>
+<dd class="field-odd"><p><strong>qubits</strong> – Qubits on which the charge operators act.</p>
 </dd>
 </dl>
 <dl class="py method">
 <dt class="sig sig-object py" id="fd_greens.cirq_ver.operators.ChargeOperators.transform">
 <span class="sig-name descname"><span class="pre">transform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">method_indices_pairs</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Mapping</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span> </span><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/fd_greens/cirq_ver/operators.html#ChargeOperators.transform"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#fd_greens.cirq_ver.operators.ChargeOperators.transform" title="Permalink to this definition"></a></dt>
-<dd><p>Transforms the operators using given method indices pairs.</p>
+<dd><p>Transforms the charge operators with Z2 symmetries and qubit tapering.</p>
 </dd></dl>
 
 </dd></dl>

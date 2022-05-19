@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>&lt;no title&gt; &mdash; fd-greens 0.0.1 documentation</title>
+  <title>N-Electron Transition Amplitudes Solver (fd_greens.excited_amplitudes_solver) &mdash; fd-greens 0.0.1 documentation</title>
       <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
   <!--[if lt IE 9]>
@@ -36,7 +36,8 @@
 </div>
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
               <!-- Local TOC -->
-              <div class="local-toc"><ul class="simple">
+              <div class="local-toc"><ul>
+<li><a class="reference internal" href="#">N-Electron Transition Amplitudes Solver (<code class="xref py py-mod docutils literal notranslate"><span class="pre">fd_greens.excited_amplitudes_solver</span></code>)</a></li>
 </ul>
 </div>
         </div>
@@ -53,7 +54,7 @@
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
       <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
-      <li>&lt;no title&gt;</li>
+      <li>N-Electron Transition Amplitudes Solver (<code class="xref py py-mod docutils literal notranslate"><span class="pre">fd_greens.excited_amplitudes_solver</span></code>)</li>
       <li class="wy-breadcrumbs-aside">
             <a href="_sources/fd_greens.cirq_ver.excited_amplitudes_solver.rst.txt" rel="nofollow"> View page source</a>
       </li>
@@ -63,7 +64,41 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  
+  <span class="target" id="module-fd_greens.cirq_ver.excited_amplitudes_solver"></span><section id="n-electron-transition-amplitudes-solver-fd-greens-excited-amplitudes-solver">
+<h1>N-Electron Transition Amplitudes Solver (<code class="xref py py-mod docutils literal notranslate"><span class="pre">fd_greens.excited_amplitudes_solver</span></code>)<a class="headerlink" href="#n-electron-transition-amplitudes-solver-fd-greens-excited-amplitudes-solver" title="Permalink to this headline"></a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="fd_greens.cirq_ver.excited_amplitudes_solver.ExcitedAmplitudesSolver">
+<em class="property"><span class="pre">class</span> </em><span class="sig-name descname"><span class="pre">ExcitedAmplitudesSolver</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">hamiltonian</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><a class="reference internal" href="fd_greens.cirq_ver.molecular_hamiltonian.html#fd_greens.cirq_ver.molecular_hamiltonian.MolecularHamiltonian" title="fd_greens.cirq_ver.molecular_hamiltonian.MolecularHamiltonian"><span class="pre">fd_greens.cirq_ver.molecular_hamiltonian.MolecularHamiltonian</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">qubits</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">cirq.ops.raw_types.Qid</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">method</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">'exact'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">repetitions</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">int</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">1000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fname</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">'lih'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">suffix</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">''</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/fd_greens/cirq_ver/excited_amplitudes_solver.html#ExcitedAmplitudesSolver"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#fd_greens.cirq_ver.excited_amplitudes_solver.ExcitedAmplitudesSolver" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Solver for transition amplitudes between ground state and N-electron excited states.</p>
+<p>Initializes an <code class="docutils literal notranslate"><span class="pre">ExcitedAmplitudesSolver</span></code> object.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>hamiltonian</strong> – The molecular Hamiltonian.</p></li>
+<li><p><strong>qubits</strong> – Qubits in the circuit.</p></li>
+<li><p><strong>method</strong> – The method for extracting the transition amplitudes.</p></li>
+<li><p><strong>repetitions</strong> – Number of repetitions used in the simulations.</p></li>
+<li><p><strong>fname</strong> – The HDF5 file name.</p></li>
+<li><p><strong>suffix</strong> – The suffix for a specific experimental run.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="fd_greens.cirq_ver.excited_amplitudes_solver.ExcitedAmplitudesSolver.run">
+<span class="sig-name descname"><span class="pre">run</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">method</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/fd_greens/cirq_ver/excited_amplitudes_solver.html#ExcitedAmplitudesSolver.run"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#fd_greens.cirq_ver.excited_amplitudes_solver.ExcitedAmplitudesSolver.run" title="Permalink to this definition"></a></dt>
+<dd><p>Runs all the functions to compute transition amplitudes.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>method</strong> – The method to calculate transition amplitudes. Either <code class="docutils literal notranslate"><span class="pre">'exact'</span></code> or <code class="docutils literal notranslate"><span class="pre">'tomo'</span></code>.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+
 
            </div>
           </div>

@@ -76,7 +76,7 @@
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>qubits</strong> – The qubits in the circuit.</p></li>
-<li><p><strong>offset</strong> – The index offset on the Berkeley device. Default to 4.</p></li>
+<li><p><strong>offset</strong> – The index offset on the Berkeley device. Defaults to 4.</p></li>
 </ul>
 </dd>
 </dl>
@@ -84,7 +84,8 @@
 <dt class="sig sig-object py" id="fd_greens.cirq_ver.circuit_string_converter.CircuitStringConverter.convert_strings_to_circuit">
 <span class="sig-name descname"><span class="pre">convert_strings_to_circuit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">qtrl_strings</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">cirq.circuits.circuit.Circuit</span></span></span><a class="reference internal" href="_modules/fd_greens/cirq_ver/circuit_string_converter.html#CircuitStringConverter.convert_strings_to_circuit"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#fd_greens.cirq_ver.circuit_string_converter.CircuitStringConverter.convert_strings_to_circuit" title="Permalink to this definition"></a></dt>
 <dd><p>Converts Qtrl strings to a Cirq circuit.</p>
-<p>Example:</p>
+<p>The Qtrl strings are saved in HDF5 files. To convert the Qtrl strings saved in <code class="docutils literal notranslate"><span class="pre">lih_3A.h5</span></code> to
+a Cirq circuit, we need to</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">sys</span>
 <span class="n">sys</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s1">&#39;path/to/fd_greens&#39;</span><span class="p">)</span>
 
@@ -115,13 +116,13 @@
 <dl class="py method">
 <dt class="sig sig-object py" id="fd_greens.cirq_ver.circuit_string_converter.CircuitStringConverter.convert_circuit_to_strings">
 <span class="sig-name descname"><span class="pre">convert_circuit_to_strings</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">circuit</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">cirq.circuits.circuit.Circuit</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/fd_greens/cirq_ver/circuit_string_converter.html#CircuitStringConverter.convert_circuit_to_strings"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#fd_greens.cirq_ver.circuit_string_converter.CircuitStringConverter.convert_circuit_to_strings" title="Permalink to this definition"></a></dt>
-<dd><p>Converts a Cirq circuit to qtrl strings.</p>
+<dd><p>Converts a Cirq circuit to Qtrl strings.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><p><strong>circuit</strong> – A Cirq circuit.</p>
 </dd>
 <dt class="field-even">Returns</dt>
-<dd class="field-even"><p><strong>qtrl_strings</strong> – The qtrl strings corresponding to the Cirq circuit.</p>
+<dd class="field-even"><p><strong>qtrl_strings</strong> – The Qtrl strings corresponding to the Cirq circuit.</p>
 </dd>
 </dl>
 </dd></dl>

@@ -87,19 +87,21 @@
 </dl>
 <dl class="py method">
 <dt class="sig sig-object py" id="fd_greens.cirq_ver.molecular_hamiltonian.MolecularHamiltonian.transform">
-<span class="sig-name descname"><span class="pre">transform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">method_indices_pairs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tapered_state</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/fd_greens/cirq_ver/molecular_hamiltonian.html#MolecularHamiltonian.transform"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#fd_greens.cirq_ver.molecular_hamiltonian.MolecularHamiltonian.transform" title="Permalink to this definition"></a></dt>
-<dd><p>Transforms Pauli strings using given method indices pairs.</p>
+<span class="sig-name descname"><span class="pre">transform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">method_indices_pairs</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Iterable</span><span class="p"><span class="pre">[</span></span><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span> </span><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tapered_state</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/fd_greens/cirq_ver/molecular_hamiltonian.html#MolecularHamiltonian.transform"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#fd_greens.cirq_ver.molecular_hamiltonian.MolecularHamiltonian.transform" title="Permalink to this definition"></a></dt>
+<dd><p>Transforms the Hamiltonian terms with Z2 symmetries and qubit tapering.</p>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="fd_greens.cirq_ver.molecular_hamiltonian.MolecularHamiltonian.copy">
 <span class="sig-name descname"><span class="pre">copy</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#fd_greens.cirq_ver.molecular_hamiltonian.MolecularHamiltonian" title="fd_greens.cirq_ver.molecular_hamiltonian.MolecularHamiltonian"><span class="pre">fd_greens.cirq_ver.molecular_hamiltonian.MolecularHamiltonian</span></a></span></span><a class="reference internal" href="_modules/fd_greens/cirq_ver/molecular_hamiltonian.html#MolecularHamiltonian.copy"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#fd_greens.cirq_ver.molecular_hamiltonian.MolecularHamiltonian.copy" title="Permalink to this definition"></a></dt>
-<dd></dd></dl>
+<dd><p>Returns a copy of itself.</p>
+</dd></dl>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="fd_greens.cirq_ver.molecular_hamiltonian.MolecularHamiltonian.matrix">
 <em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">matrix</span></span><em class="property"><span class="pre">:</span> <span class="pre">numpy.ndarray</span></em><a class="headerlink" href="#fd_greens.cirq_ver.molecular_hamiltonian.MolecularHamiltonian.matrix" title="Permalink to this definition"></a></dt>
-<dd></dd></dl>
+<dd><p>Returns the matrix form of the Hamiltonian.</p>
+</dd></dl>
 
 </dd></dl>
 
@@ -112,7 +114,7 @@
 <dd class="field-odd"><p><strong>bond_distance</strong> – The bond length of the molecule in Angstrom.</p>
 </dd>
 <dt class="field-even">Returns</dt>
-<dd class="field-even"><p><strong>hamiltonian</strong> – The molecular Hamiltonian.</p>
+<dd class="field-even"><p><strong>hamiltonian</strong> – The molecular Hamiltonian of LiH.</p>
 </dd>
 </dl>
 </dd></dl>

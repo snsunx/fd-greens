@@ -133,8 +133,8 @@
             <span class="n">qubits</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">op</span><span class="o">.</span><span class="n">qubits</span><span class="p">))</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
             <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">qubits</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">is_adjacent</span><span class="p">(</span><span class="n">qubits</span><span class="p">):</span>
                 <span class="c1"># print(qubits)</span>
+                <span class="c1"># TODO: This could be raised as warnings.</span>
                 <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Warning: Adding SWAP gates&quot;</span><span class="p">)</span>
-                <span class="c1"># print(&#39;!!!!!!&#39;, op)</span>
                 <span class="k">assert</span> <span class="n">gate</span> <span class="ow">in</span> <span class="p">[</span><span class="n">cirq</span><span class="o">.</span><span class="n">CZ</span><span class="p">,</span> <span class="n">cirq</span><span class="o">.</span><span class="n">CCZ</span><span class="p">]</span>
                 <span class="c1"># print(&#39;old qubits =&#39;, qubits)</span>
                 <span class="n">qubits_swap</span> <span class="o">=</span> <span class="p">(</span><span class="n">qubits</span><span class="p">[</span><span class="o">-</span><span class="mi">2</span><span class="p">]</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">qubits</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
@@ -256,7 +256,7 @@
 
 
 <div class="viewcode-block" id="convert_phxz_to_xpi2"><a class="viewcode-back" href="../../../fd_greens.cirq_ver.transpilation.html#fd_greens.cirq_ver.transpilation.convert_phxz_to_xpi2">[docs]</a><span class="k">def</span> <span class="nf">convert_phxz_to_xpi2</span><span class="p">(</span><span class="n">circuit</span><span class="p">:</span> <span class="n">cirq</span><span class="o">.</span><span class="n">Circuit</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">cirq</span><span class="o">.</span><span class="n">Circuit</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Converts ``PhasedXZGate``s to X(pi/2) gates and virtual Z gates.</span>
+    <span class="sd">&quot;&quot;&quot;Converts ``PhasedXZGate`` s to X(pi/2) gates and virtual Z gates.</span>
 <span class="sd">    </span>
 <span class="sd">    Args:</span>
 <span class="sd">        circuit: The circuit to be converted.</span>
@@ -272,12 +272,11 @@
             <span class="n">z</span> <span class="o">=</span> <span class="n">op</span><span class="o">.</span><span class="n">gate</span><span class="o">.</span><span class="n">z_exponent</span>
             <span class="n">q</span> <span class="o">=</span> <span class="n">op</span><span class="o">.</span><span class="n">qubits</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
 
-            <span class="c1"># Build an array consisting of the exponents of the three Z gates.</span>
-            <span class="c1"># If the middle exponent is 0.5, 1.0 or 1.5, the gate sequence can be simplified to Z or ZXZ.</span>
-            <span class="c1"># Otherwise the gate sequence is ZXZXZ.</span>
+            <span class="c1"># Build an array consisting of the exponents of the three Z gates. </span>
+            <span class="c1"># The generic gate sequence is ZXZXZ, but if the middle exponent is 1.0, the gate sequence is Z;</span>
+            <span class="c1"># if the middle exponent is 0.5 or 1.5, the gate sequence is ZXZ.</span>
             <span class="n">exponents</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="o">-</span><span class="n">a</span> <span class="o">-</span> <span class="mf">0.5</span><span class="p">,</span> <span class="mf">1.0</span> <span class="o">-</span> <span class="n">x</span><span class="p">,</span> <span class="n">a</span> <span class="o">+</span> <span class="n">z</span> <span class="o">-</span> <span class="mf">0.5</span><span class="p">])</span> <span class="o">%</span> <span class="mi">2</span>
             <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">0.5</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">,</span> <span class="mf">1.5</span><span class="p">])</span> <span class="o">-</span> <span class="n">exponents</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span> <span class="o">&lt;</span> <span class="mf">1e-8</span><span class="p">):</span>
-            <span class="c1"># if abs((1.0 - x) % 2 - 0.5) &lt; 1e-8 or abs((1.0 - x) % 2 - 1.0) &lt; 1e-8 or abs((1.0 - x) % 2 - 1.5) &lt; 1e-8:</span>
                 <span class="k">if</span> <span class="nb">abs</span><span class="p">(</span><span class="n">exponents</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="mf">1.0</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mf">1e-8</span><span class="p">:</span>
                     <span class="n">circuit_new</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">cirq</span><span class="o">.</span><span class="n">ZPowGate</span><span class="p">(</span><span class="n">exponent</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">exponents</span><span class="p">)</span> <span class="o">%</span> <span class="mi">2</span><span class="p">)(</span><span class="n">q</span><span class="p">))</span>
                     <span class="n">circuit_new</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">cirq</span><span class="o">.</span><span class="n">I</span><span class="p">(</span><span class="n">q</span><span class="p">))</span>
@@ -319,14 +318,14 @@
     <span class="n">cirq</span><span class="o">.</span><span class="n">MergeInteractions</span><span class="p">(</span><span class="n">allow_partial_czs</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span><span class="o">.</span><span class="n">optimize_circuit</span><span class="p">(</span><span class="n">circuit_new</span><span class="p">)</span>
     <span class="c1"># cirq.merge_single_qubit_gates_into_phxz(circuit_new)</span>
     
-    <span class="c1"># Three-qubit transpilation.</span>
+    <span class="c1"># Three-qubit gate transpilation.</span>
     <span class="n">circuit_new</span> <span class="o">=</span> <span class="n">convert_ccz_to_c0c0ix</span><span class="p">(</span><span class="n">circuit_new</span><span class="p">)</span>
     <span class="n">cirq</span><span class="o">.</span><span class="n">MergeInteractions</span><span class="p">(</span><span class="n">allow_partial_czs</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span><span class="o">.</span><span class="n">optimize_circuit</span><span class="p">(</span><span class="n">circuit_new</span><span class="p">)</span>
 
-    <span class="c1"># Two-qubit transpilation.</span>
+    <span class="c1"># Two-qubit gate transpilation.</span>
     <span class="n">circuit_new</span> <span class="o">=</span> <span class="n">convert_swap_to_cz</span><span class="p">(</span><span class="n">circuit_new</span><span class="p">)</span>
     
-    <span class="c1"># Single-qubit transpilation.</span>
+    <span class="c1"># Single-qubit gate transpilation.</span>
     <span class="n">cirq</span><span class="o">.</span><span class="n">MergeSingleQubitGates</span><span class="p">()</span><span class="o">.</span><span class="n">optimize_circuit</span><span class="p">(</span><span class="n">circuit_new</span><span class="p">)</span>
     <span class="n">cirq</span><span class="o">.</span><span class="n">DropEmptyMoments</span><span class="p">()</span><span class="o">.</span><span class="n">optimize_circuit</span><span class="p">(</span><span class="n">circuit_new</span><span class="p">)</span>
     <span class="n">cirq</span><span class="o">.</span><span class="n">merge_single_qubit_gates_into_phxz</span><span class="p">(</span><span class="n">circuit_new</span><span class="p">)</span>

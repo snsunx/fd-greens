@@ -76,36 +76,61 @@
 <span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
 
 
-<div class="viewcode-block" id="initialize_hdf5"><a class="viewcode-back" href="../../../fd_greens.cirq_ver.helpers.html#fd_greens.cirq_ver.helpers.initialize_hdf5">[docs]</a><span class="k">def</span> <span class="nf">initialize_hdf5</span><span class="p">(</span><span class="n">fname</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;lih&#39;</span><span class="p">,</span> <span class="n">mode</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;greens&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Creates an HDF5 file with group names if the file or group names do not exist.</span>
+<div class="viewcode-block" id="initialize_hdf5"><a class="viewcode-back" href="../../../fd_greens.cirq_ver.helpers.html#fd_greens.cirq_ver.helpers.initialize_hdf5">[docs]</a><span class="k">def</span> <span class="nf">initialize_hdf5</span><span class="p">(</span>
+    <span class="n">fname</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;lih&#39;</span><span class="p">,</span>
+    <span class="n">mode</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;greens&#39;</span><span class="p">,</span>
+    <span class="n">spin</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span><span class="p">,</span>
+    <span class="n">n_orbitals</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">2</span><span class="p">,</span>
+    <span class="n">overwrite</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Initializes an HDF5 file.</span>
 <span class="sd">    </span>
 <span class="sd">    Args:</span>
 <span class="sd">        fname: The HDF5 file name.</span>
 <span class="sd">        mode: Calculation mode. Either ``&#39;greens&#39;`` or ``&#39;resp&#39;``.</span>
+<span class="sd">        spin: Spin of the second-quantized operators.</span>
+<span class="sd">        n_orbitals: Number of orbitals. Defaults to 2.</span>
+<span class="sd">        overwrite: Whether to overwrite groups if they are found in the HDF5 file.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">assert</span> <span class="n">mode</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;greens&#39;</span><span class="p">,</span> <span class="s1">&#39;resp&#39;</span><span class="p">]</span>
+    <span class="k">if</span> <span class="n">mode</span> <span class="o">==</span> <span class="s1">&#39;greens&#39;</span><span class="p">:</span>
+        <span class="k">assert</span> <span class="n">spin</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;u&#39;</span><span class="p">,</span> <span class="s1">&#39;d&#39;</span><span class="p">]</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">assert</span> <span class="n">spin</span> <span class="o">==</span> <span class="s1">&#39;&#39;</span>
+    
     <span class="n">h5fname</span> <span class="o">=</span> <span class="n">fname</span> <span class="o">+</span> <span class="s1">&#39;.h5&#39;</span>
     <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">h5fname</span><span class="p">):</span>
         <span class="n">h5file</span> <span class="o">=</span> <span class="n">h5py</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="n">h5fname</span><span class="p">,</span> <span class="s1">&#39;r+&#39;</span><span class="p">)</span>
     <span class="k">else</span><span class="p">:</span>
         <span class="n">h5file</span> <span class="o">=</span> <span class="n">h5py</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="n">h5fname</span><span class="p">,</span> <span class="s1">&#39;w&#39;</span><span class="p">)</span>
 
-    <span class="n">group_names</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;gs&#39;</span><span class="p">,</span> <span class="s1">&#39;es&#39;</span><span class="p">,</span> <span class="s1">&#39;amp&#39;</span><span class="p">]</span>
     <span class="k">if</span> <span class="n">mode</span> <span class="o">==</span> <span class="s1">&#39;greens&#39;</span><span class="p">:</span>
-        <span class="n">group_names</span> <span class="o">+=</span> <span class="p">[</span><span class="s1">&#39;circ0u&#39;</span><span class="p">,</span> <span class="s1">&#39;circ1u&#39;</span><span class="p">,</span> <span class="s1">&#39;circ01u&#39;</span><span class="p">,</span> <span class="s1">&#39;circ0d&#39;</span><span class="p">,</span> <span class="s1">&#39;circ1d&#39;</span><span class="p">,</span> <span class="s1">&#39;circ01d&#39;</span><span class="p">]</span>
+        <span class="n">orbital_labels</span> <span class="o">=</span> <span class="p">[</span><span class="nb">str</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_orbitals</span><span class="p">)]</span>
     <span class="k">elif</span> <span class="n">mode</span> <span class="o">==</span> <span class="s1">&#39;resp&#39;</span><span class="p">:</span>
-        <span class="n">group_names</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;circ0u&#39;</span><span class="p">,</span> <span class="s1">&#39;circ1u&#39;</span><span class="p">,</span> <span class="s1">&#39;circ0d&#39;</span><span class="p">,</span> <span class="s1">&#39;circ1d&#39;</span><span class="p">,</span>
-                       <span class="s1">&#39;circ0u0d&#39;</span><span class="p">,</span> <span class="s1">&#39;circ0u1u&#39;</span><span class="p">,</span> <span class="s1">&#39;circ0u1d&#39;</span><span class="p">,</span> <span class="s1">&#39;circ0d1u&#39;</span><span class="p">,</span> <span class="s1">&#39;circ0d1d&#39;</span><span class="p">,</span> <span class="s1">&#39;circ1u1d&#39;</span><span class="p">]</span>
-        
+        <span class="n">orbital_labels</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">product</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="n">n_orbitals</span><span class="p">),</span> <span class="p">[</span><span class="s1">&#39;u&#39;</span><span class="p">,</span> <span class="s1">&#39;d&#39;</span><span class="p">]))</span>
+        <span class="n">orbital_labels</span> <span class="o">=</span> <span class="p">[</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">}{</span><span class="n">x</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="si">}</span><span class="s1">&#39;</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">orbital_labels</span><span class="p">]</span>
+
+    <span class="n">group_names</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;gs&#39;</span><span class="p">,</span> <span class="s1">&#39;es&#39;</span><span class="p">,</span> <span class="s1">&#39;amp&#39;</span><span class="p">]</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">orbital_labels</span><span class="p">)):</span>
+        <span class="n">group_names</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;circ</span><span class="si">{</span><span class="n">orbital_labels</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="si">}{</span><span class="n">spin</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">orbital_labels</span><span class="p">)):</span>
+            <span class="n">group_names</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;circ</span><span class="si">{</span><span class="n">orbital_labels</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="si">}{</span><span class="n">orbital_labels</span><span class="p">[</span><span class="n">j</span><span class="p">]</span><span class="si">}{</span><span class="n">spin</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+
     <span class="k">for</span> <span class="n">group_name</span> <span class="ow">in</span> <span class="n">group_names</span><span class="p">:</span>
-        <span class="k">if</span> <span class="n">group_name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">h5file</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+        <span class="k">if</span> <span class="n">group_name</span> <span class="ow">in</span> <span class="n">h5file</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">overwrite</span><span class="p">:</span>
+                <span class="k">del</span> <span class="n">h5file</span><span class="p">[</span><span class="n">group_name</span><span class="p">]</span>
+                <span class="n">h5file</span><span class="o">.</span><span class="n">create_group</span><span class="p">(</span><span class="n">group_name</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
             <span class="n">h5file</span><span class="o">.</span><span class="n">create_group</span><span class="p">(</span><span class="n">group_name</span><span class="p">)</span>
+    
     <span class="n">h5file</span><span class="o">.</span><span class="n">close</span><span class="p">()</span></div>
 
 <div class="viewcode-block" id="plot_spectral_function"><a class="viewcode-back" href="../../../fd_greens.cirq_ver.helpers.html#fd_greens.cirq_ver.helpers.plot_spectral_function">[docs]</a><span class="k">def</span> <span class="nf">plot_spectral_function</span><span class="p">(</span>
     <span class="n">h5fnames</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
     <span class="n">suffixes</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
     <span class="n">labels</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">annotations</span><span class="o">=</span><span class="n">Optional</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">dict</span><span class="p">]],</span>
+    <span class="n">annotations</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">dict</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">linestyles</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">dict</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">figname</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;A&quot;</span><span class="p">,</span>
     <span class="n">text</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>

@@ -70,8 +70,8 @@ def permute_qubits(circuit: cirq.Circuit) -> cirq.Circuit:
             qubits = sorted(list(op.qubits)).copy()
             if len(qubits) > 1 and not is_adjacent(qubits):
                 # print(qubits)
+                # TODO: This could be raised as warnings.
                 print("Warning: Adding SWAP gates")
-                # print('!!!!!!', op)
                 assert gate in [cirq.CZ, cirq.CCZ]
                 # print('old qubits =', qubits)
                 qubits_swap = (qubits[-2] + 1, qubits[-1])
@@ -193,7 +193,7 @@ def convert_swap_to_cz(circuit: cirq.Circuit) -> cirq.Circuit:
 
 
 def convert_phxz_to_xpi2(circuit: cirq.Circuit) -> cirq.Circuit:
-    """Converts ``PhasedXZGate``s to X(pi/2) gates and virtual Z gates.
+    """Converts ``PhasedXZGate`` s to X(pi/2) gates and virtual Z gates.
     
     Args:
         circuit: The circuit to be converted.

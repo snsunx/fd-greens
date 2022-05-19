@@ -86,19 +86,19 @@
     <span class="sd">&quot;&quot;&quot;Ground state solver.&quot;&quot;&quot;</span>
 
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span> <span class="n">hamiltonian</span><span class="p">:</span> <span class="n">MolecularHamiltonian</span><span class="p">,</span> <span class="n">qubits</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">cirq</span><span class="o">.</span><span class="n">Qid</span><span class="p">],</span> <span class="n">h5fname</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;lih&quot;</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">hamiltonian</span><span class="p">:</span> <span class="n">MolecularHamiltonian</span><span class="p">,</span> <span class="n">qubits</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">cirq</span><span class="o">.</span><span class="n">Qid</span><span class="p">],</span> <span class="n">fname</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;lih&quot;</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;Initializes a ``GroudStateSolver`` object.</span>
 <span class="sd">        </span>
 <span class="sd">        Args:</span>
 <span class="sd">            hamiltonian: The molecular Hamiltonian object.</span>
 <span class="sd">            qubits: The qubits on which the ground state is prepared.</span>
-<span class="sd">            h5fname: The HDF5 file name.</span>
+<span class="sd">            fname: The HDF5 file name.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">hamiltonian</span> <span class="o">=</span> <span class="n">hamiltonian</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">hamiltonian</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">method_indices_pairs</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">qubits</span> <span class="o">=</span> <span class="n">qubits</span>        
-        <span class="bp">self</span><span class="o">.</span><span class="n">h5fname</span> <span class="o">=</span> <span class="n">h5fname</span> <span class="o">+</span> <span class="s2">&quot;.h5&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">h5fname</span> <span class="o">=</span> <span class="n">fname</span> <span class="o">+</span> <span class="s2">&quot;.h5&quot;</span>
         
         <span class="bp">self</span><span class="o">.</span><span class="n">circuit_string_converter</span> <span class="o">=</span> <span class="n">CircuitStringConverter</span><span class="p">(</span><span class="n">qubits</span><span class="p">)</span>
 
@@ -200,7 +200,7 @@
 
         <span class="k">return</span> <span class="n">operations</span>
 
-    <span class="c1"># TODO: This should be handled differently.</span>
+    <span class="c1"># TODO: This can be deleted and instead use the </span>
     <span class="k">def</span> <span class="nf">_decompose_1q_gate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">unitary</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">qubit</span><span class="p">:</span> <span class="n">cirq</span><span class="o">.</span><span class="n">Qid</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">cirq</span><span class="o">.</span><span class="n">Operation</span><span class="p">]:</span>
         <span class="sd">&quot;&quot;&quot;ZXZXZ decomposition of a single-qubit gate.&quot;&quot;&quot;</span>
         <span class="n">decomposer</span> <span class="o">=</span> <span class="n">OneQubitEulerDecomposer</span><span class="p">(</span><span class="s2">&quot;U3&quot;</span><span class="p">)</span>
@@ -222,10 +222,6 @@
         <span class="sd">&quot;&quot;&quot;Saves ground state energy and ansatz to hdf5 file.&quot;&quot;&quot;</span>
         <span class="n">h5file</span> <span class="o">=</span> <span class="n">h5py</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">h5fname</span><span class="p">,</span> <span class="s2">&quot;r+&quot;</span><span class="p">)</span>
         <span class="n">qtrl_strings</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">circuit_string_converter</span><span class="o">.</span><span class="n">convert_circuit_to_strings</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ansatz</span><span class="p">)</span>
-
-        <span class="k">for</span> <span class="n">dset_name</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;gs/energy&#39;</span><span class="p">,</span> <span class="s1">&#39;gs/ansatz&#39;</span><span class="p">]:</span>
-            <span class="k">if</span> <span class="n">dset_name</span> <span class="ow">in</span> <span class="n">h5file</span><span class="p">:</span>
-                <span class="k">del</span> <span class="n">h5file</span><span class="p">[</span><span class="n">dset_name</span><span class="p">]</span>
         
         <span class="n">h5file</span><span class="p">[</span><span class="s1">&#39;gs/energy&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">energy</span>
         <span class="n">h5file</span><span class="p">[</span><span class="s1">&#39;gs/ansatz&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">qtrl_strings</span><span class="p">)</span>

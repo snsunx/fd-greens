@@ -1,3 +1,9 @@
+"""
+============
+Cirq Version
+============
+"""
+
 from .ground_state_solver import GroundStateSolver
 from .eh_states_solver import EHStatesSolver
 from .excited_states_solver import ExcitedStatesSolver

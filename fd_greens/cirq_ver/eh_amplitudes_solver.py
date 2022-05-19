@@ -74,9 +74,6 @@ class EHAmplitudesSolver:
 
         for m in range(self.n_orbitals):
             circuit_label = f"circ{m}{self.spin}"
-            # if f"{circuit_label}/transpiled" in h5file:
-            #     print(f"Deleting {circuit_label}/transpiled")
-            #     del h5file[f"{circuit_label}/transpiled"]
 
             # Build the diagonal circuit based on the second quantized operator.
             circuit = self.circuit_constructor.build_diagonal_circuit(
@@ -99,15 +96,13 @@ class EHAmplitudesSolver:
                     circuit, self.qubits[1:3], self.qubits[:3]) # XXX: 1:3 is hardcoded
 
                 for tomography_label, tomography_circuit in tomography_circuits.items():
+                    # Save tomography circuit to HDF5 file.
                     self.circuits[circuit_label + tomography_label] = tomography_circuit
-
-                    # if f"{circuit_label}/{tomography_label}" in h5file:
-                    #     print(f"Deleting {circuit_label}/{tomography_label}")
-                    #     del h5file[f"{circuit_label}/{tomography_label}"]
                     qtrl_strings = self.circuit_string_converter.convert_circuit_to_strings(tomography_circuit)
                     dset_tomography = h5file.create_dataset(
                         f"{circuit_label}/{tomography_label}", data=json.dumps(qtrl_strings))
 
+                    # Run tomography circuit and store results to HDF5 file.
                     result = cirq.Simulator().run(tomography_circuit, repetitions=self.repetitions)
                     histogram = result.multi_measurement_histogram(keys=[str(q) for q in self.qubits[:3]])
                     dset_tomography.attrs[f"counts{self.suffix}"] = histogram_to_array(histogram, n_qubits=3)
@@ -123,9 +118,6 @@ class EHAmplitudesSolver:
         for m in range(self.n_orbitals):
             for n in range(m + 1, self.n_orbitals):
                 circuit_label = f"circ{m}{n}{self.spin}"
-                # if f"{circuit_label}/transpiled" in h5file:
-                #     print(f"Deleting {circuit_label}/transpiled")
-                #     del h5file[f"{circuit_label}/transpiled"]
 
                 # Build the off-diagonal circuit based on the creation/annihilation operators.
                 circuit = self.circuit_constructor.build_off_diagonal_circuit(
@@ -154,10 +146,7 @@ class EHAmplitudesSolver:
                         circuit, self.qubits[2:4], self.qubits[:4]) # XXX: 2:4 is hardcoded
 
                     for tomography_label, tomography_circuit in tomography_circuits.items():
-                        # if f"{circuit_label}/{tomography_label}" in h5file:
-                        #     print(f"Deleting {circuit_label}/{tomography_label}")
-                        #     del h5file[f"{circuit_label}/{tomography_label}"]
-
+                        # Save tomography circuit to HDF5 file.
                         self.circuits[circuit_label + tomography_label] = tomography_circuit
                         qtrl_strings = self.circuit_string_converter.convert_circuit_to_strings(tomography_circuit)
                         dset_tomography = h5file.create_dataset(

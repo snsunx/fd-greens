@@ -67,146 +67,117 @@
 <span class="sd">======================================</span>
 <span class="sd">&quot;&quot;&quot;</span>
 
-<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Callable</span>
-<span class="kn">from</span> <span class="nn">copy</span> <span class="kn">import</span> <span class="n">deepcopy</span>
 <span class="kn">from</span> <span class="nn">collections</span> <span class="kn">import</span> <span class="n">Counter</span>
+<span class="kn">from</span> <span class="nn">itertools</span> <span class="kn">import</span> <span class="n">product</span>
 <span class="kn">import</span> <span class="nn">math</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Callable</span>
 
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="kn">import</span> <span class="nn">cirq</span>
 
-
-<div class="viewcode-block" id="reverse_qubit_order"><a class="viewcode-back" href="../../../fd_greens.cirq_ver.utilities.html#fd_greens.cirq_ver.utilities.reverse_qubit_order">[docs]</a><span class="k">def</span> <span class="nf">reverse_qubit_order</span><span class="p">(</span><span class="n">arr</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<div class="viewcode-block" id="reverse_qubit_order"><a class="viewcode-back" href="../../../fd_greens.cirq_ver.utilities.html#fd_greens.cirq_ver.utilities.reverse_qubit_order">[docs]</a><span class="k">def</span> <span class="nf">reverse_qubit_order</span><span class="p">(</span><span class="n">array</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;Reverses qubit order in a 1D or 2D array.</span>
-
-<span class="sd">    This is because Qiskit uses big endian order and most other packages use small endian order.</span>
-
+<span class="sd">    </span>
 <span class="sd">    Args:</span>
-<span class="sd">        arr: The 1D or 2D array on which the qubit order is to be reversed.</span>
-
+<span class="sd">        array: The array on which qubit order is to be reversed.</span>
+<span class="sd">        </span>
 <span class="sd">    Returns:</span>
-<span class="sd">       arr: The 1D or 2D array after qubit order is reversed.</span>
+<span class="sd">        array_new: The new array with qubit order reversed.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">arr</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
-        <span class="c1"># Extract the dimension and number of qubits.</span>
-        <span class="n">dim</span> <span class="o">=</span> <span class="n">arr</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
-        <span class="n">n_qubits</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">log2</span><span class="p">(</span><span class="n">dim</span><span class="p">))</span>
+    <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">array</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="ow">in</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">]</span>
+    <span class="n">n_qubits</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">log2</span><span class="p">(</span><span class="n">array</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span>
+    <span class="n">indices</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">product</span><span class="p">(</span><span class="s1">&#39;01&#39;</span><span class="p">,</span> <span class="n">repeat</span><span class="o">=</span><span class="n">n_qubits</span><span class="p">)]</span>
+    <span class="n">indices</span> <span class="o">=</span> <span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="n">x</span><span class="p">[::</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="mi">2</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">indices</span><span class="p">]</span>
 
-        <span class="c1"># Reshape to a length 2^N array, transpose the indices and then reshape back.</span>
-        <span class="n">arr</span> <span class="o">=</span> <span class="n">arr</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">*</span><span class="p">([</span><span class="mi">2</span><span class="p">]</span> <span class="o">*</span> <span class="n">n_qubits</span><span class="p">))</span>
-        <span class="n">arr</span> <span class="o">=</span> <span class="n">arr</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="o">*</span><span class="nb">range</span><span class="p">(</span><span class="n">n_qubits</span><span class="p">)[::</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
-        <span class="n">arr</span> <span class="o">=</span> <span class="n">arr</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">dim</span><span class="p">)</span>
-    <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">arr</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
-        <span class="c1"># Extract the dimension and number of qubits.</span>
-        <span class="k">assert</span> <span class="n">arr</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="n">arr</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
-        <span class="n">dim</span> <span class="o">=</span> <span class="n">arr</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
-        <span class="n">n_qubits</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">log2</span><span class="p">(</span><span class="n">dim</span><span class="p">))</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">array</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="n">array_new</span> <span class="o">=</span> <span class="n">array</span><span class="p">[</span><span class="n">indices</span><span class="p">]</span>
+    <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">array</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+        <span class="n">array_new</span> <span class="o">=</span> <span class="n">array</span><span class="p">[</span><span class="n">indices</span><span class="p">][:,</span> <span class="n">indices</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">array_new</span></div>
 
-        <span class="c1"># Reshape to a dim 2^N by 2^N array, transpose the indices and then reshape back.</span>
-        <span class="kn">from</span> <span class="nn">itertools</span> <span class="kn">import</span> <span class="n">chain</span>
-
-        <span class="n">arr</span> <span class="o">=</span> <span class="n">arr</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">*</span><span class="p">([</span><span class="mi">2</span><span class="p">]</span> <span class="o">*</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">n_qubits</span><span class="p">))</span>
-        <span class="n">arr</span> <span class="o">=</span> <span class="n">arr</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span>
-            <span class="o">*</span><span class="n">chain</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="n">n_qubits</span><span class="p">)[::</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_qubits</span><span class="p">,</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">n_qubits</span><span class="p">)[::</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
-        <span class="p">)</span>
-        <span class="n">arr</span> <span class="o">=</span> <span class="n">arr</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">dim</span><span class="p">,</span> <span class="n">dim</span><span class="p">)</span>
-    <span class="k">else</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span>
-            <span class="s2">&quot;Reversing qubit order of array with more&quot;</span>
-            <span class="s2">&quot;than two dimensions is not implemented.&quot;</span>
-        <span class="p">)</span>
-    <span class="k">return</span> <span class="n">arr</span></div>
-
-<div class="viewcode-block" id="circuit_equal"><a class="viewcode-back" href="../../../fd_greens.cirq_ver.utilities.html#fd_greens.cirq_ver.utilities.circuit_equal">[docs]</a><span class="k">def</span> <span class="nf">circuit_equal</span><span class="p">(</span>
-    <span class="n">circuit1</span><span class="p">:</span> <span class="n">cirq</span><span class="o">.</span><span class="n">Circuit</span><span class="p">,</span> <span class="n">circuit2</span><span class="p">:</span> <span class="n">cirq</span><span class="o">.</span><span class="n">Circuit</span><span class="p">,</span> <span class="n">init_state_0</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<div class="viewcode-block" id="circuit_equal"><a class="viewcode-back" href="../../../fd_greens.cirq_ver.utilities.html#fd_greens.cirq_ver.utilities.circuit_equal">[docs]</a><span class="k">def</span> <span class="nf">circuit_equal</span><span class="p">(</span><span class="n">circuit1</span><span class="p">:</span> <span class="n">cirq</span><span class="o">.</span><span class="n">Circuit</span><span class="p">,</span> <span class="n">circuit2</span><span class="p">:</span> <span class="n">cirq</span><span class="o">.</span><span class="n">Circuit</span><span class="p">,</span> <span class="n">initial_state_0</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;Checks if two circuits are equivalent.</span>
 
 <span class="sd">    The two circuits are equivalent either when the unitaries are equal up to a phase or </span>
-<span class="sd">    when the statevectors with the all 0 initial state are equal up to a phase.</span>
+<span class="sd">    when the statevectors with all 0 initial state are equal up to a phase.</span>
 <span class="sd">    </span>
 <span class="sd">    Args:</span>
 <span class="sd">        circuit1: The first cicuit.</span>
 <span class="sd">        circuit2: The second circuit.</span>
-<span class="sd">        init_state_0: Whether to assume the initial state is the all 0 state. Default to True.</span>
+<span class="sd">        initial_state_0: Whether to assume the initial state is the all 0 state.</span>
 <span class="sd">        </span>
 <span class="sd">    Returns:</span>
 <span class="sd">        is_equal: Whether the two circuits are equivalent.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="c1"># If the circuits are in instruction tuple form.</span>
     <span class="n">unitary1</span> <span class="o">=</span> <span class="n">cirq</span><span class="o">.</span><span class="n">unitary</span><span class="p">(</span><span class="n">circuit1</span><span class="p">)</span>
     <span class="n">unitary2</span> <span class="o">=</span> <span class="n">cirq</span><span class="o">.</span><span class="n">unitary</span><span class="p">(</span><span class="n">circuit2</span><span class="p">)</span>
     <span class="k">assert</span> <span class="n">unitary1</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="n">unitary2</span><span class="o">.</span><span class="n">shape</span>
-    <span class="n">is_equal</span> <span class="o">=</span> <span class="n">unitary_equal</span><span class="p">(</span><span class="n">unitary1</span><span class="p">,</span> <span class="n">unitary2</span><span class="p">,</span> <span class="n">init_state_0</span><span class="o">=</span><span class="n">init_state_0</span><span class="p">)</span>
+    <span class="n">is_equal</span> <span class="o">=</span> <span class="n">unitary_equal</span><span class="p">(</span><span class="n">unitary1</span><span class="p">,</span> <span class="n">unitary2</span><span class="p">,</span> <span class="n">initial_state_0</span><span class="o">=</span><span class="n">initial_state_0</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">is_equal</span></div>
 
 
 <div class="viewcode-block" id="unitary_equal"><a class="viewcode-back" href="../../../fd_greens.cirq_ver.utilities.html#fd_greens.cirq_ver.utilities.unitary_equal">[docs]</a><span class="k">def</span> <span class="nf">unitary_equal</span><span class="p">(</span>
-    <span class="n">uni1</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">uni2</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">init_state_0</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="n">unitary1</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">unitary2</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">initial_state_0</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;Checks if two unitaries are equal up to a phase factor.</span>
 <span class="sd">    </span>
 <span class="sd">    Args:</span>
-<span class="sd">        uni1: The first unitary.</span>
-<span class="sd">        uni2: The second unitary.</span>
-<span class="sd">        init_state_0: If set to True, only consider equality on the first column </span>
-<span class="sd">            corresponding to the all 0 state.</span>
+<span class="sd">        unitary1: The first unitary.</span>
+<span class="sd">        unitary2: The second unitary.</span>
+<span class="sd">        initial_state_0: Whether to assume the initial state to be the all 0 state.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        is_equal: Whether the two unitaries are equal up to a phase.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">if</span> <span class="n">init_state_0</span><span class="p">:</span>
-        <span class="c1"># Obtain the phase from the first column, since only comparing</span>
-        <span class="c1"># actions on the all 0 state.</span>
-        <span class="n">vec1</span> <span class="o">=</span> <span class="n">deepcopy</span><span class="p">(</span><span class="n">uni1</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">])</span>
-        <span class="n">vec2</span> <span class="o">=</span> <span class="n">deepcopy</span><span class="p">(</span><span class="n">uni2</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">])</span>
-        <span class="n">ind</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">vec1</span><span class="p">))</span>
-        <span class="k">if</span> <span class="nb">abs</span><span class="p">(</span><span class="n">vec2</span><span class="p">[</span><span class="n">ind</span><span class="p">])</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
-            <span class="k">return</span> <span class="kc">False</span>
-        <span class="n">phase1</span> <span class="o">=</span> <span class="n">vec1</span><span class="p">[</span><span class="n">ind</span><span class="p">]</span> <span class="o">/</span> <span class="nb">abs</span><span class="p">(</span><span class="n">vec1</span><span class="p">[</span><span class="n">ind</span><span class="p">])</span>
-        <span class="n">phase2</span> <span class="o">=</span> <span class="n">vec2</span><span class="p">[</span><span class="n">ind</span><span class="p">]</span> <span class="o">/</span> <span class="nb">abs</span><span class="p">(</span><span class="n">vec2</span><span class="p">[</span><span class="n">ind</span><span class="p">])</span>
 
-        <span class="c1"># Compare the two vectors after dividing by their respective phases.</span>
-        <span class="n">vec1</span> <span class="o">/=</span> <span class="n">phase1</span>
-        <span class="n">vec2</span> <span class="o">/=</span> <span class="n">phase2</span>
-        <span class="n">is_equal</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">allclose</span><span class="p">(</span><span class="n">vec1</span><span class="p">,</span> <span class="n">vec2</span><span class="p">)</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="n">is_equal</span><span class="p">:</span>
-            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;The difference is &quot;</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">vec1</span> <span class="o">-</span> <span class="n">vec2</span><span class="p">))</span>
+    <span class="c1"># Find the index of phase factor in the first column.</span>
+    <span class="n">index</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">unitary1</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]))</span>
+    <span class="k">if</span> <span class="nb">abs</span><span class="p">(</span><span class="n">unitary2</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="n">index</span><span class="p">])</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">False</span>
+
+    <span class="n">phase1</span> <span class="o">=</span> <span class="n">unitary1</span><span class="p">[</span><span class="n">index</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">/</span> <span class="nb">abs</span><span class="p">(</span><span class="n">unitary1</span><span class="p">[</span><span class="n">index</span><span class="p">,</span> <span class="mi">0</span><span class="p">])</span>
+    <span class="n">phase2</span> <span class="o">=</span> <span class="n">unitary2</span><span class="p">[</span><span class="n">index</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">/</span> <span class="nb">abs</span><span class="p">(</span><span class="n">unitary2</span><span class="p">[</span><span class="n">index</span><span class="p">,</span> <span class="mi">0</span><span class="p">])</span>
+
+    <span class="k">if</span> <span class="n">initial_state_0</span><span class="p">:</span>
+        <span class="n">is_equal</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">allclose</span><span class="p">(</span><span class="n">unitary1</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">/</span> <span class="n">phase1</span><span class="p">,</span> <span class="n">unitary2</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">/</span> <span class="n">phase2</span><span class="p">)</span>
     <span class="k">else</span><span class="p">:</span>
-        <span class="c1"># Obtain the phase from the first row.</span>
-        <span class="n">ind</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">uni1</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span>
-        <span class="k">if</span> <span class="nb">abs</span><span class="p">(</span><span class="n">uni2</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="n">ind</span><span class="p">])</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
-            <span class="k">return</span> <span class="kc">False</span>
-        <span class="n">phase1</span> <span class="o">=</span> <span class="n">uni1</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="n">ind</span><span class="p">]</span> <span class="o">/</span> <span class="nb">abs</span><span class="p">(</span><span class="n">uni1</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="n">ind</span><span class="p">])</span>
-        <span class="n">phase2</span> <span class="o">=</span> <span class="n">uni2</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="n">ind</span><span class="p">]</span> <span class="o">/</span> <span class="nb">abs</span><span class="p">(</span><span class="n">uni2</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="n">ind</span><span class="p">])</span>
-
-        <span class="c1"># Compare the two unitaries after dividing by their respective phases.</span>
-        <span class="n">uni1_copy</span> <span class="o">=</span> <span class="n">deepcopy</span><span class="p">(</span><span class="n">uni1</span><span class="p">)</span>
-        <span class="n">uni2_copy</span> <span class="o">=</span> <span class="n">deepcopy</span><span class="p">(</span><span class="n">uni2</span><span class="p">)</span>
-        <span class="n">uni1_copy</span> <span class="o">/=</span> <span class="n">phase1</span>
-        <span class="n">uni2_copy</span> <span class="o">/=</span> <span class="n">phase2</span>
-        <span class="n">is_equal</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">allclose</span><span class="p">(</span><span class="n">uni1_copy</span><span class="p">,</span> <span class="n">uni2_copy</span><span class="p">)</span>
+        <span class="n">is_equal</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">allclose</span><span class="p">(</span><span class="n">unitary1</span> <span class="o">/</span> <span class="n">phase1</span><span class="p">,</span> <span class="n">unitary2</span> <span class="o">/</span> <span class="n">phase2</span><span class="p">)</span>
 
     <span class="k">return</span> <span class="n">is_equal</span></div>
 
 <div class="viewcode-block" id="histogram_to_array"><a class="viewcode-back" href="../../../fd_greens.cirq_ver.utilities.html#fd_greens.cirq_ver.utilities.histogram_to_array">[docs]</a><span class="k">def</span> <span class="nf">histogram_to_array</span><span class="p">(</span><span class="n">histogram</span><span class="p">:</span> <span class="n">Counter</span><span class="p">,</span> <span class="n">n_qubits</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Converts a Cirq histogram to a numpy array.&quot;&quot;&quot;</span>
+    <span class="sd">&quot;&quot;&quot;Converts a Cirq histogram to a numpy array.</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        histogram: The histogram from Cirq simulator runs.</span>
+<span class="sd">        n_qubits: Number of qubits.</span>
+<span class="sd">        </span>
+<span class="sd">    Returns:</span>
+<span class="sd">        array: The array form of the histogram.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">if</span> <span class="n">n_qubits</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="n">keys</span> <span class="o">=</span> <span class="n">histogram</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span>
-        <span class="n">inds</span> <span class="o">=</span> <span class="p">[]</span>
-        <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">keys</span><span class="p">:</span>
-            <span class="n">ind</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="s1">&#39;&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="nb">str</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">key</span><span class="p">]),</span> <span class="mi">2</span><span class="p">)</span>
-            <span class="n">inds</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ind</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
-        <span class="n">n_qubits</span> <span class="o">=</span> <span class="n">math</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span><span class="n">math</span><span class="o">.</span><span class="n">log2</span><span class="p">(</span><span class="nb">max</span><span class="p">(</span><span class="n">inds</span><span class="p">)))</span>
-            
-    <span class="n">arr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="mi">2</span> <span class="o">**</span> <span class="n">n_qubits</span><span class="p">,))</span>
-    <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">val</span> <span class="ow">in</span> <span class="n">histogram</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
-        <span class="n">ind</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="s1">&#39;&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="nb">str</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">key</span><span class="p">]),</span> <span class="mi">2</span><span class="p">)</span>
-        <span class="n">arr</span><span class="p">[</span><span class="n">ind</span><span class="p">]</span> <span class="o">=</span> <span class="n">val</span>
-    <span class="k">return</span> <span class="n">arr</span></div>
+        <span class="n">indices</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">histogram</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+            <span class="n">index</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="s1">&#39;&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="nb">str</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">key</span><span class="p">]),</span> <span class="mi">2</span><span class="p">)</span>
+            <span class="n">indices</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">index</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="n">n_qubits</span> <span class="o">=</span> <span class="n">math</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span><span class="n">math</span><span class="o">.</span><span class="n">log2</span><span class="p">(</span><span class="nb">max</span><span class="p">(</span><span class="n">indices</span><span class="p">)))</span>
+    
+    <span class="n">array</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="mi">2</span> <span class="o">**</span> <span class="n">n_qubits</span><span class="p">,))</span>
+    <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">histogram</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="n">index</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="s1">&#39;&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="nb">str</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">key</span><span class="p">]),</span> <span class="mi">2</span><span class="p">)</span>
+        <span class="n">array</span><span class="p">[</span><span class="n">index</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span>
+    <span class="k">return</span> <span class="n">array</span></div>
 
 <div class="viewcode-block" id="get_gate_counts"><a class="viewcode-back" href="../../../fd_greens.cirq_ver.utilities.html#fd_greens.cirq_ver.utilities.get_gate_counts">[docs]</a><span class="k">def</span> <span class="nf">get_gate_counts</span><span class="p">(</span><span class="n">circuit</span><span class="p">:</span> <span class="n">cirq</span><span class="o">.</span><span class="n">Circuit</span><span class="p">,</span> <span class="n">criterion</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">cirq</span><span class="o">.</span><span class="n">OP_TREE</span><span class="p">],</span> <span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">op</span><span class="p">:</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Returns the count of gates satisfying a certain criterion.&quot;&quot;&quot;</span>
+    <span class="sd">&quot;&quot;&quot;Returns the count of gates satisfying a certain criterion.</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        circuit: The circuit on which to return gate counts.</span>
+<span class="sd">        criterion: The criterion of gates to be counted.</span>
+<span class="sd">        </span>
+<span class="sd">    Returns:</span>
+<span class="sd">        count: Number of gates satisfying a certain criterion.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">count</span> <span class="o">=</span> <span class="mi">0</span>
     <span class="k">for</span> <span class="n">op</span> <span class="ow">in</span> <span class="n">circuit</span><span class="o">.</span><span class="n">all_operations</span><span class="p">():</span>
         <span class="k">if</span> <span class="n">criterion</span><span class="p">(</span><span class="n">op</span><span class="p">):</span>

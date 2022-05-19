@@ -1,3 +1,9 @@
+"""
+===========
+Main Module
+===========
+"""
+
 # Main scripts.
 from .ground_state_solver import GroundStateSolver
 from .eh_states_solver import EHStatesSolver

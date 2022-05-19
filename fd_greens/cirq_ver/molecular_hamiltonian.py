@@ -4,7 +4,7 @@ Molecular Hamiltonian (:mod:`fd_greens.molecular_hamiltonian`)
 ==============================================================
 """
 
-from typing import Sequence, List, Tuple, Optional
+from typing import Sequence, List, Tuple, Optional, Iterable
 import copy
 
 import numpy as np
@@ -68,16 +68,19 @@ class MolecularHamiltonian(OperatorsBase):
                 pauli_string *= pauli_dict[symbol](qubits[index])
             self.pauli_strings.append(pauli_string)
 
-    def transform(self, method_indices_pairs, tapered_state=None) -> None:
+    def transform(self, method_indices_pairs: Iterable[Tuple[str, Sequence[int]]], tapered_state=None) -> None:
+        """Transforms the Hamiltonian terms with Z2 symmetries and qubit tapering."""
         if tapered_state is None:
             tapered_state = [1] * (self.n_qubits // 2)
         OperatorsBase.transform(self, method_indices_pairs, tapered_state=tapered_state)
     
     def copy(self) -> 'MolecularHamiltonian':
+        """Returns a copy of itself."""
         return copy.deepcopy(self)
     
     @property
     def matrix(self) -> np.ndarray:
+        """Returns the matrix form of the Hamiltonian."""
         return sum(self.pauli_strings).matrix()
 
 def get_lih_hamiltonian(bond_distance: float) -> MolecularHamiltonian:
@@ -87,7 +90,7 @@ def get_lih_hamiltonian(bond_distance: float) -> MolecularHamiltonian:
         bond_distance: The bond length of the molecule in Angstrom.
     
     Returns:
-        hamiltonian: The molecular Hamiltonian.
+        hamiltonian: The molecular Hamiltonian of LiH.
     """
     hamiltonian = MolecularHamiltonian(
         cirq.LineQubit.range(4),

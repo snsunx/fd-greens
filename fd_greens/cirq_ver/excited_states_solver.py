@@ -42,7 +42,7 @@ class ExcitedStatesSolver:
         def eigensolve(arr, inds):
             arr = arr[inds][:, inds]
             e, v = np.linalg.eigh(arr)
-            return e[1:], v[:, 1:]
+            return e[1:], v[:, 1:] # 1: for excluding ground state
 
         self.energies, self.state_vectors = eigensolve(self.hamiltonian.matrix, self.qubit_indices_dict['n'].int)
         print(f"Singlet excited-state energies are {self.energies} eV")
@@ -50,11 +50,6 @@ class ExcitedStatesSolver:
     def _save_data(self):
         """Saves N-electron excited-state energies and states to HDF5 file."""
         h5file = h5py.File(self.h5fname, "r+")
-
-        # for dset_name in ['es/energies', 'es/states']:
-        #     if dset_name in h5file:
-        #         print(f"Deleting {dset_name}")
-        #         del h5file[dset_name]
 
         h5file['es/energies'] = self.energies
         h5file['es/states'] = self.state_vectors

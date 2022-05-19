@@ -78,7 +78,7 @@ class GreensFunction:
         self._process_off_diagonal_results()
 
     def _process_diagonal_results(self) -> None:
-        """Post-processes diagonal transition amplitude results."""
+        """Processes diagonal transition amplitude results."""
         h5file = h5py.File(self.h5fname, "r+")
 
         for m in range(self.n_orbitals):
@@ -121,7 +121,7 @@ class GreensFunction:
         h5file.close()
 
     def _process_off_diagonal_results(self) -> None:
-        """Post-processes off-diagonal transition amplitude results."""
+        """Processes off-diagonal transition amplitude results."""
         h5file = h5py.File(self.h5fname, "r+")
 
         for m in range(self.n_orbitals):

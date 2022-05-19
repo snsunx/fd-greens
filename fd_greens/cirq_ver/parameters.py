@@ -1,3 +1,9 @@
+"""
+========================================
+Parameters (:mod:`fd_greens.parameters`)
+========================================
+"""
+
 from itertools import product
 
 import numpy as np

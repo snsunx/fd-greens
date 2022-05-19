@@ -51,6 +51,7 @@ class QubitIndices:
             raise TypeError("The input array must be a 1D or 2D array.")
 
     def copy(self) -> "QubitIndices":
+        """Returns a copy of itself."""
         return copy.deepcopy(self)
 
     def __str__(self) -> str:
@@ -99,6 +100,8 @@ class QubitIndices:
 
     def _get_indices(n_qubits: int, states: str, spin: Optional[str] = None) -> List[List[int]]:
         """Returns the indices of given states and spin."""
+        # ``states`` should be one of 'e' ((N+1)-electron states), 'h' ((N-1)-electron states),
+        # 's' (N-electron singlet states), 't' (N-electron triplet states).
         assert states in ['e', 'h', 's', 't']
 
         up_orbitals = range(0, n_qubits, 2)

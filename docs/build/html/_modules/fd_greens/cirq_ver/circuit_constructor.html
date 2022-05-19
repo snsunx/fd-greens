@@ -91,6 +91,7 @@
     <span class="k">def</span> <span class="nf">_get_controlled_gate_operations</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">dense_pauli_string</span><span class="p">:</span> <span class="n">cirq</span><span class="o">.</span><span class="n">DensePauliString</span><span class="p">,</span> <span class="n">control_states</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">]</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">cirq</span><span class="o">.</span><span class="n">Operation</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;Returns the controlled gate operations corresponding to a Pauli string.&quot;&quot;&quot;</span>
         <span class="k">assert</span> <span class="nb">set</span><span class="p">(</span><span class="n">control_states</span><span class="p">)</span><span class="o">.</span><span class="n">issubset</span><span class="p">({</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">})</span>  <span class="c1"># Control states must be 0 or 1</span>
         <span class="n">coeffient</span> <span class="o">=</span> <span class="n">dense_pauli_string</span><span class="o">.</span><span class="n">coefficient</span>
         <span class="n">pauli_mask</span> <span class="o">=</span> <span class="n">dense_pauli_string</span><span class="o">.</span><span class="n">pauli_mask</span>
@@ -170,7 +171,7 @@
 
         <span class="k">return</span> <span class="n">operations</span>
 
-<div class="viewcode-block" id="CircuitConstructor.build_diagonal"><a class="viewcode-back" href="../../../fd_greens.cirq_ver.circuit_constructor.html#fd_greens.cirq_ver.circuit_constructor.CircuitConstructor.build_diagonal">[docs]</a>    <span class="k">def</span> <span class="nf">build_diagonal</span><span class="p">(</span>
+<div class="viewcode-block" id="CircuitConstructor.build_diagonal_circuit"><a class="viewcode-back" href="../../../fd_greens.cirq_ver.circuit_constructor.html#fd_greens.cirq_ver.circuit_constructor.CircuitConstructor.build_diagonal_circuit">[docs]</a>    <span class="k">def</span> <span class="nf">build_diagonal_circuit</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> 
         <span class="n">dense_pauli_string_x</span><span class="p">:</span> <span class="n">cirq</span><span class="o">.</span><span class="n">DensePauliString</span><span class="p">,</span>
         <span class="n">dense_pauli_string_y</span><span class="p">:</span> <span class="n">cirq</span><span class="o">.</span><span class="n">DensePauliString</span>
@@ -201,9 +202,7 @@
 
         <span class="k">return</span> <span class="n">circuit</span></div>
 
-    <span class="n">build_diagonal_circuit</span> <span class="o">=</span> <span class="n">build_diagonal</span>
-
-<div class="viewcode-block" id="CircuitConstructor.build_off_diagonal"><a class="viewcode-back" href="../../../fd_greens.cirq_ver.circuit_constructor.html#fd_greens.cirq_ver.circuit_constructor.CircuitConstructor.build_off_diagonal">[docs]</a>    <span class="k">def</span> <span class="nf">build_off_diagonal</span><span class="p">(</span>
+<div class="viewcode-block" id="CircuitConstructor.build_off_diagonal_circuit"><a class="viewcode-back" href="../../../fd_greens.cirq_ver.circuit_constructor.html#fd_greens.cirq_ver.circuit_constructor.CircuitConstructor.build_off_diagonal_circuit">[docs]</a>    <span class="k">def</span> <span class="nf">build_off_diagonal_circuit</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">dense_pauli_string_x1</span><span class="p">:</span> <span class="n">cirq</span><span class="o">.</span><span class="n">DensePauliString</span><span class="p">,</span>
         <span class="n">dense_pauli_string_y1</span><span class="p">:</span> <span class="n">cirq</span><span class="o">.</span><span class="n">DensePauliString</span><span class="p">,</span>
@@ -249,8 +248,6 @@
         <span class="n">circuit</span><span class="o">.</span><span class="n">append</span><span class="p">([</span><span class="n">cirq</span><span class="o">.</span><span class="n">H</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">qubits</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span> <span class="n">cirq</span><span class="o">.</span><span class="n">H</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">qubits</span><span class="p">[</span><span class="mi">1</span><span class="p">])])</span>
         <span class="k">return</span> <span class="n">circuit</span></div>
 
-    <span class="n">build_off_diagonal_circuit</span> <span class="o">=</span> <span class="n">build_off_diagonal</span>
-
 <div class="viewcode-block" id="CircuitConstructor.build_tomography_circuits"><a class="viewcode-back" href="../../../fd_greens.cirq_ver.circuit_constructor.html#fd_greens.cirq_ver.circuit_constructor.CircuitConstructor.build_tomography_circuits">[docs]</a>    <span class="nd">@staticmethod</span>
     <span class="k">def</span> <span class="nf">build_tomography_circuits</span><span class="p">(</span>
         <span class="n">circuit</span><span class="p">:</span> <span class="n">cirq</span><span class="o">.</span><span class="n">Circuit</span><span class="p">,</span> 
@@ -273,7 +270,7 @@
         <span class="n">tomography_labels</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">product</span><span class="p">(</span><span class="s2">&quot;xyz&quot;</span><span class="p">,</span> <span class="n">repeat</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">tomographed_qubits</span><span class="p">))]</span>
         <span class="n">tomography_circuits</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
 
-        <span class="c1"># TODO: Take swap gates into account.</span>
+        <span class="c1"># TODO: Take swap gates at the end of the circuit into account.</span>
         <span class="k">for</span> <span class="n">label</span> <span class="ow">in</span> <span class="n">tomography_labels</span><span class="p">:</span>
             <span class="n">tomography_circuit</span> <span class="o">=</span> <span class="n">circuit</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
             <span class="k">for</span> <span class="n">q</span><span class="p">,</span> <span class="n">s</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">tomographed_qubits</span><span class="p">,</span> <span class="n">label</span><span class="p">):</span>
