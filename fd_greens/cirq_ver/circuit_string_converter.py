@@ -42,7 +42,7 @@ class CircuitStringConverter:
             indices = [q.x + self.offset for q in qubits]
             qstring = f"C{indices[0]}C{indices[1]}T{indices[2]}"
         else:
-            raise ValueError("A gate can only act on up to 3 qubits.")
+            raise ValueError(f"A gate acting on {len(qubits)} qubits cannot be converted to Qtrl string.")
         return qstring
 
     def _gstring_to_gate(self, gstring: str) -> cirq.Gate:
@@ -68,37 +68,40 @@ class CircuitStringConverter:
             elif gate_name == "Z":
                 gate = cirq.ZPowGate(exponent=exponent)
             else:
-                raise NotImplementedError("Parametrized gate can only be X or Z.")
+                raise NotImplementedError(f"Parametrized gate can only be X or Z. Got {gate_name}.")
         return gate
 
     def _gate_to_gstring(self, gate: cirq.Gate) -> str:
         """Converts Cirq gates to Qtrl gate string."""
         # print(f'{gate = }')
-        if isinstance(gate, (cirq.XPowGate, cirq.ZPowGate)):
-            gname = gate.__class__.__name__[0]
-            angle = str(gate.exponent * 180.0)
-            gstring = gname + angle
+        # if isinstance(gate, (cirq.XPowGate, cirq.ZPowGate)):
+        #     gname = gate.__class__.__name__[0]
+        #     angle = str(gate.exponent * 180.0)
+        #     gstring = gname + angle
+        if isinstance(gate, cirq.XPowGate):
+            assert abs(gate.exponent - 0.5) < 1e-8
+            gstring = 'X90'
+        elif isinstance(gate, cirq.ZPowGate):
+            angle = gate.exponent * 180.0
+            gstring = f'Z{angle}'
         elif isinstance(gate, cirq.CZPowGate):
             if abs(gate._exponent) == 1.0:
-                gstring = "CZ"
+                gstring = 'CZ'
             elif gate._exponent == 0.5:
-                gstring = "CS"
+                gstring = 'CS'
             elif gate._exponent == -0.5:
-                gstring = "CSD"
+                gstring = 'CSD'
             else:
                 raise ValueError(f"CZPowGate must have exponent 1.0, 0.5 or -0.5. Got {gate._exponent}.")
-        elif isinstance(gate, C0C0iXGate): # issubclass(gate.__class__, C0C0iXGate):
+        elif isinstance(gate, C0C0iXGate):
             assert isinstance(gate, C0C0iXGate) == (type(gate) is C0C0iXGate)
             gstring = "TOF"
         elif str(gate) == "SWAP":
-            # TODO: This could be raised as warnings.
+            # TODO: This could be raised as a warning.
             print("Warning: SWAP gate converted to Qtrl string.")
             gstring = "SWAP"
         else:
-            raise NotImplementedError(
-                # "The only gates supported are XPowGate, ZPowGate, CZPowGate and C0C0iXGate."
-                f"Conversion of {str(gate)} to Qtrl strings is not supported."
-            )
+            raise NotImplementedError(f"Conversion of {str(gate)} to Qtrl string is not supported.")
         return gstring
 
     def convert_strings_to_circuit(self, qtrl_strings: List[List[str]]) -> cirq.Circuit:

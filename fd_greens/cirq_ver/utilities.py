@@ -8,6 +8,7 @@ from collections import Counter
 from itertools import product
 import math
 from typing import Optional, Callable
+from bqskit import UnitaryMatrix
 
 import numpy as np
 import cirq
@@ -53,9 +54,7 @@ def circuit_equal(circuit1: cirq.Circuit, circuit2: cirq.Circuit, initial_state_
     return is_equal
 
 
-def unitary_equal(
-    unitary1: np.ndarray, unitary2: np.ndarray, initial_state_0: bool = True
-) -> bool:
+def unitary_equal(unitary1: np.ndarray, unitary2: np.ndarray, initial_state_0: bool = True) -> bool:
     """Checks if two unitaries are equal up to a phase factor.
     
     Args:
@@ -69,7 +68,7 @@ def unitary_equal(
 
     # Find the index of phase factor in the first column.
     index = np.argmax(np.abs(unitary1[:, 0]))
-    if abs(unitary2[0, index]) == 0:
+    if abs(unitary2[index, 0]) == 0:
         return False
 
     phase1 = unitary1[index, 0] / abs(unitary1[index, 0])
