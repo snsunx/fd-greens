@@ -8,7 +8,10 @@ from itertools import product
 
 import numpy as np
 
-method_indices_pairs = [("cnot", (2, 0)), ("cnot", (3, 1)), ("swap", (2, 3)), ("taper", (0, 1))]
+HARTREE_TO_EV = 27.211386245988
+
+method_indices_pairs = {'u': [("cnot", (2, 0)), ("cnot", (3, 1)), ("taper", (0, 1))],
+                        'd': [("cnot", (2, 0)), ("cnot", (3, 1)), ("swap", (2, 3)), ("taper", (0, 1))]}
 
 # TODO: This should be moved to another place.
 # Basis matrix for tomography

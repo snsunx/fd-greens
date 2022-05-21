@@ -93,7 +93,7 @@ def permute_qubits(circuit: cirq.Circuit) -> cirq.Circuit:
     assert circuit_equal(circuit, circuit_new)
     return circuit_new
 
-def convert_ccz_to_c0c0ix(circuit: cirq.Circuit) -> cirq.Circuit:
+def convert_ccz_to_c0c0ix(circuit: cirq.Circuit, spin: str) -> cirq.Circuit:
     """Converts CCZs to C0C0iXs in a Cirq circuit.
     
     Args:
@@ -129,7 +129,7 @@ def convert_ccz_to_c0c0ix(circuit: cirq.Circuit) -> cirq.Circuit:
                           cirq.CZ(qubits[0], qubits[1]),
                           cirq.SWAP(qubits[0], qubits[1])]
 
-                if count % 2 == 0:
+                if count % 2 == (spin == 'u'):
                     circuit_new.append(cizc_ops)
                     circuit_new.append(iswap_ops)
                     circuit_new.append(cs_ops)
@@ -239,7 +239,7 @@ def convert_phxz_to_xpi2(circuit: cirq.Circuit) -> cirq.Circuit:
     return circuit_new
 
 
-def transpile_into_berkeley_gates(circuit: cirq.Circuit) -> cirq.Circuit:
+def transpile_into_berkeley_gates(circuit: cirq.Circuit, spin: str = 'd') -> cirq.Circuit:
     """Transpiles a circuit into native gates on the Berkeley device.
     
     Args:
@@ -253,10 +253,10 @@ def transpile_into_berkeley_gates(circuit: cirq.Circuit) -> cirq.Circuit:
     # Qubit permutation.
     circuit_new = permute_qubits(circuit_new)
     cirq.MergeInteractions(allow_partial_czs=False).optimize_circuit(circuit_new)
-    # cirq.merge_single_qubit_gates_into_phxz(circuit_new)
     
     # Three-qubit gate transpilation.
-    circuit_new = convert_ccz_to_c0c0ix(circuit_new)
+    circuit_new = convert_ccz_to_c0c0ix(circuit_new, spin)
+    print_circuit(circuit_new)
     cirq.MergeInteractions(allow_partial_czs=True).optimize_circuit(circuit_new)
 
     # Two-qubit gate transpilation.

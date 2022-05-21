@@ -65,8 +65,11 @@ class EHAmplitudesSolver:
         self.circuit_constructor = CircuitConstructor(ansatz, self.qubits)
 
         # Create dictionary of the second quantized operators.
-        self.second_quantized_operators = SecondQuantizedOperators(self.qubits, self.spin)
-        self.second_quantized_operators.transform(method_indices_pairs)
+        self.second_quantized_operators = SecondQuantizedOperators(
+            self.qubits, self.spin, factor=(-1) ** (self.spin == 'd'))
+        self.second_quantized_operators.transform(method_indices_pairs[spin])
+        for x in self.second_quantized_operators:
+            print(x)
 
     def _run_diagonal_circuits(self) -> None:
         """Runs diagonal transition amplitude circuits."""
@@ -81,7 +84,7 @@ class EHAmplitudesSolver:
                 self.second_quantized_operators[2 * m + 1])
 
             # Transpile the circuit and save to HDF5 file.
-            circuit = transpile_into_berkeley_gates(circuit)
+            circuit = transpile_into_berkeley_gates(circuit, self.spin)
             self.circuits[circuit_label] = circuit
             qtrl_strings = self.circuit_string_converter.convert_circuit_to_strings(circuit)
             dset_transpiled = h5file.create_dataset(f"{circuit_label}/transpiled", data=json.dumps(qtrl_strings))
@@ -127,7 +130,7 @@ class EHAmplitudesSolver:
                     self.second_quantized_operators[2 * n + 1])
 
                 # Transpile the circuit and save to HDF5 file.
-                circuit = transpile_into_berkeley_gates(circuit)
+                circuit = transpile_into_berkeley_gates(circuit, self.spin)
                 self.circuits[circuit_label] = circuit
                 # print(circuit[:10])
                 # print(circuit[10:20])

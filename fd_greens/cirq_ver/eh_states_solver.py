@@ -27,14 +27,12 @@ class EHStatesSolver:
 
         self.hamiltonian = hamiltonian.copy()
         tapered_state = [0, 1] if spin == 'd' else [1, 0] # XXX: reversed from Qiskit, but don't know if it's right.
-        self.hamiltonian.transform(method_indices_pairs, tapered_state=tapered_state)
+        self.hamiltonian.transform(method_indices_pairs[spin], tapered_state=tapered_state)
         self.h5fname = fname + ".h5"
 
         n_qubits = 2 * len(self.hamiltonian.active_indices)
         self.qubit_indices_dict = QubitIndices.get_eh_qubit_indices_dict(
-            n_qubits, spin, method_indices_pairs, system_only=True)
-        # for key, val in self.qubit_indices_dict.items():
-        #     print(key, val)
+            n_qubits, spin, method_indices_pairs[spin], system_only=True)
 
         self.energies = dict()
         self.state_vectors = dict()

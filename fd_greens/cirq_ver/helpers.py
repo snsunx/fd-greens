@@ -268,12 +268,9 @@ def plot_counts(
     plt.close(fig)
 
 def print_circuit(circuit) -> None:
-    if True:
+    if len(circuit) < 10:
         print(circuit)
     else:
-        for i in range(len(circuit) // 10):
-            print(circuit[i * 10: (i + 1) * 10], '\n')
-
-    for op in circuit.all_operations():
-        if len(op.qubits) == 3:
-            print(op)
+        for i in range(len(circuit) // 10 + 1):
+            print(circuit[i * 10: min((i + 1) * 10, len(circuit) - 1)], '\n')
+            print('-' * 120, '\n')

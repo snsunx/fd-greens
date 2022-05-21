@@ -85,11 +85,11 @@ class CircuitStringConverter:
             angle = gate.exponent * 180.0
             gstring = f'Z{angle}'
         elif isinstance(gate, cirq.CZPowGate):
-            if abs(gate._exponent) == 1.0:
+            if abs(abs(gate._exponent) - 1.0) < 1e-8:
                 gstring = 'CZ'
-            elif gate._exponent == 0.5:
+            elif abs(gate._exponent - 0.5) < 1e-8:
                 gstring = 'CS'
-            elif gate._exponent == -0.5:
+            elif abs(gate._exponent + 0.5) < 1e-8:
                 gstring = 'CSD'
             else:
                 raise ValueError(f"CZPowGate must have exponent 1.0, 0.5 or -0.5. Got {gate._exponent}.")

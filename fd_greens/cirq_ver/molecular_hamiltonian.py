@@ -13,8 +13,7 @@ from openfermion.transforms import jordan_wigner, get_fermion_operator
 from openfermionpyscf import run_pyscf
 
 from .operators import OperatorsBase
-
-HARTREE_TO_EV = 27.211386245988
+from .parameters import HARTREE_TO_EV
 
 
 class MolecularHamiltonian(OperatorsBase):

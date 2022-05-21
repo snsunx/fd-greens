@@ -8,7 +8,6 @@ from collections import Counter
 from itertools import product
 import math
 from typing import Optional, Callable
-from bqskit import UnitaryMatrix
 
 import numpy as np
 import cirq

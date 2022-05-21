@@ -60,9 +60,8 @@ class OperatorsBase:
 
     def __getitem__(self, m) -> cirq.DensePauliString:
         pauli_string = self.pauli_strings[m]
-        # max_index = max(pauli_string._qubit_pauli_map.keys()).x
-        max_index = self.n_qubits - self.n_tapered # TODO: Maybe this can be in the parent class init method.
-        dense_pauli_string = pauli_string.dense(self.qubits[:max_index]) # XXX: 2 is hardcoded
+        max_index = self.n_qubits - self.n_tapered
+        dense_pauli_string = pauli_string.dense(self.qubits[:max_index])
         return dense_pauli_string
 
 
@@ -86,14 +85,14 @@ class SecondQuantizedOperators(OperatorsBase):
             z_chain = [cirq.Z(qubits[j]) for j in range(2 * i + (spin == 'd'))]
             pauli_string_x = cirq.PauliString(z_chain + [cirq.X(qubits[2 * i + (spin == 'd')])])
             pauli_string_y = cirq.PauliString(z_chain + [cirq.Y(qubits[2 * i + (spin == 'd')])])
-            # print('pauli_string_x =', pauli_string_x.dense(self.qubits))
-            # print('pauli_string_y =', pauli_string_y.dense(self.qubits))
             self.pauli_strings.append(factor * pauli_string_x)
             self.pauli_strings.append(factor * 1j * pauli_string_y)
 
     def transform(self, method_indices_pairs: Mapping[str, Sequence[int]]) -> None:
         """Transforms the second quantized operators with Z2 symmetries and qubit tapering."""
-        tapered_state = [1] * (self.n_qubits // 2) # XXX: Is n_qubits // 2 correct?
+        # self.n_tapered = len(method_indices_pairs['taper'])
+        self.n_tapered = len(dict(method_indices_pairs)['taper'])
+        tapered_state = [1] * self.n_tapered # XXX: Not general
         OperatorsBase.transform(self, method_indices_pairs, tapered_state=tapered_state)
 
 class ChargeOperators(OperatorsBase):
@@ -118,6 +117,6 @@ class ChargeOperators(OperatorsBase):
 
     def transform(self, method_indices_pairs: Mapping[str, Sequence[int]]) -> None:
         """Transforms the charge operators with Z2 symmetries and qubit tapering."""
-        tapered_state = [1] * (self.n_qubits // 2) # XXX: Is n_qubits // 2 correct?
-        self.n_tapered = len(tapered_state)
+        self.n_tapered = len(dict(method_indices_pairs)['taper'])
+        tapered_state = [1] * self.n_tapered # XXX: Not general
         OperatorsBase.transform(self, method_indices_pairs, tapered_state=tapered_state)

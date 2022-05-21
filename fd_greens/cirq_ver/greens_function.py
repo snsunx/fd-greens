@@ -42,6 +42,9 @@ class GreensFunction:
             method: The method used for calculating the transition amplitudes. Either ``'exact'`` or ``'tomo'``.
             verbose: Whether to print out transition amplitude values.
         """
+        assert spin in ['u', 'd']
+        assert method in ['exact', 'tomo']
+        
         # Input attributes.
         self.hamiltonian = hamiltonian
         self.fname = fname
@@ -62,9 +65,9 @@ class GreensFunction:
         # Derived attributes.
         self.n_states = {subscript: self.state_vectors[subscript].shape[1] for subscript in ['e', 'h']}
         self.n_orbitals = len(self.hamiltonian.active_indices)
-        self.n_system_qubits = 2 * self.n_orbitals - len(dict(method_indices_pairs)['taper'])
+        self.n_system_qubits = 2 * self.n_orbitals - len(dict(method_indices_pairs[spin])['taper'])
         self.qubit_indices_dict = QubitIndices.get_eh_qubit_indices_dict(
-            2 * self.n_orbitals, spin, method_indices_pairs)
+            2 * self.n_orbitals, spin, method_indices_pairs[spin])
 
         # Initialize array quantities B, D and G.
         self.B = {subscript: np.zeros((self.n_orbitals, self.n_orbitals, self.n_states[subscript]), dtype=complex)
@@ -98,15 +101,15 @@ class GreensFunction:
                 elif self.method == 'tomo':
                     tomography_labels = [''.join(x) for x in product('xyz', repeat=2)]
 
-                    array = []
+                    array_all = []
                     for tomography_label in tomography_labels:
                         array = h5file[f"{circuit_label}/{tomography_label}"].attrs[f"counts{self.suffix}"]
                         array = reverse_qubit_order(array) # XXX
                         start_index = int(qubit_indices.ancilla.str[0], 2)
                         array_label = array[start_index :: 2] / np.sum(array)
-                        array += list(array_label)
+                        array_all += list(array_label)
 
-                    density_matrix = np.linalg.lstsq(basis_matrix, array)[0]
+                    density_matrix = np.linalg.lstsq(basis_matrix, array_all)[0]
                     density_matrix = density_matrix.reshape(
                         2 ** self.n_system_qubits, 2 ** self.n_system_qubits, order='F')
                     density_matrix = qubit_indices.system(density_matrix)
@@ -143,15 +146,15 @@ class GreensFunction:
                     elif self.method == 'tomo':
                         tomography_labels = [''.join(x) for x in product('xyz', repeat=2)]
 
-                        array = []
+                        array_all = []
                         for tomography_label in tomography_labels:
                             array = h5file[f"{circuit_label}/{tomography_label}"].attrs[f"counts{self.suffix}"]
                             array = reverse_qubit_order(array) # XXX
                             start_index = int(qubit_indices.ancilla.str[0], 2)
                             array_label = array[start_index :: 2 ** 2]  / np.sum(array)
-                            array += list(array_label)
+                            array_all += list(array_label)
 
-                        density_matrix = np.linalg.lstsq(basis_matrix, array)[0]
+                        density_matrix = np.linalg.lstsq(basis_matrix, array_all)[0]
                         density_matrix = density_matrix.reshape(
                             2 ** self.n_system_qubits, 2 ** self.n_system_qubits, order='F')
                         density_matrix = qubit_indices.system(density_matrix)

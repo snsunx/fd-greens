@@ -22,7 +22,7 @@ class GroundStateSolver:
     """Ground state solver."""
 
     def __init__(
-        self, hamiltonian: MolecularHamiltonian, qubits: Sequence[cirq.Qid], fname: str = "lih"
+        self, hamiltonian: MolecularHamiltonian, qubits: Sequence[cirq.Qid], spin: str = 'd', fname: str = "lih"
     ) -> None:
         """Initializes a ``GroudStateSolver`` object.
         
@@ -32,7 +32,7 @@ class GroundStateSolver:
             fname: The HDF5 file name.
         """
         self.hamiltonian = hamiltonian.copy()
-        self.hamiltonian.transform(method_indices_pairs)
+        self.hamiltonian.transform(method_indices_pairs[spin])
         self.qubits = qubits
         self.h5fname = fname + ".h5"
         
@@ -44,6 +44,7 @@ class GroundStateSolver:
         # eigenvalue. The ansatz is prepared by the unitary with the lowest eigenvector as the first
         # column and the rest filled in randomly. The matrix after going through a QR factorization
         # and a KAK decomposition is assigned as the ansatz.
+        # TODO: This part should be cleaned up.
         e, v = np.linalg.eigh(self.hamiltonian.matrix)
         self.energy = e[0]
         # v0 = [ 0.6877791696238387+0j, 0.07105690514886635+0j, 0.07105690514886635+0j, -0.7189309050895454+0j]
