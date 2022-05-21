@@ -4,6 +4,7 @@ Ground State Solver (:mod:`fd_greens.ground_state_solver`)
 ==========================================================
 """
 
+import copy
 from typing import Sequence, List
 
 import numpy as np
@@ -31,9 +32,9 @@ class GroundStateSolver:
             qubits: The qubits on which the ground state is prepared.
             fname: The HDF5 file name.
         """
-        self.hamiltonian = hamiltonian
+        self.hamiltonian = hamiltonian.copy()
         self.hamiltonian.transform(method_indices_pairs)
-        self.qubits = qubits        
+        self.qubits = qubits
         self.h5fname = fname + ".h5"
         
         self.circuit_string_converter = CircuitStringConverter(qubits)

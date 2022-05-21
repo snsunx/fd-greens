@@ -4,8 +4,7 @@ Molecular Hamiltonian (:mod:`fd_greens.molecular_hamiltonian`)
 ==============================================================
 """
 
-from typing import Sequence, List, Tuple, Optional, Iterable
-import copy
+from typing import Sequence, Tuple, Optional, Iterable
 
 import numpy as np
 import cirq
@@ -24,18 +23,29 @@ class MolecularHamiltonian(OperatorsBase):
     def __init__(
         self,
         qubits: Sequence[cirq.Qid],
-        geometry: List[Tuple[str, Sequence[float]]],
-        basis: str,
-        multiplicity: int = 1,
-        charge: int = 0,
-        run_pyscf_options: dict = {},
+        molecule: MolecularData,
         occupied_indices: Optional[Sequence[int]] = None,
         active_indices: Optional[Sequence[int]] = None,
     ) -> None:
         """Initializes a ``MolecularHamiltonian`` object.
 
+        Example: ::
+        
+            molecule = MolecularData(
+                [["Li", (0, 0, 0)], ["H", (0, 0, bond_distance)]],
+                'sto3g',
+                multiplicity=1,
+                charge=0)
+            run_pyscf(molecule)
+
+            hamiltonian = MolecularHamiltonian(
+                cirq.LineQubit.range(4),
+                molecule,
+                occupied_indices=[0],
+                active_indices=[1, 2])
+
         Args:
-            geometry: The coordinates of all atoms in the molecule, e.g. ``[['Li', (0, 0, 0)], ['H', (0, 0, 1.6)]]``.
+            geometry: The coordinates of all atoms in the molecule.
             basis: The basis set.
             multiplicity: The spin multiplicity. Defaults to 1.
             charge: The total molecular charge. Defaults to 0.
@@ -46,8 +56,9 @@ class MolecularHamiltonian(OperatorsBase):
         self.qubits = qubits
         self.n_qubits = len(qubits)
 
-        molecule = MolecularData(geometry, basis, multiplicity=multiplicity, charge=charge)
-        run_pyscf(molecule, **run_pyscf_options)
+        # molecule = MolecularData(geometry, basis, multiplicity=multiplicity, charge=charge)
+        # run_pyscf(molecule, **run_pyscf_options)
+        self.molecule = molecule
         self.n_electrons = molecule.n_electrons
         self.orbital_energies = molecule.orbital_energies
 
@@ -68,15 +79,23 @@ class MolecularHamiltonian(OperatorsBase):
                 pauli_string *= pauli_dict[symbol](qubits[index])
             self.pauli_strings.append(pauli_string)
 
-    def transform(self, method_indices_pairs: Iterable[Tuple[str, Sequence[int]]], tapered_state=None) -> None:
+    def transform(
+        self, 
+        method_indices_pairs: Iterable[Tuple[str, Sequence[int]]],
+        tapered_state: Optional[Sequence[int]] = None
+    ) -> None:
         """Transforms the Hamiltonian terms with Z2 symmetries and qubit tapering."""
         if tapered_state is None:
             tapered_state = [1] * (self.n_qubits // 2)
         OperatorsBase.transform(self, method_indices_pairs, tapered_state=tapered_state)
-    
+
     def copy(self) -> 'MolecularHamiltonian':
         """Returns a copy of itself."""
-        return copy.deepcopy(self)
+        return self.__class__(
+            self.qubits, 
+            self.molecule,
+            occupied_indices=self.occupied_indices,
+            active_indices=self.active_indices)
     
     @property
     def matrix(self) -> np.ndarray:
@@ -92,10 +111,17 @@ def get_lih_hamiltonian(bond_distance: float) -> MolecularHamiltonian:
     Returns:
         hamiltonian: The molecular Hamiltonian of LiH.
     """
+
+    molecule = MolecularData(
+        [["Li", (0, 0, 0)], ["H", (0, 0, bond_distance)]],
+        'sto3g',
+        multiplicity=1,
+        charge=0)
+    run_pyscf(molecule)
+
     hamiltonian = MolecularHamiltonian(
         cirq.LineQubit.range(4),
-        [["Li", (0, 0, 0)], ["H", (0, 0, bond_distance)]], 
-        "sto3g", 
+        molecule,
         occupied_indices=[0],
         active_indices=[1, 2])
     return hamiltonian

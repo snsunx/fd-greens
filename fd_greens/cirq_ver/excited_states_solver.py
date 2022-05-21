@@ -26,7 +26,7 @@ class ExcitedStatesSolver:
             hamiltonian: The molecular Hamiltonian.
             fname: The HDF5 file name.
         """
-        self.hamiltonian = hamiltonian
+        self.hamiltonian = hamiltonian.copy()
         self.hamiltonian.transform(method_indices_pairs, tapered_state=[1, 1])
         self.h5fname = fname + '.h5'
 

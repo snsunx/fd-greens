@@ -4,6 +4,8 @@
 ================================================================
 """
 
+import copy
+
 import h5py
 import numpy as np
 
@@ -15,9 +17,7 @@ from .parameters import method_indices_pairs
 class EHStatesSolver:
     """(N±1)-electron states solver."""
 
-    def __init__(
-        self, hamiltonian: MolecularHamiltonian, spin: str = 'd', fname: str = 'lih'
-    ) -> None:
+    def __init__(self, hamiltonian: MolecularHamiltonian, spin: str = 'd', fname: str = 'lih') -> None:
         """Initializes an ``EHStatesSolver`` object.
         
         Args:
@@ -27,16 +27,10 @@ class EHStatesSolver:
         """
         assert spin in ['u', 'd']
 
-        self.hamiltonian = hamiltonian
+        self.hamiltonian = hamiltonian.copy()
         tapered_state = [0, 1] if spin == 'd' else [1, 0] # XXX: reversed from Qiskit, but don't know if it's right.
         self.hamiltonian.transform(method_indices_pairs, tapered_state=tapered_state)
         self.h5fname = fname + ".h5"
-        
-        # self.qubit_indices_dict = get_qubit_indices_dict(
-        #     2 * len(self.hamiltonian.active_indices), spin, method_indices_pairs, system_only=True)
-        # for key, val in self.qubit_indices_dict.items():
-        #     print(key, val)
-        # print('-' * 80)
 
         n_qubits = 2 * len(self.hamiltonian.active_indices)
         self.qubit_indices_dict = QubitIndices.get_eh_qubit_indices_dict(
