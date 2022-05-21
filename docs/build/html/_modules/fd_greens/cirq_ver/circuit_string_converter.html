@@ -105,7 +105,7 @@
             <span class="n">indices</span> <span class="o">=</span> <span class="p">[</span><span class="n">q</span><span class="o">.</span><span class="n">x</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">offset</span> <span class="k">for</span> <span class="n">q</span> <span class="ow">in</span> <span class="n">qubits</span><span class="p">]</span>
             <span class="n">qstring</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;C</span><span class="si">{</span><span class="n">indices</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s2">C</span><span class="si">{</span><span class="n">indices</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="si">}</span><span class="s2">T</span><span class="si">{</span><span class="n">indices</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;A gate can only act on up to 3 qubits.&quot;</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;A gate acting on </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">qubits</span><span class="p">)</span><span class="si">}</span><span class="s2"> qubits cannot be converted to Qtrl string.&quot;</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">qstring</span>
 
     <span class="k">def</span> <span class="nf">_gstring_to_gate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">gstring</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">cirq</span><span class="o">.</span><span class="n">Gate</span><span class="p">:</span>
@@ -131,37 +131,40 @@
             <span class="k">elif</span> <span class="n">gate_name</span> <span class="o">==</span> <span class="s2">&quot;Z&quot;</span><span class="p">:</span>
                 <span class="n">gate</span> <span class="o">=</span> <span class="n">cirq</span><span class="o">.</span><span class="n">ZPowGate</span><span class="p">(</span><span class="n">exponent</span><span class="o">=</span><span class="n">exponent</span><span class="p">)</span>
             <span class="k">else</span><span class="p">:</span>
-                <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s2">&quot;Parametrized gate can only be X or Z.&quot;</span><span class="p">)</span>
+                <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Parametrized gate can only be X or Z. Got </span><span class="si">{</span><span class="n">gate_name</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">gate</span>
 
     <span class="k">def</span> <span class="nf">_gate_to_gstring</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">gate</span><span class="p">:</span> <span class="n">cirq</span><span class="o">.</span><span class="n">Gate</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;Converts Cirq gates to Qtrl gate string.&quot;&quot;&quot;</span>
         <span class="c1"># print(f&#39;{gate = }&#39;)</span>
-        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">gate</span><span class="p">,</span> <span class="p">(</span><span class="n">cirq</span><span class="o">.</span><span class="n">XPowGate</span><span class="p">,</span> <span class="n">cirq</span><span class="o">.</span><span class="n">ZPowGate</span><span class="p">)):</span>
-            <span class="n">gname</span> <span class="o">=</span> <span class="n">gate</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
-            <span class="n">angle</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">gate</span><span class="o">.</span><span class="n">exponent</span> <span class="o">*</span> <span class="mf">180.0</span><span class="p">)</span>
-            <span class="n">gstring</span> <span class="o">=</span> <span class="n">gname</span> <span class="o">+</span> <span class="n">angle</span>
+        <span class="c1"># if isinstance(gate, (cirq.XPowGate, cirq.ZPowGate)):</span>
+        <span class="c1">#     gname = gate.__class__.__name__[0]</span>
+        <span class="c1">#     angle = str(gate.exponent * 180.0)</span>
+        <span class="c1">#     gstring = gname + angle</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">gate</span><span class="p">,</span> <span class="n">cirq</span><span class="o">.</span><span class="n">XPowGate</span><span class="p">):</span>
+            <span class="k">assert</span> <span class="nb">abs</span><span class="p">(</span><span class="n">gate</span><span class="o">.</span><span class="n">exponent</span> <span class="o">-</span> <span class="mf">0.5</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mf">1e-8</span>
+            <span class="n">gstring</span> <span class="o">=</span> <span class="s1">&#39;X90&#39;</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">gate</span><span class="p">,</span> <span class="n">cirq</span><span class="o">.</span><span class="n">ZPowGate</span><span class="p">):</span>
+            <span class="n">angle</span> <span class="o">=</span> <span class="n">gate</span><span class="o">.</span><span class="n">exponent</span> <span class="o">*</span> <span class="mf">180.0</span>
+            <span class="n">gstring</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">&#39;Z</span><span class="si">{</span><span class="n">angle</span><span class="si">}</span><span class="s1">&#39;</span>
         <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">gate</span><span class="p">,</span> <span class="n">cirq</span><span class="o">.</span><span class="n">CZPowGate</span><span class="p">):</span>
             <span class="k">if</span> <span class="nb">abs</span><span class="p">(</span><span class="n">gate</span><span class="o">.</span><span class="n">_exponent</span><span class="p">)</span> <span class="o">==</span> <span class="mf">1.0</span><span class="p">:</span>
-                <span class="n">gstring</span> <span class="o">=</span> <span class="s2">&quot;CZ&quot;</span>
+                <span class="n">gstring</span> <span class="o">=</span> <span class="s1">&#39;CZ&#39;</span>
             <span class="k">elif</span> <span class="n">gate</span><span class="o">.</span><span class="n">_exponent</span> <span class="o">==</span> <span class="mf">0.5</span><span class="p">:</span>
-                <span class="n">gstring</span> <span class="o">=</span> <span class="s2">&quot;CS&quot;</span>
+                <span class="n">gstring</span> <span class="o">=</span> <span class="s1">&#39;CS&#39;</span>
             <span class="k">elif</span> <span class="n">gate</span><span class="o">.</span><span class="n">_exponent</span> <span class="o">==</span> <span class="o">-</span><span class="mf">0.5</span><span class="p">:</span>
-                <span class="n">gstring</span> <span class="o">=</span> <span class="s2">&quot;CSD&quot;</span>
+                <span class="n">gstring</span> <span class="o">=</span> <span class="s1">&#39;CSD&#39;</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;CZPowGate must have exponent 1.0, 0.5 or -0.5. Got </span><span class="si">{</span><span class="n">gate</span><span class="o">.</span><span class="n">_exponent</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">)</span>
-        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">gate</span><span class="p">,</span> <span class="n">C0C0iXGate</span><span class="p">):</span> <span class="c1"># issubclass(gate.__class__, C0C0iXGate):</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">gate</span><span class="p">,</span> <span class="n">C0C0iXGate</span><span class="p">):</span>
             <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">gate</span><span class="p">,</span> <span class="n">C0C0iXGate</span><span class="p">)</span> <span class="o">==</span> <span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="n">gate</span><span class="p">)</span> <span class="ow">is</span> <span class="n">C0C0iXGate</span><span class="p">)</span>
             <span class="n">gstring</span> <span class="o">=</span> <span class="s2">&quot;TOF&quot;</span>
         <span class="k">elif</span> <span class="nb">str</span><span class="p">(</span><span class="n">gate</span><span class="p">)</span> <span class="o">==</span> <span class="s2">&quot;SWAP&quot;</span><span class="p">:</span>
-            <span class="c1"># TODO: This could be raised as warnings.</span>
+            <span class="c1"># TODO: This could be raised as a warning.</span>
             <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Warning: SWAP gate converted to Qtrl string.&quot;</span><span class="p">)</span>
             <span class="n">gstring</span> <span class="o">=</span> <span class="s2">&quot;SWAP&quot;</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span>
-                <span class="c1"># &quot;The only gates supported are XPowGate, ZPowGate, CZPowGate and C0C0iXGate.&quot;</span>
-                <span class="sa">f</span><span class="s2">&quot;Conversion of </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">gate</span><span class="p">)</span><span class="si">}</span><span class="s2"> to Qtrl strings is not supported.&quot;</span>
-            <span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Conversion of </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">gate</span><span class="p">)</span><span class="si">}</span><span class="s2"> to Qtrl string is not supported.&quot;</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">gstring</span>
 
 <div class="viewcode-block" id="CircuitStringConverter.convert_strings_to_circuit"><a class="viewcode-back" href="../../../fd_greens.cirq_ver.circuit_string_converter.html#fd_greens.cirq_ver.circuit_string_converter.CircuitStringConverter.convert_strings_to_circuit">[docs]</a>    <span class="k">def</span> <span class="nf">convert_strings_to_circuit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">qtrl_strings</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]])</span> <span class="o">-&gt;</span> <span class="n">cirq</span><span class="o">.</span><span class="n">Circuit</span><span class="p">:</span>

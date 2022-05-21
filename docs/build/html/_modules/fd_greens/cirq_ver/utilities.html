@@ -71,6 +71,7 @@
 <span class="kn">from</span> <span class="nn">itertools</span> <span class="kn">import</span> <span class="n">product</span>
 <span class="kn">import</span> <span class="nn">math</span>
 <span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Callable</span>
+<span class="kn">from</span> <span class="nn">bqskit</span> <span class="kn">import</span> <span class="n">UnitaryMatrix</span>
 
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="kn">import</span> <span class="nn">cirq</span>
@@ -116,9 +117,7 @@
     <span class="k">return</span> <span class="n">is_equal</span></div>
 
 
-<div class="viewcode-block" id="unitary_equal"><a class="viewcode-back" href="../../../fd_greens.cirq_ver.utilities.html#fd_greens.cirq_ver.utilities.unitary_equal">[docs]</a><span class="k">def</span> <span class="nf">unitary_equal</span><span class="p">(</span>
-    <span class="n">unitary1</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">unitary2</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">initial_state_0</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<div class="viewcode-block" id="unitary_equal"><a class="viewcode-back" href="../../../fd_greens.cirq_ver.utilities.html#fd_greens.cirq_ver.utilities.unitary_equal">[docs]</a><span class="k">def</span> <span class="nf">unitary_equal</span><span class="p">(</span><span class="n">unitary1</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">unitary2</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">initial_state_0</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;Checks if two unitaries are equal up to a phase factor.</span>
 <span class="sd">    </span>
 <span class="sd">    Args:</span>
@@ -132,7 +131,7 @@
 
     <span class="c1"># Find the index of phase factor in the first column.</span>
     <span class="n">index</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">unitary1</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]))</span>
-    <span class="k">if</span> <span class="nb">abs</span><span class="p">(</span><span class="n">unitary2</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="n">index</span><span class="p">])</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+    <span class="k">if</span> <span class="nb">abs</span><span class="p">(</span><span class="n">unitary2</span><span class="p">[</span><span class="n">index</span><span class="p">,</span> <span class="mi">0</span><span class="p">])</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
         <span class="k">return</span> <span class="kc">False</span>
 
     <span class="n">phase1</span> <span class="o">=</span> <span class="n">unitary1</span><span class="p">[</span><span class="n">index</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">/</span> <span class="nb">abs</span><span class="p">(</span><span class="n">unitary1</span><span class="p">[</span><span class="n">index</span><span class="p">,</span> <span class="mi">0</span><span class="p">])</span>

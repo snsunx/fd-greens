@@ -44,8 +44,8 @@ class GreensFunction:
         """
         # Input attributes.
         self.hamiltonian = hamiltonian
+        self.fname = fname
         self.h5fname = fname + ".h5"
-        self.datfname = fname + suffix
         self.suffix = suffix
         self.spin = spin
         self.method = method
@@ -175,12 +175,14 @@ class GreensFunction:
 
         h5file.close()
 
-    # TODO: Is this function needed?
-    @property
-    def density_matrix(self) -> np.ndarray:
-        """The density matrix obtained from the transition amplitudes."""
-        rho = np.sum(self.B["h"], axis=2)
-        return rho
+    def mean_field_greens_function(self, omega: float, eta: float = 0.0) -> np.ndarray:
+        """Returns the mean-field Green's function."""
+        orbital_energies = self.hamiltonian.orbital_energies[self.hamiltonian.active_indices]
+
+        G0 = np.zeros((self.n_orbitals, self.n_orbitals), dtype=complex)
+        for i in range(self.n_orbitals):
+            G0[i, i] = 1 / (omega + 1j * eta - orbital_energies[i])
+        return G0
 
     def greens_function(self, omega: float, eta: float = 0.0) -> np.ndarray:
         """Returns the the Green's function at given frequency and broadening.
@@ -194,6 +196,7 @@ class GreensFunction:
         """
         for m in range(self.n_orbitals):
             for n in range(self.n_orbitals):
+                # 2 is for both up and down spins.
                 self.G["e"][m, n] = 2 * np.sum(self.B["e"][m, n]
                     / (omega + 1j * eta + self.energies["gs"] - self.energies["e"]))
                 self.G["h"][m, n] = 2 * np.sum(self.B["h"][m, n]
@@ -214,19 +217,19 @@ class GreensFunction:
         Returns:
             As: The spectral function numpy array.
         """
-        A_arrays = []
+        As = []
         for omega in omegas:
-            G_array = self.greens_function(omega, eta)
-            A_array = -1 / np.pi * np.imag(np.trace(G_array))
-            A_arrays.append(A_array)
-        A_arrays = np.array(A_arrays)
+            G = self.greens_function(omega, eta)
+            A = -1 / np.pi * np.imag(np.trace(G))
+            As.append(A)
+        As = np.array(As)
 
         if save_data:
             if not os.path.exists("data"):
                 os.makedirs("data")
-            np.savetxt("data/" + self.datfname + "_A.dat", np.vstack((omegas, A_arrays)).T)
+            np.savetxt(f"data/{self.fname}{self.suffix}_A.dat", np.vstack((omegas, As)).T)
         else:
-            return A_arrays
+            return As
 
     def self_energy(
         self, omegas: Sequence[float], eta: float = 0.0, save_data: bool = True
@@ -241,16 +244,12 @@ class GreensFunction:
         Returns:
             TrSigmas: Trace of the self-energy.
         """
-        e_orb = self.hamiltonian.molecule.orbital_energies[self.hamiltonian.active_indices]
-
         TrSigmas = []
         for omega in omegas:
-            G = self.greens_function(omega + 1j * eta)
-            G_HF = np.zeros((self.n_orbitals, self.n_orbitals), dtype=complex)
-            for i in range(self.n_orbitals):
-                G_HF[i, i] = 1 / (omega - e_orb[i])
+            G0 = self.mean_field_greens_function(omega, eta)
+            G = self.greens_function(omega, eta)
 
-            Sigma = np.linalg.pinv(G_HF) - np.linalg.pinv(G)
+            Sigma = np.linalg.pinv(G0) - np.linalg.pinv(G)
             TrSigmas.append(np.trace(Sigma))
         TrSigmas = np.array(TrSigmas)
 
@@ -258,8 +257,7 @@ class GreensFunction:
             if not os.path.exists("data"):
                 os.makedirs("data")
             np.savetxt(
-                "data/" + self.datfname + "_TrS.dat",
-                np.vstack((omegas, TrSigmas.real, TrSigmas.imag)).T,
-            )
+                f"data/{self.fname}{self.suffix}_TrSigma.dat", 
+                np.vstack((omegas, TrSigmas.real, TrSigmas.imag)).T)
         else:
             return TrSigmas

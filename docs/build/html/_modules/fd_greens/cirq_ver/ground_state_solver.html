@@ -73,11 +73,10 @@
 <span class="kn">import</span> <span class="nn">h5py</span>
 <span class="kn">import</span> <span class="nn">cirq</span>
 <span class="kn">import</span> <span class="nn">json</span>
-<span class="kn">from</span> <span class="nn">qiskit.quantum_info</span> <span class="kn">import</span> <span class="n">OneQubitEulerDecomposer</span>
 
 <span class="kn">from</span> <span class="nn">.molecular_hamiltonian</span> <span class="kn">import</span> <span class="n">MolecularHamiltonian</span>
 <span class="kn">from</span> <span class="nn">.circuit_string_converter</span> <span class="kn">import</span> <span class="n">CircuitStringConverter</span>
-<span class="kn">from</span> <span class="nn">.transpilation</span> <span class="kn">import</span> <span class="n">transpile_into_berkeley_gates</span>
+<span class="kn">from</span> <span class="nn">.transpilation</span> <span class="kn">import</span> <span class="n">convert_phxz_to_xpi2</span><span class="p">,</span> <span class="n">transpile_into_berkeley_gates</span>
 <span class="kn">from</span> <span class="nn">.parameters</span> <span class="kn">import</span> <span class="n">method_indices_pairs</span>
 <span class="kn">from</span> <span class="nn">.utilities</span> <span class="kn">import</span> <span class="n">unitary_equal</span>
 
@@ -95,9 +94,9 @@
 <span class="sd">            qubits: The qubits on which the ground state is prepared.</span>
 <span class="sd">            fname: The HDF5 file name.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">hamiltonian</span> <span class="o">=</span> <span class="n">hamiltonian</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">hamiltonian</span> <span class="o">=</span> <span class="n">hamiltonian</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">hamiltonian</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">method_indices_pairs</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">qubits</span> <span class="o">=</span> <span class="n">qubits</span>        
+        <span class="bp">self</span><span class="o">.</span><span class="n">qubits</span> <span class="o">=</span> <span class="n">qubits</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">h5fname</span> <span class="o">=</span> <span class="n">fname</span> <span class="o">+</span> <span class="s2">&quot;.h5&quot;</span>
         
         <span class="bp">self</span><span class="o">.</span><span class="n">circuit_string_converter</span> <span class="o">=</span> <span class="n">CircuitStringConverter</span><span class="p">(</span><span class="n">qubits</span><span class="p">)</span>
@@ -200,20 +199,14 @@
 
         <span class="k">return</span> <span class="n">operations</span>
 
-    <span class="c1"># TODO: This can be deleted and instead use the </span>
     <span class="k">def</span> <span class="nf">_decompose_1q_gate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">unitary</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">qubit</span><span class="p">:</span> <span class="n">cirq</span><span class="o">.</span><span class="n">Qid</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">cirq</span><span class="o">.</span><span class="n">Operation</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;ZXZXZ decomposition of a single-qubit gate.&quot;&quot;&quot;</span>
-        <span class="n">decomposer</span> <span class="o">=</span> <span class="n">OneQubitEulerDecomposer</span><span class="p">(</span><span class="s2">&quot;U3&quot;</span><span class="p">)</span>
-        <span class="n">unitary_decomposed</span> <span class="o">=</span> <span class="n">decomposer</span><span class="p">(</span><span class="n">unitary</span><span class="p">)</span>
-        <span class="n">theta</span><span class="p">,</span> <span class="n">phi</span><span class="p">,</span> <span class="n">lam</span> <span class="o">=</span> <span class="n">unitary_decomposed</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">params</span>
-
-        <span class="n">operations</span> <span class="o">=</span> <span class="p">[</span>
-            <span class="n">cirq</span><span class="o">.</span><span class="n">rz</span><span class="p">(</span><span class="n">lam</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">)(</span><span class="n">qubit</span><span class="p">),</span>
-            <span class="n">cirq</span><span class="o">.</span><span class="n">rx</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">/</span> <span class="mi">2</span><span class="p">)(</span><span class="n">qubit</span><span class="p">),</span>
-            <span class="n">cirq</span><span class="o">.</span><span class="n">rz</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">-</span> <span class="n">theta</span><span class="p">)(</span><span class="n">qubit</span><span class="p">),</span>
-            <span class="n">cirq</span><span class="o">.</span><span class="n">rx</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">/</span> <span class="mi">2</span><span class="p">)(</span><span class="n">qubit</span><span class="p">),</span>
-            <span class="n">cirq</span><span class="o">.</span><span class="n">rz</span><span class="p">(</span><span class="n">phi</span><span class="p">)(</span><span class="n">qubit</span><span class="p">),</span>
-        <span class="p">]</span>
+        <span class="sd">&quot;&quot;&quot;ZXZXZ decomposition of a unitary.&quot;&quot;&quot;</span>
+        <span class="c1"># Create a matrix gate from the unitary, convert it to PhXZ </span>
+        <span class="c1"># and decompose it into ZXZXZ using the transpilation function. </span>
+        <span class="n">circuit</span> <span class="o">=</span> <span class="n">cirq</span><span class="o">.</span><span class="n">Circuit</span><span class="p">(</span><span class="n">cirq</span><span class="o">.</span><span class="n">MatrixGate</span><span class="p">(</span><span class="n">unitary</span><span class="p">)(</span><span class="n">qubit</span><span class="p">))</span>
+        <span class="n">cirq</span><span class="o">.</span><span class="n">merge_single_qubit_gates_into_phxz</span><span class="p">(</span><span class="n">circuit</span><span class="p">)</span>
+        <span class="n">circuit</span> <span class="o">=</span> <span class="n">convert_phxz_to_xpi2</span><span class="p">(</span><span class="n">circuit</span><span class="p">)</span>
+        <span class="n">operations</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">circuit</span><span class="o">.</span><span class="n">all_operations</span><span class="p">())</span>
 
         <span class="k">assert</span> <span class="n">unitary_equal</span><span class="p">(</span><span class="n">cirq</span><span class="o">.</span><span class="n">Circuit</span><span class="p">(</span><span class="n">operations</span><span class="p">)</span><span class="o">.</span><span class="n">unitary</span><span class="p">(),</span> <span class="n">unitary</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">operations</span>
@@ -221,9 +214,9 @@
     <span class="k">def</span> <span class="nf">_save_data</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;Saves ground state energy and ansatz to hdf5 file.&quot;&quot;&quot;</span>
         <span class="n">h5file</span> <span class="o">=</span> <span class="n">h5py</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">h5fname</span><span class="p">,</span> <span class="s2">&quot;r+&quot;</span><span class="p">)</span>
-        <span class="n">qtrl_strings</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">circuit_string_converter</span><span class="o">.</span><span class="n">convert_circuit_to_strings</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ansatz</span><span class="p">)</span>
         
         <span class="n">h5file</span><span class="p">[</span><span class="s1">&#39;gs/energy&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">energy</span>
+        <span class="n">qtrl_strings</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">circuit_string_converter</span><span class="o">.</span><span class="n">convert_circuit_to_strings</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ansatz</span><span class="p">)</span>
         <span class="n">h5file</span><span class="p">[</span><span class="s1">&#39;gs/ansatz&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">qtrl_strings</span><span class="p">)</span>
 
         <span class="n">h5file</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>

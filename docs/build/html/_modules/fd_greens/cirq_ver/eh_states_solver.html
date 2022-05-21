@@ -78,9 +78,7 @@
 <div class="viewcode-block" id="EHStatesSolver"><a class="viewcode-back" href="../../../fd_greens.cirq_ver.eh_states_solver.html#fd_greens.cirq_ver.eh_states_solver.EHStatesSolver">[docs]</a><span class="k">class</span> <span class="nc">EHStatesSolver</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;(N±1)-electron states solver.&quot;&quot;&quot;</span>
 
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span> <span class="n">hamiltonian</span><span class="p">:</span> <span class="n">MolecularHamiltonian</span><span class="p">,</span> <span class="n">spin</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;d&#39;</span><span class="p">,</span> <span class="n">fname</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;lih&#39;</span>
-    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">hamiltonian</span><span class="p">:</span> <span class="n">MolecularHamiltonian</span><span class="p">,</span> <span class="n">spin</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;d&#39;</span><span class="p">,</span> <span class="n">fname</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;lih&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;Initializes an ``EHStatesSolver`` object.</span>
 <span class="sd">        </span>
 <span class="sd">        Args:</span>
@@ -90,16 +88,10 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">assert</span> <span class="n">spin</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;u&#39;</span><span class="p">,</span> <span class="s1">&#39;d&#39;</span><span class="p">]</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">hamiltonian</span> <span class="o">=</span> <span class="n">hamiltonian</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">hamiltonian</span> <span class="o">=</span> <span class="n">hamiltonian</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
         <span class="n">tapered_state</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span> <span class="k">if</span> <span class="n">spin</span> <span class="o">==</span> <span class="s1">&#39;d&#39;</span> <span class="k">else</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span> <span class="c1"># XXX: reversed from Qiskit, but don&#39;t know if it&#39;s right.</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">hamiltonian</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">method_indices_pairs</span><span class="p">,</span> <span class="n">tapered_state</span><span class="o">=</span><span class="n">tapered_state</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">h5fname</span> <span class="o">=</span> <span class="n">fname</span> <span class="o">+</span> <span class="s2">&quot;.h5&quot;</span>
-        
-        <span class="c1"># self.qubit_indices_dict = get_qubit_indices_dict(</span>
-        <span class="c1">#     2 * len(self.hamiltonian.active_indices), spin, method_indices_pairs, system_only=True)</span>
-        <span class="c1"># for key, val in self.qubit_indices_dict.items():</span>
-        <span class="c1">#     print(key, val)</span>
-        <span class="c1"># print(&#39;-&#39; * 80)</span>
 
         <span class="n">n_qubits</span> <span class="o">=</span> <span class="mi">2</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">hamiltonian</span><span class="o">.</span><span class="n">active_indices</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">qubit_indices_dict</span> <span class="o">=</span> <span class="n">QubitIndices</span><span class="o">.</span><span class="n">get_eh_qubit_indices_dict</span><span class="p">(</span>

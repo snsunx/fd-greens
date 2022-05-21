@@ -4,7 +4,6 @@ Ground State Solver (:mod:`fd_greens.ground_state_solver`)
 ==========================================================
 """
 
-import copy
 from typing import Sequence, List
 
 import numpy as np

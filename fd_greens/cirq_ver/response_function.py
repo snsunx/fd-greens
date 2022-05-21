@@ -6,7 +6,7 @@ Response Function (:mod:`fd_greens.response_function`)
 
 import os
 from itertools import product
-from typing import Sequence
+from typing import Sequence, Optional, Mapping
 
 import h5py
 import numpy as np
@@ -24,7 +24,7 @@ class ResponseFunction:
     def __init__(
         self,
         hamiltonian: MolecularHamiltonian,
-        h5fname: str = 'lih',
+        fname: str = 'lih',
         suffix: str = '',
         method: str = 'exact',
         verbose: bool = True
@@ -33,13 +33,14 @@ class ResponseFunction:
         
         Args:
             hamiltonian: The molecular Hamiltonian.
-            h5fname: The HDF5 file name.
+            fname: The HDF5 file name.
             suffix: The suffix for a specific experimental run.
             method: The method for extracting transition amplitudes.
             verbose: Whether to print out observable values.
         """
         self.hamiltonian = hamiltonian
-        self.h5fname = h5fname + '.h5'
+        self.fname = fname 
+        self.h5fname = fname + '.h5'
         self.suffix = suffix
         self.method = method
         self.verbose = verbose
@@ -167,39 +168,39 @@ class ResponseFunction:
 
     def response_function(
         self, omegas: Sequence[float], eta: float = 0.0, save_data: bool = True
-    ) -> np.ndarray:
+    ) -> Optional[Mapping[str, np.ndarray]]:
         """Returns the charge-charge response function at given frequencies.
 
         Args:
             omegas: The frequencies at which the response function is calculated.
-            eta: The imaginary part, i.e. broadening factor.
-            save: Whether to save the response function to file.
+            eta: The broadening factor.
+            save_data: Whether to save the response function to file.
 
         Returns:
-            (Optional) The charge-charge response function for orbital i and orbital j.
+            chis_all: A dictionary of orbital strings to the corresponding charge-charge response functions.
         """
-        for label in ["00", "11", "01", "10"]:
-            i = int(label[0])
-            j = int(label[1])
-            chis = []
-            for omega in omegas:
-                for lam in [1, 2, 3]:  # [1, 2, 3] is hardcoded
-                    chi = np.sum(
-                        self.N[2 * i : 2 * (i + 1), 2 * j : 2 * (j + 1), lam]
-                    ) / (omega + 1j * eta - (self.energies['s'][lam] - self.energies['gs']))
-                    chi += np.sum(
-                        self.N[2 * i : 2 * (i + 1), 2 * j : 2 * (j + 1), lam]
-                    ).conjugate() / (
-                        -omega - 1j * eta - (self.energies['s'][lam] - self.energies['gs'])
-                    )
-                chis.append(chi)
-            chis = np.array(chis)
-            if save_data:
-                if not os.path.exists("data"):
-                    os.makedirs("data")
-                np.savetxt(
-                    f"data/{self.datfname}_chi{label}.dat",
-                    np.vstack((omegas, chis.real, chis.imag)).T,
-                )
-            else:
-                return chis
+        # Sum over spins in N
+        N_summed = self.N.reshape((self.n_orbitals, 2, self.n_orbitals, 2)).sum((1, 3))
+
+        chis_all = dict()
+        for i in range(self.n_orbitals):
+            for j in range(self.n_orbitals):
+                chis = []
+
+                for omega in omegas:
+                    chi = np.sum(N_summed[i, j] / (omega + 1j * eta - self.energies['n'] + self.energies['gs']))
+                    chi += np.sum(N_summed[i, j].conj() / (-omega - 1j * eta - self.energies['n'] + self.energies['gs']))
+                    chis.append(chi)
+                chis = np.array(chis)
+
+                if save_data:
+                    if not os.path.exists("data"):
+                        os.makedirs("data")
+                    np.savetxt(
+                        f"data/{self.fname}{self.suffix}_chi{i}{j}.dat",
+                        np.vstack((omegas, chis.real, chis.imag)).T)
+                else:
+                    chis_all[f'{i}{j}'] = chis
+
+        if not save_data:
+            return chis_all

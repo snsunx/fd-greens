@@ -69,7 +69,7 @@
 
 <span class="kn">import</span> <span class="nn">os</span>
 <span class="kn">from</span> <span class="nn">itertools</span> <span class="kn">import</span> <span class="n">product</span>
-<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Sequence</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Sequence</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Mapping</span>
 
 <span class="kn">import</span> <span class="nn">h5py</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
@@ -87,7 +87,7 @@
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">hamiltonian</span><span class="p">:</span> <span class="n">MolecularHamiltonian</span><span class="p">,</span>
-        <span class="n">h5fname</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;lih&#39;</span><span class="p">,</span>
+        <span class="n">fname</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;lih&#39;</span><span class="p">,</span>
         <span class="n">suffix</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span><span class="p">,</span>
         <span class="n">method</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;exact&#39;</span><span class="p">,</span>
         <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>
@@ -96,13 +96,14 @@
 <span class="sd">        </span>
 <span class="sd">        Args:</span>
 <span class="sd">            hamiltonian: The molecular Hamiltonian.</span>
-<span class="sd">            h5fname: The HDF5 file name.</span>
+<span class="sd">            fname: The HDF5 file name.</span>
 <span class="sd">            suffix: The suffix for a specific experimental run.</span>
 <span class="sd">            method: The method for extracting transition amplitudes.</span>
 <span class="sd">            verbose: Whether to print out observable values.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">hamiltonian</span> <span class="o">=</span> <span class="n">hamiltonian</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">h5fname</span> <span class="o">=</span> <span class="n">h5fname</span> <span class="o">+</span> <span class="s1">&#39;.h5&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fname</span> <span class="o">=</span> <span class="n">fname</span> 
+        <span class="bp">self</span><span class="o">.</span><span class="n">h5fname</span> <span class="o">=</span> <span class="n">fname</span> <span class="o">+</span> <span class="s1">&#39;.h5&#39;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">suffix</span> <span class="o">=</span> <span class="n">suffix</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">method</span> <span class="o">=</span> <span class="n">method</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">verbose</span> <span class="o">=</span> <span class="n">verbose</span>
@@ -230,42 +231,42 @@
 
 <div class="viewcode-block" id="ResponseFunction.response_function"><a class="viewcode-back" href="../../../fd_greens.cirq_ver.response_function.html#fd_greens.cirq_ver.response_function.ResponseFunction.response_function">[docs]</a>    <span class="k">def</span> <span class="nf">response_function</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">omegas</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">float</span><span class="p">],</span> <span class="n">eta</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span> <span class="n">save_data</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>
-    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]]:</span>
         <span class="sd">&quot;&quot;&quot;Returns the charge-charge response function at given frequencies.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            omegas: The frequencies at which the response function is calculated.</span>
-<span class="sd">            eta: The imaginary part, i.e. broadening factor.</span>
-<span class="sd">            save: Whether to save the response function to file.</span>
+<span class="sd">            eta: The broadening factor.</span>
+<span class="sd">            save_data: Whether to save the response function to file.</span>
 
 <span class="sd">        Returns:</span>
-<span class="sd">            (Optional) The charge-charge response function for orbital i and orbital j.</span>
+<span class="sd">            chis_all: A dictionary of orbital strings to the corresponding charge-charge response functions.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">for</span> <span class="n">label</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;00&quot;</span><span class="p">,</span> <span class="s2">&quot;11&quot;</span><span class="p">,</span> <span class="s2">&quot;01&quot;</span><span class="p">,</span> <span class="s2">&quot;10&quot;</span><span class="p">]:</span>
-            <span class="n">i</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">label</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
-            <span class="n">j</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">label</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
-            <span class="n">chis</span> <span class="o">=</span> <span class="p">[]</span>
-            <span class="k">for</span> <span class="n">omega</span> <span class="ow">in</span> <span class="n">omegas</span><span class="p">:</span>
-                <span class="k">for</span> <span class="n">lam</span> <span class="ow">in</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">]:</span>  <span class="c1"># [1, 2, 3] is hardcoded</span>
-                    <span class="n">chi</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span>
-                        <span class="bp">self</span><span class="o">.</span><span class="n">N</span><span class="p">[</span><span class="mi">2</span> <span class="o">*</span> <span class="n">i</span> <span class="p">:</span> <span class="mi">2</span> <span class="o">*</span> <span class="p">(</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">),</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">j</span> <span class="p">:</span> <span class="mi">2</span> <span class="o">*</span> <span class="p">(</span><span class="n">j</span> <span class="o">+</span> <span class="mi">1</span><span class="p">),</span> <span class="n">lam</span><span class="p">]</span>
-                    <span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">omega</span> <span class="o">+</span> <span class="mi">1</span><span class="n">j</span> <span class="o">*</span> <span class="n">eta</span> <span class="o">-</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">energies</span><span class="p">[</span><span class="s1">&#39;s&#39;</span><span class="p">][</span><span class="n">lam</span><span class="p">]</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">energies</span><span class="p">[</span><span class="s1">&#39;gs&#39;</span><span class="p">]))</span>
-                    <span class="n">chi</span> <span class="o">+=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span>
-                        <span class="bp">self</span><span class="o">.</span><span class="n">N</span><span class="p">[</span><span class="mi">2</span> <span class="o">*</span> <span class="n">i</span> <span class="p">:</span> <span class="mi">2</span> <span class="o">*</span> <span class="p">(</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">),</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">j</span> <span class="p">:</span> <span class="mi">2</span> <span class="o">*</span> <span class="p">(</span><span class="n">j</span> <span class="o">+</span> <span class="mi">1</span><span class="p">),</span> <span class="n">lam</span><span class="p">]</span>
-                    <span class="p">)</span><span class="o">.</span><span class="n">conjugate</span><span class="p">()</span> <span class="o">/</span> <span class="p">(</span>
-                        <span class="o">-</span><span class="n">omega</span> <span class="o">-</span> <span class="mi">1</span><span class="n">j</span> <span class="o">*</span> <span class="n">eta</span> <span class="o">-</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">energies</span><span class="p">[</span><span class="s1">&#39;s&#39;</span><span class="p">][</span><span class="n">lam</span><span class="p">]</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">energies</span><span class="p">[</span><span class="s1">&#39;gs&#39;</span><span class="p">])</span>
-                    <span class="p">)</span>
-                <span class="n">chis</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">chi</span><span class="p">)</span>
-            <span class="n">chis</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">chis</span><span class="p">)</span>
-            <span class="k">if</span> <span class="n">save_data</span><span class="p">:</span>
-                <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="s2">&quot;data&quot;</span><span class="p">):</span>
-                    <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="s2">&quot;data&quot;</span><span class="p">)</span>
-                <span class="n">np</span><span class="o">.</span><span class="n">savetxt</span><span class="p">(</span>
-                    <span class="sa">f</span><span class="s2">&quot;data/</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">datfname</span><span class="si">}</span><span class="s2">_chi</span><span class="si">{</span><span class="n">label</span><span class="si">}</span><span class="s2">.dat&quot;</span><span class="p">,</span>
-                    <span class="n">np</span><span class="o">.</span><span class="n">vstack</span><span class="p">((</span><span class="n">omegas</span><span class="p">,</span> <span class="n">chis</span><span class="o">.</span><span class="n">real</span><span class="p">,</span> <span class="n">chis</span><span class="o">.</span><span class="n">imag</span><span class="p">))</span><span class="o">.</span><span class="n">T</span><span class="p">,</span>
-                <span class="p">)</span>
-            <span class="k">else</span><span class="p">:</span>
-                <span class="k">return</span> <span class="n">chis</span></div></div>
+        <span class="c1"># Sum over spins in N</span>
+        <span class="n">N_summed</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">N</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">n_orbitals</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_orbitals</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span><span class="o">.</span><span class="n">sum</span><span class="p">((</span><span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">))</span>
+
+        <span class="n">chis_all</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n_orbitals</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n_orbitals</span><span class="p">):</span>
+                <span class="n">chis</span> <span class="o">=</span> <span class="p">[]</span>
+
+                <span class="k">for</span> <span class="n">omega</span> <span class="ow">in</span> <span class="n">omegas</span><span class="p">:</span>
+                    <span class="n">chi</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">N_summed</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span> <span class="o">/</span> <span class="p">(</span><span class="n">omega</span> <span class="o">+</span> <span class="mi">1</span><span class="n">j</span> <span class="o">*</span> <span class="n">eta</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">energies</span><span class="p">[</span><span class="s1">&#39;n&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">energies</span><span class="p">[</span><span class="s1">&#39;gs&#39;</span><span class="p">]))</span>
+                    <span class="n">chi</span> <span class="o">+=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">N_summed</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span><span class="o">.</span><span class="n">conj</span><span class="p">()</span> <span class="o">/</span> <span class="p">(</span><span class="o">-</span><span class="n">omega</span> <span class="o">-</span> <span class="mi">1</span><span class="n">j</span> <span class="o">*</span> <span class="n">eta</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">energies</span><span class="p">[</span><span class="s1">&#39;n&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">energies</span><span class="p">[</span><span class="s1">&#39;gs&#39;</span><span class="p">]))</span>
+                    <span class="n">chis</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">chi</span><span class="p">)</span>
+                <span class="n">chis</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">chis</span><span class="p">)</span>
+
+                <span class="k">if</span> <span class="n">save_data</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="s2">&quot;data&quot;</span><span class="p">):</span>
+                        <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="s2">&quot;data&quot;</span><span class="p">)</span>
+                    <span class="n">np</span><span class="o">.</span><span class="n">savetxt</span><span class="p">(</span>
+                        <span class="sa">f</span><span class="s2">&quot;data/</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">fname</span><span class="si">}{</span><span class="bp">self</span><span class="o">.</span><span class="n">suffix</span><span class="si">}</span><span class="s2">_chi</span><span class="si">{</span><span class="n">i</span><span class="si">}{</span><span class="n">j</span><span class="si">}</span><span class="s2">.dat&quot;</span><span class="p">,</span>
+                        <span class="n">np</span><span class="o">.</span><span class="n">vstack</span><span class="p">((</span><span class="n">omegas</span><span class="p">,</span> <span class="n">chis</span><span class="o">.</span><span class="n">real</span><span class="p">,</span> <span class="n">chis</span><span class="o">.</span><span class="n">imag</span><span class="p">))</span><span class="o">.</span><span class="n">T</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">chis_all</span><span class="p">[</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">i</span><span class="si">}{</span><span class="n">j</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">chis</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">save_data</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">chis_all</span></div></div>
 </pre></div>
 
            </div>
