@@ -13,8 +13,8 @@ import numpy as np
 
 from .molecular_hamiltonian import MolecularHamiltonian
 from .qubit_indices import QubitIndices
-from .parameters import basis_matrix, REVERSE_QUBIT_ORDER, get_method_indices_pairs
-from .utilities import reverse_qubit_order
+from .parameters import REVERSE_QUBIT_ORDER, get_method_indices_pairs
+from .utilities import reverse_qubit_order, two_qubit_state_tomography
 
 
 np.set_printoptions(precision=6)
@@ -117,13 +117,14 @@ class GreensFunction:
                             # print(qubit_indices.ancilla.str[0])
                             indices = [qubit_indices.ancilla.str[0] + x for x in indices]
                             indices = [int(x, 2) for x in indices]
-                            print(indices)
+                            # print(indices)
                             array_label = array[indices] / np.sum(array)
                         array_all += list(array_label)
 
-                    density_matrix = np.linalg.lstsq(basis_matrix, array_all)[0]
-                    density_matrix = density_matrix.reshape(
-                        2 ** self.n_system_qubits, 2 ** self.n_system_qubits, order='F')
+                    # density_matrix = np.linalg.lstsq(basis_matrix, array_all)[0]
+                    # density_matrix = density_matrix.reshape(
+                    #     2 ** self.n_system_qubits, 2 ** self.n_system_qubits, order='F')
+                    density_matrix = two_qubit_state_tomography(array_all)
                     density_matrix = qubit_indices.system(density_matrix)
 
                     self.B[subscript][m, m] = [
@@ -174,9 +175,10 @@ class GreensFunction:
                                 array_label = array[indices] / np.sum(array)
                             array_all += list(array_label)
 
-                        density_matrix = np.linalg.lstsq(basis_matrix, array_all)[0]
-                        density_matrix = density_matrix.reshape(
-                            2 ** self.n_system_qubits, 2 ** self.n_system_qubits, order='F')
+                        # density_matrix = np.linalg.lstsq(basis_matrix, array_all)[0]
+                        # density_matrix = density_matrix.reshape(
+                        #     2 ** self.n_system_qubits, 2 ** self.n_system_qubits, order='F')
+                        density_matrix = two_qubit_state_tomography(array_all)
                         density_matrix = qubit_indices.system(density_matrix)
                         
                         self.D[subscript][m, n] = self.D[subscript][n, m] = [

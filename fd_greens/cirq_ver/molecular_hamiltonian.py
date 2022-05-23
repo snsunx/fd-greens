@@ -44,13 +44,10 @@ class MolecularHamiltonian(OperatorsBase):
                 active_indices=[1, 2])
 
         Args:
-            geometry: The coordinates of all atoms in the molecule.
-            basis: The basis set.
-            multiplicity: The spin multiplicity. Defaults to 1.
-            charge: The total molecular charge. Defaults to 0.
-            run_pyscf_options: Keyword arguments passed to the run_pyscf function.
-            occupied_indices: A list of indices for occupied orbitals.
-            active_indices: A list of indices for active orbitals.
+            qubits: Qubits on which the qubit operator acts.
+            molecule: The molecule from which Hamiltonian is constructed.
+            occupied_indices: A list of occupied orbital indices.
+            active_indices: A list of active orbital indices.
         """
         self.qubits = qubits
         self.n_qubits = len(qubits)

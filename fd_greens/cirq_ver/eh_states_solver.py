@@ -26,22 +26,19 @@ class EHStatesSolver:
         assert spin in ['u', 'd']
 
         self.hamiltonian = hamiltonian.copy()
+        
+        method_indices_pairs = get_method_indices_pairs(spin)
         tapered_state = [0, 1] if spin == 'u' else [1, 0]
         if REVERSE_QUBIT_ORDER:
             tapered_state.reverse()
 
-        # self.hamiltonian.transform(method_indices_pairs[spin], tapered_state=tapered_state)
-        self.hamiltonian.transform(get_method_indices_pairs(spin), tapered_state=tapered_state)
-        # for x in self.hamiltonian.pauli_strings:
-        #     print(x)
+        self.hamiltonian.transform(method_indices_pairs, tapered_state=tapered_state)
         
         self.h5fname = fname + ".h5"
 
         n_qubits = 2 * len(self.hamiltonian.active_indices)
         self.qubit_indices_dict = QubitIndices.get_eh_qubit_indices_dict(
-            n_qubits, spin, get_method_indices_pairs(spin), system_only=True)
-        # for k, v in self.qubit_indices_dict.items():
-        #     print(k, v)
+            n_qubits, spin, method_indices_pairs, system_only=True)
 
         self.energies = dict()
         self.state_vectors = dict()

@@ -7,10 +7,12 @@ Utilities (:mod:`fd_greens.utilities`)
 from collections import Counter
 from itertools import product
 import math
-from typing import Optional, Callable
+from typing import Optional, Callable, Union
 
 import numpy as np
 import cirq
+
+from .parameters import REVERSE_QUBIT_ORDER
 
 def reverse_qubit_order(array: np.ndarray) -> np.ndarray:
     """Reverses qubit order in a 1D or 2D array.
@@ -32,29 +34,10 @@ def reverse_qubit_order(array: np.ndarray) -> np.ndarray:
         array_new = array[indices][:, indices]
     return array_new
 
-# TODO: Maybe can deprecate this function and combine it with unitary_equal.
-def circuit_equal(circuit1: cirq.Circuit, circuit2: cirq.Circuit, initial_state_0: bool = True) -> bool:
-    """Checks if two circuits are equivalent.
-
-    The two circuits are equivalent either when the unitaries are equal up to a phase or 
-    when the statevectors with all 0 initial state are equal up to a phase.
-    
-    Args:
-        circuit1: The first cicuit.
-        circuit2: The second circuit.
-        initial_state_0: Whether to assume the initial state is the all 0 state.
-        
-    Returns:
-        is_equal: Whether the two circuits are equivalent.
-    """
-    unitary1 = cirq.unitary(circuit1)
-    unitary2 = cirq.unitary(circuit2)
-    assert unitary1.shape == unitary2.shape
-    is_equal = unitary_equal(unitary1, unitary2, initial_state_0=initial_state_0)
-    return is_equal
-
-
-def unitary_equal(unitary1: np.ndarray, unitary2: np.ndarray, initial_state_0: bool = True) -> bool:
+def unitary_equal(unitary1: Union[cirq.Circuit, np.ndarray], 
+                  unitary2: Union[cirq.Circuit, np.ndarray], 
+                  initial_state_0: bool = True
+                  ) -> bool:
     """Checks if two unitaries are equal up to a phase factor.
     
     Args:
@@ -65,12 +48,17 @@ def unitary_equal(unitary1: np.ndarray, unitary2: np.ndarray, initial_state_0: b
     Returns:
         is_equal: Whether the two unitaries are equal up to a phase.
     """
-
+    # It the unitaries are in circuit form, convert them to unitaries.
+    if isinstance(unitary1, cirq.Circuit):
+        unitary1 = cirq.unitary(unitary1)
+    if isinstance(unitary2, cirq.Circuit):
+        unitary2 = cirq.unitary(unitary2)
+    
     # Find the index for the phase factor in the first column, since the (0, 0) element might be 0.
     index = np.argmax(np.abs(unitary1[:, 0]))
     if abs(unitary2[index, 0]) == 0:
         return False
-
+    
     phase1 = unitary1[index, 0] / abs(unitary1[index, 0])
     phase2 = unitary2[index, 0] / abs(unitary2[index, 0])
 
@@ -119,3 +107,39 @@ def get_gate_counts(circuit: cirq.Circuit, criterion: Callable[[cirq.OP_TREE], b
         if criterion(op):
             count += 1
     return count
+
+def two_qubit_state_tomography(result_array: np.ndarray) -> np.ndarray:
+    """Two-qubit quantum state tomography.
+    
+    Args:
+        result_array: The array that contains normalized bitstring counts.
+        
+    Returns:
+        density_matrix: The density matrix obtained from state tomography.
+    """
+    basis_matrix = []
+
+    if REVERSE_QUBIT_ORDER:
+        bases = [(f'{x[1]}{x[2]}', f'{x[0]}{x[3]}') for x in product('xyz', 'xyz', '01', '01')]
+    else:
+        bases = [(f'{x[0]}{x[2]}', f'{x[1]}{x[3]}') for x in product('xyz', 'xyz', '01', '01')]
+    
+    states = {
+        "x0": np.array([1.0, 1.0]) / np.sqrt(2),
+        "x1": np.array([1.0, -1.0]) / np.sqrt(2),
+        "y0": np.array([1.0, 1.0j]) / np.sqrt(2),
+        "y1": np.array([1.0, -1.0j]) / np.sqrt(2),
+        "z0": np.array([1.0, 0.0]),
+        "z1": np.array([0.0, 1.0]),
+    }
+
+    for basis in bases:
+        basis_state = np.kron(states[basis[0]], states[basis[1]])
+        basis_vectorized = np.outer(basis_state, basis_state.conj()).reshape(-1)
+        basis_matrix.append(basis_vectorized)
+    basis_matrix = np.array(basis_matrix)
+
+    density_matrix = np.linalg.lstsq(basis_matrix, result_array)[0]
+    dim = int(np.sqrt(density_matrix.shape[0]))
+    density_matrix = density_matrix.reshape(dim, dim, order='F')
+    return density_matrix

@@ -116,7 +116,6 @@ class EHAmplitudesSolver:
         """Runs off-diagonal transition amplitude circuits."""
         h5file = h5py.File(self.h5fname, "r+")
 
-        # TODO: Take in m and n here.
         for m in range(self.n_orbitals):
             for n in range(m + 1, self.n_orbitals):
                 circuit_label = f"circ{m}{n}{self.spin}"

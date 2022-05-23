@@ -9,7 +9,7 @@ from typing import Tuple
 import numpy as np
 import cirq
 
-from .utilities import circuit_equal
+from .utilities import unitary_equal
 from .helpers import print_circuit
 
 
@@ -90,7 +90,7 @@ def permute_qubits(circuit: cirq.Circuit) -> cirq.Circuit:
     # print('-' * 80)
     # print_circuit(circuit_new)
     # print('=' * 80)
-    assert circuit_equal(circuit, circuit_new)
+    assert unitary_equal(circuit, circuit_new)
     return circuit_new
 
 def convert_ccz_to_c0c0ix(circuit: cirq.Circuit, spin: str) -> cirq.Circuit:
@@ -149,7 +149,7 @@ def convert_ccz_to_c0c0ix(circuit: cirq.Circuit, spin: str) -> cirq.Circuit:
     # print('-' * 80)
     # print_circuit(circuit_new)
     # print('=' * 80)
-    assert circuit_equal(circuit, circuit_new)
+    assert unitary_equal(circuit, circuit_new)
     return circuit_new
 
 
@@ -190,7 +190,7 @@ def convert_swap_to_cz(circuit: cirq.Circuit) -> cirq.Circuit:
     # print('-' * 80)
     # print_circuit(circuit_new)
     # print('=' * 80)
-    assert circuit_equal(circuit, circuit_new)
+    assert unitary_equal(circuit, circuit_new)
     return circuit_new
 
 
@@ -237,7 +237,7 @@ def convert_phxz_to_xpi2(circuit: cirq.Circuit) -> cirq.Circuit:
         else:
             circuit_new.append(op)
 
-    assert circuit_equal(circuit, circuit_new)
+    assert unitary_equal(circuit, circuit_new)
     return circuit_new
 
 
