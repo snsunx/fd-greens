@@ -9,7 +9,7 @@ import numpy as np
 
 from .molecular_hamiltonian import MolecularHamiltonian
 from .qubit_indices import QubitIndices
-from .parameters import method_indices_pairs, REVERSE_QUBIT_ORDER
+from .parameters import REVERSE_QUBIT_ORDER, get_method_indices_pairs
 
 
 class EHStatesSolver:
@@ -30,7 +30,8 @@ class EHStatesSolver:
         if REVERSE_QUBIT_ORDER:
             tapered_state.reverse()
 
-        self.hamiltonian.transform(method_indices_pairs[spin], tapered_state=tapered_state)
+        # self.hamiltonian.transform(method_indices_pairs[spin], tapered_state=tapered_state)
+        self.hamiltonian.transform(get_method_indices_pairs(spin), tapered_state=tapered_state)
         # for x in self.hamiltonian.pauli_strings:
         #     print(x)
         
@@ -38,7 +39,7 @@ class EHStatesSolver:
 
         n_qubits = 2 * len(self.hamiltonian.active_indices)
         self.qubit_indices_dict = QubitIndices.get_eh_qubit_indices_dict(
-            n_qubits, spin, method_indices_pairs[spin], system_only=True)
+            n_qubits, spin, get_method_indices_pairs(spin), system_only=True)
         # for k, v in self.qubit_indices_dict.items():
         #     print(k, v)
 

@@ -8,6 +8,7 @@ import os
 from typing import Sequence, Optional
 from itertools import product
 
+import cirq
 import h5py
 import numpy as np
 import matplotlib.pyplot as plt
@@ -267,7 +268,12 @@ def plot_counts(
     fig.savefig(f"figs/counts_{h5fname}_{circ_label}{tomo_label}.png", dpi=300, bbox_inches="tight")
     plt.close(fig)
 
-def print_circuit(circuit) -> None:
+def print_circuit(circuit: cirq.Circuit) -> None:
+    """Prints out a circuit 10 elements at a time.
+    
+    Args:
+        circuit: The circuit to be printed.
+    """
     if len(circuit) < 10:
         print(circuit)
     else:

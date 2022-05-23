@@ -5,12 +5,12 @@ Qubit Indices (:mod:`fd_greens.qubit_indices`)
 """
 
 from itertools import combinations
-from typing import Mapping, Iterable, Optional, Tuple, Sequence, List
+from typing import Mapping, Iterable, Optional, List
 
 import copy
 import numpy as np
 
-from .parameters import REVERSE_QUBIT_ORDER
+from .parameters import REVERSE_QUBIT_ORDER, MethodIndicesPairs
 
 
 class QubitIndices:
@@ -99,7 +99,7 @@ class QubitIndices:
         for i, qubit_index in enumerate(self.system_indices):
             self.system_indices[i] = [q for j, q in enumerate(qubit_index) if j not in tapered_indices]
 
-    def transform(self, method_indices_pairs: Iterable[Tuple[str, Sequence[int]]]) -> None:
+    def transform(self, method_indices_pairs: MethodIndicesPairs) -> None:
         """Transforms a ``QubitIndices`` object."""
         method_dict = {"cnot": self._cnot, "swap": self._swap, "taper": self._taper}
         for method_key, indices in method_indices_pairs:
@@ -144,10 +144,10 @@ class QubitIndices:
     def get_eh_qubit_indices_dict(
         n_qubits: int,
         spin: str,
-        method_indices_pairs: Iterable[Tuple[str, Sequence[int]]] = [],
+        method_indices_pairs: MethodIndicesPairs = [],
         system_only: bool = False
     ) -> Mapping[str, 'QubitIndices']:
-        """Returns the qubit indices of (N+-1)-electron states.
+        """Returns the qubit indices of (N±1)-electron states.
         
         Args:
             n_qubits: Number of qubits.
@@ -187,7 +187,7 @@ class QubitIndices:
     @staticmethod
     def get_excited_qubit_indices_dict(
         n_qubits: int,
-        method_indices_pairs: Iterable[Tuple[str, Sequence[int]]],
+        method_indices_pairs: MethodIndicesPairs,
         system_only: bool = False
     ) -> Mapping[str, 'QubitIndices']:
         """Returns the qubit indices of N-electron excited states.

@@ -4,9 +4,11 @@ Operators (:mod:`fd_greens.operators`)
 ======================================
 """
 
-from typing import Sequence, Mapping, Optional
+from typing import Sequence, Mapping, Optional, List
 
 import cirq
+
+from .parameters import MethodIndicesPairs
 
 class OperatorsBase:
     """Operators base."""
@@ -44,7 +46,7 @@ class OperatorsBase:
 
     def transform(
         self, 
-        method_indices_pairs: Mapping[str, Sequence[int]], 
+        method_indices_pairs: MethodIndicesPairs, 
         tapered_state: Optional[Sequence[int]] = None
     ) -> None:
         """Transforms Pauli strings with Z2 symmetries and qubit tapering."""
@@ -88,11 +90,11 @@ class SecondQuantizedOperators(OperatorsBase):
             self.pauli_strings.append(factor * pauli_string_x)
             self.pauli_strings.append(factor * 1j * pauli_string_y)
 
-    def transform(self, method_indices_pairs: Mapping[str, Sequence[int]]) -> None:
+    def transform(self, method_indices_pairs: MethodIndicesPairs, tapered_state: Optional[List[int]] = None) -> None:
         """Transforms the second quantized operators with Z2 symmetries and qubit tapering."""
-        # self.n_tapered = len(method_indices_pairs['taper'])
-        self.n_tapered = len(dict(method_indices_pairs)['taper'])
-        tapered_state = [1] * self.n_tapered # XXX: Not general
+        self.n_tapered = method_indices_pairs.n_tapered
+        if tapered_state is None:
+            tapered_state = [1] * self.n_tapered
         OperatorsBase.transform(self, method_indices_pairs, tapered_state=tapered_state)
 
 class ChargeOperators(OperatorsBase):
@@ -115,8 +117,9 @@ class ChargeOperators(OperatorsBase):
             self.pauli_strings.append(pauli_string_i)
             self.pauli_strings.append(pauli_string_z)
 
-    def transform(self, method_indices_pairs: Mapping[str, Sequence[int]]) -> None:
+    def transform(self, method_indices_pairs: MethodIndicesPairs, tapered_state: Optional[List[int]] = None) -> None:
         """Transforms the charge operators with Z2 symmetries and qubit tapering."""
-        self.n_tapered = len(dict(method_indices_pairs)['taper'])
-        tapered_state = [1] * self.n_tapered # XXX: Not general
+        self.n_tapered = method_indices_pairs.n_tapered
+        if tapered_state is None:
+            tapered_state = [1] * self.n_tapered
         OperatorsBase.transform(self, method_indices_pairs, tapered_state=tapered_state)

@@ -32,6 +32,7 @@ def reverse_qubit_order(array: np.ndarray) -> np.ndarray:
         array_new = array[indices][:, indices]
     return array_new
 
+# TODO: Maybe can deprecate this function and combine it with unitary_equal.
 def circuit_equal(circuit1: cirq.Circuit, circuit2: cirq.Circuit, initial_state_0: bool = True) -> bool:
     """Checks if two circuits are equivalent.
 

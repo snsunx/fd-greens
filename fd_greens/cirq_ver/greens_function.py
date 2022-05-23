@@ -11,10 +11,9 @@ from itertools import product
 import h5py
 import numpy as np
 
-from .parameters import method_indices_pairs
 from .molecular_hamiltonian import MolecularHamiltonian
 from .qubit_indices import QubitIndices
-from .parameters import basis_matrix, REVERSE_QUBIT_ORDER
+from .parameters import basis_matrix, REVERSE_QUBIT_ORDER, get_method_indices_pairs
 from .utilities import reverse_qubit_order
 
 
@@ -63,11 +62,14 @@ class GreensFunction:
                                   "h": h5file["es/states_h"][:]}
 
         # Derived attributes.
+        method_indices_pairs = get_method_indices_pairs(spin)
         self.n_states = {subscript: self.state_vectors[subscript].shape[1] for subscript in ['e', 'h']}
         self.n_orbitals = len(self.hamiltonian.active_indices)
-        self.n_system_qubits = 2 * self.n_orbitals - len(dict(method_indices_pairs[spin])['taper'])
+        # self.n_system_qubits = 2 * self.n_orbitals - len(dict(method_indices_pairs[spin])['taper'])
+        self.n_system_qubits = 2 * self.n_orbitals - method_indices_pairs.n_tapered
+
         self.qubit_indices_dict = QubitIndices.get_eh_qubit_indices_dict(
-            2 * self.n_orbitals, spin, method_indices_pairs[spin])
+            2 * self.n_orbitals, spin, method_indices_pairs)
 
         # Initialize array quantities B, D and G.
         self.B = {subscript: np.zeros((self.n_orbitals, self.n_orbitals, self.n_states[subscript]), dtype=complex)
