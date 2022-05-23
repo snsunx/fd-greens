@@ -65,7 +65,7 @@ def unitary_equal(unitary1: np.ndarray, unitary2: np.ndarray, initial_state_0: b
         is_equal: Whether the two unitaries are equal up to a phase.
     """
 
-    # Find the index of phase factor in the first column.
+    # Find the index for the phase factor in the first column, since the (0, 0) element might be 0.
     index = np.argmax(np.abs(unitary1[:, 0]))
     if abs(unitary2[index, 0]) == 0:
         return False

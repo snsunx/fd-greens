@@ -109,6 +109,8 @@ def convert_ccz_to_c0c0ix(circuit: cirq.Circuit, spin: str) -> cirq.Circuit:
         for op in moment:
             if op.gate.__str__() == "CCZ":
                 qubits = op.qubits
+
+                # CiZC gate from the C0C0iX gate, with XHX gates appended on both sides.
                 cizc_ops = [
                     cirq.X(qubits[0]), cirq.H(qubits[1]), cirq.X(qubits[2]),
                     C0C0iX(qubits[0], qubits[2], qubits[1]),
@@ -256,7 +258,7 @@ def transpile_into_berkeley_gates(circuit: cirq.Circuit, spin: str = 'd') -> cir
     
     # Three-qubit gate transpilation.
     circuit_new = convert_ccz_to_c0c0ix(circuit_new, spin)
-    print_circuit(circuit_new)
+    # print_circuit(circuit_new)
     cirq.MergeInteractions(allow_partial_czs=True).optimize_circuit(circuit_new)
 
     # Two-qubit gate transpilation.

@@ -10,6 +10,8 @@ from typing import Mapping, Iterable, Optional, Tuple, Sequence, List
 import copy
 import numpy as np
 
+from .parameters import REVERSE_QUBIT_ORDER
+
 
 class QubitIndices:
     """Qubit indices of system and ancilla qubits."""
@@ -33,13 +35,19 @@ class QubitIndices:
     def _build(self) -> None:
         """Builds str, int and list forms of the qubit indices."""
         self.list = []
+        self.str = []
+        self.int = []
+
         for sys in self.system_indices:
             for anc in self.ancilla_indices:
                 self.list.append(anc + sys)
-    
-        # XXX: I don't think [::-1] is correct here.
-        self.str = [''.join([str(i) for i in l[::-1]]) for l in self.list]
-        self.int = [int(s, 2) for s in self.str]
+                string = ''.join(map(str, anc)) + ' ' + ''.join(map(str, sys))
+                if REVERSE_QUBIT_ORDER:
+                    string = string[::-1]
+                self.str.append(string.strip())
+                self.int.append(int(string.replace(' ', ''), 2))
+
+        # print(f'{self.str = }')
 
     def __call__(self, array: np.ndarray) -> np.ndarray:
         """Slices a 1D or 2D array by the qubit indices."""
@@ -52,7 +60,7 @@ class QubitIndices:
 
     def copy(self) -> "QubitIndices":
         """Returns a copy of itself."""
-        return copy.deepcopy(self)
+        return self.__class__(self.system_indices, ancilla_indices=self.ancilla_indices)
 
     def __str__(self) -> str:
         return str(self.list)

@@ -161,5 +161,7 @@ class GroundStateSolver:
 
     def run(self) -> None:
         """Runs the ground-state calculation with exact two-qubit gate decomposition."""
+        print("Start ground state solver.")
         self._run_exact()
         self._save_data()
+        print("Ground state solver finished.")

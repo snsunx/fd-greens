@@ -68,8 +68,8 @@ class EHAmplitudesSolver:
         self.second_quantized_operators = SecondQuantizedOperators(
             self.qubits, self.spin, factor=(-1) ** (self.spin == 'd'))
         self.second_quantized_operators.transform(method_indices_pairs[spin])
-        for x in self.second_quantized_operators:
-            print(x)
+        # for x in self.second_quantized_operators:
+        #     print(x)
 
     def _run_diagonal_circuits(self) -> None:
         """Runs diagonal transition amplitude circuits."""
@@ -109,7 +109,6 @@ class EHAmplitudesSolver:
                     result = cirq.Simulator().run(tomography_circuit, repetitions=self.repetitions)
                     histogram = result.multi_measurement_histogram(keys=[str(q) for q in self.qubits[:3]])
                     dset_tomography.attrs[f"counts{self.suffix}"] = histogram_to_array(histogram, n_qubits=3)
-                    # print(f'{histogram_to_array(histogram, n_qubits=3).shape = }')
 
         h5file.close()
 
@@ -163,18 +162,9 @@ class EHAmplitudesSolver:
 
         h5file.close()
 
-    def run(self, method: Optional[str] = None) -> None:
-        """Runs all transition amplitude circuits.
-
-        Args:
-            method: The method to calculate transition amplitudes. Either ``'exact'`` or ``'tomo'``.
-        """
-        # TODO: What is the best way to design this method feature.
-        assert method in [None, "exact", "tomo"]
-
+    def run(self) -> None:
+        """Runs all transition amplitude circuits."""
         print("Start (N±1)-electron amplitudes solver.")
-        if method is not None:
-            self.method = method
         self._run_diagonal_circuits()
         self._run_off_diagonal_circuits()
         print("(N±1)-electron amplitudes solver finshed.")

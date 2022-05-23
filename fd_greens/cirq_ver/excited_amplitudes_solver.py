@@ -153,14 +153,8 @@ class ExcitedAmplitudesSolver:
 
         h5file.close()
 
-    def run(self, method: Optional[str] = None) -> None:
-        """Runs all the functions to compute transition amplitudes.
-
-        Args:
-            method: The method to calculate transition amplitudes. Either ``'exact'`` or ``'tomo'``.
-        """
-        if method is not None:
-            self.method = method
+    def run(self) -> None:
+        """Runs all the functions to compute transition amplitudes."""
         print(f"Start N-electron amplitudes solver.")
         self._run_diagonal_circuits()
         self._run_off_diagonal_circuits()

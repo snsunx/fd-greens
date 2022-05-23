@@ -67,7 +67,7 @@ class ResponseFunction:
         self._process_off_diagonal()
 
     def _process_diagonal(self) -> None:
-        """Post-processes diagonal transition amplitudes circuits."""
+        """Processes diagonal transition amplitudes results."""
         h5file = h5py.File(self.h5fname, 'r+')
         for i in range(2 * self.n_orbitals):
             m, s = self.orbital_labels[i]
@@ -109,7 +109,7 @@ class ResponseFunction:
         h5file.close()
 
     def _process_off_diagonal(self) -> None:
-        """Post-processes off-diagonal transition amplitude circuits."""
+        """Processes off-diagonal transition amplitude results."""
         h5file = h5py.File(self.h5fname, "r+")
 
         for i in range(2 * self.n_orbitals):
@@ -177,7 +177,7 @@ class ResponseFunction:
             save_data: Whether to save the response function to file.
 
         Returns:
-            chis_all: A dictionary of orbital strings to the corresponding charge-charge response functions.
+            chis_all: A dictionary from orbital strings to the corresponding charge-charge response functions.
         """
         # Sum over spins in N
         N_summed = self.N.reshape((self.n_orbitals, 2, self.n_orbitals, 2)).sum((1, 3))

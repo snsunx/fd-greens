@@ -9,7 +9,7 @@ import numpy as np
 
 from .molecular_hamiltonian import MolecularHamiltonian
 from .qubit_indices import QubitIndices
-from .parameters import method_indices_pairs
+from .parameters import method_indices_pairs, REVERSE_QUBIT_ORDER
 
 
 class EHStatesSolver:
@@ -26,13 +26,21 @@ class EHStatesSolver:
         assert spin in ['u', 'd']
 
         self.hamiltonian = hamiltonian.copy()
-        tapered_state = [0, 1] if spin == 'd' else [1, 0] # XXX: reversed from Qiskit, but don't know if it's right.
+        tapered_state = [0, 1] if spin == 'u' else [1, 0]
+        if REVERSE_QUBIT_ORDER:
+            tapered_state.reverse()
+
         self.hamiltonian.transform(method_indices_pairs[spin], tapered_state=tapered_state)
+        # for x in self.hamiltonian.pauli_strings:
+        #     print(x)
+        
         self.h5fname = fname + ".h5"
 
         n_qubits = 2 * len(self.hamiltonian.active_indices)
         self.qubit_indices_dict = QubitIndices.get_eh_qubit_indices_dict(
             n_qubits, spin, method_indices_pairs[spin], system_only=True)
+        # for k, v in self.qubit_indices_dict.items():
+        #     print(k, v)
 
         self.energies = dict()
         self.state_vectors = dict()
@@ -65,5 +73,7 @@ class EHStatesSolver:
 
     def run(self) -> None:
         """Runs the (N±1)-electron states calculation."""
+        print("Start (N±1)-electron states solver.")
         self._run_exact()
         self._save_data()
+        print("(N±1)-electron states solver finished.")

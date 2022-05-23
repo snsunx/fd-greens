@@ -14,7 +14,7 @@ import numpy as np
 from .parameters import method_indices_pairs
 from .molecular_hamiltonian import MolecularHamiltonian
 from .qubit_indices import QubitIndices
-from .parameters import basis_matrix
+from .parameters import basis_matrix, REVERSE_QUBIT_ORDER
 from .utilities import reverse_qubit_order
 
 
@@ -93,7 +93,8 @@ class GreensFunction:
 
                 if self.method == 'exact':
                     state_vector = h5file[f'{circuit_label}/transpiled'].attrs[f'psi{self.suffix}']
-                    state_vector = reverse_qubit_order(state_vector) # XXX
+                    if REVERSE_QUBIT_ORDER:
+                        state_vector = reverse_qubit_order(state_vector)
                     state_vector = qubit_indices(state_vector)
 
                     self.B[subscript][m, m] = np.abs(state_vectors_exact.conj().T @ state_vector) ** 2
@@ -104,9 +105,18 @@ class GreensFunction:
                     array_all = []
                     for tomography_label in tomography_labels:
                         array = h5file[f"{circuit_label}/{tomography_label}"].attrs[f"counts{self.suffix}"]
-                        array = reverse_qubit_order(array) # XXX
-                        start_index = int(qubit_indices.ancilla.str[0], 2)
-                        array_label = array[start_index :: 2] / np.sum(array)
+                        if REVERSE_QUBIT_ORDER:
+                            array = reverse_qubit_order(array)
+                            start_index = int(qubit_indices.ancilla.str[0], 2)
+                            array_label = array[start_index :: 2] / np.sum(array)
+                            # print(list(range(start_index, len(array), 2)))
+                        else:
+                            indices = [''.join(l) for l in product('01', repeat=2)]
+                            # print(qubit_indices.ancilla.str[0])
+                            indices = [qubit_indices.ancilla.str[0] + x for x in indices]
+                            indices = [int(x, 2) for x in indices]
+                            print(indices)
+                            array_label = array[indices] / np.sum(array)
                         array_all += list(array_label)
 
                     density_matrix = np.linalg.lstsq(basis_matrix, array_all)[0]
@@ -137,7 +147,8 @@ class GreensFunction:
 
                     if self.method == 'exact':
                         state_vector = h5file[f'{circuit_label}/transpiled'].attrs[f"psi{self.suffix}"]
-                        state_vector = reverse_qubit_order(state_vector)
+                        if REVERSE_QUBIT_ORDER:
+                            state_vector = reverse_qubit_order(state_vector)
                         state_vector = qubit_indices(state_vector)
 
                         self.D[subscript][m, n] = self.D[subscript][n, m] = \
@@ -149,9 +160,16 @@ class GreensFunction:
                         array_all = []
                         for tomography_label in tomography_labels:
                             array = h5file[f"{circuit_label}/{tomography_label}"].attrs[f"counts{self.suffix}"]
-                            array = reverse_qubit_order(array) # XXX
-                            start_index = int(qubit_indices.ancilla.str[0], 2)
-                            array_label = array[start_index :: 2 ** 2]  / np.sum(array)
+                            if REVERSE_QUBIT_ORDER:
+                                array = reverse_qubit_order(array)
+                                start_index = int(qubit_indices.ancilla.str[0], 2)
+                                array_label = array[start_index :: 2 ** 2]  / np.sum(array)
+                                # print(list(range(start_index, len(array), 2)))
+                            else:
+                                indices = [''.join(l) for l in product('01', repeat=2)]
+                                indices = [qubit_indices.ancilla.str[0] + x for x in indices]
+                                indices = [int(x, 2) for x in indices]
+                                array_label = array[indices] / np.sum(array)
                             array_all += list(array_label)
 
                         density_matrix = np.linalg.lstsq(basis_matrix, array_all)[0]
@@ -179,7 +197,15 @@ class GreensFunction:
         h5file.close()
 
     def mean_field_greens_function(self, omega: float, eta: float = 0.0) -> np.ndarray:
-        """Returns the mean-field Green's function."""
+        """Returns the mean-field Green's function.
+        
+        Args:
+            omega: The frequency at which the mean-field Green's function is calculated.
+            eta: The broadening factor.
+
+        Returns:
+            G0: The mean-field Green's function.
+        """
         orbital_energies = self.hamiltonian.orbital_energies[self.hamiltonian.active_indices]
 
         G0 = np.zeros((self.n_orbitals, self.n_orbitals), dtype=complex)
@@ -195,7 +221,7 @@ class GreensFunction:
             eta: The broadening factor.
         
         Returns:
-            G: The Green's function at given frequency and broadening.
+            G: The Green's function.
         """
         for m in range(self.n_orbitals):
             for n in range(self.n_orbitals):
