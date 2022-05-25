@@ -41,8 +41,8 @@ def unitary_equal(unitary1: Union[cirq.Circuit, np.ndarray],
     """Checks if two unitaries are equal up to a phase factor.
     
     Args:
-        unitary1: The first unitary.
-        unitary2: The second unitary.
+        unitary1: The first unitary in circuit or array form.
+        unitary2: The second unitary in circuit or array form.
         initial_state_0: Whether to assume the initial state to be the all 0 state.
 
     Returns:
@@ -69,27 +69,42 @@ def unitary_equal(unitary1: Union[cirq.Circuit, np.ndarray],
 
     return is_equal
 
-def histogram_to_array(histogram: Counter, n_qubits: Optional[int] = None) -> np.ndarray:
-    """Converts a Cirq histogram to a numpy array.
+def histogram_to_array(
+    histogram: dict,
+    n_qubits: Optional[int] = None,
+    base: int = 2,
+    normalize: bool = True
+) -> np.ndarray:
+    """Converts a bitstring histogram to a numpy array.
+
+    Keys of the histogram can either be strings, such as '01', or tuples of integers, such as (0, 1).
     
     Args:
-        histogram: The histogram from Cirq simulator runs.
+        histogram: The histogram from simulators or experiments.
         n_qubits: Number of qubits.
+        base: The base in integer conversion. Defaults to 2 for qubits.
         
     Returns:
-        array: The array form of the histogram.
+        array: The bitstring array from the histogram.
     """
     if n_qubits is None:
-        indices = []
-        for key in histogram.keys():
-            index = int(''.join([str(i) for i in key]), 2)
-            indices.append(index + 1)
-        n_qubits = math.ceil(math.log2(max(indices)))
+        n_qubits = len(list(histogram.keys())[0])
+        # indices = []
+        # for key in histogram.keys():
+        #     index = int(''.join([str(i) for i in key]), base)
+        #     indices.append(index + 1)
+        # n_qubits = math.ceil(math.log2(max(indices)))
     
-    array = np.zeros((2 ** n_qubits,))
+    array = np.zeros((base ** n_qubits,))
     for key, value in histogram.items():
-        index = int(''.join([str(i) for i in key]), 2)
+        if isinstance(key, str):
+            index = int(key, base)
+        else:
+            index = int(''.join([str(i) for i in key]), base)
         array[index] = value
+
+    if normalize:
+        array = array / np.sum(array)
     return array
 
 def get_gate_counts(circuit: cirq.Circuit, criterion: Callable[[cirq.OP_TREE], bool] = lambda op: True) -> int:

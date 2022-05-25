@@ -17,9 +17,10 @@ import matplotlib.pyplot as plt
 def initialize_hdf5(
     fname: str = 'lih',
     mode: str = 'greens',
-    spin: str = '',
+    # spin: str = '',
     n_orbitals: int = 2,
-    overwrite: bool = True
+    overwrite: bool = True,
+    create_datasets: bool = False
 ) -> None:
     """Initializes an HDF5 file.
     
@@ -31,10 +32,6 @@ def initialize_hdf5(
         overwrite: Whether to overwrite groups if they are found in the HDF5 file.
     """
     assert mode in ['greens', 'resp']
-    if mode == 'greens':
-        assert spin in ['u', 'd']
-    else:
-        assert spin == ''
     
     h5fname = fname + '.h5'
     if os.path.exists(h5fname):
@@ -42,17 +39,15 @@ def initialize_hdf5(
     else:
         h5file = h5py.File(h5fname, 'w')
 
-    if mode == 'greens':
-        orbital_labels = [str(i) for i in range(n_orbitals)]
-    elif mode == 'resp':
-        orbital_labels = list(product(range(n_orbitals), ['u', 'd']))
-        orbital_labels = [f'{x[0]}{x[1]}' for x in orbital_labels]
+    orbital_labels = list(product(range(n_orbitals), ['u', 'd']))
+    orbital_labels = [f'{x[0]}{x[1]}' for x in orbital_labels]
 
     group_names = ['gs', 'es', 'amp']
     for i in range(len(orbital_labels)):
-        group_names.append(f'circ{orbital_labels[i]}{spin}')
+        group_names.append(f'circ{orbital_labels[i]}')
         for j in range(i + 1, len(orbital_labels)):
-            group_names.append(f'circ{orbital_labels[i]}{orbital_labels[j]}{spin}')
+            if mode == 'resp' or orbital_labels[i][-1] == orbital_labels[j][-1]:
+                 group_names.append(f'circ{orbital_labels[i]}{orbital_labels[j]}')
 
     for group_name in group_names:
         if group_name in h5file.keys():
@@ -61,6 +56,11 @@ def initialize_hdf5(
                 h5file.create_group(group_name)
         else:
             h5file.create_group(group_name)
+        
+        if create_datasets and group_name not in ['gs', 'es', 'amp']:
+            tomography_labels = [''.join(x) for x in product('xyz', repeat=2)]
+            for tomography_label in tomography_labels:
+                h5file.create_dataset(f'{group_name}/{tomography_label}', data='')
     
     h5file.close()
 
@@ -226,9 +226,15 @@ plot_chi = plot_response_function
 
 
 def plot_counts(
-    h5fname: str, counts_name: str, circ_label: str, tomo_label: str, width: float = 0.5
+    fname_sim: str, 
+    fname_expt: str,
+    dset_name_sim: str,
+    dset_name_expt: str,
+    counts_name_sim: str = '',
+    counts_name_expt: str = '', 
+    width: float = 0.5
 ) -> None:
-    """Plots the QASM and experimental bitstring counts.
+    """Plots the simulation and experimental bitstring counts.
     
     Args:
         h5fname: The HDF5 file name.
@@ -237,36 +243,39 @@ def plot_counts(
         tomo_label: The tomography label.
         width: The width of the bars in the bar chart.
     """
-    h5file = h5py.File(h5fname + ".h5", "r")
-    # print(circ_label, tomo_label)
-    dset = h5file[f"circ{circ_label}/{tomo_label}"]
-    counts = dset.attrs[counts_name]
-    counts_norm = counts / np.sum(counts)
-    counts_exp = dset.attrs[counts_name + "_exp_proc"]
-    counts_exp_norm = counts_exp / np.sum(counts_exp)
-    tvd = np.sum(np.abs(counts_norm - counts_exp_norm)) / 2
+    h5file_sim = h5py.File(fname_sim + '.h5', 'r')
+    h5file_expt = h5py.File(fname_expt + '.h5', 'r')
+    array_sim = h5file_sim[dset_name_sim].attrs[counts_name_sim][:]
+    array_expt = h5file_expt[dset_name_expt].attrs[counts_name_expt][:]
 
-    n_qubits = int(np.log2(len(counts)))
+    # Compute total variational distance.
+    assert abs(np.sum(array_sim) - 1) < 1e-8
+    assert abs(np.sum(array_expt) - 1) < 1e-8
+    distance = np.sum(np.abs(array_sim - array_expt)) / 2
+
+    n_qubits = int(np.log2(len(array_sim)))
     x = np.arange(2 ** n_qubits)
     tick_labels = ["".join(x) for x in product("01", repeat=n_qubits)]
 
     plt.clf()
-    if n_qubits == 3:
-        fig, ax = plt.subplots(figsize=(6, 4))
-    else:
-        fig, ax = plt.subplots(figsize=(10, 4))
-    ax.bar(x - width / 3, counts_norm, width / 1.5, label="QASM")
-    ax.bar(x + width / 3, counts_exp_norm, width / 1.5, label="Expt")
+
+    fig, ax = plt.subplots(figsize=(len(array_sim) * 0.6 + 2, len(array_sim) * 0.5))
+    ax.bar(x - width / 3, array_sim, width / 1.5, label="Sim")
+    ax.bar(x + width / 3, array_expt, width / 1.5, label="Expt")
     ax.set_xticks(x)
     ax.set_xticklabels(tick_labels)
     ax.set_xlabel("Bitstring")
     ax.set_ylabel("Ratio")
-    ax.set_title(f"Total Variational Distance: {tvd:.4f}")
+    ax.set_title(f"Total Variational Distance: {distance:.4f}")
     ax.legend()
+
     if not os.path.exists("figs"):
         os.makedirs("figs")
-    fig.savefig(f"figs/counts_{h5fname}_{circ_label}{tomo_label}.png", dpi=300, bbox_inches="tight")
+    fig.savefig(f"figs/counts_{dset_name_sim.replace('/', '_')}.png", dpi=300, bbox_inches="tight")
     plt.close(fig)
+
+    h5file_sim.close()
+    h5file_expt.close()
 
 def print_circuit(circuit: cirq.Circuit) -> None:
     """Prints out a circuit 10 elements at a time.
