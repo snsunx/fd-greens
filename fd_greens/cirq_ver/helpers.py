@@ -17,7 +17,7 @@ import matplotlib.pyplot as plt
 def initialize_hdf5(
     fname: str = 'lih',
     mode: str = 'greens',
-    # spin: str = '',
+    spin: str = '',
     n_orbitals: int = 2,
     overwrite: bool = True,
     create_datasets: bool = False
@@ -39,15 +39,17 @@ def initialize_hdf5(
     else:
         h5file = h5py.File(h5fname, 'w')
 
-    orbital_labels = list(product(range(n_orbitals), ['u', 'd']))
-    orbital_labels = [f'{x[0]}{x[1]}' for x in orbital_labels]
+    if mode == 'greens':
+        orbital_labels = [str(i) for i in range(n_orbitals)]
+    elif mode == 'resp':
+        orbital_labels = list(product(range(n_orbitals), ['u', 'd']))
+        orbital_labels = [f'{x[0]}{x[1]}' for x in orbital_labels]
 
     group_names = ['gs', 'es', 'amp']
     for i in range(len(orbital_labels)):
-        group_names.append(f'circ{orbital_labels[i]}')
+        group_names.append(f'circ{orbital_labels[i]}{spin}')
         for j in range(i + 1, len(orbital_labels)):
-            if mode == 'resp' or orbital_labels[i][-1] == orbital_labels[j][-1]:
-                 group_names.append(f'circ{orbital_labels[i]}{orbital_labels[j]}')
+            group_names.append(f'circ{orbital_labels[i]}{orbital_labels[j]}{spin}')
 
     for group_name in group_names:
         if group_name in h5file.keys():
@@ -56,7 +58,7 @@ def initialize_hdf5(
                 h5file.create_group(group_name)
         else:
             h5file.create_group(group_name)
-        
+
         if create_datasets and group_name not in ['gs', 'es', 'amp']:
             tomography_labels = [''.join(x) for x in product('xyz', repeat=2)]
             for tomography_label in tomography_labels:
@@ -243,6 +245,7 @@ def plot_counts(
         tomo_label: The tomography label.
         width: The width of the bars in the bar chart.
     """
+    # print(fname_sim)
     h5file_sim = h5py.File(fname_sim + '.h5', 'r')
     h5file_expt = h5py.File(fname_expt + '.h5', 'r')
     array_sim = h5file_sim[dset_name_sim].attrs[counts_name_sim][:]
@@ -259,18 +262,19 @@ def plot_counts(
 
     plt.clf()
 
-    fig, ax = plt.subplots(figsize=(len(array_sim) * 0.6 + 2, len(array_sim) * 0.5))
+    fig, ax = plt.subplots(figsize=(len(array_sim) * 0.6 + 2, 4))
     ax.bar(x - width / 3, array_sim, width / 1.5, label="Sim")
     ax.bar(x + width / 3, array_expt, width / 1.5, label="Expt")
     ax.set_xticks(x)
     ax.set_xticklabels(tick_labels)
     ax.set_xlabel("Bitstring")
     ax.set_ylabel("Ratio")
-    ax.set_title(f"Total Variational Distance: {distance:.4f}")
+    ax.set_title(f"Fidelity (1 - TVD): {1 - distance:.4f}")
     ax.legend()
 
     if not os.path.exists("figs"):
         os.makedirs("figs")
+    fig.set_facecolor('white')
     fig.savefig(f"figs/counts_{dset_name_sim.replace('/', '_')}.png", dpi=300, bbox_inches="tight")
     plt.close(fig)
 
