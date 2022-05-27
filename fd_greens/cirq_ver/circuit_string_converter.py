@@ -7,9 +7,11 @@ Circuit String Converter (:mod:`fd_greens.circuit_string_converter`)
 import re
 from typing import List, Sequence
 
+import numpy as np
 import cirq
 
 from .transpilation import C0C0iXGate
+from .utilities import get_gate_counts
 
 
 class CircuitStringConverter:
@@ -164,9 +166,20 @@ class CircuitStringConverter:
         Returns:
             qtrl_strings: The Qtrl strings corresponding to the Cirq circuit.
         """
+
         qtrl_strings = []
 
         for moment in circuit:
+
+            # XXX: Temporary check statement.
+            gate_counts = [get_gate_counts(cirq.Circuit(moment), 
+                lambda op: op.gate.num_qubits() == i) for i in [1, 2, 3]]
+
+            if np.count_nonzero(gate_counts) != 1:
+                print(gate_counts)
+                print(moment)
+                exit()
+
             strings_moment = []
             for op in moment:
                 gate = op.gate

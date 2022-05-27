@@ -5,11 +5,15 @@ Circuit Constructor (:mod:`fd_greens.circuit_constructor`)
 """
 
 from itertools import product
+from turtle import position
 from typing import Mapping, Sequence, Optional, List
 from cmath import polar
 
 import numpy as np
 import cirq
+
+from .transpilation import convert_phxz_to_xpi2
+from .utilities import get_gate_counts
 
 
 class CircuitConstructor:
@@ -209,22 +213,39 @@ class CircuitConstructor:
 
         # TODO: Take swap gates at the end of the circuit into account.
         for label in tomography_labels:
-            tomography_circuit = circuit.copy()
+            position = 0
+            while True:
+                position -= 1
+                moment = circuit[position]
+                gate_count = get_gate_counts(cirq.Circuit(moment), lambda op: op.gate.num_qubits() > 1)
+                if gate_count > 0:
+                    break
+            
+            if position != -1:
+                tomography_circuit = circuit[:position + 1]
+                measurement_circuit = circuit[position + 1:]
+            else:
+                tomography_circuit = circuit.copy()
+                measurement_circuit = cirq.Circuit()
+                    
             for q, s in zip(tomographed_qubits, label):
                 if s == "x":
-                    tomography_circuit.append(
-                        [
-                            cirq.ZPowGate(exponent=0.5)(q),
-                            cirq.XPowGate(exponent=0.5)(q),
-                            cirq.ZPowGate(exponent=0.5)(q),
-                        ]
-                    )
+                    measurement_circuit.append(cirq.ZPowGate(exponent=0.5)(q))
+                    measurement_circuit.append(cirq.XPowGate(exponent=0.5)(q))
+                    measurement_circuit.append(cirq.ZPowGate(exponent=0.5)(q))
                 elif s == "y":
-                    tomography_circuit.append([cirq.XPowGate(exponent=0.5)(q), cirq.ZPowGate(exponent=0.5)(q)])
-
+                    measurement_circuit.append(cirq.I(q))
+                    measurement_circuit.append(cirq.XPowGate(exponent=0.5)(q))
+                    measurement_circuit.append(cirq.ZPowGate(exponent=0.5)(q))
+            
+            cirq.MergeSingleQubitGates().optimize_circuit(measurement_circuit)
+            cirq.DropEmptyMoments().optimize_circuit(measurement_circuit)
+            cirq.merge_single_qubit_gates_into_phxz(measurement_circuit)
+            measurement_circuit = convert_phxz_to_xpi2(measurement_circuit)
             for q in measured_qubits:
-                tomography_circuit.append(cirq.measure(q))
+                measurement_circuit.append(cirq.measure(q))
 
+            tomography_circuit = tomography_circuit + measurement_circuit
             tomography_circuits[label] = tomography_circuit
 
         return tomography_circuits
