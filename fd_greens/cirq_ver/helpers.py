@@ -234,34 +234,39 @@ def plot_counts(
     dset_name_expt: str,
     counts_name_sim: str = '',
     counts_name_expt: str = '', 
-    width: float = 0.5
+    width: float = 0.5,
+    dirname: str = 'figs'
 ) -> None:
-    """Plots the simulation and experimental bitstring counts.
+    """Plots the simulation and experimental bitstring counts along with total variational distance.
     
     Args:
-        h5fname: The HDF5 file name.
-        counts_name: Name of the bitstring counts.
-        circ_label: The circuit label.
-        tomo_label: The tomography label.
-        width: The width of the bars in the bar chart.
+        fname_sim: Name of the simulation HDF5 file.
+        fname_expt: Name of the experimental HDF5 file.
+        dset_name_sim: Name of the simulation dataset.
+        dset_name_expt: Name of the experimental dataset.
+        counts_name_sim: Name of the simulation bitstring counts.
+        counts_name_expt: Name fo the experimental bitstring counts.
+        width: Width of bars in the bar chart.
     """
     # print(fname_sim)
-    h5file_sim = h5py.File(fname_sim + '.h5', 'r')
-    h5file_expt = h5py.File(fname_expt + '.h5', 'r')
-    array_sim = h5file_sim[dset_name_sim].attrs[counts_name_sim][:]
-    array_expt = h5file_expt[dset_name_expt].attrs[counts_name_expt][:]
+    # h5file_sim = h5py.File(fname_sim + '.h5', 'r')
+    # h5file_expt = h5py.File(fname_expt + '.h5', 'r')
+    with h5py.File(fname_sim + '.h5', 'r') as h5file_sim:
+        array_sim = h5file_sim[dset_name_sim].attrs[counts_name_sim][:]
+    with h5py.File(fname_expt + '.h5', 'r') as h5file_expt:
+        array_expt = h5file_expt[dset_name_expt].attrs[counts_name_expt][:]
 
     # Compute total variational distance.
     assert abs(np.sum(array_sim) - 1) < 1e-8
     assert abs(np.sum(array_expt) - 1) < 1e-8
     distance = np.sum(np.abs(array_sim - array_expt)) / 2
 
+    # Create x tick locations and labels.
     n_qubits = int(np.log2(len(array_sim)))
     x = np.arange(2 ** n_qubits)
-    tick_labels = ["".join(x) for x in product("01", repeat=n_qubits)]
+    tick_labels = ["".join(y) for y in product("01", repeat=n_qubits)]
 
     plt.clf()
-
     fig, ax = plt.subplots(figsize=(len(array_sim) * 0.6 + 2, 4))
     ax.bar(x - width / 3, array_sim, width / 1.5, label="Sim")
     ax.bar(x + width / 3, array_expt, width / 1.5, label="Expt")
@@ -272,14 +277,12 @@ def plot_counts(
     ax.set_title(f"Fidelity (1 - TVD): {1 - distance:.4f}")
     ax.legend()
 
-    if not os.path.exists("figs"):
-        os.makedirs("figs")
+    if not os.path.exists(dirname):
+        os.makedirs(dirname)
     fig.set_facecolor('white')
-    fig.savefig(f"figs/counts_{dset_name_sim.replace('/', '_')}.png", dpi=300, bbox_inches="tight")
+    fig.savefig(f"{dirname}/counts_{dset_name_sim.replace('/', '_')}.png", dpi=300, bbox_inches="tight")
     plt.close(fig)
 
-    h5file_sim.close()
-    h5file_expt.close()
 
 def print_circuit(circuit: cirq.Circuit) -> None:
     """Prints out a circuit 10 elements at a time.

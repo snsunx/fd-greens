@@ -112,7 +112,8 @@ def get_gate_counts(circuit: cirq.Circuit, criterion: Callable[[cirq.OP_TREE], b
     
     Args:
         circuit: The circuit on which to return gate counts.
-        criterion: The criterion of gates to be counted.
+        criterion: The criterion of gates to be counted. Defaults to counting all gates. For example, to count all
+            2q gates use ``lambda: op: op.gate.num_qubits() == 2``.  
         
     Returns:
         count: Number of gates satisfying a certain criterion.
@@ -123,6 +124,7 @@ def get_gate_counts(circuit: cirq.Circuit, criterion: Callable[[cirq.OP_TREE], b
             count += 1
     return count
 
+# TODO: Write a general implementation of state tomography.
 def two_qubit_state_tomography(result_array: np.ndarray) -> np.ndarray:
     """Two-qubit quantum state tomography.
     
