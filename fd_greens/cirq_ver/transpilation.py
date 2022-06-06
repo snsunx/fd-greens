@@ -240,6 +240,15 @@ def convert_phxz_to_xpi2(circuit: cirq.Circuit) -> cirq.Circuit:
     assert unitary_equal(circuit, circuit_new)
     return circuit_new
 
+def transpile_1q_gates(circuit: cirq.Circuit) -> cirq.Circuit:
+    """Transpiles single-qubit gates."""
+    circuit_new = circuit.copy()
+    cirq.MergeSingleQubitGates().optimize_circuit(circuit_new)
+    cirq.DropEmptyMoments().optimize_circuit(circuit_new)
+    cirq.merge_single_qubit_gates_into_phxz(circuit_new)
+    circuit_new = convert_phxz_to_xpi2(circuit_new)
+    return circuit_new
+
 
 def transpile_into_berkeley_gates(circuit: cirq.Circuit, spin: str = 'd') -> cirq.Circuit:
     """Transpiles a circuit into native gates on the Berkeley device.
@@ -258,15 +267,15 @@ def transpile_into_berkeley_gates(circuit: cirq.Circuit, spin: str = 'd') -> cir
     
     # Three-qubit gate transpilation.
     circuit_new = convert_ccz_to_c0c0ix(circuit_new, spin)
-    # print_circuit(circuit_new)
     cirq.MergeInteractions(allow_partial_czs=True).optimize_circuit(circuit_new)
 
     # Two-qubit gate transpilation.
     circuit_new = convert_swap_to_cz(circuit_new)
     
     # Single-qubit gate transpilation.
-    cirq.MergeSingleQubitGates().optimize_circuit(circuit_new)
-    cirq.DropEmptyMoments().optimize_circuit(circuit_new)
-    cirq.merge_single_qubit_gates_into_phxz(circuit_new)
-    circuit_new = convert_phxz_to_xpi2(circuit_new)
+    # cirq.MergeSingleQubitGates().optimize_circuit(circuit_new)
+    # cirq.DropEmptyMoments().optimize_circuit(circuit_new)
+    # cirq.merge_single_qubit_gates_into_phxz(circuit_new)
+    # circuit_new = convert_phxz_to_xpi2(circuit_new)
+    circuit_new = transpile_1q_gates(circuit_new)
     return circuit_new

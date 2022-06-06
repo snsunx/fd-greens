@@ -12,7 +12,7 @@ from cmath import polar
 import numpy as np
 import cirq
 
-from .transpilation import convert_phxz_to_xpi2
+from .transpilation import transpile_1q_gates
 from .utilities import get_gate_counts
 
 
@@ -213,14 +213,17 @@ class CircuitConstructor:
 
         # TODO: Take swap gates at the end of the circuit into account.
         for label in tomography_labels:
+            # Look for the position where the first multi-qubit gate is encountered.
+            # This is general because in the last transpilation step the circuits have been converted into
+            # the form with alternating single- and multi-qubit gates.
             position = 0
-            while True:
+            gate_count = 0
+            while gate_count == 0:
                 position -= 1
-                moment = circuit[position]
-                gate_count = get_gate_counts(cirq.Circuit(moment), lambda op: op.gate.num_qubits() > 1)
-                if gate_count > 0:
-                    break
+                # moment = circuit[position]
+                gate_count = get_gate_counts(circuit[position], lambda op: op.gate.num_qubits() > 1)
             
+            # Break the circuit at the position where the multi-qubit gate is encountered.
             if position != -1:
                 tomography_circuit = circuit[:position + 1]
                 measurement_circuit = circuit[position + 1:]
@@ -228,6 +231,7 @@ class CircuitConstructor:
                 tomography_circuit = circuit.copy()
                 measurement_circuit = cirq.Circuit()
                     
+            # Append H or X(pi/2) to the measurement circuit.
             for q, s in zip(tomographed_qubits, label):
                 if s == "x":
                     measurement_circuit.append(cirq.ZPowGate(exponent=0.5)(q))
@@ -238,10 +242,7 @@ class CircuitConstructor:
                     measurement_circuit.append(cirq.XPowGate(exponent=0.5)(q))
                     measurement_circuit.append(cirq.ZPowGate(exponent=0.5)(q))
             
-            cirq.MergeSingleQubitGates().optimize_circuit(measurement_circuit)
-            cirq.DropEmptyMoments().optimize_circuit(measurement_circuit)
-            cirq.merge_single_qubit_gates_into_phxz(measurement_circuit)
-            measurement_circuit = convert_phxz_to_xpi2(measurement_circuit)
+            measurement_circuit = transpile_1q_gates(measurement_circuit)
             for q in measured_qubits:
                 measurement_circuit.append(cirq.measure(q))
 

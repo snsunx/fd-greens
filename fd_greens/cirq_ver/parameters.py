@@ -11,6 +11,8 @@ HARTREE_TO_EV = 27.211386245988
 
 REVERSE_QUBIT_ORDER = False
 
+WRAP_Z_AROUND_ITOFFOLI = True
+
 @dataclass
 class MethodIndicesPairs:
     methods: List[str]

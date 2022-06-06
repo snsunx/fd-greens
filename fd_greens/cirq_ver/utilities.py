@@ -107,19 +107,32 @@ def histogram_to_array(
         array = array / np.sum(array)
     return array
 
-def get_gate_counts(circuit: cirq.Circuit, criterion: Callable[[cirq.OP_TREE], bool] = lambda op: True) -> int:
+def get_gate_counts(circuit: Union[cirq.Circuit, cirq.Moment], *,
+					criterion: Union[int, Callable[[cirq.OP_TREE], bool]] = lambda op: True,
+                    num_qubits: Optional[int] = None
+				   ) -> int:
     """Returns the count of gates satisfying a certain criterion.
     
     Args:
         circuit: The circuit on which to return gate counts.
         criterion: The criterion of gates to be counted. Defaults to counting all gates. For example, to count all
-            2q gates use ``lambda: op: op.gate.num_qubits() == 2``.  
+            2q gates use ``lambda: op: op.gate.num_qubits() == 2``. 
+        num_qubits: Number of qubits in gates to be counted. 
         
     Returns:
         count: Number of gates satisfying a certain criterion.
     """
     count = 0
-    for op in circuit.all_operations():
+    if isinstance(circuit, cirq.Circuit):
+        all_operations = circuit.all_operations()
+    else:
+        all_operations = circuit
+
+    # Overwrite criterion if num_qubits is given.
+    if num_qubits is not None:
+        criterion = lambda op: op.gate.num_qubits() == num_qubits
+
+    for op in all_operations:
         if criterion(op):
             count += 1
     return count

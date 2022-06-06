@@ -12,6 +12,7 @@ import cirq
 
 from .transpilation import C0C0iXGate
 from .utilities import get_gate_counts
+from .parameters import WRAP_Z_AROUND_ITOFFOLI
 
 
 class CircuitStringConverter:
@@ -171,7 +172,7 @@ class CircuitStringConverter:
 
         for moment in circuit:
 
-            # XXX: Temporary check statement.
+            # TODO: Write this better with check statements.
             gate_counts = [get_gate_counts(cirq.Circuit(moment), 
                 lambda op: op.gate.num_qubits() == i) for i in [1, 2, 3]]
 
@@ -199,6 +200,10 @@ class CircuitStringConverter:
                 strings_moment.append(qtrl_string)
             
             if strings_moment != []:
+                if WRAP_Z_AROUND_ITOFFOLI and len(strings_moment) == 1 and strings_moment[0][:3] == 'TOF':
+                    qtrl_strings.append(["Q5/Z-20.67"])
                 qtrl_strings.append(strings_moment)
+                if WRAP_Z_AROUND_ITOFFOLI and len(strings_moment) == 1 and strings_moment[0][:3] == 'TOF':
+                    qtrl_strings.append(["Q5/Z20.67"])
             
         return qtrl_strings
