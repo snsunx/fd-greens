@@ -9,9 +9,17 @@ from typing import List, Sequence
 
 HARTREE_TO_EV = 27.211386245988
 
+# Whether to reverse qubit order for Qiskit-order postprocessing.
 REVERSE_QUBIT_ORDER = False
 
+# Whether to wrap Z rotation gates around iToffoli for hardware runs.
 WRAP_Z_AROUND_ITOFFOLI = True
+
+# Whether to put CS dagger gates on qubits 4 and 5.
+CSD_IN_ITOFFOLI_ON_45 = True
+
+# Whether to check original and transpiled circuits are equal.
+CHECK_CIRCUIT_EQUAL = True
 
 @dataclass
 class MethodIndicesPairs:

@@ -121,9 +121,6 @@ class GreensFunction:
                             array_label = array[indices] / np.sum(array)
                         array_all += list(array_label)
 
-                    # density_matrix = np.linalg.lstsq(basis_matrix, array_all)[0]
-                    # density_matrix = density_matrix.reshape(
-                    #     2 ** self.n_system_qubits, 2 ** self.n_system_qubits, order='F')
                     density_matrix = two_qubit_state_tomography(array_all)
                     density_matrix = qubit_indices.system(density_matrix)
 
@@ -175,9 +172,6 @@ class GreensFunction:
                                 array_label = array[indices] / np.sum(array)
                             array_all += list(array_label)
 
-                        # density_matrix = np.linalg.lstsq(basis_matrix, array_all)[0]
-                        # density_matrix = density_matrix.reshape(
-                        #     2 ** self.n_system_qubits, 2 ** self.n_system_qubits, order='F')
                         density_matrix = two_qubit_state_tomography(array_all)
                         density_matrix = qubit_indices.system(density_matrix)
                         

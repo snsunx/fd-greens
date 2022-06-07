@@ -9,8 +9,11 @@ from typing import Tuple
 import numpy as np
 import cirq
 
+from fd_greens.cirq_ver.parameters import CSD_IN_ITOFFOLI_ON_45
+
 from .utilities import unitary_equal
 from .helpers import print_circuit
+from .parameters import CHECK_CIRCUIT_EQUAL
 
 
 class C0C0iXGate(cirq.Gate):
@@ -85,12 +88,8 @@ def permute_qubits(circuit: cirq.Circuit) -> cirq.Circuit:
             else:
                 circuit_new.append(op)
 
-    # print('In permute_qubits\n')
-    # print_circuit(circuit)
-    # print('-' * 80)
-    # print_circuit(circuit_new)
-    # print('=' * 80)
-    assert unitary_equal(circuit, circuit_new)
+    if CHECK_CIRCUIT_EQUAL:
+        assert unitary_equal(circuit, circuit_new)
     return circuit_new
 
 def convert_ccz_to_c0c0ix(circuit: cirq.Circuit, spin: str) -> cirq.Circuit:
@@ -117,19 +116,26 @@ def convert_ccz_to_c0c0ix(circuit: cirq.Circuit, spin: str) -> cirq.Circuit:
                     cirq.X(qubits[0]), cirq.H(qubits[1]), cirq.X(qubits[2]),
                 ]
 
+                if CSD_IN_ITOFFOLI_ON_45:
+                    qubits_csd = [qubits[0], qubits[1]]
+                    qubits_swap = [qubits[1], qubits[2]]
+                else:
+                    qubits_csd = [qubits[1], qubits[2]]
+                    qubits_swap = [qubits[0], qubits[1]]
+                    
                 # SWAP gate without a CZ, equivalent to an iSWAP gate.
                 iswap_ops = [
-                    cirq.XPowGate(exponent=0.5)(qubits[0]), cirq.XPowGate(exponent=0.5)(qubits[1]),
-                    cirq.CZ(qubits[0], qubits[1]),
-                    cirq.XPowGate(exponent=0.5)(qubits[0]), cirq.XPowGate(exponent=0.5)(qubits[1]),
-                    cirq.CZ(qubits[0], qubits[1]),
-                    cirq.XPowGate(exponent=0.5)(qubits[0]), cirq.XPowGate(exponent=0.5)(qubits[1])
+                    cirq.XPowGate(exponent=0.5)(qubits_swap[0]), cirq.XPowGate(exponent=0.5)(qubits_swap[1]),
+                    cirq.CZ(*qubits_swap),
+                    cirq.XPowGate(exponent=0.5)(qubits_swap[0]), cirq.XPowGate(exponent=0.5)(qubits_swap[1]),
+                    cirq.CZ(*qubits_swap),
+                    cirq.XPowGate(exponent=0.5)(qubits_swap[0]), cirq.XPowGate(exponent=0.5)(qubits_swap[1])
                 ]
 
-                # Long-range CS gate without an iSWAP gate.
-                cs_ops = [cirq.CZPowGate(exponent=-0.5)(qubits[1], qubits[2]),
-                          cirq.CZ(qubits[0], qubits[1]),
-                          cirq.SWAP(qubits[0], qubits[1])]
+                # Long-range CS dagger gate absent an equivalent iSWAP gate.
+                cs_ops = [cirq.CZPowGate(exponent=-0.5)(*qubits_csd),
+                          cirq.CZ(*qubits_swap),
+                          cirq.SWAP(*qubits_swap)]
 
                 if count % 2 == (spin == 'u'):
                     circuit_new.append(cizc_ops)
@@ -144,12 +150,8 @@ def convert_ccz_to_c0c0ix(circuit: cirq.Circuit, spin: str) -> cirq.Circuit:
             else:
                 circuit_new.append(op)
 
-    # print('In convert_ccz_to_c0c0ix\n')
-    # print_circuit(circuit)
-    # print('-' * 80)
-    # print_circuit(circuit_new)
-    # print('=' * 80)
-    assert unitary_equal(circuit, circuit_new)
+    if CHECK_CIRCUIT_EQUAL:
+        assert unitary_equal(circuit, circuit_new)
     return circuit_new
 
 
@@ -187,13 +189,11 @@ def convert_swap_to_cz(circuit: cirq.Circuit) -> cirq.Circuit:
                 convert_swap = True
             # print('circuit_new\n', circuit_new)
 
-    # print('-' * 80)
-    # print_circuit(circuit_new)
-    # print('=' * 80)
-    assert unitary_equal(circuit, circuit_new)
+    if CHECK_CIRCUIT_EQUAL:
+        assert unitary_equal(circuit, circuit_new)
     return circuit_new
 
-
+# TODO: This can be combined with transpile_1q_gates into a single function.
 def convert_phxz_to_xpi2(circuit: cirq.Circuit) -> cirq.Circuit:
     """Converts ``PhasedXZGate`` s to X(pi/2) gates and virtual Z gates.
     
@@ -237,7 +237,8 @@ def convert_phxz_to_xpi2(circuit: cirq.Circuit) -> cirq.Circuit:
         else:
             circuit_new.append(op)
 
-    assert unitary_equal(circuit, circuit_new)
+    if CHECK_CIRCUIT_EQUAL:
+        assert unitary_equal(circuit, circuit_new)
     return circuit_new
 
 def transpile_1q_gates(circuit: cirq.Circuit) -> cirq.Circuit:
@@ -247,6 +248,9 @@ def transpile_1q_gates(circuit: cirq.Circuit) -> cirq.Circuit:
     cirq.DropEmptyMoments().optimize_circuit(circuit_new)
     cirq.merge_single_qubit_gates_into_phxz(circuit_new)
     circuit_new = convert_phxz_to_xpi2(circuit_new)
+    
+    # if CHECK_CIRCUIT_EQUAL:
+    #     assert unitary_equal(circuit, circuit_new)
     return circuit_new
 
 
@@ -273,9 +277,5 @@ def transpile_into_berkeley_gates(circuit: cirq.Circuit, spin: str = 'd') -> cir
     circuit_new = convert_swap_to_cz(circuit_new)
     
     # Single-qubit gate transpilation.
-    # cirq.MergeSingleQubitGates().optimize_circuit(circuit_new)
-    # cirq.DropEmptyMoments().optimize_circuit(circuit_new)
-    # cirq.merge_single_qubit_gates_into_phxz(circuit_new)
-    # circuit_new = convert_phxz_to_xpi2(circuit_new)
     circuit_new = transpile_1q_gates(circuit_new)
     return circuit_new

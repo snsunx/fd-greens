@@ -7,7 +7,7 @@ Utilities (:mod:`fd_greens.utilities`)
 from collections import Counter
 from itertools import product
 import math
-from typing import Optional, Callable, Union
+from typing import Optional, Callable, Union, List
 
 import numpy as np
 import cirq
@@ -136,6 +136,33 @@ def get_gate_counts(circuit: Union[cirq.Circuit, cirq.Moment], *,
         if criterion(op):
             count += 1
     return count
+
+def split_circuit_across_moment(circuit: cirq.Circuit, moment_split: cirq.Moment) -> List[cirq.Circuit]:
+    """Splits a circuit across a certain moment."""
+    unitary_split = cirq.unitary(moment_split)
+
+    circuits = []
+    moments = []
+    for moment in circuit:
+        unitary = cirq.unitary(moment)
+        if unitary.shape == unitary_split.shape and np.allclose(unitary, unitary_split):
+            circuits.append(cirq.Circuit(moments))
+            moments = []
+        else:
+            moments.append(moment)
+
+    circuits.append(cirq.Circuit(moments))
+    return circuits
+
+def get_circuit_depth(circuit: cirq.Circuit) -> int:
+    """Returns the circuit depth by excluding Z gates."""
+    depth = 0
+    for moment in circuit:
+        is_z_gates = [isinstance(op.gate, cirq.ZPowGate) for op in moment]
+        if all(is_z_gates):
+            continue
+        depth += 1
+    return depth
 
 # TODO: Write a general implementation of state tomography.
 def two_qubit_state_tomography(result_array: np.ndarray) -> np.ndarray:

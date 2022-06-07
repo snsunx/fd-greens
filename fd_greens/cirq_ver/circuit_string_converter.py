@@ -173,8 +173,7 @@ class CircuitStringConverter:
         for moment in circuit:
 
             # TODO: Write this better with check statements.
-            gate_counts = [get_gate_counts(cirq.Circuit(moment), 
-                lambda op: op.gate.num_qubits() == i) for i in [1, 2, 3]]
+            gate_counts = [get_gate_counts(moment,num_qubits=i) for i in [1, 2, 3]]
 
             if np.count_nonzero(gate_counts) != 1:
                 print(gate_counts)
