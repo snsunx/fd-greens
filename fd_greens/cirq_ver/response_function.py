@@ -13,8 +13,8 @@ import numpy as np
 
 from .molecular_hamiltonian import MolecularHamiltonian
 from .qubit_indices import QubitIndices
-from .parameters import method_indices_pairs, basis_matrix
-from .utilities import reverse_qubit_order
+from .parameters import REVERSE_QUBIT_ORDER, get_method_indices_pairs
+from .utilities import reverse_qubit_order, two_qubit_state_tomography
 
 np.set_printoptions(precision=6)
 
@@ -38,6 +38,7 @@ class ResponseFunction:
             method: The method for extracting transition amplitudes.
             verbose: Whether to print out observable values.
         """
+        # Input attributes.
         self.hamiltonian = hamiltonian
         self.fname = fname 
         self.h5fname = fname + '.h5'
@@ -45,19 +46,22 @@ class ResponseFunction:
         self.method = method
         self.verbose = verbose
 
+        # Load energies and state vectors from HDF5 file.
         with h5py.File(self.h5fname, 'r') as h5file:
             self.energies = {'gs': h5file['gs/energy'][()],
                              'n': h5file['es/energies'][:]}
             self.state_vectors = {'n': h5file['es/states'][:]}
 
+        # Derived attributes.
+        method_indices_pairs = get_method_indices_pairs('d')
         self.n_states = {'n': self.state_vectors['n'].shape[1]}
         self.n_orbitals = len(hamiltonian.active_indices)
         self.orbital_labels = list(product(range(self.n_orbitals), ['u', 'd']))
-        self.n_system_qubits = 2 * self.n_orbitals - len(dict(method_indices_pairs)['taper'])
-
+        self.n_system_qubits = 2 * self.n_orbitals - method_indices_pairs.n_tapered
         self.qubit_indices_dict = QubitIndices.get_excited_qubit_indices_dict(
             2 * self.n_orbitals, method_indices_pairs)
 
+        # Initialize array quantities N and T.
         self.N = {subscript: np.zeros((2 * self.n_orbitals, 2 * self.n_orbitals, self.n_states[subscript]),
                     dtype=complex) for subscript in ['n']}
         self.T = {subscript: np.zeros((2 * self.n_orbitals, 2 * self.n_orbitals, self.n_states[subscript[0]]), 
@@ -79,7 +83,8 @@ class ResponseFunction:
 
                 if self.method == 'exact':
                     state_vector = h5file[f'{circuit_label}/transpiled'].attrs[f'psi{self.suffix}']
-                    state_vector = reverse_qubit_order(state_vector)
+                    if REVERSE_QUBIT_ORDER:
+                        state_vector = reverse_qubit_order(state_vector)
                     state_vector = qubit_indices(state_vector)
 
                     self.N[subscript][i, i] = np.abs(state_vectors_exact.conj().T @ state_vector) ** 2
@@ -87,16 +92,19 @@ class ResponseFunction:
                 elif self.method == 'tomo':
                     tomography_labels = [''.join(x) for x in product('xyz', repeat=2)]
 
-                    array = []
+                    array_all = []
                     for tomography_label in tomography_labels:
-                        array_all = h5file[f"{circuit_label}/{tomography_label}"].attrs[f"counts{self.suffix}"]
-                        array_all = reverse_qubit_order(array_all) # XXX
-                        start_index = int(qubit_indices.ancilla.str[0], 2)
-                        array_label =  array_all[start_index :: 2]  / np.sum(array_all)
-                        array += list(array_label)
+                        array_raw = h5file[f"{circuit_label}/{tomography_label}"].attrs[f"counts{self.suffix}"]
+                        repetitions = np.sum(array_raw)
+                        ancilla_index = int(qubit_indices.ancilla.str[0], 2)
+                        if REVERSE_QUBIT_ORDER:
+                            array_raw = reverse_qubit_order(array_raw)
+                            array_label =  array_raw[ancilla_index :: 2]  / repetitions
+                        else:
+                            array_label =  array_raw[ancilla_index * 4:(ancilla_index + 1) * 4] / repetitions
+                        array_all += list(array_label)
                     
-                    density_matrix = np.linalg.lstsq(basis_matrix, array)[0]
-                    density_matrix = density_matrix(2 ** self.n_system_qubits, 2 ** self.n_system_qubits, order='F')
+                    density_matrix = two_qubit_state_tomography(array_all)
                     density_matrix = qubit_indices.system(density_matrix)
 
                     self.N[subscript][i, i] = [
@@ -124,7 +132,8 @@ class ResponseFunction:
 
                     if self.method == 'exact':
                         state_vector = h5file[f'{circuit_label}/transpiled'].attrs[f'psi{self.suffix}']
-                        state_vector = reverse_qubit_order(state_vector) # XXX
+                        if REVERSE_QUBIT_ORDER:
+                            state_vector = reverse_qubit_order(state_vector)
                         state_vector = qubit_indices(state_vector)
 
                         self.T[subscript][i, j] = self.T[subscript][j, i] = np.abs(
@@ -133,21 +142,24 @@ class ResponseFunction:
                     elif self.method == 'tomo':
                         tomography_labels = [''.join(x) for x in product('xyz', repeat=2)]
 
-                        array = []
+                        array_all = []
                         for tomography_label in tomography_labels:
-                            array_all = h5file[f"{circuit_label}/{tomography_label}"].attrs[f"counts{self.suffix}"]
-                            array_all = reverse_qubit_order(array_all) # XXX
-                            start_index = int(qubit_indices.ancilla.str[0], 2)
-                            array_label =  array_all[start_index :: 2 ** 2]  / np.sum(array_all)
-                            array += list(array_label)
+                            array_raw = h5file[f"{circuit_label}/{tomography_label}"].attrs[f"counts{self.suffix}"]
+                            repetitions = np.sum(array_raw)
+                            ancilla_index = int(qubit_indices.ancilla.str[0], 2)
+                            if REVERSE_QUBIT_ORDER:
+                                array_raw = reverse_qubit_order(array_raw)
+                                array_label = array_raw[ancilla_index :: 4]  / repetitions
+                            else:
+                                array_label = array_raw[ancilla_index * 4 : (ancilla_index + 1) * 4] / repetitions
+                            array_all += list(array_label)
 
-                        density_matrix = np.linalg.lstsq(basis_matrix, array)[0]
-                        density_matrix = density_matrix.reshape(
-                            2 ** self.n_system_qubits, 2 ** self.n_system_qubits, order='F')
+                        density_matrix = two_qubit_state_tomography(array_all)
                         density_matrix = qubit_indices.system(density_matrix)
+
                         self.T[subscript][i, j] = self.T[subscript][j, i] = [
                             (state_vectors_exact[:, k].conj() @ density_matrix @ state_vectors_exact[:, k]).real
-                            for k in range(self.n_states[subscript])]
+                            for k in range(self.n_states[subscript[0]])]
 
                     if self.verbose:
                         print(f'T[{subscript}][{i}, {j}] = {self.T[subscript][i, j]}')

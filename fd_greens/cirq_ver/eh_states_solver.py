@@ -20,7 +20,7 @@ class EHStatesSolver:
         
         Args:
             hamiltonian: The molecular Hamiltonian.
-            spin: Spin of the second-quantized operators. Either ``'u'`` or ``'d'``. 
+            spin: Spin of the second-quantized operators. Either ``'u'`` or ``'d'``.
             fname: The HDF5 file name.
         """
         assert spin in ['u', 'd']

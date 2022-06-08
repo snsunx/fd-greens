@@ -45,6 +45,8 @@ def initialize_hdf5(
         orbital_labels = list(product(range(n_orbitals), ['u', 'd']))
         orbital_labels = [f'{x[0]}{x[1]}' for x in orbital_labels]
 
+    print(f'{orbital_labels}')
+
     group_names = ['gs', 'es', 'amp']
     for i in range(len(orbital_labels)):
         group_names.append(f'circ{orbital_labels[i]}{spin}')
@@ -62,6 +64,7 @@ def initialize_hdf5(
         if create_datasets and group_name not in ['gs', 'es', 'amp']:
             tomography_labels = [''.join(x) for x in product('xyz', repeat=2)]
             for tomography_label in tomography_labels:
+                print(f'{group_name}/{tomography_label}')
                 h5file.create_dataset(f'{group_name}/{tomography_label}', data='')
     
     h5file.close()

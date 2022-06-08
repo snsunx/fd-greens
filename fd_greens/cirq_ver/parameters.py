@@ -51,7 +51,3 @@ def get_method_indices_pairs(spin: str) -> MethodIndicesPairs:
 
     method_indices_pairs = MethodIndicesPairs(methods, indices)
     return method_indices_pairs
-
-# XXX: For import issues.
-method_indices_pairs = None
-basis_matrix = None

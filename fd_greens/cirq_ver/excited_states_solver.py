@@ -8,7 +8,7 @@ import h5py
 import numpy as np
 
 from .molecular_hamiltonian import MolecularHamiltonian
-from .parameters import method_indices_pairs
+from .parameters import get_method_indices_pairs
 from .qubit_indices import QubitIndices
 
 
@@ -27,6 +27,7 @@ class ExcitedStatesSolver:
             fname: The HDF5 file name.
         """
         self.hamiltonian = hamiltonian.copy()
+        method_indices_pairs = get_method_indices_pairs('d')
         self.hamiltonian.transform(method_indices_pairs, tapered_state=[1, 1])
         self.h5fname = fname + '.h5'
 

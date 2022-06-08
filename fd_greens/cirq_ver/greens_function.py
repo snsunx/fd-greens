@@ -16,7 +16,6 @@ from .qubit_indices import QubitIndices
 from .parameters import REVERSE_QUBIT_ORDER, get_method_indices_pairs
 from .utilities import reverse_qubit_order, two_qubit_state_tomography
 
-
 np.set_printoptions(precision=6)
 
 class GreensFunction:
@@ -65,7 +64,6 @@ class GreensFunction:
         method_indices_pairs = get_method_indices_pairs(spin)
         self.n_states = {subscript: self.state_vectors[subscript].shape[1] for subscript in ['e', 'h']}
         self.n_orbitals = len(self.hamiltonian.active_indices)
-        # self.n_system_qubits = 2 * self.n_orbitals - len(dict(method_indices_pairs[spin])['taper'])
         self.n_system_qubits = 2 * self.n_orbitals - method_indices_pairs.n_tapered
 
         self.qubit_indices_dict = QubitIndices.get_eh_qubit_indices_dict(
@@ -106,19 +104,14 @@ class GreensFunction:
 
                     array_all = []
                     for tomography_label in tomography_labels:
-                        array = h5file[f"{circuit_label}/{tomography_label}"].attrs[f"counts{self.suffix}"]
+                        array_raw = h5file[f"{circuit_label}/{tomography_label}"].attrs[f"counts{self.suffix}"]
+                        repetitions = np.sum(array_raw)
+                        ancilla_index = int(qubit_indices.ancilla.str[0], 2)
                         if REVERSE_QUBIT_ORDER:
-                            array = reverse_qubit_order(array)
-                            start_index = int(qubit_indices.ancilla.str[0], 2)
-                            array_label = array[start_index :: 2] / np.sum(array)
-                            # print(list(range(start_index, len(array), 2)))
+                            array_raw = reverse_qubit_order(array_raw)
+                            array_label = array_raw[ancilla_index :: 2] / repetitions
                         else:
-                            indices = [''.join(l) for l in product('01', repeat=2)]
-                            # print(qubit_indices.ancilla.str[0])
-                            indices = [qubit_indices.ancilla.str[0] + x for x in indices]
-                            indices = [int(x, 2) for x in indices]
-                            # print(indices)
-                            array_label = array[indices] / np.sum(array)
+                            array_label = array_raw[ancilla_index * 4 : (ancilla_index + 1) * 4] / repetitions
                         array_all += list(array_label)
 
                     density_matrix = two_qubit_state_tomography(array_all)
@@ -159,17 +152,14 @@ class GreensFunction:
 
                         array_all = []
                         for tomography_label in tomography_labels:
-                            array = h5file[f"{circuit_label}/{tomography_label}"].attrs[f"counts{self.suffix}"]
+                            array_raw = h5file[f"{circuit_label}/{tomography_label}"].attrs[f"counts{self.suffix}"]
+                            repetitions = np.sum(array_raw)
+                            ancilla_index = int(qubit_indices.ancilla.str[0], 2)
                             if REVERSE_QUBIT_ORDER:
-                                array = reverse_qubit_order(array)
-                                start_index = int(qubit_indices.ancilla.str[0], 2)
-                                array_label = array[start_index :: 2 ** 2]  / np.sum(array)
-                                # print(list(range(start_index, len(array), 2)))
+                                array_raw = reverse_qubit_order(array_raw)
+                                array_label = array_raw[ancilla_index :: 4]  / repetitions
                             else:
-                                indices = [''.join(l) for l in product('01', repeat=2)]
-                                indices = [qubit_indices.ancilla.str[0] + x for x in indices]
-                                indices = [int(x, 2) for x in indices]
-                                array_label = array[indices] / np.sum(array)
+                                array_label  = array_raw[ancilla_index * 4:(ancilla_index + 1) * 4] / repetitions
                             array_all += list(array_label)
 
                         density_matrix = two_qubit_state_tomography(array_all)

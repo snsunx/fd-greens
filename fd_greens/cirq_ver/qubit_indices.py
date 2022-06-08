@@ -5,6 +5,7 @@ Qubit Indices (:mod:`fd_greens.qubit_indices`)
 """
 
 from itertools import combinations
+from os import system
 from typing import Mapping, Iterable, Optional, List
 
 import copy
@@ -30,6 +31,7 @@ class QubitIndices:
         """
         self.system_indices = system_indices
         self.ancilla_indices = ancilla_indices
+        self.n_qubits = len(system_indices[0]) + len(ancilla_indices[0])
         self._build()
 
     def _build(self) -> None:
@@ -47,8 +49,6 @@ class QubitIndices:
                 self.str.append(string.strip())
                 self.int.append(int(string.replace(' ', ''), 2))
 
-        # print(f'{self.str = }')
-
     def __call__(self, array: np.ndarray) -> np.ndarray:
         """Slices a 1D or 2D array by the qubit indices."""
         if len(array.shape) == 1:
@@ -57,6 +57,22 @@ class QubitIndices:
             return array[self.int][:, self.int]
         else:
             raise TypeError("The input array must be a 1D or 2D array.")
+
+    def expand(self, array: np.ndarray) -> np.ndarray:
+        """Expands a 1D or 2D array by the qubit indices."""
+        if len(array.shape) == 1:
+            print("Expand 1d array")
+            array_new = np.zeros((2 ** self.n_qubits,), dtype=complex)
+            print(f'{self.int = }')
+            array_new[self.int] = array
+        elif len(array.shape) == 2:
+            print("Expand 2d array")
+            array_new = np.zeros((2 ** self.n_qubits, 2 ** self.n_qubits), dtype=complex)
+            array_new[np.repeat(self.int, self.n_qubits), self.int * self.n_qubits] = array.flatten()
+        else:
+            raise TypeError("The input array must be a 1D or 2D array.")
+        return array_new
+
 
     def copy(self) -> "QubitIndices":
         """Returns a copy of itself."""
