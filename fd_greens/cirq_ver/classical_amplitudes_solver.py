@@ -13,22 +13,22 @@ from .molecular_hamiltonian import MolecularHamiltonian
 np.set_printoptions(precision=6)
 
 class ClassicalAmplitudesSolver:
+    """Classical solver of the transition amplitudes."""
 
-    def __init__(self, hamiltonian: MolecularHamiltonian, fname: str):
+    def __init__(self, hamiltonian: MolecularHamiltonian, verbose: bool = True) -> None:
+        """Initializes a ``ClassicalAmplitudesSolver`` object.
+        
+        Args:
+            hamiltonian: The molecular Hamiltonian.
+        """
         self.hamiltonian = hamiltonian
-        self.h5fname = fname + '.h5'
+        self.n_orbitals = len(hamiltonian.active_indices) # Spatial orbitals
+        self.n_qubits = 2 * self.n_orbitals
+        self.verbose = verbose
 
-
-        self.n_orbitals = len(hamiltonian.active_indices)
-
-        e, v = np.linalg.eigh(self.hamiltonian.matrix)
-        self.state_gs = v[:, 0]
-        # self.state_gs = np.flip(self.state_gs)
-        # self.state_gs[abs(self.state_gs) < 1e-8] = 0.0
-        # print('self.states_gs =', self.state_gs)
-        for i, x in enumerate(self.state_gs):
-            if abs(x) > 1e-8:
-                print(format(i, "04b"), format(x, ".6f"))
+        # Calculate the ground state.
+        _, states = np.linalg.eigh(self.hamiltonian.matrix)
+        self.state_gs = states[:, 0]
     
     def _get_a_operator(self, m: int, spin: str = '', dagger: bool = False) -> np.ndarray:
         """Returns a creation/annihilation operator."""
@@ -40,95 +40,92 @@ class ClassicalAmplitudesSolver:
         if dagger:
             a_matrix = a_matrix.T
 
+        # When spin is '', interpret m as spin orbital index.
         if spin != '':
             m = 2 * m + (spin == 'd')
 
         matrices = [Z_matrix] * m + [a_matrix] + [I_matrix] * (n - m - 1)
         return reduce(np.kron, matrices)
+    
+    def _get_n_operator(self, i: int) -> np.ndarray:
+        """Returns a number operator."""
+        n = 2 * self.n_orbitals
+        I_matrix = np.eye(2)
+        Z_matrix = np.diag([1.0, -1.0])
+        n_matrix = np.diag([0.0, 1.0])
 
-    def compute_B(self, spin: str = 'u'):
+        matrices = [Z_matrix] * i + [n_matrix] + [I_matrix] * (n - i - 1)
+        return reduce(np.kron, matrices)
+
+    def compute_B(self, spin: str = '') -> None:
         """Computes the B matrix."""
-        qubit_indices = QubitIndices.get_eh_qubit_indices_dict(4, spin, system_only=True)
-        print(qubit_indices['e'])
-        print(qubit_indices['h'])
+        assert spin in ['u', 'd', '']
+        if spin in ['u', 'd']:
+            qubit_indices = QubitIndices.get_eh_qubit_indices_dict(self.n_qubits, spin, system_only=True)
+            indices_e = qubit_indices['e'].int
+            indices_h = qubit_indices['h'].int
+            dim_B = self.n_orbitals
+        else:
+            indices_e = [int(x, 2) for x in ['0111', '1011', '1101', '1110']]
+            indices_h = [int(x, 2) for x in ['0001', '0010', '0100', '1000']]
+            dim_B = 2 * self.n_orbitals
 
-        energies_e, states_e = np.linalg.eigh(qubit_indices['e'](self.hamiltonian.matrix))
-        energies_h, states_h = np.linalg.eigh(qubit_indices['h'](self.hamiltonian.matrix))
-
-        states_e = states_e
-        states_h = np.flip(states_h)
-
-        self.states_e = np.array([qubit_indices['e'].expand(states_e[:, i]) for i in range(2)]).T
-        self.states_h = np.array([qubit_indices['h'].expand(states_h[:, i]) for i in range(2)]).T
-
-        self.B = {subscript: np.zeros((self.n_orbitals, self.n_orbitals, 2), dtype=complex)
-                  for subscript in ['e', 'h']}
-        
-        for m in range(self.n_orbitals):
-            a_m = self._get_a_operator(m, spin, dagger=False)
-            for n in range(self.n_orbitals):
-                a_n_dag = self._get_a_operator(n, spin, dagger=True)
-                # print(f"{self.states_e.shape}")
-                # print(f"{a_n_dag.shape}")
-                # print(f"{self.state_gs.shape}")
-                self.B['e'][m, n] = (self.state_gs @ a_m @ self.states_e) * (self.states_e.conj().T @ a_n_dag @ self.state_gs)
-                self.B['h'][m, n] = (self.state_gs @ a_n_dag @ self.states_h) * (self.states_h.conj().T @ a_m @ self.state_gs)
-
-                print(f"self.B['e'][{m}, {n}] = ", self.B['e'][m, n])
-            # print(f"self.B['h'][{m}, {m}] = ", self.B['h'][m, m])
-
-    def compute_B1(self):
-        """Computes the B matrix."""
-
-        indices_e = [int(x, 2) for x in ['0111', '1011', '1101', '1110']]
-        indices_h = [int(x, 2) for x in ['0001', '0010', '0100', '1000']]
         hamiltonian_e = self.hamiltonian.matrix[indices_e][:, indices_e]
         hamiltonian_h = self.hamiltonian.matrix[indices_h][:, indices_h]
 
-        print(indices_e)
-        print(indices_h)
-
-        energies_e, states_e = np.linalg.eigh(hamiltonian_e)
-        energies_h, states_h = np.linalg.eigh(hamiltonian_h)
-
-        self.states_e = np.zeros((16, 4), dtype=complex)
-        self.states_h = np.zeros((16, 4), dtype=complex)
-        for i in range(4):
+        # Calculate the (N±1)-electron eigenstates.
+        _, states_e = np.linalg.eigh(hamiltonian_e)
+        _, states_h = np.linalg.eigh(hamiltonian_h)
+        n_states = states_e.shape[1]
+        self.states_e = np.zeros((2 ** self.n_qubits, n_states), dtype=complex)
+        self.states_h = np.zeros((2 ** self.n_qubits, n_states), dtype=complex)
+        for i in range(n_states):
             self.states_e[indices_e, i] = states_e[:, i]
             self.states_h[indices_h, i] = states_h[:, i]
-        # print(energies_e)
-        # print(states_e)
-        # print(energies_h)
-        # print(states_h)
+    
+        # Calculate the B elements from the (N±1)-electron eigenstates.
+        self.B = {subscript: np.zeros((dim_B, dim_B, n_states), dtype=complex) for subscript in ['e', 'h']}
+        for m in range(dim_B):
+            a_m = self._get_a_operator(m, spin, dagger=False)
+            for n in range(dim_B):
+                a_n_dag = self._get_a_operator(n, spin, dagger=True)
 
-        self.B = {subscript: np.zeros((2 * self.n_orbitals, 2 * self.n_orbitals, 4), dtype=complex)
-                  for subscript in ['e', 'h']}
+                self.B['e'][m, n] = (self.state_gs @ a_m @ self.states_e) * \
+                    (self.states_e.conj().T @ a_n_dag @ self.state_gs)
+                self.B['h'][m, n] = (self.state_gs @ a_n_dag @ self.states_h) * \
+                    (self.states_h.conj().T @ a_m @ self.state_gs)
 
-        print('-' * 80)
-        for j in range(4):
-            print('j = ', j)
-            a_n = self._get_a_operator(j, dagger=True)
-            result = a_n @ self.state_gs
-            for i, x in enumerate(result):
-                if abs(x) > 1e-8:
-                    print(i, format(i, "04b"), format(x, ".6f"))
+                self.B['e'][m, n][np.abs(self.B['e'][m, n]) < 1e-8] = 0.0
+                self.B['h'][m, n][np.abs(self.B['h'][m, n]) < 1e-8] = 0.0
+                if self.verbose:
+                    print(f"B['e'][{m}, {n}] = ", self.B['e'][m, n])
+                    print(f"B['h'][{m}, {n}] = ", self.B['h'][m, n])
 
-        
+    def compute_N(self) -> None:
+        """Computes the N matrix."""
+        qubit_indices = QubitIndices.get_excited_qubit_indices_dict(2 * self.n_orbitals, system_only=True)
+        indices = qubit_indices['n'].int
+        print(indices)
 
-        for m in range(2 * self.n_orbitals):
-            a_m = self._get_a_operator(m, dagger=False)
-            for n in range(2 * self.n_orbitals):
-                a_n_dag = self._get_a_operator(n, dagger=True)
-                self.B['e'][m, n] = (self.state_gs @ a_m @ self.states_e) * (self.states_e.conj().T @ a_n_dag @ self.state_gs)
-                self.B['h'][m, n] = (self.state_gs @ a_n_dag @ self.states_h) * (self.states_h.conj().T @ a_m @ self.state_gs)
+        hamiltonian_subspace = self.hamiltonian.matrix[indices][:, indices]
+        _, states_es = np.linalg.eigh(hamiltonian_subspace)
+        states_es = states_es[:, 1:]
+        n_states = states_es.shape[1]
 
-
-            result = self.B['e'][m, m]
-            result[abs(result) < 1e-8] = 0.0
-            print(f"self.B['e'][{m}, {m}] = ", result)
-            # print(f"self.B['h'][{m}, {m}] = ", self.B['h'][m, m])
+        self.states_es = np.zeros((2 ** self.n_qubits, n_states), dtype=complex)
+        for i in range(n_states):
+            self.states_es[indices, i] = states_es[:, i]
 
 
-    def compute_N(self):
-        pass
+        self.N = {'n': np.zeros((2 * self.n_orbitals, 2 * self.n_orbitals, n_states))}
+        for i in range(2 * self.n_orbitals):
+            n_i = self._get_n_operator(i)
+            for j in range(2 * self.n_orbitals):
+                n_j = self._get_n_operator(j)
 
+                self.N['n'][i, j] = (self.state_gs @ n_i @ self.states_es)\
+                    * (self.states_es.conj().T @ n_j @ self.state_gs)
+                
+                self.N['n'][i, j][np.abs(self.N['n'][i, j]) < 1e-8] = 0.0
+                if self.verbose:
+                    print(f"N['n'][{i}, {j}] = ", self.N['n'][i, j])

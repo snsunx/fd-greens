@@ -53,7 +53,7 @@ class ResponseFunction:
             self.state_vectors = {'n': h5file['es/states'][:]}
 
         # Derived attributes.
-        method_indices_pairs = get_method_indices_pairs('d')
+        method_indices_pairs = get_method_indices_pairs('d') # XXX
         self.n_states = {'n': self.state_vectors['n'].shape[1]}
         self.n_orbitals = len(hamiltonian.active_indices)
         self.orbital_labels = list(product(range(self.n_orbitals), ['u', 'd']))

@@ -11,6 +11,7 @@ from .eh_amplitudes_solver import EHAmplitudesSolver
 from .excited_amplitudes_solver import ExcitedAmplitudesSolver
 from .greens_function import GreensFunction
 from .response_function import ResponseFunction
+from .classical_amplitudes_solver import ClassicalAmplitudesSolver
 
 from .qubit_indices import QubitIndices
 from .operators import SecondQuantizedOperators, ChargeOperators

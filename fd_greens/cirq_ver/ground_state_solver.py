@@ -32,7 +32,6 @@ class GroundStateSolver:
             fname: The HDF5 file name.
         """
         self.hamiltonian = hamiltonian.copy()
-        # self.hamiltonian.transform(method_indices_pairs[spin])
         self.hamiltonian.transform(get_method_indices_pairs(spin))
         self.qubits = qubits
         self.h5fname = fname + ".h5"

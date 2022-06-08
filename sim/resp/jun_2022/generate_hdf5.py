@@ -1,6 +1,7 @@
 import sys
 sys.path.append('../../..')
 
+import numpy as np
 import cirq
 from fd_greens import (
 	GroundStateSolver, 
@@ -8,7 +9,8 @@ from fd_greens import (
 	ExcitedAmplitudesSolver, 
 	ResponseFunction, 
 	get_lih_hamiltonian, 
-	initialize_hdf5)
+	initialize_hdf5,
+	ClassicalAmplitudesSolver)
 
 qubits = cirq.LineQubit.range(4)
 hamiltonian = get_lih_hamiltonian(3.0)
@@ -27,3 +29,18 @@ amp_solver = ExcitedAmplitudesSolver(hamiltonian, qubits, method=method, fname=f
 amp_solver.run()
 
 resp = ResponseFunction(hamiltonian, fname=fname, method=method)
+N = resp.N['n']
+
+classical_solver = ClassicalAmplitudesSolver(hamiltonian)
+classical_solver.compute_N()
+N1 = classical_solver.N['n']
+
+
+print('=' * 80)
+for i in range(4):
+	print(N[i, i])
+	print(N1[i, i])
+	print('-' * 80)
+
+print(np.allclose(N, N1))
+

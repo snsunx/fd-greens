@@ -203,7 +203,7 @@ class QubitIndices:
     @staticmethod
     def get_excited_qubit_indices_dict(
         n_qubits: int,
-        method_indices_pairs: MethodIndicesPairs,
+        method_indices_pairs: MethodIndicesPairs = [],
         system_only: bool = False
     ) -> Mapping[str, 'QubitIndices']:
         """Returns the qubit indices of N-electron excited states.
