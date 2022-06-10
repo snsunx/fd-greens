@@ -31,16 +31,9 @@ amp_solver.run()
 resp = ResponseFunction(hamiltonian, fname=fname, method=method)
 N = resp.N['n']
 
-classical_solver = ClassicalAmplitudesSolver(hamiltonian)
+classical_solver = ClassicalAmplitudesSolver(hamiltonian, verbose=False)
 classical_solver.compute_N()
 N1 = classical_solver.N['n']
-
-
-print('=' * 80)
-for i in range(4):
-	print(N[i, i])
-	print(N1[i, i])
-	print('-' * 80)
 
 print(np.allclose(N, N1))
 

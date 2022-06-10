@@ -4,9 +4,7 @@ Utilities (:mod:`fd_greens.utilities`)
 ======================================
 """
 
-from collections import Counter
 from itertools import product
-import math
 from typing import Optional, Callable, Union, List
 
 import numpy as np
@@ -107,7 +105,7 @@ def histogram_to_array(
         array = array / np.sum(array)
     return array
 
-def get_gate_counts(circuit: Union[cirq.Circuit, cirq.Moment], *,
+def get_gate_counts(circuit: cirq.Circuit, *,
 					criterion: Union[int, Callable[[cirq.OP_TREE], bool]] = lambda op: True,
                     num_qubits: Optional[int] = None
 				   ) -> int:
@@ -124,7 +122,7 @@ def get_gate_counts(circuit: Union[cirq.Circuit, cirq.Moment], *,
     """
     count = 0
     if isinstance(circuit, cirq.Circuit):
-        all_operations = circuit.all_operations()
+        all_operations = list(circuit.all_operations())
     else:
         all_operations = circuit
 
@@ -132,25 +130,36 @@ def get_gate_counts(circuit: Union[cirq.Circuit, cirq.Moment], *,
     if num_qubits is not None:
         criterion = lambda op: op.gate.num_qubits() == num_qubits
 
-    for op in all_operations:
+    for op in list(circuit.all_operations()):
+    # for op in all_operations:
         if criterion(op):
             count += 1
     return count
 
 def split_circuit_across_moment(circuit: cirq.Circuit, moment_split: cirq.Moment) -> List[cirq.Circuit]:
-    """Splits a circuit across a certain moment."""
+    """Splits a circuit across a certain moment.
+    
+    Args:
+        circuit: The circuit to be split.
+        moment_split: A moment used to split the circuit.
+        
+    Returns:
+        circuits: A list of circuits.
+    """
     unitary_split = cirq.unitary(moment_split)
 
     circuits = []
     moments = []
     for moment in circuit:
         unitary = cirq.unitary(moment)
+        # TODO: The criterion should be more specific than comparing unitaries.
         if unitary.shape == unitary_split.shape and np.allclose(unitary, unitary_split):
             circuits.append(cirq.Circuit(moments))
             moments = []
         else:
             moments.append(moment)
 
+    # Append the last moments.
     circuits.append(cirq.Circuit(moments))
     return circuits
 
@@ -163,6 +172,35 @@ def get_circuit_depth(circuit: cirq.Circuit) -> int:
             continue
         depth += 1
     return depth
+
+def print_circuit_statistics(circuit: cirq.Circuit) -> None:
+    """Prints out circuit statistics."""
+    depth = get_circuit_depth(circuit.copy())
+    n_2q = get_gate_counts(circuit.copy(), num_qubits=2)
+    n_3q = get_gate_counts(circuit.copy(), num_qubits=3)
+    print(f"Circuit depth = {depth}")
+    print(f"Number of two-qubit gates = {n_2q}")
+    print(f"Number of three-qubit gates = {n_3q}")
+
+    qubits = sorted(circuit.all_qubits())
+    if len(qubits) == 4:
+        for i in range(len(qubits) - 1):
+            qubit_pair = (qubits[i], qubits[i + 1])
+            # print(f'{qubit_pair = }')
+            n_cs = get_gate_counts(
+                circuit, 
+                criterion=lambda op: op.gate == cirq.CZPowGate(exponent=0.5) and set(op.qubits) == set(qubit_pair))
+            t_cs = 150 + 200 * (i % 2 == 0)
+            n_csd = get_gate_counts(
+                circuit,
+                criterion=lambda op: op.gate == cirq.CZPowGate(exponent=-0.5) and set(op.qubits) == set(qubit_pair))
+            t_csd = 150 + 200 * (i % 2 == 1)
+            n_cz = get_gate_counts(
+                circuit, 
+                criterion=lambda op: op.gate == cirq.CZPowGate(exponent=1.0) and set(op.qubits) == set(qubit_pair))
+            t_cz = 200
+            print(f"Number of CS, CSD, CZ gates on qubits {i}, {i + 1}"
+                  f" = {n_cs} ({t_cs} ns), {n_csd} ({t_csd} ns), {n_cz} ({t_cz} ns)")
 
 # TODO: Write a general implementation of state tomography.
 def two_qubit_state_tomography(result_array: np.ndarray) -> np.ndarray:

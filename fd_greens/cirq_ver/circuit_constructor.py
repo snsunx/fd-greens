@@ -220,7 +220,7 @@ class CircuitConstructor:
             gate_count = 0
             while gate_count == 0:
                 position -= 1
-                gate_count = get_gate_counts(circuit[position], criterion=lambda op: op.gate.num_qubits() > 1)
+                gate_count = get_gate_counts(cirq.Circuit(circuit[position]), criterion=lambda op: op.gate.num_qubits() > 1)
             
             # Break the circuit at the position where the multi-qubit gate is encountered.
             if position != -1:

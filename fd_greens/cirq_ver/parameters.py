@@ -15,8 +15,8 @@ REVERSE_QUBIT_ORDER = False
 # Whether to wrap Z rotation gates around iToffoli for hardware runs.
 WRAP_Z_AROUND_ITOFFOLI = True
 
-# Whether to put CS dagger gates on qubits 4 and 5.
-CSD_IN_ITOFFOLI_ON_45 = True
+# Whether to force putting CS dagger gates on qubits 4 and 5.
+CSD_IN_ITOFFOLI_ON_45 = False
 
 # Whether to check original and transpiled circuits are equal.
 CHECK_CIRCUIT_EQUAL = True

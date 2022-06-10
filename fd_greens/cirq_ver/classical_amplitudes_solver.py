@@ -5,9 +5,8 @@ from itertools import permutations
 
 import numpy as np
 
-from fd_greens.cirq_ver.qubit_indices import QubitIndices
-
 from .molecular_hamiltonian import MolecularHamiltonian
+from .qubit_indices import QubitIndices
 
 
 np.set_printoptions(precision=6)
@@ -117,7 +116,7 @@ class ClassicalAmplitudesSolver:
             self.states_es[indices, i] = states_es[:, i]
 
 
-        self.N = {'n': np.zeros((2 * self.n_orbitals, 2 * self.n_orbitals, n_states))}
+        self.N = {'n': np.zeros((2 * self.n_orbitals, 2 * self.n_orbitals, n_states), dtype=complex)}
         for i in range(2 * self.n_orbitals):
             n_i = self._get_n_operator(i)
             for j in range(2 * self.n_orbitals):
