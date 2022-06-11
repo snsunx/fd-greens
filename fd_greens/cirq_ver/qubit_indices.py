@@ -5,7 +5,6 @@ Qubit Indices (:mod:`fd_greens.qubit_indices`)
 """
 
 from itertools import combinations
-from os import system
 from typing import Mapping, Iterable, Optional, List
 
 import copy

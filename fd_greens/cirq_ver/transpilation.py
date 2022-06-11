@@ -5,6 +5,7 @@ Transpilation (:mod:`fd_greens.transpilation`)
 """
 
 from typing import Tuple
+import warnings
 
 import numpy as np
 import cirq
@@ -12,8 +13,7 @@ import cirq
 from fd_greens.cirq_ver.parameters import CSD_IN_ITOFFOLI_ON_45
 
 from .utilities import unitary_equal
-from .helpers import print_circuit
-from .parameters import CHECK_CIRCUIT_EQUAL
+from .parameters import CHECK_CIRCUITS
 
 
 class C0C0iXGate(cirq.Gate):
@@ -72,9 +72,7 @@ def permute_qubits(circuit: cirq.Circuit) -> cirq.Circuit:
             gate = op.gate
             qubits = sorted(list(op.qubits)).copy()
             if len(qubits) > 1 and not is_adjacent(qubits):
-                # print(qubits)
-                # TODO: This could be raised as warnings.
-                print("Warning: Adding SWAP gates")
+                warnings.warn("Adding SWAP gates when permuting qubits.")
                 assert gate in [cirq.CZ, cirq.CCZ]
                 # print('old qubits =', qubits)
                 qubits_swap = (qubits[-2] + 1, qubits[-1])
@@ -88,7 +86,7 @@ def permute_qubits(circuit: cirq.Circuit) -> cirq.Circuit:
             else:
                 circuit_new.append(op)
 
-    if CHECK_CIRCUIT_EQUAL:
+    if CHECK_CIRCUITS:
         assert unitary_equal(circuit, circuit_new)
     return circuit_new
 
@@ -150,7 +148,7 @@ def convert_ccz_to_c0c0ix(circuit: cirq.Circuit, spin: str) -> cirq.Circuit:
             else:
                 circuit_new.append(op)
 
-    if CHECK_CIRCUIT_EQUAL:
+    if CHECK_CIRCUITS:
         assert unitary_equal(circuit, circuit_new)
     return circuit_new
 
@@ -182,20 +180,20 @@ def convert_swap_to_cz(circuit: cirq.Circuit) -> cirq.Circuit:
                         circuit_new.insert(0, [cirq.XPowGate(exponent=0.5)(op.qubits[1])])
                         circuit_new.insert(0, cirq.CZ(op.qubits[0], op.qubits[1]))
                 else:
-                    print("Warning: SWAP gates at the end.")
+                    warnings.warn("Not converting SWAP gates at the end to CZs.")
                     circuit_new.insert(0, op)
             else:
                 circuit_new.insert(0, op)
                 convert_swap = True
             # print('circuit_new\n', circuit_new)
 
-    if CHECK_CIRCUIT_EQUAL:
+    if CHECK_CIRCUITS:
         assert unitary_equal(circuit, circuit_new)
     return circuit_new
 
 # TODO: This can be combined with transpile_1q_gates into a single function.
 def convert_phxz_to_xpi2(circuit: cirq.Circuit) -> cirq.Circuit:
-    """Converts ``PhasedXZGate`` s to X(pi/2) gates and virtual Z gates.
+    """Converts ``PhasedXZGate``s to X(pi/2) gates and virtual Z gates.
     
     Args:
         circuit: The circuit to be converted.
@@ -237,7 +235,7 @@ def convert_phxz_to_xpi2(circuit: cirq.Circuit) -> cirq.Circuit:
         else:
             circuit_new.append(op)
 
-    if CHECK_CIRCUIT_EQUAL:
+    if CHECK_CIRCUITS:
         assert unitary_equal(circuit, circuit_new)
     return circuit_new
 
@@ -249,7 +247,7 @@ def transpile_1q_gates(circuit: cirq.Circuit) -> cirq.Circuit:
     cirq.merge_single_qubit_gates_into_phxz(circuit_new)
     circuit_new = convert_phxz_to_xpi2(circuit_new)
     
-    # if CHECK_CIRCUIT_EQUAL:
+    # if CHECK_CIRCUITS:
     #     assert unitary_equal(circuit, circuit_new)
     return circuit_new
 

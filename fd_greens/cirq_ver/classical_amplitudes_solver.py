@@ -19,9 +19,10 @@ class ClassicalAmplitudesSolver:
         
         Args:
             hamiltonian: The molecular Hamiltonian.
+            verbose: Whether to print out more information.
         """
         self.hamiltonian = hamiltonian
-        self.n_orbitals = len(hamiltonian.active_indices) # Spatial orbitals
+        self.n_orbitals = len(hamiltonian.active_indices)
         self.n_qubits = 2 * self.n_orbitals
         self.verbose = verbose
 
@@ -57,7 +58,12 @@ class ClassicalAmplitudesSolver:
         return reduce(np.kron, matrices)
 
     def compute_B(self, spin: str = '') -> None:
-        """Computes the B matrix."""
+        """Computes the B matrix in Green's function calculation.
+        
+        Args:
+            spin: The spin label. Either ``'u'``, ``'d'`` or ``''`` (both spins).
+        """
+
         assert spin in ['u', 'd', '']
         if spin in ['u', 'd']:
             qubit_indices = QubitIndices.get_eh_qubit_indices_dict(self.n_qubits, spin, system_only=True)
@@ -82,7 +88,7 @@ class ClassicalAmplitudesSolver:
             self.states_e[indices_e, i] = states_e[:, i]
             self.states_h[indices_h, i] = states_h[:, i]
     
-        # Calculate the B elements from the (N±1)-electron eigenstates.
+        # Calculate the B matrix elements from the (N±1)-electron eigenstates.
         self.B = {subscript: np.zeros((dim_B, dim_B, n_states), dtype=complex) for subscript in ['e', 'h']}
         for m in range(dim_B):
             a_m = self._get_a_operator(m, spin, dagger=False)
@@ -101,10 +107,9 @@ class ClassicalAmplitudesSolver:
                     print(f"B['h'][{m}, {n}] = ", self.B['h'][m, n])
 
     def compute_N(self) -> None:
-        """Computes the N matrix."""
+        """Computes the N matrix in response function calculation."""
         qubit_indices = QubitIndices.get_excited_qubit_indices_dict(2 * self.n_orbitals, system_only=True)
         indices = qubit_indices['n'].int
-        print(indices)
 
         hamiltonian_subspace = self.hamiltonian.matrix[indices][:, indices]
         _, states_es = np.linalg.eigh(hamiltonian_subspace)
@@ -115,7 +120,7 @@ class ClassicalAmplitudesSolver:
         for i in range(n_states):
             self.states_es[indices, i] = states_es[:, i]
 
-
+        # Calculate the N matrix elements from the N-electron excited states.
         self.N = {'n': np.zeros((2 * self.n_orbitals, 2 * self.n_orbitals, n_states), dtype=complex)}
         for i in range(2 * self.n_orbitals):
             n_i = self._get_n_operator(i)

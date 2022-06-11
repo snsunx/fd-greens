@@ -6,13 +6,14 @@ Circuit String Converter (:mod:`fd_greens.circuit_string_converter`)
 
 import re
 from typing import List, Sequence
+import warnings
 
 import numpy as np
 import cirq
 
 from .transpilation import C0C0iXGate
 from .utilities import get_gate_counts
-from .parameters import WRAP_Z_AROUND_ITOFFOLI
+from .parameters import CHECK_CIRCUITS, WRAP_Z_AROUND_ITOFFOLI
 
 
 class CircuitStringConverter:
@@ -76,11 +77,6 @@ class CircuitStringConverter:
 
     def _gate_to_gstring(self, gate: cirq.Gate) -> str:
         """Converts Cirq gates to Qtrl gate string."""
-        # print(f'{gate = }')
-        # if isinstance(gate, (cirq.XPowGate, cirq.ZPowGate)):
-        #     gname = gate.__class__.__name__[0]
-        #     angle = str(gate.exponent * 180.0)
-        #     gstring = gname + angle
         if isinstance(gate, cirq.XPowGate):
             assert abs(gate.exponent - 0.5) < 1e-8
             gstring = 'X90'
@@ -100,8 +96,7 @@ class CircuitStringConverter:
             assert isinstance(gate, C0C0iXGate) == (type(gate) is C0C0iXGate)
             gstring = "TOF"
         elif str(gate) == "SWAP":
-            # TODO: This could be raised as a warning.
-            print("Warning: SWAP gate converted to Qtrl string.")
+            warnings.warn("SWAP gate converted to Qtrl string.")
             gstring = "SWAP"
         else:
             raise NotImplementedError(f"Conversion of {str(gate)} to Qtrl string is not supported.")
@@ -171,14 +166,11 @@ class CircuitStringConverter:
         qtrl_strings = []
 
         for moment in circuit:
-
-            # TODO: Write this better with check statements.
-            gate_counts = [get_gate_counts(cirq.Circuit(moment), num_qubits=i) for i in [1, 2, 3]]
-
-            if np.count_nonzero(gate_counts) != 1:
-                print(gate_counts)
-                print(moment)
-                exit()
+            # Check the moment contains only one type of gates.
+            if CHECK_CIRCUITS:
+                gate_counts = [get_gate_counts(cirq.Circuit(moment), num_qubits=i) for i in [1, 2, 3]]
+                if np.count_nonzero(gate_counts) != 1:
+                    raise ValueError("A moment can only consist of one type of gates.")
 
             strings_moment = []
             for op in moment:

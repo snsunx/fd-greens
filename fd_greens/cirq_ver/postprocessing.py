@@ -7,7 +7,6 @@ Postprocessing (:mod:`fd_greens.postprocessing`)
 import h5py
 from typing import Optional
 from itertools import product
-from more_itertools import prepend
 
 import numpy as np
 

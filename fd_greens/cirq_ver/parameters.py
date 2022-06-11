@@ -7,22 +7,24 @@ Parameters (:mod:`fd_greens.parameters`)
 from dataclasses import dataclass
 from typing import List, Sequence
 
+# Hartree to electron volts conversion.
 HARTREE_TO_EV = 27.211386245988
 
-# Whether to reverse qubit order for Qiskit-order postprocessing.
+# Whether to reverse qubit order for Qiskit qubit-order postprocessing. Should be set to False.
 REVERSE_QUBIT_ORDER = False
 
-# Whether to wrap Z rotation gates around iToffoli for hardware runs.
+# Whether to wrap Z rotation gates around iToffoli for hardware runs. Should be set to True.
 WRAP_Z_AROUND_ITOFFOLI = True
 
-# Whether to force putting CS dagger gates on qubits 4 and 5.
+# Whether to force putting CS dagger gates on qubits 4 and 5. Should be set to False.
 CSD_IN_ITOFFOLI_ON_45 = False
 
-# Whether to check original and transpiled circuits are equal.
-CHECK_CIRCUIT_EQUAL = True
+# Whether to check original and transpiled circuits are equal. Should be set to True.
+CHECK_CIRCUITS = True
 
 @dataclass
 class MethodIndicesPairs:
+    """Method indices pairs used in Z2 symmetry conversion."""
     methods: List[str]
     indices: List[Sequence[int]]
 
@@ -39,6 +41,14 @@ class MethodIndicesPairs:
 
 
 def get_method_indices_pairs(spin: str) -> MethodIndicesPairs:
+    """Returns the method indices pairs corresponding to a given spin label.
+    
+    Args:
+        spin: The spin label. Either ``'u'`` or ``'d'``.
+    
+    Returns:
+        method_indices_pairs: The method indices pairs.
+    """
     assert spin in ['u', 'd']
 
     if spin == 'u':

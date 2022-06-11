@@ -74,24 +74,19 @@ def histogram_to_array(
     normalize: bool = True
 ) -> np.ndarray:
     """Converts a bitstring histogram to a numpy array.
-
-    Keys of the histogram can either be strings, such as '01', or tuples of integers, such as (0, 1).
     
     Args:
-        histogram: The histogram from simulators or experiments.
+        histogram: The histogram from simulators or experiments. Keys of the histogram 
+            can either be strings, such as ``'01'``, or tuples of integers, such as ``(0, 1)``.
         n_qubits: Number of qubits.
         base: The base in integer conversion. Defaults to 2 for qubits.
+        normalize: Whether to normalize the sum of the bitstring counts to 1.
         
     Returns:
         array: The bitstring array from the histogram.
     """
     if n_qubits is None:
         n_qubits = len(list(histogram.keys())[0])
-        # indices = []
-        # for key in histogram.keys():
-        #     index = int(''.join([str(i) for i in key]), base)
-        #     indices.append(index + 1)
-        # n_qubits = math.ceil(math.log2(max(indices)))
     
     array = np.zeros((base ** n_qubits,))
     for key, value in histogram.items():
@@ -106,32 +101,33 @@ def histogram_to_array(
     return array
 
 def get_gate_counts(circuit: cirq.Circuit, *,
-					criterion: Union[int, Callable[[cirq.OP_TREE], bool]] = lambda op: True,
+					criterion: Callable[[cirq.OP_TREE], bool] = lambda op: True,
                     num_qubits: Optional[int] = None
 				   ) -> int:
     """Returns the count of gates satisfying a certain criterion.
+
+    Only one of ``num_qubits`` and ``criterion`` should be given. If ``num_qubits`` is given,
+    count the number of gates with ``num_qubits`` number of qubits. Otherwise counting is performed
+    with ``criterion``. Defaults to counting all non-Z-rotation gates.
     
     Args:
         circuit: The circuit on which to return gate counts.
-        criterion: The criterion of gates to be counted. Defaults to counting all gates. For example, to count all
-            2q gates use ``lambda: op: op.gate.num_qubits() == 2``. 
-        num_qubits: Number of qubits in gates to be counted. 
+        criterion: The criterion of gates to be counted.
+        num_qubits: Number of qubits in gates to be counted.
         
     Returns:
         count: Number of gates satisfying a certain criterion.
     """
-    count = 0
-    if isinstance(circuit, cirq.Circuit):
-        all_operations = list(circuit.all_operations())
-    else:
-        all_operations = circuit
-
-    # Overwrite criterion if num_qubits is given.
     if num_qubits is not None:
+        # Counting gates with number of qubits.
         criterion = lambda op: op.gate.num_qubits() == num_qubits
 
-    for op in list(circuit.all_operations()):
-    # for op in all_operations:
+    if criterion is None:
+        # Only counting non-Z-rotation gates.
+        criterion = lambda op: not isinstance(op.gate, cirq.ZPowGate)
+
+    count = 0
+    for op in circuit.all_operations():
         if criterion(op):
             count += 1
     return count
@@ -144,7 +140,7 @@ def split_circuit_across_moment(circuit: cirq.Circuit, moment_split: cirq.Moment
         moment_split: A moment used to split the circuit.
         
     Returns:
-        circuits: A list of circuits.
+        circuits: A list of circuits split at moments.
     """
     unitary_split = cirq.unitary(moment_split)
 
@@ -159,12 +155,19 @@ def split_circuit_across_moment(circuit: cirq.Circuit, moment_split: cirq.Moment
         else:
             moments.append(moment)
 
-    # Append the last moments.
+    # Append the circuit built from the last moments to circuits.
     circuits.append(cirq.Circuit(moments))
     return circuits
 
 def get_circuit_depth(circuit: cirq.Circuit) -> int:
-    """Returns the circuit depth by excluding Z gates."""
+    """Returns the circuit depth by excluding Z gates.
+    
+    Args:
+        circuit: The circuit on which depth is to be calculated.
+    
+    Returns:
+        depth: The depth of the circuit.
+    """
     depth = 0
     for moment in circuit:
         is_z_gates = [isinstance(op.gate, cirq.ZPowGate) for op in moment]
@@ -174,14 +177,19 @@ def get_circuit_depth(circuit: cirq.Circuit) -> int:
     return depth
 
 def print_circuit_statistics(circuit: cirq.Circuit) -> None:
-    """Prints out circuit statistics."""
-    depth = get_circuit_depth(circuit.copy())
-    n_2q = get_gate_counts(circuit.copy(), num_qubits=2)
-    n_3q = get_gate_counts(circuit.copy(), num_qubits=3)
+    """Prints out circuit statistics.
+    
+    Args:
+        circuit: The circuit on which statistics are to be printed.
+    """
+    depth = get_circuit_depth(circuit)
+    n_2q = get_gate_counts(circuit, num_qubits=2)
+    n_3q = get_gate_counts(circuit, num_qubits=3)
     print(f"Circuit depth = {depth}")
     print(f"Number of two-qubit gates = {n_2q}")
     print(f"Number of three-qubit gates = {n_3q}")
 
+    # Only print out multi-qubit gate counts on 4-qubit circuits.
     qubits = sorted(circuit.all_qubits())
     if len(qubits) == 4:
         for i in range(len(qubits) - 1):

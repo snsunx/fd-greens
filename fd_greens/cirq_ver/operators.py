@@ -4,7 +4,7 @@ Operators (:mod:`fd_greens.operators`)
 ======================================
 """
 
-from typing import Sequence, Mapping, Optional, List
+from typing import Sequence, Optional, List
 
 import cirq
 
@@ -31,16 +31,13 @@ class OperatorsBase:
         for i, pauli_string in enumerate(self.pauli_strings):
             coefficient = pauli_string.coefficient
             pauli_mask = pauli_string.dense(self.qubits).pauli_mask
-            # print(f'{coefficient = }')
-            # print(f'{pauli_string.dense(self.qubits) = }')
-            # print(f'{tapered_state = }')
             for state, index in zip(tapered_state, tapered_indices):
+                # If Y, multiply coefficient by 1j when the state is 0 and by -1j when the state is 1.
+                # If Z, multiply coefficient by -1 when the state is -1.
                 if pauli_mask[index] == 2:
                     coefficient *= (-1) ** state * 1j
                 elif pauli_mask[index] == 3:
                     coefficient *= (-1) ** state
-            # print(f'coefficient_new = {coefficient}')
-            # print('-' * 80)
             pauli_mask_new = [pauli_mask[i] for i in range(self.n_qubits) if i not in tapered_indices]
             self.pauli_strings[i] = cirq.DensePauliString(pauli_mask_new, coefficient=coefficient).sparse()
 
@@ -49,9 +46,17 @@ class OperatorsBase:
         method_indices_pairs: MethodIndicesPairs, 
         tapered_state: Optional[Sequence[int]] = None
     ) -> None:
-        """Transforms Pauli strings with Z2 symmetries and qubit tapering."""
+        """Transforms Pauli strings with Z2 symmetries and qubit tapering.
+        
+        Args:
+            method_indices_pairs: A dictionary of methods and the corresponding indices.
+                Each method must be one of ``'cnot'``, ``'swap``, ``'taper'``.
+            tapered_state: A sequence of 0 and 1 indicating the states on the tapered qubits.
+        """
         method_dict = {"cnot": self._cnot, "swap": self._swap, "taper": self._taper}
         for method_key, indices in method_indices_pairs:
+            # If not tapering, the argument should be two integers. If tapering, 
+            # the argument should be the tapered state followed by a sequence of integers.
             if method_key != 'taper':
                 method_dict[method_key](*indices)
             else:
@@ -76,7 +81,7 @@ class SecondQuantizedOperators(OperatorsBase):
         Args:
             qubits: Qubits on which the second quantized operators act.
             spin: The spin of the second quantized operators. Either ``'u'`` or ``'d'``.
-            factor: Multiplication factor of the operators for easy gate construction.
+            factor: Multiplication factor of the operators for simpler gate construction.
         """
         self.qubits = qubits
         self.n_qubits = len(qubits)
@@ -91,7 +96,14 @@ class SecondQuantizedOperators(OperatorsBase):
             self.pauli_strings.append(factor * 1j * pauli_string_y)
 
     def transform(self, method_indices_pairs: MethodIndicesPairs, tapered_state: Optional[List[int]] = None) -> None:
-        """Transforms the second quantized operators with Z2 symmetries and qubit tapering."""
+        """Transforms the second quantized operators with Z2 symmetries and qubit tapering.
+        
+        Args:
+            method_indices_pairs: A dictionary of methods and the corresponding indices.
+                Each method must be one of ``'cnot'``, ``'swap``, ``'taper'``.
+            tapered_state: A sequence of 0 and 1 indicating the states on the tapered qubits.
+                Defaults to 1 on all qubits.
+        """
         self.n_tapered = method_indices_pairs.n_tapered
         if tapered_state is None:
             tapered_state = [1] * self.n_tapered
@@ -118,7 +130,14 @@ class ChargeOperators(OperatorsBase):
             self.pauli_strings.append(pauli_string_z)
 
     def transform(self, method_indices_pairs: MethodIndicesPairs, tapered_state: Optional[List[int]] = None) -> None:
-        """Transforms the charge operators with Z2 symmetries and qubit tapering."""
+        """Transforms the charge operators with Z2 symmetries and qubit tapering.
+        
+        Args:
+            method_indices_pairs: A dictionary of methods and the corresponding indices.
+                Each method must be one of ``'cnot'``, ``'swap``, ``'taper'``.
+            tapered_state: A sequence of 0 and 1 indicating the states on the tapered qubits.
+                Defaults to 1 on all qubits.
+        """
         self.n_tapered = method_indices_pairs.n_tapered
         if tapered_state is None:
             tapered_state = [1] * self.n_tapered

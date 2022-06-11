@@ -48,8 +48,7 @@ class ResponseFunction:
 
         # Load energies and state vectors from HDF5 file.
         with h5py.File(self.h5fname, 'r') as h5file:
-            self.energies = {'gs': h5file['gs/energy'][()],
-                             'n': h5file['es/energies'][:]}
+            self.energies = {'gs': h5file['gs/energy'][()], 'n': h5file['es/energies'][:]}
             self.state_vectors = {'n': h5file['es/states'][:]}
 
         # Derived attributes.
