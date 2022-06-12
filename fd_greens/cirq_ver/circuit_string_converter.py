@@ -13,7 +13,7 @@ import cirq
 
 from .transpilation import C0C0iXGate
 from .utilities import get_gate_counts
-from .parameters import CHECK_CIRCUITS, WRAP_Z_AROUND_ITOFFOLI
+from .parameters import ADJUST_GATES_FOR_HARDWARE, CHECK_CIRCUITS
 
 
 class CircuitStringConverter:
@@ -93,7 +93,6 @@ class CircuitStringConverter:
             else:
                 raise ValueError(f"CZPowGate must have exponent 1.0, 0.5 or -0.5. Got {gate._exponent}.")
         elif isinstance(gate, C0C0iXGate):
-            assert isinstance(gate, C0C0iXGate) == (type(gate) is C0C0iXGate)
             gstring = "TOF"
         elif str(gate) == "SWAP":
             warnings.warn("SWAP gate converted to Qtrl string.")
@@ -130,22 +129,16 @@ class CircuitStringConverter:
         Returns:
             circuit: A Cirq circuit corresponding to the Qtrl strings. 
         """
-        # Flatten the qtrl strings if they are not flat.
-        # if isinstance(qtrl_strings[0], list):
-        #     qtrl_strings = [y for x in qtrl_strings for y in x]
         circuit = cirq.Circuit()
 
-        # Iterate over each qtrl string. The qstr, gstr order depends on whether
-        # the gate is 1q or multi-q gate.
+        # Iterate over qtrl_strings and construct the circuit from each moment.
         for strings_moment in qtrl_strings:
             ops_moment = []
             for string in strings_moment:
-                if string[0] == "Q":  # single-qubit gate
+                if string[0] == 'Q':  # single-qubit gate
                     qstring, gstring = string.split("/")
                 else:  # multi-qubit gate
                     gstring, qstring = string.split("/")
-                # print(f'{qstr = }')
-                # print(f'{gstr = }')
                 qubits = self._qstring_to_qubits(qstring)
                 gate = self._gstring_to_gate(gstring)
                 ops_moment.append(gate(*qubits))
@@ -165,6 +158,8 @@ class CircuitStringConverter:
 
         qtrl_strings = []
 
+        i_moment = 0
+        adjustments = []
         for moment in circuit:
             # Check the moment contains only one type of gates.
             if CHECK_CIRCUITS:
@@ -174,27 +169,46 @@ class CircuitStringConverter:
 
             strings_moment = []
             for op in moment:
-                gate = op.gate
-                qubits = op.qubits
-
                 # Ignore identity and measurement gates.
                 if isinstance(op.gate, (cirq.IdentityGate, cirq.MeasurementGate)):
                     continue
 
-                gstring = self._gate_to_gstring(gate)
-                qstring = self._qubits_to_qstring(qubits)
+                gstring = self._gate_to_gstring(op.gate)
+                qstring = self._qubits_to_qstring(op.qubits)
 
-                if len(qubits) == 1:
+                if len(op.qubits) == 1:
                     qtrl_string = qstring + "/" + gstring
                 else:
                     qtrl_string = gstring + "/" + qstring
+
+                if ADJUST_GATES_FOR_HARDWARE:
+                    if qtrl_string == 'CS/C5T4':
+                        qtrl_string = qtrl_string.replace('CS', 'CSD')
+                        adjustments.append((i_moment, ['CZ/C5T4']))
+
+                    if qtrl_string == 'CSD/C6T5':
+                        qtrl_string = qtrl_string.replace('CSD', 'CS')
+                        adjustments.append((i_moment, ['CZ/C6T5']))
+
+                    if qtrl_string == 'CS/C7T6':
+                        qtrl_string = qtrl_string.replace('CS', 'CSD')
+                        adjustments.append((i_moment, ['CZ/C7T6']))
+                
+                    if qtrl_string == 'TOF/C4C6T5':
+                        adjustments.append((i_moment, ['Q5/Z-20.67']))
+                        adjustments.append((i_moment + 1, ['Q5/Z20.67']))
+                
                 strings_moment.append(qtrl_string)
             
-            if strings_moment != []:
-                if WRAP_Z_AROUND_ITOFFOLI and len(strings_moment) == 1 and strings_moment[0][:3] == 'TOF':
-                    qtrl_strings.append(["Q5/Z-20.67"])
+            if strings_moment != []:  # [] when all identities or measurements
+                i_moment += 1
                 qtrl_strings.append(strings_moment)
-                if WRAP_Z_AROUND_ITOFFOLI and len(strings_moment) == 1 and strings_moment[0][:3] == 'TOF':
-                    qtrl_strings.append(["Q5/Z20.67"])
-            
+
+        
+        # Insert adjustment gates to qtrl_strings.
+        offset = 0
+        for i, strings_moment in adjustments:
+            qtrl_strings.insert(i + offset, strings_moment)
+            offset += 1
+        
         return qtrl_strings

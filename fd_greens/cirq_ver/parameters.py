@@ -13,8 +13,9 @@ HARTREE_TO_EV = 27.211386245988
 # Whether to reverse qubit order for Qiskit qubit-order postprocessing. Should be set to False.
 REVERSE_QUBIT_ORDER = False
 
-# Whether to wrap Z rotation gates around iToffoli for hardware runs. Should be set to True.
-WRAP_Z_AROUND_ITOFFOLI = True
+# Whether to apply native CS/CSD gates on qubit pairs and wrap Z rotation gates around iToffoli
+# for hardware runs. Should be set to True.
+ADJUST_GATES_FOR_HARDWARE = True
 
 # Whether to force putting CS dagger gates on qubits 4 and 5. Should be set to False.
 CSD_IN_ITOFFOLI_ON_45 = False
