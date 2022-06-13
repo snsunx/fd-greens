@@ -13,7 +13,7 @@ import cirq
 
 from .transpilation import C0C0iXGate
 from .utilities import get_gate_counts
-from .parameters import ADJUST_GATES_FOR_HARDWARE, CHECK_CIRCUITS
+from .parameters import CHECK_CIRCUITS, ADJUST_CS_CSD_GATES, WRAP_Z_AROUND_ITOFFOLI
 
 
 class CircuitStringConverter:
@@ -181,7 +181,7 @@ class CircuitStringConverter:
                 else:
                     qtrl_string = gstring + "/" + qstring
 
-                if ADJUST_GATES_FOR_HARDWARE:
+                if ADJUST_CS_CSD_GATES:
                     if qtrl_string == 'CS/C5T4':
                         qtrl_string = qtrl_string.replace('CS', 'CSD')
                         adjustments.append((i_moment, ['CZ/C5T4']))
@@ -194,6 +194,7 @@ class CircuitStringConverter:
                         qtrl_string = qtrl_string.replace('CS', 'CSD')
                         adjustments.append((i_moment, ['CZ/C7T6']))
                 
+                if WRAP_Z_AROUND_ITOFFOLI:
                     if qtrl_string == 'TOF/C4C6T5':
                         adjustments.append((i_moment, ['Q5/Z-20.67']))
                         adjustments.append((i_moment + 1, ['Q5/Z20.67']))

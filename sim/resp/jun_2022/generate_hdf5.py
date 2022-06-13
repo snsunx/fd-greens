@@ -15,7 +15,7 @@ from fd_greens import (
 qubits = cirq.LineQubit.range(4)
 hamiltonian = get_lih_hamiltonian(3.0)
 fname = 'lih_resp_sim'
-method = 'exact'
+method = 'tomo'
 
 initialize_hdf5(fname, mode='resp', spin='')
 
@@ -29,11 +29,11 @@ amp_solver = ExcitedAmplitudesSolver(hamiltonian, qubits, method=method, fname=f
 amp_solver.run()
 
 resp = ResponseFunction(hamiltonian, fname=fname, method=method)
-N = resp.N['n']
+# N = resp.N['n']
 
-classical_solver = ClassicalAmplitudesSolver(hamiltonian, verbose=False)
-classical_solver.compute_N()
-N1 = classical_solver.N['n']
+# classical_solver = ClassicalAmplitudesSolver(hamiltonian, verbose=False)
+# classical_solver.compute_N()
+# N1 = classical_solver.N['n']
 
-print(np.allclose(N, N1))
+# print(np.allclose(N, N1))
 

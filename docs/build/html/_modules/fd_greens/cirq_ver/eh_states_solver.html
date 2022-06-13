@@ -72,7 +72,7 @@
 
 <span class="kn">from</span> <span class="nn">.molecular_hamiltonian</span> <span class="kn">import</span> <span class="n">MolecularHamiltonian</span>
 <span class="kn">from</span> <span class="nn">.qubit_indices</span> <span class="kn">import</span> <span class="n">QubitIndices</span>
-<span class="kn">from</span> <span class="nn">.parameters</span> <span class="kn">import</span> <span class="n">method_indices_pairs</span>
+<span class="kn">from</span> <span class="nn">.parameters</span> <span class="kn">import</span> <span class="n">REVERSE_QUBIT_ORDER</span><span class="p">,</span> <span class="n">get_method_indices_pairs</span>
 
 
 <div class="viewcode-block" id="EHStatesSolver"><a class="viewcode-back" href="../../../fd_greens.cirq_ver.eh_states_solver.html#fd_greens.cirq_ver.eh_states_solver.EHStatesSolver">[docs]</a><span class="k">class</span> <span class="nc">EHStatesSolver</span><span class="p">:</span>
@@ -83,21 +83,25 @@
 <span class="sd">        </span>
 <span class="sd">        Args:</span>
 <span class="sd">            hamiltonian: The molecular Hamiltonian.</span>
-<span class="sd">            spin: Spin of the second-quantized operators. Either ``&#39;u&#39;`` or ``&#39;d&#39;``. </span>
+<span class="sd">            spin: Spin of the second-quantized operators. Either ``&#39;u&#39;`` or ``&#39;d&#39;``.</span>
 <span class="sd">            fname: The HDF5 file name.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">assert</span> <span class="n">spin</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;u&#39;</span><span class="p">,</span> <span class="s1">&#39;d&#39;</span><span class="p">]</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">hamiltonian</span> <span class="o">=</span> <span class="n">hamiltonian</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
-        <span class="n">tapered_state</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span> <span class="k">if</span> <span class="n">spin</span> <span class="o">==</span> <span class="s1">&#39;d&#39;</span> <span class="k">else</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span> <span class="c1"># XXX: reversed from Qiskit, but don&#39;t know if it&#39;s right.</span>
+        
+        <span class="n">method_indices_pairs</span> <span class="o">=</span> <span class="n">get_method_indices_pairs</span><span class="p">(</span><span class="n">spin</span><span class="p">)</span>
+        <span class="n">tapered_state</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span> <span class="k">if</span> <span class="n">spin</span> <span class="o">==</span> <span class="s1">&#39;u&#39;</span> <span class="k">else</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">REVERSE_QUBIT_ORDER</span><span class="p">:</span>
+            <span class="n">tapered_state</span><span class="o">.</span><span class="n">reverse</span><span class="p">()</span>
+
         <span class="bp">self</span><span class="o">.</span><span class="n">hamiltonian</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">method_indices_pairs</span><span class="p">,</span> <span class="n">tapered_state</span><span class="o">=</span><span class="n">tapered_state</span><span class="p">)</span>
+        
         <span class="bp">self</span><span class="o">.</span><span class="n">h5fname</span> <span class="o">=</span> <span class="n">fname</span> <span class="o">+</span> <span class="s2">&quot;.h5&quot;</span>
 
         <span class="n">n_qubits</span> <span class="o">=</span> <span class="mi">2</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">hamiltonian</span><span class="o">.</span><span class="n">active_indices</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">qubit_indices_dict</span> <span class="o">=</span> <span class="n">QubitIndices</span><span class="o">.</span><span class="n">get_eh_qubit_indices_dict</span><span class="p">(</span>
             <span class="n">n_qubits</span><span class="p">,</span> <span class="n">spin</span><span class="p">,</span> <span class="n">method_indices_pairs</span><span class="p">,</span> <span class="n">system_only</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-        <span class="c1"># for key, val in self.qubit_indices_dict.items():</span>
-        <span class="c1">#     print(key, val)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">energies</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">state_vectors</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
@@ -130,8 +134,10 @@
 
 <div class="viewcode-block" id="EHStatesSolver.run"><a class="viewcode-back" href="../../../fd_greens.cirq_ver.eh_states_solver.html#fd_greens.cirq_ver.eh_states_solver.EHStatesSolver.run">[docs]</a>    <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;Runs the (N±1)-electron states calculation.&quot;&quot;&quot;</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Start (N±1)-electron states solver.&quot;</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_run_exact</span><span class="p">()</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_save_data</span><span class="p">()</span></div></div>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_save_data</span><span class="p">()</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;(N±1)-electron states solver finished.&quot;</span><span class="p">)</span></div></div>
 </pre></div>
 
            </div>

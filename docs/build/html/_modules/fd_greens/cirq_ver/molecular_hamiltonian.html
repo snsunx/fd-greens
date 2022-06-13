@@ -76,8 +76,7 @@
 <span class="kn">from</span> <span class="nn">openfermionpyscf</span> <span class="kn">import</span> <span class="n">run_pyscf</span>
 
 <span class="kn">from</span> <span class="nn">.operators</span> <span class="kn">import</span> <span class="n">OperatorsBase</span>
-
-<span class="n">HARTREE_TO_EV</span> <span class="o">=</span> <span class="mf">27.211386245988</span>
+<span class="kn">from</span> <span class="nn">.parameters</span> <span class="kn">import</span> <span class="n">HARTREE_TO_EV</span>
 
 
 <div class="viewcode-block" id="MolecularHamiltonian"><a class="viewcode-back" href="../../../fd_greens.cirq_ver.molecular_hamiltonian.html#fd_greens.cirq_ver.molecular_hamiltonian.MolecularHamiltonian">[docs]</a><span class="k">class</span> <span class="nc">MolecularHamiltonian</span><span class="p">(</span><span class="n">OperatorsBase</span><span class="p">):</span>
@@ -108,13 +107,10 @@
 <span class="sd">                active_indices=[1, 2])</span>
 
 <span class="sd">        Args:</span>
-<span class="sd">            geometry: The coordinates of all atoms in the molecule.</span>
-<span class="sd">            basis: The basis set.</span>
-<span class="sd">            multiplicity: The spin multiplicity. Defaults to 1.</span>
-<span class="sd">            charge: The total molecular charge. Defaults to 0.</span>
-<span class="sd">            run_pyscf_options: Keyword arguments passed to the run_pyscf function.</span>
-<span class="sd">            occupied_indices: A list of indices for occupied orbitals.</span>
-<span class="sd">            active_indices: A list of indices for active orbitals.</span>
+<span class="sd">            qubits: Qubits on which the qubit operator acts.</span>
+<span class="sd">            molecule: The molecule from which Hamiltonian is constructed.</span>
+<span class="sd">            occupied_indices: A list of occupied orbital indices.</span>
+<span class="sd">            active_indices: A list of active orbital indices.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">qubits</span> <span class="o">=</span> <span class="n">qubits</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">n_qubits</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">qubits</span><span class="p">)</span>

@@ -149,12 +149,8 @@
         <li><a href="fd_greens.qiskit_ver.main.operators.html#fd_greens.qiskit_ver.main.operators.ChargeOperators">(class in fd_greens.qiskit_ver.main.operators)</a>
 </li>
       </ul></li>
-      <li><a href="fd_greens.cirq_ver.utilities.html#fd_greens.cirq_ver.utilities.circuit_equal">circuit_equal() (in module fd_greens.cirq_ver.utilities)</a>
-
-      <ul>
-        <li><a href="fd_greens.qiskit_ver.utils.general_utils.html#fd_greens.qiskit_ver.utils.general_utils.circuit_equal">(in module fd_greens.qiskit_ver.utils.general_utils)</a>
+      <li><a href="fd_greens.qiskit_ver.utils.general_utils.html#fd_greens.qiskit_ver.utils.general_utils.circuit_equal">circuit_equal() (in module fd_greens.qiskit_ver.utils.general_utils)</a>
 </li>
-      </ul></li>
       <li><a href="fd_greens.cirq_ver.circuit_constructor.html#fd_greens.cirq_ver.circuit_constructor.CircuitConstructor">CircuitConstructor (class in fd_greens.cirq_ver.circuit_constructor)</a>
 
       <ul>
@@ -163,6 +159,8 @@
       </ul></li>
       <li><a href="fd_greens.cirq_ver.circuit_string_converter.html#fd_greens.cirq_ver.circuit_string_converter.CircuitStringConverter">CircuitStringConverter (class in fd_greens.cirq_ver.circuit_string_converter)</a>
 </li>
+      <li><a href="fd_greens.cirq_ver.classical_amplitudes_solver.html#fd_greens.cirq_ver.classical_amplitudes_solver.ClassicalAmplitudesSolver">ClassicalAmplitudesSolver (class in fd_greens.cirq_ver.classical_amplitudes_solver)</a>
+</li>
       <li><a href="fd_greens.qiskit_ver.main.z2symmetries.html#fd_greens.qiskit_ver.main.z2symmetries.cnot_indices">cnot_indices() (in module fd_greens.qiskit_ver.main.z2symmetries)</a>
 </li>
       <li><a href="fd_greens.qiskit_ver.main.z2symmetries.html#fd_greens.qiskit_ver.main.z2symmetries.cnot_pauli">cnot_pauli() (in module fd_greens.qiskit_ver.main.z2symmetries)</a>
@@ -170,6 +168,10 @@
       <li><a href="fd_greens.qiskit_ver.main.transpilation.html#fd_greens.qiskit_ver.main.transpilation.combine_1q_gates">combine_1q_gates() (in module fd_greens.qiskit_ver.main.transpilation)</a>
 </li>
       <li><a href="fd_greens.qiskit_ver.main.transpilation.html#fd_greens.qiskit_ver.main.transpilation.combine_2q_gates">combine_2q_gates() (in module fd_greens.qiskit_ver.main.transpilation)</a>
+</li>
+      <li><a href="fd_greens.cirq_ver.classical_amplitudes_solver.html#fd_greens.cirq_ver.classical_amplitudes_solver.ClassicalAmplitudesSolver.compute_B">compute_B() (ClassicalAmplitudesSolver method)</a>
+</li>
+      <li><a href="fd_greens.cirq_ver.classical_amplitudes_solver.html#fd_greens.cirq_ver.classical_amplitudes_solver.ClassicalAmplitudesSolver.compute_N">compute_N() (ClassicalAmplitudesSolver method)</a>
 </li>
       <li><a href="fd_greens.cirq_ver.postprocessing.html#fd_greens.cirq_ver.postprocessing.compute_tvd">compute_tvd() (in module fd_greens.cirq_ver.postprocessing)</a>
 
@@ -263,6 +265,8 @@
         <li><a href="fd_greens.qiskit_ver.main.excited_amplitudes_solver.html#fd_greens.qiskit_ver.main.excited_amplitudes_solver.ExcitedAmplitudesSolver.execute_off_diagonal">(ExcitedAmplitudesSolver method)</a>
 </li>
       </ul></li>
+      <li><a href="fd_greens.cirq_ver.qubit_indices.html#fd_greens.cirq_ver.qubit_indices.QubitIndices.expand">expand() (QubitIndices method)</a>
+</li>
   </ul></td>
 </tr></table>
 
@@ -295,6 +299,13 @@
 
       <ul>
         <li><a href="fd_greens.cirq_ver.circuit_string_converter.html#module-fd_greens.cirq_ver.circuit_string_converter">module</a>
+</li>
+      </ul></li>
+      <li>
+    fd_greens.cirq_ver.classical_amplitudes_solver
+
+      <ul>
+        <li><a href="fd_greens.cirq_ver.classical_amplitudes_solver.html#module-fd_greens.cirq_ver.classical_amplitudes_solver">module</a>
 </li>
       </ul></li>
       <li>
@@ -423,6 +434,8 @@
         <li><a href="fd_greens.qiskit_ver.main.ansatze.html#module-fd_greens.qiskit_ver.main.ansatze">module</a>
 </li>
       </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li>
     fd_greens.qiskit_ver.main.circuit_constructor
 
@@ -430,8 +443,6 @@
         <li><a href="fd_greens.qiskit_ver.main.circuit_constructor.html#module-fd_greens.qiskit_ver.main.circuit_constructor">module</a>
 </li>
       </ul></li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li>
     fd_greens.qiskit_ver.main.eh_amplitudes_solver
 
@@ -596,8 +607,12 @@
 </li>
       <li><a href="fd_greens.qiskit_ver.utils.general_utils.html#fd_greens.qiskit_ver.utils.general_utils.get_ccz_matrix">get_ccz_matrix() (in module fd_greens.qiskit_ver.utils.general_utils)</a>
 </li>
-      <li><a href="fd_greens.qiskit_ver.utils.circuit_utils.html#fd_greens.qiskit_ver.utils.circuit_utils.get_circuit_depth">get_circuit_depth() (in module fd_greens.qiskit_ver.utils.circuit_utils)</a>
+      <li><a href="fd_greens.cirq_ver.utilities.html#fd_greens.cirq_ver.utilities.get_circuit_depth">get_circuit_depth() (in module fd_greens.cirq_ver.utilities)</a>
+
+      <ul>
+        <li><a href="fd_greens.qiskit_ver.utils.circuit_utils.html#fd_greens.qiskit_ver.utils.circuit_utils.get_circuit_depth">(in module fd_greens.qiskit_ver.utils.circuit_utils)</a>
 </li>
+      </ul></li>
       <li><a href="fd_greens.cirq_ver.qubit_indices.html#fd_greens.cirq_ver.qubit_indices.QubitIndices.get_eh_qubit_indices_dict">get_eh_qubit_indices_dict() (QubitIndices static method)</a>
 </li>
       <li><a href="fd_greens.cirq_ver.qubit_indices.html#fd_greens.cirq_ver.qubit_indices.QubitIndices.get_excited_qubit_indices_dict">get_excited_qubit_indices_dict() (QubitIndices static method)</a>
@@ -612,20 +627,22 @@
         <li><a href="fd_greens.qiskit_ver.utils.helpers.html#fd_greens.qiskit_ver.utils.helpers.get_lih_hamiltonian">(in module fd_greens.qiskit_ver.utils.helpers)</a>
 </li>
       </ul></li>
+      <li><a href="fd_greens.cirq_ver.parameters.html#fd_greens.cirq_ver.parameters.get_method_indices_pairs">get_method_indices_pairs() (in module fd_greens.cirq_ver.parameters)</a>
+</li>
       <li><a href="fd_greens.qiskit_ver.utils.circuit_utils.html#fd_greens.qiskit_ver.utils.circuit_utils.get_n_2q_gates">get_n_2q_gates() (in module fd_greens.qiskit_ver.utils.circuit_utils)</a>
 </li>
       <li><a href="fd_greens.qiskit_ver.utils.circuit_utils.html#fd_greens.qiskit_ver.utils.circuit_utils.get_n_3q_gates">get_n_3q_gates() (in module fd_greens.qiskit_ver.utils.circuit_utils)</a>
 </li>
       <li><a href="fd_greens.qiskit_ver.utils.general_utils.html#fd_greens.qiskit_ver.utils.general_utils.get_overlap">get_overlap() (in module fd_greens.qiskit_ver.utils.general_utils)</a>
 </li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="fd_greens.qiskit_ver.main.operators.html#fd_greens.qiskit_ver.main.operators.ChargeOperators.get_pauli_dict">get_pauli_dict() (ChargeOperators method)</a>
 
       <ul>
         <li><a href="fd_greens.qiskit_ver.main.operators.html#fd_greens.qiskit_ver.main.operators.SecondQuantizedOperators.get_pauli_dict">(SecondQuantizedOperators method)</a>
 </li>
       </ul></li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="fd_greens.qiskit_ver.utils.helpers.html#fd_greens.qiskit_ver.utils.helpers.get_quantum_instance">get_quantum_instance() (in module fd_greens.qiskit_ver.utils.helpers)</a>
 </li>
       <li><a href="fd_greens.qiskit_ver.utils.circuit_utils.html#fd_greens.qiskit_ver.utils.circuit_utils.get_registers_in_circuit">get_registers_in_circuit() (in module fd_greens.qiskit_ver.utils.circuit_utils)</a>
@@ -668,6 +685,8 @@
 <h2 id="I">I</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="fd_greens.cirq_ver.parameters.html#fd_greens.cirq_ver.parameters.MethodIndicesPairs.indices">indices (MethodIndicesPairs attribute)</a>
+</li>
       <li><a href="fd_greens.cirq_ver.helpers.html#fd_greens.cirq_ver.helpers.initialize_hdf5">initialize_hdf5() (in module fd_greens.cirq_ver.helpers)</a>
 
       <ul>
@@ -702,6 +721,10 @@
 </li>
       <li><a href="fd_greens.qiskit_ver.main.transpilation.html#fd_greens.qiskit_ver.main.transpilation.merge_subcircuit">merge_subcircuit() (in module fd_greens.qiskit_ver.main.transpilation)</a>
 </li>
+      <li><a href="fd_greens.cirq_ver.parameters.html#fd_greens.cirq_ver.parameters.MethodIndicesPairs">MethodIndicesPairs (class in fd_greens.cirq_ver.parameters)</a>
+</li>
+      <li><a href="fd_greens.cirq_ver.parameters.html#fd_greens.cirq_ver.parameters.MethodIndicesPairs.methods">methods (MethodIndicesPairs attribute)</a>
+</li>
       <li>
     module
 
@@ -713,6 +736,8 @@
         <li><a href="fd_greens.cirq_ver.circuit_constructor.html#module-fd_greens.cirq_ver.circuit_constructor">fd_greens.cirq_ver.circuit_constructor</a>
 </li>
         <li><a href="fd_greens.cirq_ver.circuit_string_converter.html#module-fd_greens.cirq_ver.circuit_string_converter">fd_greens.cirq_ver.circuit_string_converter</a>
+</li>
+        <li><a href="fd_greens.cirq_ver.classical_amplitudes_solver.html#module-fd_greens.cirq_ver.classical_amplitudes_solver">fd_greens.cirq_ver.classical_amplitudes_solver</a>
 </li>
         <li><a href="fd_greens.cirq_ver.eh_amplitudes_solver.html#module-fd_greens.cirq_ver.eh_amplitudes_solver">fd_greens.cirq_ver.eh_amplitudes_solver</a>
 </li>
@@ -811,6 +836,10 @@
 <h2 id="N">N</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="fd_greens.cirq_ver.parameters.html#fd_greens.cirq_ver.parameters.MethodIndicesPairs.n_tapered">n_tapered (MethodIndicesPairs property)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="fd_greens.cirq_ver.transpilation.html#fd_greens.cirq_ver.transpilation.C0C0iXGate.num_qubits">num_qubits() (C0C0iXGate method)</a>
 </li>
   </ul></td>
@@ -859,10 +888,10 @@
 </li>
       <li><a href="fd_greens.cirq_ver.helpers.html#fd_greens.cirq_ver.helpers.plot_spectral_function">plot_spectral_function() (in module fd_greens.cirq_ver.helpers)</a>
 </li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="fd_greens.cirq_ver.helpers.html#fd_greens.cirq_ver.helpers.plot_trace_self_energy">plot_trace_self_energy() (in module fd_greens.cirq_ver.helpers)</a>
 </li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="fd_greens.cirq_ver.helpers.html#fd_greens.cirq_ver.helpers.plot_TrS">plot_TrS() (in module fd_greens.cirq_ver.helpers)</a>
 
       <ul>
@@ -871,12 +900,16 @@
       </ul></li>
       <li><a href="fd_greens.cirq_ver.helpers.html#fd_greens.cirq_ver.helpers.print_circuit">print_circuit() (in module fd_greens.cirq_ver.helpers)</a>
 </li>
+      <li><a href="fd_greens.cirq_ver.utilities.html#fd_greens.cirq_ver.utilities.print_circuit_statistics">print_circuit_statistics() (in module fd_greens.cirq_ver.utilities)</a>
+</li>
       <li><a href="fd_greens.cirq_ver.postprocessing.html#fd_greens.cirq_ver.postprocessing.process_berkeley_results">process_berkeley_results() (in module fd_greens.cirq_ver.postprocessing)</a>
 
       <ul>
         <li><a href="fd_greens.qiskit_ver.utils.process_utils.html#fd_greens.qiskit_ver.utils.process_utils.process_berkeley_results">(in module fd_greens.qiskit_ver.utils.process_utils)</a>
 </li>
       </ul></li>
+      <li><a href="fd_greens.cirq_ver.postprocessing.html#fd_greens.cirq_ver.postprocessing.process_bitstring_counts">process_bitstring_counts() (in module fd_greens.cirq_ver.postprocessing)</a>
+</li>
       <li><a href="fd_greens.qiskit_ver.main.eh_amplitudes_solver.html#fd_greens.qiskit_ver.main.eh_amplitudes_solver.EHAmplitudesSolver.process_diagonal">process_diagonal() (EHAmplitudesSolver method)</a>
 
       <ul>
@@ -1003,10 +1036,10 @@
 </li>
       <li><a href="fd_greens.qiskit_ver.main.transpilation.html#fd_greens.qiskit_ver.main.transpilation.simplify_czxcz">simplify_czxcz() (in module fd_greens.qiskit_ver.main.transpilation)</a>
 </li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="fd_greens.qiskit_ver.main.transpilation.html#fd_greens.qiskit_ver.main.transpilation.simplify_swap_gates">simplify_swap_gates() (in module fd_greens.qiskit_ver.main.transpilation)</a>
 </li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="fd_greens.qiskit_ver.main.transpilation.html#fd_greens.qiskit_ver.main.transpilation.simplify_xzpi2x">simplify_xzpi2x() (in module fd_greens.qiskit_ver.main.transpilation)</a>
 </li>
       <li><a href="fd_greens.qiskit_ver.main.transpilation.html#fd_greens.qiskit_ver.main.transpilation.simplify_xzpix">simplify_xzpix() (in module fd_greens.qiskit_ver.main.transpilation)</a>
@@ -1016,6 +1049,8 @@
       <li><a href="fd_greens.cirq_ver.greens_function.html#fd_greens.cirq_ver.greens_function.GreensFunction.spectral_function">spectral_function() (GreensFunction method)</a>, <a href="fd_greens.qiskit_ver.main.greens_function.html#fd_greens.qiskit_ver.main.greens_function.GreensFunction.spectral_function">[1]</a>
 </li>
       <li><a href="fd_greens.qiskit_ver.utils.circuit_utils.html#fd_greens.qiskit_ver.utils.circuit_utils.split_circuit_across_barriers">split_circuit_across_barriers() (in module fd_greens.qiskit_ver.utils.circuit_utils)</a>
+</li>
+      <li><a href="fd_greens.cirq_ver.utilities.html#fd_greens.cirq_ver.utilities.split_circuit_across_moment">split_circuit_across_moment() (in module fd_greens.cirq_ver.utilities)</a>
 </li>
       <li><a href="fd_greens.qiskit_ver.main.transpilation.html#fd_greens.qiskit_ver.main.transpilation.split_subcircuit">split_subcircuit() (in module fd_greens.qiskit_ver.main.transpilation)</a>
 </li>
@@ -1053,14 +1088,18 @@
         <li><a href="fd_greens.cirq_ver.operators.html#fd_greens.cirq_ver.operators.SecondQuantizedOperators.transform">(SecondQuantizedOperators method)</a>, <a href="fd_greens.qiskit_ver.main.operators.html#fd_greens.qiskit_ver.main.operators.SecondQuantizedOperators.transform">[1]</a>
 </li>
       </ul></li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="fd_greens.qiskit_ver.main.z2symmetries.html#fd_greens.qiskit_ver.main.z2symmetries.transform_4q_indices">transform_4q_indices() (in module fd_greens.qiskit_ver.main.z2symmetries)</a>
 </li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="fd_greens.qiskit_ver.main.z2symmetries.html#fd_greens.qiskit_ver.main.z2symmetries.transform_4q_pauli">transform_4q_pauli() (in module fd_greens.qiskit_ver.main.z2symmetries)</a>
 </li>
-      <li><a href="fd_greens.qiskit_ver.main.transpilation.html#fd_greens.qiskit_ver.main.transpilation.transpile_1q_gates">transpile_1q_gates() (in module fd_greens.qiskit_ver.main.transpilation)</a>
+      <li><a href="fd_greens.cirq_ver.transpilation.html#fd_greens.cirq_ver.transpilation.transpile_1q_gates">transpile_1q_gates() (in module fd_greens.cirq_ver.transpilation)</a>
+
+      <ul>
+        <li><a href="fd_greens.qiskit_ver.main.transpilation.html#fd_greens.qiskit_ver.main.transpilation.transpile_1q_gates">(in module fd_greens.qiskit_ver.main.transpilation)</a>
 </li>
+      </ul></li>
       <li><a href="fd_greens.qiskit_ver.main.transpilation.html#fd_greens.qiskit_ver.main.transpilation.transpile_2q_gates">transpile_2q_gates() (in module fd_greens.qiskit_ver.main.transpilation)</a>
 </li>
       <li><a href="fd_greens.qiskit_ver.main.transpilation.html#fd_greens.qiskit_ver.main.transpilation.transpile_3q_gates">transpile_3q_gates() (in module fd_greens.qiskit_ver.main.transpilation)</a>
@@ -1074,6 +1113,8 @@
 </li>
       </ul></li>
       <li><a href="fd_greens.qiskit_ver.main.transpilation.html#fd_greens.qiskit_ver.main.transpilation.transpile_subcircuit">transpile_subcircuit() (in module fd_greens.qiskit_ver.main.transpilation)</a>
+</li>
+      <li><a href="fd_greens.cirq_ver.utilities.html#fd_greens.cirq_ver.utilities.two_qubit_state_tomography">two_qubit_state_tomography() (in module fd_greens.cirq_ver.utilities)</a>
 </li>
   </ul></td>
 </tr></table>

@@ -4,7 +4,7 @@
 ===================================================================================
 """
 
-from typing import Optional, Sequence
+from typing import Sequence
 
 import h5py
 import json
@@ -130,11 +130,7 @@ class EHAmplitudesSolver:
                 # Transpile the circuit and save to HDF5 file.
                 circuit = transpile_into_berkeley_gates(circuit, self.spin)
                 self.circuits[circuit_label] = circuit
-                # print(circuit[:10])
-                # print(circuit[10:20])
-                # print(circuit[20:])
                 qtrl_strings = self.circuit_string_converter.convert_circuit_to_strings(circuit)
-                # print(qtrl_strings)
                 dset_transpiled = h5file.create_dataset(f"{circuit_label}/transpiled", data=json.dumps(qtrl_strings))
 
                 # Run simulation and save results to HDF5 file.

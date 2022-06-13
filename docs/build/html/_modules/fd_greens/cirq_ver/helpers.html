@@ -71,6 +71,7 @@
 <span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Sequence</span><span class="p">,</span> <span class="n">Optional</span>
 <span class="kn">from</span> <span class="nn">itertools</span> <span class="kn">import</span> <span class="n">product</span>
 
+<span class="kn">import</span> <span class="nn">cirq</span>
 <span class="kn">import</span> <span class="nn">h5py</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
@@ -81,7 +82,8 @@
     <span class="n">mode</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;greens&#39;</span><span class="p">,</span>
     <span class="n">spin</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span><span class="p">,</span>
     <span class="n">n_orbitals</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">2</span><span class="p">,</span>
-    <span class="n">overwrite</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="n">overwrite</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+    <span class="n">create_datasets</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;Initializes an HDF5 file.</span>
 <span class="sd">    </span>
@@ -93,10 +95,6 @@
 <span class="sd">        overwrite: Whether to overwrite groups if they are found in the HDF5 file.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">assert</span> <span class="n">mode</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;greens&#39;</span><span class="p">,</span> <span class="s1">&#39;resp&#39;</span><span class="p">]</span>
-    <span class="k">if</span> <span class="n">mode</span> <span class="o">==</span> <span class="s1">&#39;greens&#39;</span><span class="p">:</span>
-        <span class="k">assert</span> <span class="n">spin</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;u&#39;</span><span class="p">,</span> <span class="s1">&#39;d&#39;</span><span class="p">]</span>
-    <span class="k">else</span><span class="p">:</span>
-        <span class="k">assert</span> <span class="n">spin</span> <span class="o">==</span> <span class="s1">&#39;&#39;</span>
     
     <span class="n">h5fname</span> <span class="o">=</span> <span class="n">fname</span> <span class="o">+</span> <span class="s1">&#39;.h5&#39;</span>
     <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">h5fname</span><span class="p">):</span>
@@ -109,6 +107,8 @@
     <span class="k">elif</span> <span class="n">mode</span> <span class="o">==</span> <span class="s1">&#39;resp&#39;</span><span class="p">:</span>
         <span class="n">orbital_labels</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">product</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="n">n_orbitals</span><span class="p">),</span> <span class="p">[</span><span class="s1">&#39;u&#39;</span><span class="p">,</span> <span class="s1">&#39;d&#39;</span><span class="p">]))</span>
         <span class="n">orbital_labels</span> <span class="o">=</span> <span class="p">[</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">}{</span><span class="n">x</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="si">}</span><span class="s1">&#39;</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">orbital_labels</span><span class="p">]</span>
+
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">orbital_labels</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
 
     <span class="n">group_names</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;gs&#39;</span><span class="p">,</span> <span class="s1">&#39;es&#39;</span><span class="p">,</span> <span class="s1">&#39;amp&#39;</span><span class="p">]</span>
     <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">orbital_labels</span><span class="p">)):</span>
@@ -123,6 +123,12 @@
                 <span class="n">h5file</span><span class="o">.</span><span class="n">create_group</span><span class="p">(</span><span class="n">group_name</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">h5file</span><span class="o">.</span><span class="n">create_group</span><span class="p">(</span><span class="n">group_name</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">create_datasets</span> <span class="ow">and</span> <span class="n">group_name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;gs&#39;</span><span class="p">,</span> <span class="s1">&#39;es&#39;</span><span class="p">,</span> <span class="s1">&#39;amp&#39;</span><span class="p">]:</span>
+            <span class="n">tomography_labels</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">product</span><span class="p">(</span><span class="s1">&#39;xyz&#39;</span><span class="p">,</span> <span class="n">repeat</span><span class="o">=</span><span class="mi">2</span><span class="p">)]</span>
+            <span class="k">for</span> <span class="n">tomography_label</span> <span class="ow">in</span> <span class="n">tomography_labels</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">group_name</span><span class="si">}</span><span class="s1">/</span><span class="si">{</span><span class="n">tomography_label</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+                <span class="n">h5file</span><span class="o">.</span><span class="n">create_dataset</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">group_name</span><span class="si">}</span><span class="s1">/</span><span class="si">{</span><span class="n">tomography_label</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">)</span>
     
     <span class="n">h5file</span><span class="o">.</span><span class="n">close</span><span class="p">()</span></div>
 
@@ -288,58 +294,74 @@
 
 
 <div class="viewcode-block" id="plot_counts"><a class="viewcode-back" href="../../../fd_greens.cirq_ver.helpers.html#fd_greens.cirq_ver.helpers.plot_counts">[docs]</a><span class="k">def</span> <span class="nf">plot_counts</span><span class="p">(</span>
-    <span class="n">h5fname</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">counts_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">circ_label</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">tomo_label</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">width</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.5</span>
+    <span class="n">fname_sim</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> 
+    <span class="n">fname_expt</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">dset_name_sim</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">dset_name_expt</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">counts_name_sim</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span><span class="p">,</span>
+    <span class="n">counts_name_expt</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span><span class="p">,</span> 
+    <span class="n">width</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.5</span><span class="p">,</span>
+    <span class="n">dirname</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;figs&#39;</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Plots the QASM and experimental bitstring counts.</span>
+    <span class="sd">&quot;&quot;&quot;Plots the simulation and experimental bitstring counts along with total variational distance.</span>
 <span class="sd">    </span>
 <span class="sd">    Args:</span>
-<span class="sd">        h5fname: The HDF5 file name.</span>
-<span class="sd">        counts_name: Name of the bitstring counts.</span>
-<span class="sd">        circ_label: The circuit label.</span>
-<span class="sd">        tomo_label: The tomography label.</span>
-<span class="sd">        width: The width of the bars in the bar chart.</span>
+<span class="sd">        fname_sim: Name of the simulation HDF5 file.</span>
+<span class="sd">        fname_expt: Name of the experimental HDF5 file.</span>
+<span class="sd">        dset_name_sim: Name of the simulation dataset.</span>
+<span class="sd">        dset_name_expt: Name of the experimental dataset.</span>
+<span class="sd">        counts_name_sim: Name of the simulation bitstring counts.</span>
+<span class="sd">        counts_name_expt: Name fo the experimental bitstring counts.</span>
+<span class="sd">        width: Width of bars in the bar chart.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">h5file</span> <span class="o">=</span> <span class="n">h5py</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="n">h5fname</span> <span class="o">+</span> <span class="s2">&quot;.h5&quot;</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">)</span>
-    <span class="c1"># print(circ_label, tomo_label)</span>
-    <span class="n">dset</span> <span class="o">=</span> <span class="n">h5file</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;circ</span><span class="si">{</span><span class="n">circ_label</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">tomo_label</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">]</span>
-    <span class="n">counts</span> <span class="o">=</span> <span class="n">dset</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="n">counts_name</span><span class="p">]</span>
-    <span class="n">counts_norm</span> <span class="o">=</span> <span class="n">counts</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">counts</span><span class="p">)</span>
-    <span class="n">counts_exp</span> <span class="o">=</span> <span class="n">dset</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="n">counts_name</span> <span class="o">+</span> <span class="s2">&quot;_exp_proc&quot;</span><span class="p">]</span>
-    <span class="n">counts_exp_norm</span> <span class="o">=</span> <span class="n">counts_exp</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">counts_exp</span><span class="p">)</span>
-    <span class="n">tvd</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">counts_norm</span> <span class="o">-</span> <span class="n">counts_exp_norm</span><span class="p">))</span> <span class="o">/</span> <span class="mi">2</span>
+    <span class="c1"># print(fname_sim)</span>
+    <span class="c1"># h5file_sim = h5py.File(fname_sim + &#39;.h5&#39;, &#39;r&#39;)</span>
+    <span class="c1"># h5file_expt = h5py.File(fname_expt + &#39;.h5&#39;, &#39;r&#39;)</span>
+    <span class="k">with</span> <span class="n">h5py</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="n">fname_sim</span> <span class="o">+</span> <span class="s1">&#39;.h5&#39;</span><span class="p">,</span> <span class="s1">&#39;r&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">h5file_sim</span><span class="p">:</span>
+        <span class="n">array_sim</span> <span class="o">=</span> <span class="n">h5file_sim</span><span class="p">[</span><span class="n">dset_name_sim</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="n">counts_name_sim</span><span class="p">][:]</span>
+    <span class="k">with</span> <span class="n">h5py</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="n">fname_expt</span> <span class="o">+</span> <span class="s1">&#39;.h5&#39;</span><span class="p">,</span> <span class="s1">&#39;r&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">h5file_expt</span><span class="p">:</span>
+        <span class="n">array_expt</span> <span class="o">=</span> <span class="n">h5file_expt</span><span class="p">[</span><span class="n">dset_name_expt</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="n">counts_name_expt</span><span class="p">][:]</span>
 
-    <span class="n">n_qubits</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">log2</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">counts</span><span class="p">)))</span>
+    <span class="c1"># Compute total variational distance.</span>
+    <span class="k">assert</span> <span class="nb">abs</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">array_sim</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mf">1e-8</span>
+    <span class="k">assert</span> <span class="nb">abs</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">array_expt</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mf">1e-8</span>
+    <span class="n">distance</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">array_sim</span> <span class="o">-</span> <span class="n">array_expt</span><span class="p">))</span> <span class="o">/</span> <span class="mi">2</span>
+
+    <span class="c1"># Create x tick locations and labels.</span>
+    <span class="n">n_qubits</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">log2</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">array_sim</span><span class="p">)))</span>
     <span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">2</span> <span class="o">**</span> <span class="n">n_qubits</span><span class="p">)</span>
-    <span class="n">tick_labels</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">product</span><span class="p">(</span><span class="s2">&quot;01&quot;</span><span class="p">,</span> <span class="n">repeat</span><span class="o">=</span><span class="n">n_qubits</span><span class="p">)]</span>
+    <span class="n">tick_labels</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">y</span><span class="p">)</span> <span class="k">for</span> <span class="n">y</span> <span class="ow">in</span> <span class="n">product</span><span class="p">(</span><span class="s2">&quot;01&quot;</span><span class="p">,</span> <span class="n">repeat</span><span class="o">=</span><span class="n">n_qubits</span><span class="p">)]</span>
 
     <span class="n">plt</span><span class="o">.</span><span class="n">clf</span><span class="p">()</span>
-    <span class="k">if</span> <span class="n">n_qubits</span> <span class="o">==</span> <span class="mi">3</span><span class="p">:</span>
-        <span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">6</span><span class="p">,</span> <span class="mi">4</span><span class="p">))</span>
-    <span class="k">else</span><span class="p">:</span>
-        <span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">4</span><span class="p">))</span>
-    <span class="n">ax</span><span class="o">.</span><span class="n">bar</span><span class="p">(</span><span class="n">x</span> <span class="o">-</span> <span class="n">width</span> <span class="o">/</span> <span class="mi">3</span><span class="p">,</span> <span class="n">counts_norm</span><span class="p">,</span> <span class="n">width</span> <span class="o">/</span> <span class="mf">1.5</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;QASM&quot;</span><span class="p">)</span>
-    <span class="n">ax</span><span class="o">.</span><span class="n">bar</span><span class="p">(</span><span class="n">x</span> <span class="o">+</span> <span class="n">width</span> <span class="o">/</span> <span class="mi">3</span><span class="p">,</span> <span class="n">counts_exp_norm</span><span class="p">,</span> <span class="n">width</span> <span class="o">/</span> <span class="mf">1.5</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;Expt&quot;</span><span class="p">)</span>
+    <span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">array_sim</span><span class="p">)</span> <span class="o">*</span> <span class="mf">0.6</span> <span class="o">+</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">4</span><span class="p">))</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">bar</span><span class="p">(</span><span class="n">x</span> <span class="o">-</span> <span class="n">width</span> <span class="o">/</span> <span class="mi">3</span><span class="p">,</span> <span class="n">array_sim</span><span class="p">,</span> <span class="n">width</span> <span class="o">/</span> <span class="mf">1.5</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;Sim&quot;</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">bar</span><span class="p">(</span><span class="n">x</span> <span class="o">+</span> <span class="n">width</span> <span class="o">/</span> <span class="mi">3</span><span class="p">,</span> <span class="n">array_expt</span><span class="p">,</span> <span class="n">width</span> <span class="o">/</span> <span class="mf">1.5</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;Expt&quot;</span><span class="p">)</span>
     <span class="n">ax</span><span class="o">.</span><span class="n">set_xticks</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
     <span class="n">ax</span><span class="o">.</span><span class="n">set_xticklabels</span><span class="p">(</span><span class="n">tick_labels</span><span class="p">)</span>
     <span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s2">&quot;Bitstring&quot;</span><span class="p">)</span>
     <span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s2">&quot;Ratio&quot;</span><span class="p">)</span>
-    <span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Total Variational Distance: </span><span class="si">{</span><span class="n">tvd</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Fidelity (1 - TVD): </span><span class="si">{</span><span class="mi">1</span> <span class="o">-</span> <span class="n">distance</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
     <span class="n">ax</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
-    <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="s2">&quot;figs&quot;</span><span class="p">):</span>
-        <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="s2">&quot;figs&quot;</span><span class="p">)</span>
-    <span class="n">fig</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;figs/counts_</span><span class="si">{</span><span class="n">h5fname</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">circ_label</span><span class="si">}{</span><span class="n">tomo_label</span><span class="si">}</span><span class="s2">.png&quot;</span><span class="p">,</span> <span class="n">dpi</span><span class="o">=</span><span class="mi">300</span><span class="p">,</span> <span class="n">bbox_inches</span><span class="o">=</span><span class="s2">&quot;tight&quot;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">dirname</span><span class="p">):</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">dirname</span><span class="p">)</span>
+    <span class="n">fig</span><span class="o">.</span><span class="n">set_facecolor</span><span class="p">(</span><span class="s1">&#39;white&#39;</span><span class="p">)</span>
+    <span class="n">fig</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">dirname</span><span class="si">}</span><span class="s2">/counts_</span><span class="si">{</span><span class="n">dset_name_sim</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;/&#39;</span><span class="p">,</span> <span class="s1">&#39;_&#39;</span><span class="p">)</span><span class="si">}</span><span class="s2">.png&quot;</span><span class="p">,</span> <span class="n">dpi</span><span class="o">=</span><span class="mi">300</span><span class="p">,</span> <span class="n">bbox_inches</span><span class="o">=</span><span class="s2">&quot;tight&quot;</span><span class="p">)</span>
     <span class="n">plt</span><span class="o">.</span><span class="n">close</span><span class="p">(</span><span class="n">fig</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="print_circuit"><a class="viewcode-back" href="../../../fd_greens.cirq_ver.helpers.html#fd_greens.cirq_ver.helpers.print_circuit">[docs]</a><span class="k">def</span> <span class="nf">print_circuit</span><span class="p">(</span><span class="n">circuit</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="k">if</span> <span class="kc">True</span><span class="p">:</span>
+
+<div class="viewcode-block" id="print_circuit"><a class="viewcode-back" href="../../../fd_greens.cirq_ver.helpers.html#fd_greens.cirq_ver.helpers.print_circuit">[docs]</a><span class="k">def</span> <span class="nf">print_circuit</span><span class="p">(</span><span class="n">circuit</span><span class="p">:</span> <span class="n">cirq</span><span class="o">.</span><span class="n">Circuit</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Prints out a circuit 10 elements at a time.</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        circuit: The circuit to be printed.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">circuit</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">10</span><span class="p">:</span>
         <span class="nb">print</span><span class="p">(</span><span class="n">circuit</span><span class="p">)</span>
     <span class="k">else</span><span class="p">:</span>
-        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">circuit</span><span class="p">)</span> <span class="o">//</span> <span class="mi">10</span><span class="p">):</span>
-            <span class="nb">print</span><span class="p">(</span><span class="n">circuit</span><span class="p">[</span><span class="n">i</span> <span class="o">*</span> <span class="mi">10</span><span class="p">:</span> <span class="p">(</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="mi">10</span><span class="p">],</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span>
-
-    <span class="k">for</span> <span class="n">op</span> <span class="ow">in</span> <span class="n">circuit</span><span class="o">.</span><span class="n">all_operations</span><span class="p">():</span>
-        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">op</span><span class="o">.</span><span class="n">qubits</span><span class="p">)</span> <span class="o">==</span> <span class="mi">3</span><span class="p">:</span>
-            <span class="nb">print</span><span class="p">(</span><span class="n">op</span><span class="p">)</span></div>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">circuit</span><span class="p">)</span> <span class="o">//</span> <span class="mi">10</span> <span class="o">+</span> <span class="mi">1</span><span class="p">):</span>
+            <span class="nb">print</span><span class="p">(</span><span class="n">circuit</span><span class="p">[</span><span class="n">i</span> <span class="o">*</span> <span class="mi">10</span><span class="p">:</span> <span class="nb">min</span><span class="p">((</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="mi">10</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">circuit</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)],</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;-&#39;</span> <span class="o">*</span> <span class="mi">120</span><span class="p">,</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span></div>
 </pre></div>
 
            </div>

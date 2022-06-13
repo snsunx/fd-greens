@@ -77,7 +77,7 @@
 <span class="kn">from</span> <span class="nn">.molecular_hamiltonian</span> <span class="kn">import</span> <span class="n">MolecularHamiltonian</span>
 <span class="kn">from</span> <span class="nn">.circuit_string_converter</span> <span class="kn">import</span> <span class="n">CircuitStringConverter</span>
 <span class="kn">from</span> <span class="nn">.transpilation</span> <span class="kn">import</span> <span class="n">convert_phxz_to_xpi2</span><span class="p">,</span> <span class="n">transpile_into_berkeley_gates</span>
-<span class="kn">from</span> <span class="nn">.parameters</span> <span class="kn">import</span> <span class="n">method_indices_pairs</span>
+<span class="kn">from</span> <span class="nn">.parameters</span> <span class="kn">import</span> <span class="n">get_method_indices_pairs</span>
 <span class="kn">from</span> <span class="nn">.utilities</span> <span class="kn">import</span> <span class="n">unitary_equal</span>
 
 
@@ -85,7 +85,7 @@
     <span class="sd">&quot;&quot;&quot;Ground state solver.&quot;&quot;&quot;</span>
 
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span> <span class="n">hamiltonian</span><span class="p">:</span> <span class="n">MolecularHamiltonian</span><span class="p">,</span> <span class="n">qubits</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">cirq</span><span class="o">.</span><span class="n">Qid</span><span class="p">],</span> <span class="n">fname</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;lih&quot;</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">hamiltonian</span><span class="p">:</span> <span class="n">MolecularHamiltonian</span><span class="p">,</span> <span class="n">qubits</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">cirq</span><span class="o">.</span><span class="n">Qid</span><span class="p">],</span> <span class="n">spin</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;d&#39;</span><span class="p">,</span> <span class="n">fname</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;lih&quot;</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;Initializes a ``GroudStateSolver`` object.</span>
 <span class="sd">        </span>
@@ -95,7 +95,7 @@
 <span class="sd">            fname: The HDF5 file name.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">hamiltonian</span> <span class="o">=</span> <span class="n">hamiltonian</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">hamiltonian</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">method_indices_pairs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">hamiltonian</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">get_method_indices_pairs</span><span class="p">(</span><span class="n">spin</span><span class="p">))</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">qubits</span> <span class="o">=</span> <span class="n">qubits</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">h5fname</span> <span class="o">=</span> <span class="n">fname</span> <span class="o">+</span> <span class="s2">&quot;.h5&quot;</span>
         
@@ -107,6 +107,7 @@
         <span class="c1"># eigenvalue. The ansatz is prepared by the unitary with the lowest eigenvector as the first</span>
         <span class="c1"># column and the rest filled in randomly. The matrix after going through a QR factorization</span>
         <span class="c1"># and a KAK decomposition is assigned as the ansatz.</span>
+        <span class="c1"># TODO: This part should be cleaned up.</span>
         <span class="n">e</span><span class="p">,</span> <span class="n">v</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">eigh</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">hamiltonian</span><span class="o">.</span><span class="n">matrix</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">energy</span> <span class="o">=</span> <span class="n">e</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
         <span class="c1"># v0 = [ 0.6877791696238387+0j, 0.07105690514886635+0j, 0.07105690514886635+0j, -0.7189309050895454+0j]</span>
@@ -223,8 +224,10 @@
 
 <div class="viewcode-block" id="GroundStateSolver.run"><a class="viewcode-back" href="../../../fd_greens.cirq_ver.ground_state_solver.html#fd_greens.cirq_ver.ground_state_solver.GroundStateSolver.run">[docs]</a>    <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;Runs the ground-state calculation with exact two-qubit gate decomposition.&quot;&quot;&quot;</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Start ground state solver.&quot;</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_run_exact</span><span class="p">()</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_save_data</span><span class="p">()</span></div></div>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_save_data</span><span class="p">()</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Ground state solver finished.&quot;</span><span class="p">)</span></div></div>
 </pre></div>
 
            </div>

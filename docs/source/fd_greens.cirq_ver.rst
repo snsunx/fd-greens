@@ -14,6 +14,7 @@ Submodules
 
    fd_greens.cirq_ver.circuit_constructor
    fd_greens.cirq_ver.circuit_string_converter
+   fd_greens.cirq_ver.classical_amplitudes_solver
    fd_greens.cirq_ver.eh_amplitudes_solver
    fd_greens.cirq_ver.eh_states_solver
    fd_greens.cirq_ver.excited_amplitudes_solver

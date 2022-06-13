@@ -67,14 +67,13 @@
 <span class="sd">======================================</span>
 <span class="sd">&quot;&quot;&quot;</span>
 
-<span class="kn">from</span> <span class="nn">collections</span> <span class="kn">import</span> <span class="n">Counter</span>
 <span class="kn">from</span> <span class="nn">itertools</span> <span class="kn">import</span> <span class="n">product</span>
-<span class="kn">import</span> <span class="nn">math</span>
-<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Callable</span>
-<span class="kn">from</span> <span class="nn">bqskit</span> <span class="kn">import</span> <span class="n">UnitaryMatrix</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Union</span><span class="p">,</span> <span class="n">List</span>
 
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="kn">import</span> <span class="nn">cirq</span>
+
+<span class="kn">from</span> <span class="nn">.parameters</span> <span class="kn">import</span> <span class="n">REVERSE_QUBIT_ORDER</span>
 
 <div class="viewcode-block" id="reverse_qubit_order"><a class="viewcode-back" href="../../../fd_greens.cirq_ver.utilities.html#fd_greens.cirq_ver.utilities.reverse_qubit_order">[docs]</a><span class="k">def</span> <span class="nf">reverse_qubit_order</span><span class="p">(</span><span class="n">array</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;Reverses qubit order in a 1D or 2D array.</span>
@@ -96,44 +95,31 @@
         <span class="n">array_new</span> <span class="o">=</span> <span class="n">array</span><span class="p">[</span><span class="n">indices</span><span class="p">][:,</span> <span class="n">indices</span><span class="p">]</span>
     <span class="k">return</span> <span class="n">array_new</span></div>
 
-<div class="viewcode-block" id="circuit_equal"><a class="viewcode-back" href="../../../fd_greens.cirq_ver.utilities.html#fd_greens.cirq_ver.utilities.circuit_equal">[docs]</a><span class="k">def</span> <span class="nf">circuit_equal</span><span class="p">(</span><span class="n">circuit1</span><span class="p">:</span> <span class="n">cirq</span><span class="o">.</span><span class="n">Circuit</span><span class="p">,</span> <span class="n">circuit2</span><span class="p">:</span> <span class="n">cirq</span><span class="o">.</span><span class="n">Circuit</span><span class="p">,</span> <span class="n">initial_state_0</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Checks if two circuits are equivalent.</span>
-
-<span class="sd">    The two circuits are equivalent either when the unitaries are equal up to a phase or </span>
-<span class="sd">    when the statevectors with all 0 initial state are equal up to a phase.</span>
-<span class="sd">    </span>
-<span class="sd">    Args:</span>
-<span class="sd">        circuit1: The first cicuit.</span>
-<span class="sd">        circuit2: The second circuit.</span>
-<span class="sd">        initial_state_0: Whether to assume the initial state is the all 0 state.</span>
-<span class="sd">        </span>
-<span class="sd">    Returns:</span>
-<span class="sd">        is_equal: Whether the two circuits are equivalent.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">unitary1</span> <span class="o">=</span> <span class="n">cirq</span><span class="o">.</span><span class="n">unitary</span><span class="p">(</span><span class="n">circuit1</span><span class="p">)</span>
-    <span class="n">unitary2</span> <span class="o">=</span> <span class="n">cirq</span><span class="o">.</span><span class="n">unitary</span><span class="p">(</span><span class="n">circuit2</span><span class="p">)</span>
-    <span class="k">assert</span> <span class="n">unitary1</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="n">unitary2</span><span class="o">.</span><span class="n">shape</span>
-    <span class="n">is_equal</span> <span class="o">=</span> <span class="n">unitary_equal</span><span class="p">(</span><span class="n">unitary1</span><span class="p">,</span> <span class="n">unitary2</span><span class="p">,</span> <span class="n">initial_state_0</span><span class="o">=</span><span class="n">initial_state_0</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">is_equal</span></div>
-
-
-<div class="viewcode-block" id="unitary_equal"><a class="viewcode-back" href="../../../fd_greens.cirq_ver.utilities.html#fd_greens.cirq_ver.utilities.unitary_equal">[docs]</a><span class="k">def</span> <span class="nf">unitary_equal</span><span class="p">(</span><span class="n">unitary1</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">unitary2</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">initial_state_0</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<div class="viewcode-block" id="unitary_equal"><a class="viewcode-back" href="../../../fd_greens.cirq_ver.utilities.html#fd_greens.cirq_ver.utilities.unitary_equal">[docs]</a><span class="k">def</span> <span class="nf">unitary_equal</span><span class="p">(</span><span class="n">unitary1</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">cirq</span><span class="o">.</span><span class="n">Circuit</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span> 
+                  <span class="n">unitary2</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">cirq</span><span class="o">.</span><span class="n">Circuit</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span> 
+                  <span class="n">initial_state_0</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>
+                  <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;Checks if two unitaries are equal up to a phase factor.</span>
 <span class="sd">    </span>
 <span class="sd">    Args:</span>
-<span class="sd">        unitary1: The first unitary.</span>
-<span class="sd">        unitary2: The second unitary.</span>
+<span class="sd">        unitary1: The first unitary in circuit or array form.</span>
+<span class="sd">        unitary2: The second unitary in circuit or array form.</span>
 <span class="sd">        initial_state_0: Whether to assume the initial state to be the all 0 state.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        is_equal: Whether the two unitaries are equal up to a phase.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-
-    <span class="c1"># Find the index of phase factor in the first column.</span>
+    <span class="c1"># It the unitaries are in circuit form, convert them to unitaries.</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">unitary1</span><span class="p">,</span> <span class="n">cirq</span><span class="o">.</span><span class="n">Circuit</span><span class="p">):</span>
+        <span class="n">unitary1</span> <span class="o">=</span> <span class="n">cirq</span><span class="o">.</span><span class="n">unitary</span><span class="p">(</span><span class="n">unitary1</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">unitary2</span><span class="p">,</span> <span class="n">cirq</span><span class="o">.</span><span class="n">Circuit</span><span class="p">):</span>
+        <span class="n">unitary2</span> <span class="o">=</span> <span class="n">cirq</span><span class="o">.</span><span class="n">unitary</span><span class="p">(</span><span class="n">unitary2</span><span class="p">)</span>
+    
+    <span class="c1"># Find the index for the phase factor in the first column, since the (0, 0) element might be 0.</span>
     <span class="n">index</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">unitary1</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]))</span>
     <span class="k">if</span> <span class="nb">abs</span><span class="p">(</span><span class="n">unitary2</span><span class="p">[</span><span class="n">index</span><span class="p">,</span> <span class="mi">0</span><span class="p">])</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
         <span class="k">return</span> <span class="kc">False</span>
-
+    
     <span class="n">phase1</span> <span class="o">=</span> <span class="n">unitary1</span><span class="p">[</span><span class="n">index</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">/</span> <span class="nb">abs</span><span class="p">(</span><span class="n">unitary1</span><span class="p">[</span><span class="n">index</span><span class="p">,</span> <span class="mi">0</span><span class="p">])</span>
     <span class="n">phase2</span> <span class="o">=</span> <span class="n">unitary2</span><span class="p">[</span><span class="n">index</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">/</span> <span class="nb">abs</span><span class="p">(</span><span class="n">unitary2</span><span class="p">[</span><span class="n">index</span><span class="p">,</span> <span class="mi">0</span><span class="p">])</span>
 
@@ -144,44 +130,185 @@
 
     <span class="k">return</span> <span class="n">is_equal</span></div>
 
-<div class="viewcode-block" id="histogram_to_array"><a class="viewcode-back" href="../../../fd_greens.cirq_ver.utilities.html#fd_greens.cirq_ver.utilities.histogram_to_array">[docs]</a><span class="k">def</span> <span class="nf">histogram_to_array</span><span class="p">(</span><span class="n">histogram</span><span class="p">:</span> <span class="n">Counter</span><span class="p">,</span> <span class="n">n_qubits</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Converts a Cirq histogram to a numpy array.</span>
+<div class="viewcode-block" id="histogram_to_array"><a class="viewcode-back" href="../../../fd_greens.cirq_ver.utilities.html#fd_greens.cirq_ver.utilities.histogram_to_array">[docs]</a><span class="k">def</span> <span class="nf">histogram_to_array</span><span class="p">(</span>
+    <span class="n">histogram</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span>
+    <span class="n">n_qubits</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">base</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">2</span><span class="p">,</span>
+    <span class="n">normalize</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Converts a bitstring histogram to a numpy array.</span>
 <span class="sd">    </span>
 <span class="sd">    Args:</span>
-<span class="sd">        histogram: The histogram from Cirq simulator runs.</span>
+<span class="sd">        histogram: The histogram from simulators or experiments. Keys of the histogram </span>
+<span class="sd">            can either be strings, such as ``&#39;01&#39;``, or tuples of integers, such as ``(0, 1)``.</span>
 <span class="sd">        n_qubits: Number of qubits.</span>
+<span class="sd">        base: The base in integer conversion. Defaults to 2 for qubits.</span>
+<span class="sd">        normalize: Whether to normalize the sum of the bitstring counts to 1.</span>
 <span class="sd">        </span>
 <span class="sd">    Returns:</span>
-<span class="sd">        array: The array form of the histogram.</span>
+<span class="sd">        array: The bitstring array from the histogram.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">if</span> <span class="n">n_qubits</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="n">indices</span> <span class="o">=</span> <span class="p">[]</span>
-        <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">histogram</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
-            <span class="n">index</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="s1">&#39;&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="nb">str</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">key</span><span class="p">]),</span> <span class="mi">2</span><span class="p">)</span>
-            <span class="n">indices</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">index</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
-        <span class="n">n_qubits</span> <span class="o">=</span> <span class="n">math</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span><span class="n">math</span><span class="o">.</span><span class="n">log2</span><span class="p">(</span><span class="nb">max</span><span class="p">(</span><span class="n">indices</span><span class="p">)))</span>
+        <span class="n">n_qubits</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">histogram</span><span class="o">.</span><span class="n">keys</span><span class="p">())[</span><span class="mi">0</span><span class="p">])</span>
     
-    <span class="n">array</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="mi">2</span> <span class="o">**</span> <span class="n">n_qubits</span><span class="p">,))</span>
+    <span class="n">array</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">base</span> <span class="o">**</span> <span class="n">n_qubits</span><span class="p">,))</span>
     <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">histogram</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
-        <span class="n">index</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="s1">&#39;&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="nb">str</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">key</span><span class="p">]),</span> <span class="mi">2</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="n">index</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">base</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">index</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="s1">&#39;&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="nb">str</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">key</span><span class="p">]),</span> <span class="n">base</span><span class="p">)</span>
         <span class="n">array</span><span class="p">[</span><span class="n">index</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span>
+
+    <span class="k">if</span> <span class="n">normalize</span><span class="p">:</span>
+        <span class="n">array</span> <span class="o">=</span> <span class="n">array</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">array</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">array</span></div>
 
-<div class="viewcode-block" id="get_gate_counts"><a class="viewcode-back" href="../../../fd_greens.cirq_ver.utilities.html#fd_greens.cirq_ver.utilities.get_gate_counts">[docs]</a><span class="k">def</span> <span class="nf">get_gate_counts</span><span class="p">(</span><span class="n">circuit</span><span class="p">:</span> <span class="n">cirq</span><span class="o">.</span><span class="n">Circuit</span><span class="p">,</span> <span class="n">criterion</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">cirq</span><span class="o">.</span><span class="n">OP_TREE</span><span class="p">],</span> <span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">op</span><span class="p">:</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<div class="viewcode-block" id="get_gate_counts"><a class="viewcode-back" href="../../../fd_greens.cirq_ver.utilities.html#fd_greens.cirq_ver.utilities.get_gate_counts">[docs]</a><span class="k">def</span> <span class="nf">get_gate_counts</span><span class="p">(</span><span class="n">circuit</span><span class="p">:</span> <span class="n">cirq</span><span class="o">.</span><span class="n">Circuit</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span>
+					<span class="n">criterion</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">cirq</span><span class="o">.</span><span class="n">OP_TREE</span><span class="p">],</span> <span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">op</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+                    <span class="n">num_qubits</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+				   <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;Returns the count of gates satisfying a certain criterion.</span>
+
+<span class="sd">    Only one of ``num_qubits`` and ``criterion`` should be given. If ``num_qubits`` is given,</span>
+<span class="sd">    count the number of gates with ``num_qubits`` number of qubits. Otherwise counting is performed</span>
+<span class="sd">    with ``criterion``. Defaults to counting all non-Z-rotation gates.</span>
 <span class="sd">    </span>
 <span class="sd">    Args:</span>
 <span class="sd">        circuit: The circuit on which to return gate counts.</span>
 <span class="sd">        criterion: The criterion of gates to be counted.</span>
+<span class="sd">        num_qubits: Number of qubits in gates to be counted.</span>
 <span class="sd">        </span>
 <span class="sd">    Returns:</span>
 <span class="sd">        count: Number of gates satisfying a certain criterion.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">num_qubits</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="c1"># Counting gates with number of qubits.</span>
+        <span class="n">criterion</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">op</span><span class="p">:</span> <span class="n">op</span><span class="o">.</span><span class="n">gate</span><span class="o">.</span><span class="n">num_qubits</span><span class="p">()</span> <span class="o">==</span> <span class="n">num_qubits</span>
+
+    <span class="k">if</span> <span class="n">criterion</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="c1"># Only counting non-Z-rotation gates.</span>
+        <span class="n">criterion</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">op</span><span class="p">:</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">op</span><span class="o">.</span><span class="n">gate</span><span class="p">,</span> <span class="n">cirq</span><span class="o">.</span><span class="n">ZPowGate</span><span class="p">)</span>
+
     <span class="n">count</span> <span class="o">=</span> <span class="mi">0</span>
     <span class="k">for</span> <span class="n">op</span> <span class="ow">in</span> <span class="n">circuit</span><span class="o">.</span><span class="n">all_operations</span><span class="p">():</span>
         <span class="k">if</span> <span class="n">criterion</span><span class="p">(</span><span class="n">op</span><span class="p">):</span>
             <span class="n">count</span> <span class="o">+=</span> <span class="mi">1</span>
     <span class="k">return</span> <span class="n">count</span></div>
+
+<div class="viewcode-block" id="split_circuit_across_moment"><a class="viewcode-back" href="../../../fd_greens.cirq_ver.utilities.html#fd_greens.cirq_ver.utilities.split_circuit_across_moment">[docs]</a><span class="k">def</span> <span class="nf">split_circuit_across_moment</span><span class="p">(</span><span class="n">circuit</span><span class="p">:</span> <span class="n">cirq</span><span class="o">.</span><span class="n">Circuit</span><span class="p">,</span> <span class="n">moment_split</span><span class="p">:</span> <span class="n">cirq</span><span class="o">.</span><span class="n">Moment</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">cirq</span><span class="o">.</span><span class="n">Circuit</span><span class="p">]:</span>
+    <span class="sd">&quot;&quot;&quot;Splits a circuit across a certain moment.</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        circuit: The circuit to be split.</span>
+<span class="sd">        moment_split: A moment used to split the circuit.</span>
+<span class="sd">        </span>
+<span class="sd">    Returns:</span>
+<span class="sd">        circuits: A list of circuits split at moments.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">unitary_split</span> <span class="o">=</span> <span class="n">cirq</span><span class="o">.</span><span class="n">unitary</span><span class="p">(</span><span class="n">moment_split</span><span class="p">)</span>
+
+    <span class="n">circuits</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">moments</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">moment</span> <span class="ow">in</span> <span class="n">circuit</span><span class="p">:</span>
+        <span class="n">unitary</span> <span class="o">=</span> <span class="n">cirq</span><span class="o">.</span><span class="n">unitary</span><span class="p">(</span><span class="n">moment</span><span class="p">)</span>
+        <span class="c1"># TODO: The criterion should be more specific than comparing unitaries.</span>
+        <span class="k">if</span> <span class="n">unitary</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="n">unitary_split</span><span class="o">.</span><span class="n">shape</span> <span class="ow">and</span> <span class="n">np</span><span class="o">.</span><span class="n">allclose</span><span class="p">(</span><span class="n">unitary</span><span class="p">,</span> <span class="n">unitary_split</span><span class="p">):</span>
+            <span class="n">circuits</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">cirq</span><span class="o">.</span><span class="n">Circuit</span><span class="p">(</span><span class="n">moments</span><span class="p">))</span>
+            <span class="n">moments</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">moments</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">moment</span><span class="p">)</span>
+
+    <span class="c1"># Append the circuit built from the last moments to circuits.</span>
+    <span class="n">circuits</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">cirq</span><span class="o">.</span><span class="n">Circuit</span><span class="p">(</span><span class="n">moments</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">circuits</span></div>
+
+<div class="viewcode-block" id="get_circuit_depth"><a class="viewcode-back" href="../../../fd_greens.cirq_ver.utilities.html#fd_greens.cirq_ver.utilities.get_circuit_depth">[docs]</a><span class="k">def</span> <span class="nf">get_circuit_depth</span><span class="p">(</span><span class="n">circuit</span><span class="p">:</span> <span class="n">cirq</span><span class="o">.</span><span class="n">Circuit</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Returns the circuit depth by excluding Z gates.</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        circuit: The circuit on which depth is to be calculated.</span>
+<span class="sd">    </span>
+<span class="sd">    Returns:</span>
+<span class="sd">        depth: The depth of the circuit.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">depth</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">for</span> <span class="n">moment</span> <span class="ow">in</span> <span class="n">circuit</span><span class="p">:</span>
+        <span class="n">is_z_gates</span> <span class="o">=</span> <span class="p">[</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">op</span><span class="o">.</span><span class="n">gate</span><span class="p">,</span> <span class="n">cirq</span><span class="o">.</span><span class="n">ZPowGate</span><span class="p">)</span> <span class="k">for</span> <span class="n">op</span> <span class="ow">in</span> <span class="n">moment</span><span class="p">]</span>
+        <span class="k">if</span> <span class="nb">all</span><span class="p">(</span><span class="n">is_z_gates</span><span class="p">):</span>
+            <span class="k">continue</span>
+        <span class="n">depth</span> <span class="o">+=</span> <span class="mi">1</span>
+    <span class="k">return</span> <span class="n">depth</span></div>
+
+<div class="viewcode-block" id="print_circuit_statistics"><a class="viewcode-back" href="../../../fd_greens.cirq_ver.utilities.html#fd_greens.cirq_ver.utilities.print_circuit_statistics">[docs]</a><span class="k">def</span> <span class="nf">print_circuit_statistics</span><span class="p">(</span><span class="n">circuit</span><span class="p">:</span> <span class="n">cirq</span><span class="o">.</span><span class="n">Circuit</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Prints out circuit statistics.</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        circuit: The circuit on which statistics are to be printed.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">depth</span> <span class="o">=</span> <span class="n">get_circuit_depth</span><span class="p">(</span><span class="n">circuit</span><span class="p">)</span>
+    <span class="n">n_2q</span> <span class="o">=</span> <span class="n">get_gate_counts</span><span class="p">(</span><span class="n">circuit</span><span class="p">,</span> <span class="n">num_qubits</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+    <span class="n">n_3q</span> <span class="o">=</span> <span class="n">get_gate_counts</span><span class="p">(</span><span class="n">circuit</span><span class="p">,</span> <span class="n">num_qubits</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Circuit depth = </span><span class="si">{</span><span class="n">depth</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Number of two-qubit gates = </span><span class="si">{</span><span class="n">n_2q</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Number of three-qubit gates = </span><span class="si">{</span><span class="n">n_3q</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+    <span class="c1"># Only print out multi-qubit gate counts on 4-qubit circuits.</span>
+    <span class="n">qubits</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">circuit</span><span class="o">.</span><span class="n">all_qubits</span><span class="p">())</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">qubits</span><span class="p">)</span> <span class="o">==</span> <span class="mi">4</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">qubits</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">):</span>
+            <span class="n">qubit_pair</span> <span class="o">=</span> <span class="p">(</span><span class="n">qubits</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">qubits</span><span class="p">[</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">])</span>
+            <span class="c1"># print(f&#39;{qubit_pair = }&#39;)</span>
+            <span class="n">n_cs</span> <span class="o">=</span> <span class="n">get_gate_counts</span><span class="p">(</span>
+                <span class="n">circuit</span><span class="p">,</span> 
+                <span class="n">criterion</span><span class="o">=</span><span class="k">lambda</span> <span class="n">op</span><span class="p">:</span> <span class="n">op</span><span class="o">.</span><span class="n">gate</span> <span class="o">==</span> <span class="n">cirq</span><span class="o">.</span><span class="n">CZPowGate</span><span class="p">(</span><span class="n">exponent</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">set</span><span class="p">(</span><span class="n">op</span><span class="o">.</span><span class="n">qubits</span><span class="p">)</span> <span class="o">==</span> <span class="nb">set</span><span class="p">(</span><span class="n">qubit_pair</span><span class="p">))</span>
+            <span class="n">t_cs</span> <span class="o">=</span> <span class="mi">150</span> <span class="o">+</span> <span class="mi">200</span> <span class="o">*</span> <span class="p">(</span><span class="n">i</span> <span class="o">%</span> <span class="mi">2</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span>
+            <span class="n">n_csd</span> <span class="o">=</span> <span class="n">get_gate_counts</span><span class="p">(</span>
+                <span class="n">circuit</span><span class="p">,</span>
+                <span class="n">criterion</span><span class="o">=</span><span class="k">lambda</span> <span class="n">op</span><span class="p">:</span> <span class="n">op</span><span class="o">.</span><span class="n">gate</span> <span class="o">==</span> <span class="n">cirq</span><span class="o">.</span><span class="n">CZPowGate</span><span class="p">(</span><span class="n">exponent</span><span class="o">=-</span><span class="mf">0.5</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">set</span><span class="p">(</span><span class="n">op</span><span class="o">.</span><span class="n">qubits</span><span class="p">)</span> <span class="o">==</span> <span class="nb">set</span><span class="p">(</span><span class="n">qubit_pair</span><span class="p">))</span>
+            <span class="n">t_csd</span> <span class="o">=</span> <span class="mi">150</span> <span class="o">+</span> <span class="mi">200</span> <span class="o">*</span> <span class="p">(</span><span class="n">i</span> <span class="o">%</span> <span class="mi">2</span> <span class="o">==</span> <span class="mi">1</span><span class="p">)</span>
+            <span class="n">n_cz</span> <span class="o">=</span> <span class="n">get_gate_counts</span><span class="p">(</span>
+                <span class="n">circuit</span><span class="p">,</span> 
+                <span class="n">criterion</span><span class="o">=</span><span class="k">lambda</span> <span class="n">op</span><span class="p">:</span> <span class="n">op</span><span class="o">.</span><span class="n">gate</span> <span class="o">==</span> <span class="n">cirq</span><span class="o">.</span><span class="n">CZPowGate</span><span class="p">(</span><span class="n">exponent</span><span class="o">=</span><span class="mf">1.0</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">set</span><span class="p">(</span><span class="n">op</span><span class="o">.</span><span class="n">qubits</span><span class="p">)</span> <span class="o">==</span> <span class="nb">set</span><span class="p">(</span><span class="n">qubit_pair</span><span class="p">))</span>
+            <span class="n">t_cz</span> <span class="o">=</span> <span class="mi">200</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Number of CS, CSD, CZ gates on qubits </span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2">, </span><span class="si">{</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="si">}</span><span class="s2">&quot;</span>
+                  <span class="sa">f</span><span class="s2">&quot; = </span><span class="si">{</span><span class="n">n_cs</span><span class="si">}</span><span class="s2"> (</span><span class="si">{</span><span class="n">t_cs</span><span class="si">}</span><span class="s2"> ns), </span><span class="si">{</span><span class="n">n_csd</span><span class="si">}</span><span class="s2"> (</span><span class="si">{</span><span class="n">t_csd</span><span class="si">}</span><span class="s2"> ns), </span><span class="si">{</span><span class="n">n_cz</span><span class="si">}</span><span class="s2"> (</span><span class="si">{</span><span class="n">t_cz</span><span class="si">}</span><span class="s2"> ns)&quot;</span><span class="p">)</span></div>
+
+<span class="c1"># TODO: Write a general implementation of state tomography.</span>
+<div class="viewcode-block" id="two_qubit_state_tomography"><a class="viewcode-back" href="../../../fd_greens.cirq_ver.utilities.html#fd_greens.cirq_ver.utilities.two_qubit_state_tomography">[docs]</a><span class="k">def</span> <span class="nf">two_qubit_state_tomography</span><span class="p">(</span><span class="n">result_array</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Two-qubit quantum state tomography.</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        result_array: The array that contains normalized bitstring counts.</span>
+<span class="sd">        </span>
+<span class="sd">    Returns:</span>
+<span class="sd">        density_matrix: The density matrix obtained from state tomography.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">basis_matrix</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="k">if</span> <span class="n">REVERSE_QUBIT_ORDER</span><span class="p">:</span>
+        <span class="n">bases</span> <span class="o">=</span> <span class="p">[(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">x</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="si">}{</span><span class="n">x</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">,</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">}{</span><span class="n">x</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">product</span><span class="p">(</span><span class="s1">&#39;xyz&#39;</span><span class="p">,</span> <span class="s1">&#39;xyz&#39;</span><span class="p">,</span> <span class="s1">&#39;01&#39;</span><span class="p">,</span> <span class="s1">&#39;01&#39;</span><span class="p">)]</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">bases</span> <span class="o">=</span> <span class="p">[(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">}{</span><span class="n">x</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">,</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">x</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="si">}{</span><span class="n">x</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">product</span><span class="p">(</span><span class="s1">&#39;xyz&#39;</span><span class="p">,</span> <span class="s1">&#39;xyz&#39;</span><span class="p">,</span> <span class="s1">&#39;01&#39;</span><span class="p">,</span> <span class="s1">&#39;01&#39;</span><span class="p">)]</span>
+    
+    <span class="n">states</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">&quot;x0&quot;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">1.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">])</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mi">2</span><span class="p">),</span>
+        <span class="s2">&quot;x1&quot;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">1.0</span><span class="p">,</span> <span class="o">-</span><span class="mf">1.0</span><span class="p">])</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mi">2</span><span class="p">),</span>
+        <span class="s2">&quot;y0&quot;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">1.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="n">j</span><span class="p">])</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mi">2</span><span class="p">),</span>
+        <span class="s2">&quot;y1&quot;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">1.0</span><span class="p">,</span> <span class="o">-</span><span class="mf">1.0</span><span class="n">j</span><span class="p">])</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mi">2</span><span class="p">),</span>
+        <span class="s2">&quot;z0&quot;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">1.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">]),</span>
+        <span class="s2">&quot;z1&quot;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">]),</span>
+    <span class="p">}</span>
+
+    <span class="k">for</span> <span class="n">basis</span> <span class="ow">in</span> <span class="n">bases</span><span class="p">:</span>
+        <span class="n">basis_state</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">kron</span><span class="p">(</span><span class="n">states</span><span class="p">[</span><span class="n">basis</span><span class="p">[</span><span class="mi">0</span><span class="p">]],</span> <span class="n">states</span><span class="p">[</span><span class="n">basis</span><span class="p">[</span><span class="mi">1</span><span class="p">]])</span>
+        <span class="n">basis_vectorized</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">outer</span><span class="p">(</span><span class="n">basis_state</span><span class="p">,</span> <span class="n">basis_state</span><span class="o">.</span><span class="n">conj</span><span class="p">())</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">basis_matrix</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">basis_vectorized</span><span class="p">)</span>
+    <span class="n">basis_matrix</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">basis_matrix</span><span class="p">)</span>
+
+    <span class="n">density_matrix</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">lstsq</span><span class="p">(</span><span class="n">basis_matrix</span><span class="p">,</span> <span class="n">result_array</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">dim</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">density_matrix</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span>
+    <span class="n">density_matrix</span> <span class="o">=</span> <span class="n">density_matrix</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">dim</span><span class="p">,</span> <span class="n">dim</span><span class="p">,</span> <span class="n">order</span><span class="o">=</span><span class="s1">&#39;F&#39;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">density_matrix</span></div>
 </pre></div>
 
            </div>

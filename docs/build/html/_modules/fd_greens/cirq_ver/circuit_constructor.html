@@ -68,11 +68,15 @@
 <span class="sd">&quot;&quot;&quot;</span>
 
 <span class="kn">from</span> <span class="nn">itertools</span> <span class="kn">import</span> <span class="n">product</span>
+<span class="kn">from</span> <span class="nn">turtle</span> <span class="kn">import</span> <span class="n">position</span>
 <span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Mapping</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">List</span>
 <span class="kn">from</span> <span class="nn">cmath</span> <span class="kn">import</span> <span class="n">polar</span>
 
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="kn">import</span> <span class="nn">cirq</span>
+
+<span class="kn">from</span> <span class="nn">.transpilation</span> <span class="kn">import</span> <span class="n">transpile_1q_gates</span>
+<span class="kn">from</span> <span class="nn">.utilities</span> <span class="kn">import</span> <span class="n">get_gate_counts</span>
 
 
 <div class="viewcode-block" id="CircuitConstructor"><a class="viewcode-back" href="../../../fd_greens.cirq_ver.circuit_constructor.html#fd_greens.cirq_ver.circuit_constructor.CircuitConstructor">[docs]</a><span class="k">class</span> <span class="nc">CircuitConstructor</span><span class="p">:</span>
@@ -272,22 +276,39 @@
 
         <span class="c1"># TODO: Take swap gates at the end of the circuit into account.</span>
         <span class="k">for</span> <span class="n">label</span> <span class="ow">in</span> <span class="n">tomography_labels</span><span class="p">:</span>
-            <span class="n">tomography_circuit</span> <span class="o">=</span> <span class="n">circuit</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+            <span class="c1"># Look for the position where the first multi-qubit gate is encountered.</span>
+            <span class="c1"># This is general because in the last transpilation step the circuits have been converted into</span>
+            <span class="c1"># the form with alternating single- and multi-qubit gates.</span>
+            <span class="n">position</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="n">gate_count</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="k">while</span> <span class="n">gate_count</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">position</span> <span class="o">-=</span> <span class="mi">1</span>
+                <span class="n">gate_count</span> <span class="o">=</span> <span class="n">get_gate_counts</span><span class="p">(</span><span class="n">cirq</span><span class="o">.</span><span class="n">Circuit</span><span class="p">(</span><span class="n">circuit</span><span class="p">[</span><span class="n">position</span><span class="p">]),</span> <span class="n">criterion</span><span class="o">=</span><span class="k">lambda</span> <span class="n">op</span><span class="p">:</span> <span class="n">op</span><span class="o">.</span><span class="n">gate</span><span class="o">.</span><span class="n">num_qubits</span><span class="p">()</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">)</span>
+            
+            <span class="c1"># Break the circuit at the position where the multi-qubit gate is encountered.</span>
+            <span class="k">if</span> <span class="n">position</span> <span class="o">!=</span> <span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+                <span class="n">tomography_circuit</span> <span class="o">=</span> <span class="n">circuit</span><span class="p">[:</span><span class="n">position</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]</span>
+                <span class="n">measurement_circuit</span> <span class="o">=</span> <span class="n">circuit</span><span class="p">[</span><span class="n">position</span> <span class="o">+</span> <span class="mi">1</span><span class="p">:]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">tomography_circuit</span> <span class="o">=</span> <span class="n">circuit</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+                <span class="n">measurement_circuit</span> <span class="o">=</span> <span class="n">cirq</span><span class="o">.</span><span class="n">Circuit</span><span class="p">()</span>
+                    
+            <span class="c1"># Append H or X(pi/2) to the measurement circuit.</span>
             <span class="k">for</span> <span class="n">q</span><span class="p">,</span> <span class="n">s</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">tomographed_qubits</span><span class="p">,</span> <span class="n">label</span><span class="p">):</span>
                 <span class="k">if</span> <span class="n">s</span> <span class="o">==</span> <span class="s2">&quot;x&quot;</span><span class="p">:</span>
-                    <span class="n">tomography_circuit</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
-                        <span class="p">[</span>
-                            <span class="n">cirq</span><span class="o">.</span><span class="n">ZPowGate</span><span class="p">(</span><span class="n">exponent</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)(</span><span class="n">q</span><span class="p">),</span>
-                            <span class="n">cirq</span><span class="o">.</span><span class="n">XPowGate</span><span class="p">(</span><span class="n">exponent</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)(</span><span class="n">q</span><span class="p">),</span>
-                            <span class="n">cirq</span><span class="o">.</span><span class="n">ZPowGate</span><span class="p">(</span><span class="n">exponent</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)(</span><span class="n">q</span><span class="p">),</span>
-                        <span class="p">]</span>
-                    <span class="p">)</span>
+                    <span class="n">measurement_circuit</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">cirq</span><span class="o">.</span><span class="n">ZPowGate</span><span class="p">(</span><span class="n">exponent</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)(</span><span class="n">q</span><span class="p">))</span>
+                    <span class="n">measurement_circuit</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">cirq</span><span class="o">.</span><span class="n">XPowGate</span><span class="p">(</span><span class="n">exponent</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)(</span><span class="n">q</span><span class="p">))</span>
+                    <span class="n">measurement_circuit</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">cirq</span><span class="o">.</span><span class="n">ZPowGate</span><span class="p">(</span><span class="n">exponent</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)(</span><span class="n">q</span><span class="p">))</span>
                 <span class="k">elif</span> <span class="n">s</span> <span class="o">==</span> <span class="s2">&quot;y&quot;</span><span class="p">:</span>
-                    <span class="n">tomography_circuit</span><span class="o">.</span><span class="n">append</span><span class="p">([</span><span class="n">cirq</span><span class="o">.</span><span class="n">XPowGate</span><span class="p">(</span><span class="n">exponent</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)(</span><span class="n">q</span><span class="p">),</span> <span class="n">cirq</span><span class="o">.</span><span class="n">ZPowGate</span><span class="p">(</span><span class="n">exponent</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)(</span><span class="n">q</span><span class="p">)])</span>
-
+                    <span class="n">measurement_circuit</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">cirq</span><span class="o">.</span><span class="n">I</span><span class="p">(</span><span class="n">q</span><span class="p">))</span>
+                    <span class="n">measurement_circuit</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">cirq</span><span class="o">.</span><span class="n">XPowGate</span><span class="p">(</span><span class="n">exponent</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)(</span><span class="n">q</span><span class="p">))</span>
+                    <span class="n">measurement_circuit</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">cirq</span><span class="o">.</span><span class="n">ZPowGate</span><span class="p">(</span><span class="n">exponent</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)(</span><span class="n">q</span><span class="p">))</span>
+            
+            <span class="n">measurement_circuit</span> <span class="o">=</span> <span class="n">transpile_1q_gates</span><span class="p">(</span><span class="n">measurement_circuit</span><span class="p">)</span>
             <span class="k">for</span> <span class="n">q</span> <span class="ow">in</span> <span class="n">measured_qubits</span><span class="p">:</span>
-                <span class="n">tomography_circuit</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">cirq</span><span class="o">.</span><span class="n">measure</span><span class="p">(</span><span class="n">q</span><span class="p">))</span>
+                <span class="n">measurement_circuit</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">cirq</span><span class="o">.</span><span class="n">measure</span><span class="p">(</span><span class="n">q</span><span class="p">))</span>
 
+            <span class="n">tomography_circuit</span> <span class="o">=</span> <span class="n">tomography_circuit</span> <span class="o">+</span> <span class="n">measurement_circuit</span>
             <span class="n">tomography_circuits</span><span class="p">[</span><span class="n">label</span><span class="p">]</span> <span class="o">=</span> <span class="n">tomography_circuit</span>
 
         <span class="k">return</span> <span class="n">tomography_circuits</span></div></div>

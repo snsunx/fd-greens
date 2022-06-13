@@ -194,21 +194,19 @@ def print_circuit_statistics(circuit: cirq.Circuit) -> None:
     if len(qubits) == 4:
         for i in range(len(qubits) - 1):
             qubit_pair = (qubits[i], qubits[i + 1])
-            # print(f'{qubit_pair = }')
             n_cs = get_gate_counts(
                 circuit, 
                 criterion=lambda op: op.gate == cirq.CZPowGate(exponent=0.5) and set(op.qubits) == set(qubit_pair))
-            t_cs = 150 + 200 * (i % 2 == 0)
+            # t_cs = 150 + 200 * (i % 2 == 0)
             n_csd = get_gate_counts(
                 circuit,
                 criterion=lambda op: op.gate == cirq.CZPowGate(exponent=-0.5) and set(op.qubits) == set(qubit_pair))
-            t_csd = 150 + 200 * (i % 2 == 1)
+            # t_csd = 150 + 200 * (i % 2 == 1)
             n_cz = get_gate_counts(
                 circuit, 
                 criterion=lambda op: op.gate == cirq.CZPowGate(exponent=1.0) and set(op.qubits) == set(qubit_pair))
-            t_cz = 200
-            print(f"Number of CS, CSD, CZ gates on qubits {i}, {i + 1}"
-                  f" = {n_cs} ({t_cs} ns), {n_csd} ({t_csd} ns), {n_cz} ({t_cz} ns)")
+            # t_cz = 200
+            print(f"Number of CS, CSD, CZ gates on qubits ({i}, {i + 1}) = {n_cs}, {n_csd}, {n_cz}")
 
 # TODO: Write a general implementation of state tomography.
 def two_qubit_state_tomography(result_array: np.ndarray) -> np.ndarray:

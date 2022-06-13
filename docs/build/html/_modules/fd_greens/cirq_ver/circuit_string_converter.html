@@ -69,10 +69,14 @@
 
 <span class="kn">import</span> <span class="nn">re</span>
 <span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">List</span><span class="p">,</span> <span class="n">Sequence</span>
+<span class="kn">import</span> <span class="nn">warnings</span>
 
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="kn">import</span> <span class="nn">cirq</span>
 
 <span class="kn">from</span> <span class="nn">.transpilation</span> <span class="kn">import</span> <span class="n">C0C0iXGate</span>
+<span class="kn">from</span> <span class="nn">.utilities</span> <span class="kn">import</span> <span class="n">get_gate_counts</span>
+<span class="kn">from</span> <span class="nn">.parameters</span> <span class="kn">import</span> <span class="n">ADJUST_GATES_FOR_HARDWARE</span><span class="p">,</span> <span class="n">CHECK_CIRCUITS</span>
 
 
 <div class="viewcode-block" id="CircuitStringConverter"><a class="viewcode-back" href="../../../fd_greens.cirq_ver.circuit_string_converter.html#fd_greens.cirq_ver.circuit_string_converter.CircuitStringConverter">[docs]</a><span class="k">class</span> <span class="nc">CircuitStringConverter</span><span class="p">:</span>
@@ -136,11 +140,6 @@
 
     <span class="k">def</span> <span class="nf">_gate_to_gstring</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">gate</span><span class="p">:</span> <span class="n">cirq</span><span class="o">.</span><span class="n">Gate</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;Converts Cirq gates to Qtrl gate string.&quot;&quot;&quot;</span>
-        <span class="c1"># print(f&#39;{gate = }&#39;)</span>
-        <span class="c1"># if isinstance(gate, (cirq.XPowGate, cirq.ZPowGate)):</span>
-        <span class="c1">#     gname = gate.__class__.__name__[0]</span>
-        <span class="c1">#     angle = str(gate.exponent * 180.0)</span>
-        <span class="c1">#     gstring = gname + angle</span>
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">gate</span><span class="p">,</span> <span class="n">cirq</span><span class="o">.</span><span class="n">XPowGate</span><span class="p">):</span>
             <span class="k">assert</span> <span class="nb">abs</span><span class="p">(</span><span class="n">gate</span><span class="o">.</span><span class="n">exponent</span> <span class="o">-</span> <span class="mf">0.5</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mf">1e-8</span>
             <span class="n">gstring</span> <span class="o">=</span> <span class="s1">&#39;X90&#39;</span>
@@ -148,20 +147,18 @@
             <span class="n">angle</span> <span class="o">=</span> <span class="n">gate</span><span class="o">.</span><span class="n">exponent</span> <span class="o">*</span> <span class="mf">180.0</span>
             <span class="n">gstring</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">&#39;Z</span><span class="si">{</span><span class="n">angle</span><span class="si">}</span><span class="s1">&#39;</span>
         <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">gate</span><span class="p">,</span> <span class="n">cirq</span><span class="o">.</span><span class="n">CZPowGate</span><span class="p">):</span>
-            <span class="k">if</span> <span class="nb">abs</span><span class="p">(</span><span class="n">gate</span><span class="o">.</span><span class="n">_exponent</span><span class="p">)</span> <span class="o">==</span> <span class="mf">1.0</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">abs</span><span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">gate</span><span class="o">.</span><span class="n">_exponent</span><span class="p">)</span> <span class="o">-</span> <span class="mf">1.0</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mf">1e-8</span><span class="p">:</span>
                 <span class="n">gstring</span> <span class="o">=</span> <span class="s1">&#39;CZ&#39;</span>
-            <span class="k">elif</span> <span class="n">gate</span><span class="o">.</span><span class="n">_exponent</span> <span class="o">==</span> <span class="mf">0.5</span><span class="p">:</span>
+            <span class="k">elif</span> <span class="nb">abs</span><span class="p">(</span><span class="n">gate</span><span class="o">.</span><span class="n">_exponent</span> <span class="o">-</span> <span class="mf">0.5</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mf">1e-8</span><span class="p">:</span>
                 <span class="n">gstring</span> <span class="o">=</span> <span class="s1">&#39;CS&#39;</span>
-            <span class="k">elif</span> <span class="n">gate</span><span class="o">.</span><span class="n">_exponent</span> <span class="o">==</span> <span class="o">-</span><span class="mf">0.5</span><span class="p">:</span>
+            <span class="k">elif</span> <span class="nb">abs</span><span class="p">(</span><span class="n">gate</span><span class="o">.</span><span class="n">_exponent</span> <span class="o">+</span> <span class="mf">0.5</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mf">1e-8</span><span class="p">:</span>
                 <span class="n">gstring</span> <span class="o">=</span> <span class="s1">&#39;CSD&#39;</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;CZPowGate must have exponent 1.0, 0.5 or -0.5. Got </span><span class="si">{</span><span class="n">gate</span><span class="o">.</span><span class="n">_exponent</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">)</span>
         <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">gate</span><span class="p">,</span> <span class="n">C0C0iXGate</span><span class="p">):</span>
-            <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">gate</span><span class="p">,</span> <span class="n">C0C0iXGate</span><span class="p">)</span> <span class="o">==</span> <span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="n">gate</span><span class="p">)</span> <span class="ow">is</span> <span class="n">C0C0iXGate</span><span class="p">)</span>
             <span class="n">gstring</span> <span class="o">=</span> <span class="s2">&quot;TOF&quot;</span>
         <span class="k">elif</span> <span class="nb">str</span><span class="p">(</span><span class="n">gate</span><span class="p">)</span> <span class="o">==</span> <span class="s2">&quot;SWAP&quot;</span><span class="p">:</span>
-            <span class="c1"># TODO: This could be raised as a warning.</span>
-            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Warning: SWAP gate converted to Qtrl string.&quot;</span><span class="p">)</span>
+            <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;SWAP gate converted to Qtrl string.&quot;</span><span class="p">)</span>
             <span class="n">gstring</span> <span class="o">=</span> <span class="s2">&quot;SWAP&quot;</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Conversion of </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">gate</span><span class="p">)</span><span class="si">}</span><span class="s2"> to Qtrl string is not supported.&quot;</span><span class="p">)</span>
@@ -195,22 +192,16 @@
 <span class="sd">        Returns:</span>
 <span class="sd">            circuit: A Cirq circuit corresponding to the Qtrl strings. </span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="c1"># Flatten the qtrl strings if they are not flat.</span>
-        <span class="c1"># if isinstance(qtrl_strings[0], list):</span>
-        <span class="c1">#     qtrl_strings = [y for x in qtrl_strings for y in x]</span>
         <span class="n">circuit</span> <span class="o">=</span> <span class="n">cirq</span><span class="o">.</span><span class="n">Circuit</span><span class="p">()</span>
 
-        <span class="c1"># Iterate over each qtrl string. The qstr, gstr order depends on whether</span>
-        <span class="c1"># the gate is 1q or multi-q gate.</span>
+        <span class="c1"># Iterate over qtrl_strings and construct the circuit from each moment.</span>
         <span class="k">for</span> <span class="n">strings_moment</span> <span class="ow">in</span> <span class="n">qtrl_strings</span><span class="p">:</span>
             <span class="n">ops_moment</span> <span class="o">=</span> <span class="p">[]</span>
             <span class="k">for</span> <span class="n">string</span> <span class="ow">in</span> <span class="n">strings_moment</span><span class="p">:</span>
-                <span class="k">if</span> <span class="n">string</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;Q&quot;</span><span class="p">:</span>  <span class="c1"># single-qubit gate</span>
+                <span class="k">if</span> <span class="n">string</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;Q&#39;</span><span class="p">:</span>  <span class="c1"># single-qubit gate</span>
                     <span class="n">qstring</span><span class="p">,</span> <span class="n">gstring</span> <span class="o">=</span> <span class="n">string</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;/&quot;</span><span class="p">)</span>
                 <span class="k">else</span><span class="p">:</span>  <span class="c1"># multi-qubit gate</span>
                     <span class="n">gstring</span><span class="p">,</span> <span class="n">qstring</span> <span class="o">=</span> <span class="n">string</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;/&quot;</span><span class="p">)</span>
-                <span class="c1"># print(f&#39;{qstr = }&#39;)</span>
-                <span class="c1"># print(f&#39;{gstr = }&#39;)</span>
                 <span class="n">qubits</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_qstring_to_qubits</span><span class="p">(</span><span class="n">qstring</span><span class="p">)</span>
                 <span class="n">gate</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_gstring_to_gate</span><span class="p">(</span><span class="n">gstring</span><span class="p">)</span>
                 <span class="n">ops_moment</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">gate</span><span class="p">(</span><span class="o">*</span><span class="n">qubits</span><span class="p">))</span>
@@ -227,30 +218,62 @@
 <span class="sd">        Returns:</span>
 <span class="sd">            qtrl_strings: The Qtrl strings corresponding to the Cirq circuit.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
+
         <span class="n">qtrl_strings</span> <span class="o">=</span> <span class="p">[]</span>
 
+        <span class="n">i_moment</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">adjustments</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="k">for</span> <span class="n">moment</span> <span class="ow">in</span> <span class="n">circuit</span><span class="p">:</span>
+            <span class="c1"># Check the moment contains only one type of gates.</span>
+            <span class="k">if</span> <span class="n">CHECK_CIRCUITS</span><span class="p">:</span>
+                <span class="n">gate_counts</span> <span class="o">=</span> <span class="p">[</span><span class="n">get_gate_counts</span><span class="p">(</span><span class="n">cirq</span><span class="o">.</span><span class="n">Circuit</span><span class="p">(</span><span class="n">moment</span><span class="p">),</span> <span class="n">num_qubits</span><span class="o">=</span><span class="n">i</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">]]</span>
+                <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">count_nonzero</span><span class="p">(</span><span class="n">gate_counts</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;A moment can only consist of one type of gates.&quot;</span><span class="p">)</span>
+
             <span class="n">strings_moment</span> <span class="o">=</span> <span class="p">[]</span>
             <span class="k">for</span> <span class="n">op</span> <span class="ow">in</span> <span class="n">moment</span><span class="p">:</span>
-                <span class="n">gate</span> <span class="o">=</span> <span class="n">op</span><span class="o">.</span><span class="n">gate</span>
-                <span class="n">qubits</span> <span class="o">=</span> <span class="n">op</span><span class="o">.</span><span class="n">qubits</span>
-
                 <span class="c1"># Ignore identity and measurement gates.</span>
                 <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">op</span><span class="o">.</span><span class="n">gate</span><span class="p">,</span> <span class="p">(</span><span class="n">cirq</span><span class="o">.</span><span class="n">IdentityGate</span><span class="p">,</span> <span class="n">cirq</span><span class="o">.</span><span class="n">MeasurementGate</span><span class="p">)):</span>
                     <span class="k">continue</span>
 
-                <span class="n">gstring</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_gate_to_gstring</span><span class="p">(</span><span class="n">gate</span><span class="p">)</span>
-                <span class="n">qstring</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_qubits_to_qstring</span><span class="p">(</span><span class="n">qubits</span><span class="p">)</span>
+                <span class="n">gstring</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_gate_to_gstring</span><span class="p">(</span><span class="n">op</span><span class="o">.</span><span class="n">gate</span><span class="p">)</span>
+                <span class="n">qstring</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_qubits_to_qstring</span><span class="p">(</span><span class="n">op</span><span class="o">.</span><span class="n">qubits</span><span class="p">)</span>
 
-                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">qubits</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">op</span><span class="o">.</span><span class="n">qubits</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
                     <span class="n">qtrl_string</span> <span class="o">=</span> <span class="n">qstring</span> <span class="o">+</span> <span class="s2">&quot;/&quot;</span> <span class="o">+</span> <span class="n">gstring</span>
                 <span class="k">else</span><span class="p">:</span>
                     <span class="n">qtrl_string</span> <span class="o">=</span> <span class="n">gstring</span> <span class="o">+</span> <span class="s2">&quot;/&quot;</span> <span class="o">+</span> <span class="n">qstring</span>
+
+                <span class="k">if</span> <span class="n">ADJUST_GATES_FOR_HARDWARE</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">qtrl_string</span> <span class="o">==</span> <span class="s1">&#39;CS/C5T4&#39;</span><span class="p">:</span>
+                        <span class="n">qtrl_string</span> <span class="o">=</span> <span class="n">qtrl_string</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;CS&#39;</span><span class="p">,</span> <span class="s1">&#39;CSD&#39;</span><span class="p">)</span>
+                        <span class="n">adjustments</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">i_moment</span><span class="p">,</span> <span class="p">[</span><span class="s1">&#39;CZ/C5T4&#39;</span><span class="p">]))</span>
+
+                    <span class="k">if</span> <span class="n">qtrl_string</span> <span class="o">==</span> <span class="s1">&#39;CSD/C6T5&#39;</span><span class="p">:</span>
+                        <span class="n">qtrl_string</span> <span class="o">=</span> <span class="n">qtrl_string</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;CSD&#39;</span><span class="p">,</span> <span class="s1">&#39;CS&#39;</span><span class="p">)</span>
+                        <span class="n">adjustments</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">i_moment</span><span class="p">,</span> <span class="p">[</span><span class="s1">&#39;CZ/C6T5&#39;</span><span class="p">]))</span>
+
+                    <span class="k">if</span> <span class="n">qtrl_string</span> <span class="o">==</span> <span class="s1">&#39;CS/C7T6&#39;</span><span class="p">:</span>
+                        <span class="n">qtrl_string</span> <span class="o">=</span> <span class="n">qtrl_string</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;CS&#39;</span><span class="p">,</span> <span class="s1">&#39;CSD&#39;</span><span class="p">)</span>
+                        <span class="n">adjustments</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">i_moment</span><span class="p">,</span> <span class="p">[</span><span class="s1">&#39;CZ/C7T6&#39;</span><span class="p">]))</span>
+                
+                    <span class="k">if</span> <span class="n">qtrl_string</span> <span class="o">==</span> <span class="s1">&#39;TOF/C4C6T5&#39;</span><span class="p">:</span>
+                        <span class="n">adjustments</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">i_moment</span><span class="p">,</span> <span class="p">[</span><span class="s1">&#39;Q5/Z-20.67&#39;</span><span class="p">]))</span>
+                        <span class="n">adjustments</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">i_moment</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="p">[</span><span class="s1">&#39;Q5/Z20.67&#39;</span><span class="p">]))</span>
+                
                 <span class="n">strings_moment</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">qtrl_string</span><span class="p">)</span>
             
-            <span class="k">if</span> <span class="n">strings_moment</span> <span class="o">!=</span> <span class="p">[]:</span>
+            <span class="k">if</span> <span class="n">strings_moment</span> <span class="o">!=</span> <span class="p">[]:</span>  <span class="c1"># [] when all identities or measurements</span>
+                <span class="n">i_moment</span> <span class="o">+=</span> <span class="mi">1</span>
                 <span class="n">qtrl_strings</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">strings_moment</span><span class="p">)</span>
-            
+
+        
+        <span class="c1"># Insert adjustment gates to qtrl_strings.</span>
+        <span class="n">offset</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">strings_moment</span> <span class="ow">in</span> <span class="n">adjustments</span><span class="p">:</span>
+            <span class="n">qtrl_strings</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="n">i</span> <span class="o">+</span> <span class="n">offset</span><span class="p">,</span> <span class="n">strings_moment</span><span class="p">)</span>
+            <span class="n">offset</span> <span class="o">+=</span> <span class="mi">1</span>
+        
         <span class="k">return</span> <span class="n">qtrl_strings</span></div></div>
 </pre></div>
 

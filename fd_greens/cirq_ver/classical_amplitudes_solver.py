@@ -1,7 +1,10 @@
-"""Classical Transition Amplitudes Solver."""
+"""
+=====================================================================================
+Classical Transition Amplitudes Solver (:mod:`fd_greens.classical_amplitudes_solver`)
+=====================================================================================
+"""
 
 from functools import reduce
-from itertools import permutations
 
 import numpy as np
 

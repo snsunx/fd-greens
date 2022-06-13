@@ -71,7 +71,7 @@
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 
 <span class="kn">from</span> <span class="nn">.molecular_hamiltonian</span> <span class="kn">import</span> <span class="n">MolecularHamiltonian</span>
-<span class="kn">from</span> <span class="nn">.parameters</span> <span class="kn">import</span> <span class="n">method_indices_pairs</span>
+<span class="kn">from</span> <span class="nn">.parameters</span> <span class="kn">import</span> <span class="n">get_method_indices_pairs</span>
 <span class="kn">from</span> <span class="nn">.qubit_indices</span> <span class="kn">import</span> <span class="n">QubitIndices</span>
 
 
@@ -90,6 +90,7 @@
 <span class="sd">            fname: The HDF5 file name.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">hamiltonian</span> <span class="o">=</span> <span class="n">hamiltonian</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="n">method_indices_pairs</span> <span class="o">=</span> <span class="n">get_method_indices_pairs</span><span class="p">(</span><span class="s1">&#39;d&#39;</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">hamiltonian</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">method_indices_pairs</span><span class="p">,</span> <span class="n">tapered_state</span><span class="o">=</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">])</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">h5fname</span> <span class="o">=</span> <span class="n">fname</span> <span class="o">+</span> <span class="s1">&#39;.h5&#39;</span>
 

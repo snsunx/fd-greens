@@ -67,9 +67,11 @@
 <span class="sd">======================================</span>
 <span class="sd">&quot;&quot;&quot;</span>
 
-<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Sequence</span><span class="p">,</span> <span class="n">Mapping</span><span class="p">,</span> <span class="n">Optional</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Sequence</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">List</span>
 
 <span class="kn">import</span> <span class="nn">cirq</span>
+
+<span class="kn">from</span> <span class="nn">.parameters</span> <span class="kn">import</span> <span class="n">MethodIndicesPairs</span>
 
 <div class="viewcode-block" id="OperatorsBase"><a class="viewcode-back" href="../../../fd_greens.cirq_ver.operators.html#fd_greens.cirq_ver.operators.OperatorsBase">[docs]</a><span class="k">class</span> <span class="nc">OperatorsBase</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;Operators base.&quot;&quot;&quot;</span>
@@ -92,27 +94,32 @@
         <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">pauli_string</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pauli_strings</span><span class="p">):</span>
             <span class="n">coefficient</span> <span class="o">=</span> <span class="n">pauli_string</span><span class="o">.</span><span class="n">coefficient</span>
             <span class="n">pauli_mask</span> <span class="o">=</span> <span class="n">pauli_string</span><span class="o">.</span><span class="n">dense</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">qubits</span><span class="p">)</span><span class="o">.</span><span class="n">pauli_mask</span>
-            <span class="c1"># print(f&#39;{coefficient = }&#39;)</span>
-            <span class="c1"># print(f&#39;{pauli_string.dense(self.qubits) = }&#39;)</span>
-            <span class="c1"># print(f&#39;{tapered_state = }&#39;)</span>
             <span class="k">for</span> <span class="n">state</span><span class="p">,</span> <span class="n">index</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">tapered_state</span><span class="p">,</span> <span class="n">tapered_indices</span><span class="p">):</span>
+                <span class="c1"># If Y, multiply coefficient by 1j when the state is 0 and by -1j when the state is 1.</span>
+                <span class="c1"># If Z, multiply coefficient by -1 when the state is -1.</span>
                 <span class="k">if</span> <span class="n">pauli_mask</span><span class="p">[</span><span class="n">index</span><span class="p">]</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
                     <span class="n">coefficient</span> <span class="o">*=</span> <span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span> <span class="o">**</span> <span class="n">state</span> <span class="o">*</span> <span class="mi">1</span><span class="n">j</span>
                 <span class="k">elif</span> <span class="n">pauli_mask</span><span class="p">[</span><span class="n">index</span><span class="p">]</span> <span class="o">==</span> <span class="mi">3</span><span class="p">:</span>
                     <span class="n">coefficient</span> <span class="o">*=</span> <span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span> <span class="o">**</span> <span class="n">state</span>
-            <span class="c1"># print(f&#39;coefficient_new = {coefficient}&#39;)</span>
-            <span class="c1"># print(&#39;-&#39; * 80)</span>
             <span class="n">pauli_mask_new</span> <span class="o">=</span> <span class="p">[</span><span class="n">pauli_mask</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n_qubits</span><span class="p">)</span> <span class="k">if</span> <span class="n">i</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">tapered_indices</span><span class="p">]</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">pauli_strings</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">cirq</span><span class="o">.</span><span class="n">DensePauliString</span><span class="p">(</span><span class="n">pauli_mask_new</span><span class="p">,</span> <span class="n">coefficient</span><span class="o">=</span><span class="n">coefficient</span><span class="p">)</span><span class="o">.</span><span class="n">sparse</span><span class="p">()</span>
 
 <div class="viewcode-block" id="OperatorsBase.transform"><a class="viewcode-back" href="../../../fd_greens.cirq_ver.operators.html#fd_greens.cirq_ver.operators.OperatorsBase.transform">[docs]</a>    <span class="k">def</span> <span class="nf">transform</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> 
-        <span class="n">method_indices_pairs</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">int</span><span class="p">]],</span> 
+        <span class="n">method_indices_pairs</span><span class="p">:</span> <span class="n">MethodIndicesPairs</span><span class="p">,</span> 
         <span class="n">tapered_state</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Transforms Pauli strings with Z2 symmetries and qubit tapering.&quot;&quot;&quot;</span>
+        <span class="sd">&quot;&quot;&quot;Transforms Pauli strings with Z2 symmetries and qubit tapering.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            method_indices_pairs: A dictionary of methods and the corresponding indices.</span>
+<span class="sd">                Each method must be one of ``&#39;cnot&#39;``, ``&#39;swap``, ``&#39;taper&#39;``.</span>
+<span class="sd">            tapered_state: A sequence of 0 and 1 indicating the states on the tapered qubits.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">method_dict</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;cnot&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cnot</span><span class="p">,</span> <span class="s2">&quot;swap&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_swap</span><span class="p">,</span> <span class="s2">&quot;taper&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_taper</span><span class="p">}</span>
         <span class="k">for</span> <span class="n">method_key</span><span class="p">,</span> <span class="n">indices</span> <span class="ow">in</span> <span class="n">method_indices_pairs</span><span class="p">:</span>
+            <span class="c1"># If not tapering, the argument should be two integers. If tapering, </span>
+            <span class="c1"># the argument should be the tapered state followed by a sequence of integers.</span>
             <span class="k">if</span> <span class="n">method_key</span> <span class="o">!=</span> <span class="s1">&#39;taper&#39;</span><span class="p">:</span>
                 <span class="n">method_dict</span><span class="p">[</span><span class="n">method_key</span><span class="p">](</span><span class="o">*</span><span class="n">indices</span><span class="p">)</span>
             <span class="k">else</span><span class="p">:</span>
@@ -123,9 +130,8 @@
 
     <span class="k">def</span> <span class="fm">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">m</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">cirq</span><span class="o">.</span><span class="n">DensePauliString</span><span class="p">:</span>
         <span class="n">pauli_string</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pauli_strings</span><span class="p">[</span><span class="n">m</span><span class="p">]</span>
-        <span class="c1"># max_index = max(pauli_string._qubit_pauli_map.keys()).x</span>
-        <span class="n">max_index</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_qubits</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_tapered</span> <span class="c1"># TODO: Maybe this can be in the parent class init method.</span>
-        <span class="n">dense_pauli_string</span> <span class="o">=</span> <span class="n">pauli_string</span><span class="o">.</span><span class="n">dense</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">qubits</span><span class="p">[:</span><span class="n">max_index</span><span class="p">])</span> <span class="c1"># XXX: 2 is hardcoded</span>
+        <span class="n">max_index</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_qubits</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_tapered</span>
+        <span class="n">dense_pauli_string</span> <span class="o">=</span> <span class="n">pauli_string</span><span class="o">.</span><span class="n">dense</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">qubits</span><span class="p">[:</span><span class="n">max_index</span><span class="p">])</span>
         <span class="k">return</span> <span class="n">dense_pauli_string</span></div>
 
 
@@ -138,7 +144,7 @@
 <span class="sd">        Args:</span>
 <span class="sd">            qubits: Qubits on which the second quantized operators act.</span>
 <span class="sd">            spin: The spin of the second quantized operators. Either ``&#39;u&#39;`` or ``&#39;d&#39;``.</span>
-<span class="sd">            factor: Multiplication factor of the operators for easy gate construction.</span>
+<span class="sd">            factor: Multiplication factor of the operators for simpler gate construction.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">qubits</span> <span class="o">=</span> <span class="n">qubits</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">n_qubits</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">qubits</span><span class="p">)</span>
@@ -149,14 +155,21 @@
             <span class="n">z_chain</span> <span class="o">=</span> <span class="p">[</span><span class="n">cirq</span><span class="o">.</span><span class="n">Z</span><span class="p">(</span><span class="n">qubits</span><span class="p">[</span><span class="n">j</span><span class="p">])</span> <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">i</span> <span class="o">+</span> <span class="p">(</span><span class="n">spin</span> <span class="o">==</span> <span class="s1">&#39;d&#39;</span><span class="p">))]</span>
             <span class="n">pauli_string_x</span> <span class="o">=</span> <span class="n">cirq</span><span class="o">.</span><span class="n">PauliString</span><span class="p">(</span><span class="n">z_chain</span> <span class="o">+</span> <span class="p">[</span><span class="n">cirq</span><span class="o">.</span><span class="n">X</span><span class="p">(</span><span class="n">qubits</span><span class="p">[</span><span class="mi">2</span> <span class="o">*</span> <span class="n">i</span> <span class="o">+</span> <span class="p">(</span><span class="n">spin</span> <span class="o">==</span> <span class="s1">&#39;d&#39;</span><span class="p">)])])</span>
             <span class="n">pauli_string_y</span> <span class="o">=</span> <span class="n">cirq</span><span class="o">.</span><span class="n">PauliString</span><span class="p">(</span><span class="n">z_chain</span> <span class="o">+</span> <span class="p">[</span><span class="n">cirq</span><span class="o">.</span><span class="n">Y</span><span class="p">(</span><span class="n">qubits</span><span class="p">[</span><span class="mi">2</span> <span class="o">*</span> <span class="n">i</span> <span class="o">+</span> <span class="p">(</span><span class="n">spin</span> <span class="o">==</span> <span class="s1">&#39;d&#39;</span><span class="p">)])])</span>
-            <span class="c1"># print(&#39;pauli_string_x =&#39;, pauli_string_x.dense(self.qubits))</span>
-            <span class="c1"># print(&#39;pauli_string_y =&#39;, pauli_string_y.dense(self.qubits))</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">pauli_strings</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">factor</span> <span class="o">*</span> <span class="n">pauli_string_x</span><span class="p">)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">pauli_strings</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">factor</span> <span class="o">*</span> <span class="mi">1</span><span class="n">j</span> <span class="o">*</span> <span class="n">pauli_string_y</span><span class="p">)</span>
 
-<div class="viewcode-block" id="SecondQuantizedOperators.transform"><a class="viewcode-back" href="../../../fd_greens.cirq_ver.operators.html#fd_greens.cirq_ver.operators.SecondQuantizedOperators.transform">[docs]</a>    <span class="k">def</span> <span class="nf">transform</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">method_indices_pairs</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">int</span><span class="p">]])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Transforms the second quantized operators with Z2 symmetries and qubit tapering.&quot;&quot;&quot;</span>
-        <span class="n">tapered_state</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">*</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n_qubits</span> <span class="o">//</span> <span class="mi">2</span><span class="p">)</span> <span class="c1"># XXX: Is n_qubits // 2 correct?</span>
+<div class="viewcode-block" id="SecondQuantizedOperators.transform"><a class="viewcode-back" href="../../../fd_greens.cirq_ver.operators.html#fd_greens.cirq_ver.operators.SecondQuantizedOperators.transform">[docs]</a>    <span class="k">def</span> <span class="nf">transform</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">method_indices_pairs</span><span class="p">:</span> <span class="n">MethodIndicesPairs</span><span class="p">,</span> <span class="n">tapered_state</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Transforms the second quantized operators with Z2 symmetries and qubit tapering.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            method_indices_pairs: A dictionary of methods and the corresponding indices.</span>
+<span class="sd">                Each method must be one of ``&#39;cnot&#39;``, ``&#39;swap``, ``&#39;taper&#39;``.</span>
+<span class="sd">            tapered_state: A sequence of 0 and 1 indicating the states on the tapered qubits.</span>
+<span class="sd">                Defaults to 1 on all qubits.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">n_tapered</span> <span class="o">=</span> <span class="n">method_indices_pairs</span><span class="o">.</span><span class="n">n_tapered</span>
+        <span class="k">if</span> <span class="n">tapered_state</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">tapered_state</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_tapered</span>
         <span class="n">OperatorsBase</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">method_indices_pairs</span><span class="p">,</span> <span class="n">tapered_state</span><span class="o">=</span><span class="n">tapered_state</span><span class="p">)</span></div></div>
 
 <div class="viewcode-block" id="ChargeOperators"><a class="viewcode-back" href="../../../fd_greens.cirq_ver.operators.html#fd_greens.cirq_ver.operators.ChargeOperators">[docs]</a><span class="k">class</span> <span class="nc">ChargeOperators</span><span class="p">(</span><span class="n">OperatorsBase</span><span class="p">):</span>
@@ -174,15 +187,23 @@
 
         <span class="bp">self</span><span class="o">.</span><span class="n">pauli_strings</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n_qubits</span><span class="p">):</span>
-            <span class="n">pauli_string_i</span> <span class="o">=</span> <span class="n">cirq</span><span class="o">.</span><span class="n">PauliString</span><span class="p">()</span>
-            <span class="n">pauli_string_z</span> <span class="o">=</span> <span class="n">cirq</span><span class="o">.</span><span class="n">PauliString</span><span class="p">(</span><span class="n">cirq</span><span class="o">.</span><span class="n">Z</span><span class="p">(</span><span class="n">qubits</span><span class="p">[</span><span class="n">i</span><span class="p">]))</span>
+            <span class="n">pauli_string_i</span> <span class="o">=</span> <span class="n">cirq</span><span class="o">.</span><span class="n">PauliString</span><span class="p">([</span><span class="n">cirq</span><span class="o">.</span><span class="n">Z</span><span class="p">(</span><span class="n">qubits</span><span class="p">[</span><span class="n">j</span><span class="p">])</span> <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">i</span><span class="p">)])</span>
+            <span class="n">pauli_string_z</span> <span class="o">=</span> <span class="n">cirq</span><span class="o">.</span><span class="n">PauliString</span><span class="p">([</span><span class="n">cirq</span><span class="o">.</span><span class="n">Z</span><span class="p">(</span><span class="n">qubits</span><span class="p">[</span><span class="n">j</span><span class="p">])</span> <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)])</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">pauli_strings</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">pauli_string_i</span><span class="p">)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">pauli_strings</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">pauli_string_z</span><span class="p">)</span>
 
-<div class="viewcode-block" id="ChargeOperators.transform"><a class="viewcode-back" href="../../../fd_greens.cirq_ver.operators.html#fd_greens.cirq_ver.operators.ChargeOperators.transform">[docs]</a>    <span class="k">def</span> <span class="nf">transform</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">method_indices_pairs</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">int</span><span class="p">]])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Transforms the charge operators with Z2 symmetries and qubit tapering.&quot;&quot;&quot;</span>
-        <span class="n">tapered_state</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">*</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n_qubits</span> <span class="o">//</span> <span class="mi">2</span><span class="p">)</span> <span class="c1"># XXX: Is n_qubits // 2 correct?</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">n_tapered</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">tapered_state</span><span class="p">)</span>
+<div class="viewcode-block" id="ChargeOperators.transform"><a class="viewcode-back" href="../../../fd_greens.cirq_ver.operators.html#fd_greens.cirq_ver.operators.ChargeOperators.transform">[docs]</a>    <span class="k">def</span> <span class="nf">transform</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">method_indices_pairs</span><span class="p">:</span> <span class="n">MethodIndicesPairs</span><span class="p">,</span> <span class="n">tapered_state</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Transforms the charge operators with Z2 symmetries and qubit tapering.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            method_indices_pairs: A dictionary of methods and the corresponding indices.</span>
+<span class="sd">                Each method must be one of ``&#39;cnot&#39;``, ``&#39;swap``, ``&#39;taper&#39;``.</span>
+<span class="sd">            tapered_state: A sequence of 0 and 1 indicating the states on the tapered qubits.</span>
+<span class="sd">                Defaults to 1 on all qubits.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">n_tapered</span> <span class="o">=</span> <span class="n">method_indices_pairs</span><span class="o">.</span><span class="n">n_tapered</span>
+        <span class="k">if</span> <span class="n">tapered_state</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">tapered_state</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_tapered</span>
         <span class="n">OperatorsBase</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">method_indices_pairs</span><span class="p">,</span> <span class="n">tapered_state</span><span class="o">=</span><span class="n">tapered_state</span><span class="p">)</span></div></div>
 </pre></div>
 
