@@ -60,12 +60,12 @@ class QubitIndices:
     def expand(self, array: np.ndarray) -> np.ndarray:
         """Expands a 1D or 2D array by the qubit indices."""
         if len(array.shape) == 1:
-            print("Expand 1d array")
+            # print("Expand 1d array")
             array_new = np.zeros((2 ** self.n_qubits,), dtype=complex)
-            print(f'{self.int = }')
+            # print(f'{self.int = }')
             array_new[self.int] = array
         elif len(array.shape) == 2:
-            print("Expand 2d array")
+            # print("Expand 2d array")
             array_new = np.zeros((2 ** self.n_qubits, 2 ** self.n_qubits), dtype=complex)
             array_new[np.repeat(self.int, self.n_qubits), self.int * self.n_qubits] = array.flatten()
         else:

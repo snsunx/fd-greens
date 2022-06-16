@@ -5,7 +5,7 @@ Helpers (:mod:`fd_greens.helpers`)
 """
 
 import os
-from typing import Sequence, Optional
+from typing import Sequence, List, Optional
 from itertools import product
 
 import cirq
@@ -13,6 +13,30 @@ import h5py
 import numpy as np
 import matplotlib.pyplot as plt
 
+
+def get_circuit_labels(n_orbitals: int, mode: str = 'greens', spin: str = '') -> List[str]:
+    """Returns the circuit labels of a """
+    assert mode in ['greens', 'resp']
+    if mode == 'greens':
+        assert spin in ['u', 'd']
+    else:
+        assert spin == ''
+
+    orbital_labels = [str(i) for i in range(n_orbitals)]
+
+    if mode == 'greens':
+        orbital_labels = [str(i) for i in range(n_orbitals)]
+    elif mode == 'resp':
+        orbital_labels = list(product(range(n_orbitals), ['u', 'd']))
+        orbital_labels = [f'{x[0]}{x[1]}' for x in orbital_labels]
+
+    circuit_labels = []
+    for i in range(len(orbital_labels)):
+        circuit_labels.append(f'circ{orbital_labels[i]}{spin}')
+        for j in range(i + 1, len(orbital_labels)):
+            circuit_labels.append(f'circ{orbital_labels[i]}{orbital_labels[j]}{spin}')
+    
+    return circuit_labels
 
 def initialize_hdf5(
     fname: str = 'lih',
@@ -45,8 +69,7 @@ def initialize_hdf5(
         orbital_labels = list(product(range(n_orbitals), ['u', 'd']))
         orbital_labels = [f'{x[0]}{x[1]}' for x in orbital_labels]
 
-    print(f'{orbital_labels}')
-
+    # TODO: group_names should be constructed from get_circuit_labels.
     group_names = ['gs', 'es', 'amp']
     for i in range(len(orbital_labels)):
         group_names.append(f'circ{orbital_labels[i]}{spin}')
@@ -64,7 +87,7 @@ def initialize_hdf5(
         if create_datasets and group_name not in ['gs', 'es', 'amp']:
             tomography_labels = [''.join(x) for x in product('xyz', repeat=2)]
             for tomography_label in tomography_labels:
-                print(f'{group_name}/{tomography_label}')
+                print(f'Creating {group_name}/{tomography_label}')
                 h5file.create_dataset(f'{group_name}/{tomography_label}', data='')
     
     h5file.close()
@@ -98,7 +121,7 @@ def plot_spectral_function(
     if labels is None:
         labels = [s[1:] for s in suffixes]
     if linestyles is None:
-        linestyles = [None] * n_curves
+        linestyles = [{}] * n_curves
 
     plt.clf()
     fig, ax = plt.subplots()
@@ -150,13 +173,13 @@ def plot_trace_self_energy(
     if labels is None:
         labels = [s[1:] for s in suffixes]
     if linestyles is None:
-        linestyles = [None] * n_curves
+        linestyles = [{}] * n_curves
 
     plt.clf()
     fig, ax = plt.subplots()
     # for h5fname, suffix, label, linestyle in zip(h5fnames, suffixes, labels, linestyles):
     for i in range(n_curves // 2):
-        omegas, real, imag = np.loadtxt(f"data/{h5fnames[i]}{suffixes[i]}_TrS.dat").T
+        omegas, real, imag = np.loadtxt(f"data/{h5fnames[i]}{suffixes[i]}_TrSigma.dat").T
         ax.plot(omegas, real, label=labels[i] + " (real)", **linestyles[2 * i])
         ax.plot(omegas, imag, label=labels[i] + " (imag)", **linestyles[2 * i + 1])
     ax.set_xlabel("$\omega$ (eV)")
@@ -203,29 +226,28 @@ def plot_response_function(
     if labels is None:
         labels = [s[1:] for s in suffixes]
     if linestyles is None:
-        linestyles = [None] * n_curves
+        linestyles = [{}] * n_curves
 
-    plt.clf()
-    fig, ax = plt.subplots()
     # for h5fname, suffix, label, linestyle in zip(h5fnames, suffixes, labels, linestyles):
-    for i in range(n_curves // 2):
-        omegas, real, imag = np.loadtxt(
-            f"data/{h5fnames[i]}{suffixes[i]}_chi{circ_label}.dat"
-        ).T
-        ax.plot(omegas, real, label=labels[i] + " (real)", **linestyles[2 * i])
-        ax.plot(omegas, imag, label=labels[i] + " (imag)", **linestyles[2 * i + 1])
-    ax.set_xlabel("$\omega$ (eV)")
-    ax.set_ylabel("$\chi_{" + circ_label + "}$ (eV$^{-1}$)")
-    if text == "legend":
-        ax.legend()
-    elif text == "annotation":
-        # for kwargs in annotations:
-        for i in range(n_curves):
-            ax.text(**annotations[i], transform=ax.transAxes)
+    for circ_label in ['00', '01', '10', '11']:
+        plt.clf()
+        fig, ax = plt.subplots()
+        for i in range(n_curves // 2):
+            omegas, real, imag = np.loadtxt(f"data/{h5fnames[i]}{suffixes[i]}_chi{circ_label}.dat").T
+            ax.plot(omegas, real, label=labels[i] + " (real)", **linestyles[2 * i])
+            ax.plot(omegas, imag, label=labels[i] + " (imag)", **linestyles[2 * i + 1])
+        ax.set_xlabel("$\omega$ (eV)")
+        ax.set_ylabel("$\chi_{" + circ_label + "}$ (eV$^{-1}$)")
+        if text == "legend":
+            ax.legend()
+        elif text == "annotation":
+            # for kwargs in annotations:
+            for i in range(n_curves):
+                ax.text(**annotations[i], transform=ax.transAxes)
 
-    if not os.path.exists("figs"):
-        os.makedirs("figs")
-    fig.savefig(f"figs/{figname}{circ_label}.png", dpi=300, bbox_inches="tight")
+        if not os.path.exists("figs"):
+            os.makedirs("figs")
+        fig.savefig(f"figs/{figname}{circ_label}.png", dpi=300, bbox_inches="tight")
 
 plot_chi = plot_response_function
 

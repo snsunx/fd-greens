@@ -25,6 +25,23 @@ CSD_IN_ITOFFOLI_ON_45 = False
 # Whether to check original and transpiled circuits are equal. Should be set to True.
 CHECK_CIRCUITS = True
 
+# Linestyles for spectral function, trace of self-energy and response function.
+linestyles_A = [{}, {"ls": "--", "marker": "x", "markevery": 30}]
+linestyles_TrSigma = [
+    {"color": "xkcd:red"},
+    {"color": "xkcd:blue"},
+    {"ls": "--", "marker": "x", "markevery": 100, "color": "xkcd:rose pink"},
+    {"ls": "--", "marker": "x", "markevery": 100, "color": "xkcd:azure"},
+]
+linestyles_chi = [
+    {"color": "xkcd:red"},
+    {"color": "xkcd:blue"},
+    {"ls": "--", "marker": "x", "markevery": 100, "color": "xkcd:rose pink"},
+    {"ls": "--", "marker": "x", "markevery": 100, "color": "xkcd:azure"},
+]
+
+
+
 @dataclass
 class MethodIndicesPairs:
     """Method indices pairs used in Z2 symmetry conversion."""

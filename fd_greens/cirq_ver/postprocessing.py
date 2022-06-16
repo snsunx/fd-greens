@@ -9,9 +9,11 @@ from typing import Optional
 from itertools import product
 
 import numpy as np
+from deprecated import deprecated
 
 from .utilities import histogram_to_array, reverse_qubit_order
 
+@deprecated
 def restrict_to_qubit_subspace(
     arr: np.ndarray, circ_label: Optional[str] = None, reverse: bool = True
 ) -> np.ndarray:
@@ -93,7 +95,7 @@ def process_bitstring_counts(
     else:
         return array
 
-
+@deprecated
 def process_berkeley_results(
     h5fname: str, circ_label: str, tomo_label: str, counts_name: str
 ) -> None:
@@ -116,7 +118,7 @@ def process_berkeley_results(
     counts_exp_proc = restrict_to_qubit_subspace(counts_exp, circ_label=circ_label)
     dset.attrs[f"{counts_name}_exp_proc"] = counts_exp_proc
 
-
+@deprecated
 def compute_tvd(h5fname: str, circ_label: str, counts_name: str) -> float:
     """Calculates the average total variational distance (TVD) of a circuit.
     

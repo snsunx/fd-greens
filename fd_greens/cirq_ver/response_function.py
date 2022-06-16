@@ -191,7 +191,7 @@ class ResponseFunction:
             chis_all: A dictionary from orbital strings to the corresponding charge-charge response functions.
         """
         # Sum over spins in N
-        N_summed = self.N.reshape((self.n_orbitals, 2, self.n_orbitals, 2)).sum((1, 3))
+        N_summed = self.N['n'].reshape((self.n_orbitals, 2, self.n_orbitals, 2, 3)).sum((1, 3))
 
         chis_all = dict()
         for i in range(self.n_orbitals):
