@@ -198,6 +198,7 @@ class CircuitStringConverter:
                     if qtrl_string == 'TOF/C4C6T5':
                         adjustments.append((i_moment, ['Q5/Z-20.67']))
                         adjustments.append((i_moment + 1, ['Q5/Z20.67']))
+                        adjustments.append((i_moment + 1, ['CP/C7T6']))
                 
                 strings_moment.append(qtrl_string)
             

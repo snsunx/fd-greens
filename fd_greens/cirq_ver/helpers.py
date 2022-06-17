@@ -93,11 +93,12 @@ def initialize_hdf5(
     h5file.close()
 
 def plot_spectral_function(
-    h5fnames: Sequence[str],
+    fnames: Sequence[str],
     suffixes: Sequence[str],
     labels: Sequence[str] = None,
     annotations: Optional[Sequence[dict]] = None,
     linestyles: Optional[Sequence[dict]] = None,
+    dirname: str = "figs",
     figname: str = "A",
     text: Optional[str] = None,
     n_curves: Optional[int] = None,
@@ -105,7 +106,7 @@ def plot_spectral_function(
     """Plots the spectral function.
     
     Args:
-        h5fnames: Names of the HDF5 files from which the curves are generated.
+        fnames: Names of the HDF5 files from which the curves are generated.
         suffixes: Suffixes of the curves.
         labels: Legend labels of the curves.
         annotations: Annotation options to be passed into ax.text.
@@ -117,7 +118,7 @@ def plot_spectral_function(
     assert text in [None, "legend", "annotation"]
 
     if n_curves is None:
-        n_curves = max(len(h5fnames), len(suffixes))
+        n_curves = max(len(fnames), len(suffixes))
     if labels is None:
         labels = [s[1:] for s in suffixes]
     if linestyles is None:
@@ -125,9 +126,9 @@ def plot_spectral_function(
 
     plt.clf()
     fig, ax = plt.subplots()
-    # for h5fname, suffix, label, linestyle in zip(h5fnames, suffixes, labels, linestyles):
+    # for h5fname, suffix, label, linestyle in zip(fnames, suffixes, labels, linestyles):
     for i in range(n_curves):
-        omegas, As = np.loadtxt(f"data/{h5fnames[i]}{suffixes[i]}_A.dat").T
+        omegas, As = np.loadtxt(f"data/{fnames[i]}{suffixes[i]}_A.dat").T
         ax.plot(omegas, As, label=labels[i], **linestyles[i])
     ax.set_xlabel("$\omega$ (eV)")
     ax.set_ylabel("$A$ (eV$^{-1}$)")
@@ -137,19 +138,20 @@ def plot_spectral_function(
         for i in range(n_curves):
             ax.text(**annotations[i], transform=ax.transAxes)
 
-    if not os.path.exists("figs"):
-        os.makedirs("figs")
-    fig.savefig(f"figs/{figname}.png", dpi=300, bbox_inches="tight")
+    if not os.path.exists(dirname):
+        os.makedirs(dirname)
+    fig.savefig(f"{dirname}/{figname}.png", dpi=300, bbox_inches="tight")
 
 plot_A = plot_spectral_function
 
 
 def plot_trace_self_energy(
-    h5fnames: Sequence[str],
+    fnames: Sequence[str],
     suffixes: Sequence[str],
     labels: Optional[Sequence[str]] = None,
     annotations: Optional[Sequence[str]] = None,
-    figname: str = "TrS",
+    dirname: str = "figs",
+    figname: str = "TrSigma",
     linestyles: Optional[Sequence[dict]] = None,
     text: str = None,
     n_curves: Optional[int] = None,
@@ -157,7 +159,7 @@ def plot_trace_self_energy(
     """Plots the trace of the self-energy.
     
     Args:
-        h5fnames: Names of the HDF5 files from which the curves are generated.
+        fnames: Names of the HDF5 files from which the curves are generated.
         suffixes: Suffixes of the curves.
         labels: Legend labels of the curves.
         annotations: Annotation options to be passed into ax.text.
@@ -169,7 +171,7 @@ def plot_trace_self_energy(
     assert text in [None, "legend", "annotation"]
 
     if n_curves is None:
-        n_curves = 2 * max(len(h5fnames), len(suffixes))
+        n_curves = 2 * max(len(fnames), len(suffixes))
     if labels is None:
         labels = [s[1:] for s in suffixes]
     if linestyles is None:
@@ -177,9 +179,9 @@ def plot_trace_self_energy(
 
     plt.clf()
     fig, ax = plt.subplots()
-    # for h5fname, suffix, label, linestyle in zip(h5fnames, suffixes, labels, linestyles):
+    # for h5fname, suffix, label, linestyle in zip(fnames, suffixes, labels, linestyles):
     for i in range(n_curves // 2):
-        omegas, real, imag = np.loadtxt(f"data/{h5fnames[i]}{suffixes[i]}_TrSigma.dat").T
+        omegas, real, imag = np.loadtxt(f"data/{fnames[i]}{suffixes[i]}_TrSigma.dat").T
         ax.plot(omegas, real, label=labels[i] + " (real)", **linestyles[2 * i])
         ax.plot(omegas, imag, label=labels[i] + " (imag)", **linestyles[2 * i + 1])
     ax.set_xlabel("$\omega$ (eV)")
@@ -190,18 +192,19 @@ def plot_trace_self_energy(
         for i in range(n_curves):
             ax.text(**annotations[i], transform=ax.transAxes)
 
-    if not os.path.exists("figs"):
-        os.makedirs("figs")
-    fig.savefig(f"figs/{figname}.png", dpi=300, bbox_inches="tight")
+    if not os.path.exists(dirname):
+        os.makedirs(dirname)
+    fig.savefig(f"{dirname}/{figname}.png", dpi=300, bbox_inches="tight")
 
 plot_TrS = plot_trace_self_energy
 
 
 def plot_response_function(
-    h5fnames: Sequence[str],
+    fnames: Sequence[str],
     suffixes: Sequence[str],
     labels: Optional[Sequence[str]] = None,
     annotations: Optional[Sequence[str]] = None,
+    dirname: str = "figs",
     figname: str = "chi",
     circ_label: str = "00",
     linestyles: Sequence[dict] = None,
@@ -211,7 +214,7 @@ def plot_response_function(
     """Plots the charge-charge response function.
 
     Args:
-        h5fnames: Names of the HDF5 files from which the curves are generated.
+        fnames: Names of the HDF5 files from which the curves are generated.
         suffixes: Suffixes of the curves.
         labels: Legend labels of the curves.
         annotations: Annotation options to be passed into ax.text.
@@ -222,18 +225,18 @@ def plot_response_function(
         n_curves: Number of curves.
     """
     if n_curves is None:
-        n_curves = 2 * max(len(h5fnames), len(suffixes))
+        n_curves = 2 * max(len(fnames), len(suffixes))
     if labels is None:
         labels = [s[1:] for s in suffixes]
     if linestyles is None:
         linestyles = [{}] * n_curves
 
-    # for h5fname, suffix, label, linestyle in zip(h5fnames, suffixes, labels, linestyles):
+    # for h5fname, suffix, label, linestyle in zip(fnames, suffixes, labels, linestyles):
     for circ_label in ['00', '01', '10', '11']:
         plt.clf()
         fig, ax = plt.subplots()
         for i in range(n_curves // 2):
-            omegas, real, imag = np.loadtxt(f"data/{h5fnames[i]}{suffixes[i]}_chi{circ_label}.dat").T
+            omegas, real, imag = np.loadtxt(f"data/{fnames[i]}{suffixes[i]}_chi{circ_label}.dat").T
             ax.plot(omegas, real, label=labels[i] + " (real)", **linestyles[2 * i])
             ax.plot(omegas, imag, label=labels[i] + " (imag)", **linestyles[2 * i + 1])
         ax.set_xlabel("$\omega$ (eV)")
@@ -245,9 +248,9 @@ def plot_response_function(
             for i in range(n_curves):
                 ax.text(**annotations[i], transform=ax.transAxes)
 
-        if not os.path.exists("figs"):
-            os.makedirs("figs")
-        fig.savefig(f"figs/{figname}{circ_label}.png", dpi=300, bbox_inches="tight")
+        if not os.path.exists(dirname):
+            os.makedirs(dirname)
+        fig.savefig(f"{dirname}/{figname}{circ_label}.png", dpi=300, bbox_inches="tight")
 
 plot_chi = plot_response_function
 
