@@ -4,6 +4,7 @@ Utilities (:mod:`fd_greens.utilities`)
 ======================================
 """
 
+import re
 from itertools import product
 from typing import Optional, Callable, Union, List
 
@@ -175,6 +176,27 @@ def get_circuit_depth(circuit: cirq.Circuit) -> int:
             continue
         depth += 1
     return depth
+
+def get_non_z_locations(circuit: Union[cirq.Circuit, List[List[str]]]) -> List[int]:
+    """Returns the non-Z locations of a circuit.
+    
+    Args:
+        circuit: A circuit in either Cirq circuit form or Qtrl strings form.
+        
+    Returns:
+        locations: A list of integers indicating the non-Z locations.
+    """
+    locations = []
+    for i, moment in enumerate(circuit):
+        if isinstance(moment, cirq.Moment):
+            is_z_gates = [isinstance(op.gate, cirq.ZPowGate) for op in moment]
+        else:
+            is_z_gates = [re.findall('Q\d/Z.+', s) != [] for s in moment]
+         
+        if not all(is_z_gates):
+            locations.append(i)
+    
+    return locations
 
 def print_circuit_statistics(circuit: cirq.Circuit) -> None:
     """Prints out circuit statistics.

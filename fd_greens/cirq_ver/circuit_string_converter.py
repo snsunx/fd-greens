@@ -13,7 +13,7 @@ import cirq
 
 from .transpilation import C0C0iXGate
 from .utilities import get_gate_counts
-from .parameters import CHECK_CIRCUITS, ADJUST_CS_CSD_GATES, WRAP_Z_AROUND_ITOFFOLI
+from .parameters import CHECK_CIRCUITS, ADJUST_CS_CSD_GATES, WRAP_Z_AROUND_ITOFFOLI, ITOFFOLI_Z_ANGLE
 
 
 class CircuitStringConverter:
@@ -58,6 +58,8 @@ class CircuitStringConverter:
                 gate = cirq.CZPowGate(exponent=0.5)
             elif gstring == "CSD":
                 gate = cirq.CZPowGate(exponent=-0.5)
+            elif gstring == "CP":
+                gate = cirq.I
             elif gstring == "TOF":
                 gate = C0C0iXGate()
             elif gstring == "SWAP":
@@ -70,7 +72,10 @@ class CircuitStringConverter:
             if gate_name == "X":
                 gate = cirq.XPowGate(exponent=exponent)
             elif gate_name == "Z":
-                gate = cirq.ZPowGate(exponent=exponent)
+                if abs(abs(exponent) - ITOFFOLI_Z_ANGLE / 180.0) < 1e-8:
+                    gate = cirq.I
+                else:
+                    gate = cirq.ZPowGate(exponent=exponent)
             else:
                 raise NotImplementedError(f"Parametrized gate can only be X or Z. Got {gate_name}.")
         return gate
@@ -139,10 +144,15 @@ class CircuitStringConverter:
                     qstring, gstring = string.split("/")
                 else:  # multi-qubit gate
                     gstring, qstring = string.split("/")
+                
                 qubits = self._qstring_to_qubits(qstring)
                 gate = self._gstring_to_gate(gstring)
-                ops_moment.append(gate(*qubits))
-            circuit.append(cirq.Moment(ops_moment))
+                # print(f"{gate = }")
+                if gate != cirq.I: # Z and CP around iToffoli
+                    ops_moment.append(gate(*qubits))
+            
+            if ops_moment != []:
+                circuit.append(cirq.Moment(ops_moment))
 
         return circuit
 
@@ -196,8 +206,8 @@ class CircuitStringConverter:
                 
                 if WRAP_Z_AROUND_ITOFFOLI:
                     if qtrl_string == 'TOF/C4C6T5':
-                        adjustments.append((i_moment, ['Q5/Z-20.67']))
-                        adjustments.append((i_moment + 1, ['Q5/Z20.67']))
+                        adjustments.append((i_moment, [f'Q5/Z-{ITOFFOLI_Z_ANGLE}']))
+                        adjustments.append((i_moment + 1, [f'Q5/Z{ITOFFOLI_Z_ANGLE}']))
                         adjustments.append((i_moment + 1, ['CP/C7T6']))
                 
                 strings_moment.append(qtrl_string)

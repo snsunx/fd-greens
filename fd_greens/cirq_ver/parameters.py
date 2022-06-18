@@ -18,6 +18,7 @@ ADJUST_CS_CSD_GATES = True
 
 # Whether to wrap Z rotation gates around iToffoli for hardware runs. Should be set to True.
 WRAP_Z_AROUND_ITOFFOLI = True
+ITOFFOLI_Z_ANGLE = 20.67
 
 # Whether to force putting CS dagger gates on qubits 4 and 5. Should be set to False.
 CSD_IN_ITOFFOLI_ON_45 = False
