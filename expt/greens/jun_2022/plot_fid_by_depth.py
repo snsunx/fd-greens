@@ -13,15 +13,17 @@ from fd_greens import histogram_to_array, CircuitStringConverter
 from fd_greens.cirq_ver.postprocessing import process_bitstring_counts
 from fd_greens.cirq_ver.utilities import get_non_z_locations
 
+from fd_greens.cirq_ver.helpers import get_tomography_labels, plot_fidelity_by_depth
+
 
 def plot_fid_by_depth(run_id):
 
     qubits = cirq.LineQubit.range(4)
     converter = CircuitStringConverter(qubits)
 
-    pkl_data = pickle.load(open(f'greens_3A_run0613_{run_id}.pkl', 'rb'))
-    circuit_expt = pkl_data[f'circ01d_by_depth']['circs'][-1]
-    results_expt = pkl_data[f'circ01d_by_depth']['results']
+    pkl_data = pickle.load(open(f'greens_3A_run0616_{run_id}.pkl', 'rb'))
+    circuit_expt = pkl_data[f'circ01dzz_by_depth']['circs'][-1]
+    results_expt = pkl_data[f'circ01dzz_by_depth']['results']
 
     with h5py.File('lih_3A_sim.h5', 'r') as h5file:
         qtrl_strings = json.loads(h5file[f'circ01d/zz'][()])
@@ -71,5 +73,13 @@ def plot_fid_by_depth(run_id):
 
 
 if __name__ == '__main__':
-    for run_id in [0]:
-        plot_fid_by_depth(run_id)
+    pkl_data = pickle.load(open('greens_3A_run0616_0.pkl', 'rb'))
+    print(pkl_data.keys())
+
+    # for run_id in [0, 1, 2, 3]:
+    #     plot_fidelity_by_depth('lih_3A_sim', f'greens_3A_run0613_{run_id}', 'circ01d/zz', 'circ01d', 4, figname=f'fid_by_depth_{run_id}')
+
+    for label in ['xx', 'xy', 'xz', 'zx', 'zy', 'zz']:
+        print(label)
+        print(pkl_data[f'circ01u{label}_by_depth'].keys())
+        plot_fidelity_by_depth('lih_3A_sim', 'greens_3A_run0616_0', f'circ01d/{label}', f'circ01d{label}', 4, figname=f'fid_by_depth_0616_{label}')

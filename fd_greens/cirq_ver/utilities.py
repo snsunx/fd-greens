@@ -177,7 +177,7 @@ def get_circuit_depth(circuit: cirq.Circuit) -> int:
         depth += 1
     return depth
 
-def get_non_z_locations(circuit: Union[cirq.Circuit, List[List[str]]]) -> List[int]:
+def get_non_z_locations(circuit: Union[cirq.Circuit, List[List[str]]], include_last: bool = True) -> List[int]:
     """Returns the non-Z locations of a circuit.
     
     Args:
@@ -191,10 +191,13 @@ def get_non_z_locations(circuit: Union[cirq.Circuit, List[List[str]]]) -> List[i
         if isinstance(moment, cirq.Moment):
             is_z_gates = [isinstance(op.gate, cirq.ZPowGate) for op in moment]
         else:
-            is_z_gates = [re.findall('Q\d/Z.+', s) != [] for s in moment]
+            is_z_gates = [re.findall('Q\d/Z.+', s) != [] or re.findall('CP.+', s) != [] for s in moment]
          
         if not all(is_z_gates):
             locations.append(i)
+
+    if include_last:
+        locations.append(len(circuit) - 1)
     
     return locations
 

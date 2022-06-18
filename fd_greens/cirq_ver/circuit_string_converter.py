@@ -165,7 +165,6 @@ class CircuitStringConverter:
         Returns:
             qtrl_strings: The Qtrl strings corresponding to the Cirq circuit.
         """
-
         qtrl_strings = []
 
         i_moment = 0
@@ -218,9 +217,9 @@ class CircuitStringConverter:
 
         
         # Insert adjustment gates to qtrl_strings.
-        offset = 0
+        moment_offset = 0
         for i, strings_moment in adjustments:
-            qtrl_strings.insert(i + offset, strings_moment)
-            offset += 1
+            qtrl_strings.insert(i + moment_offset, strings_moment)
+            moment_offset += 1
         
         return qtrl_strings

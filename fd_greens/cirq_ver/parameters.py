@@ -26,6 +26,9 @@ CSD_IN_ITOFFOLI_ON_45 = False
 # Whether to check original and transpiled circuits are equal. Should be set to True.
 CHECK_CIRCUITS = True
 
+# Resolution of figures.
+FIGURE_DPI = 250
+
 # Linestyles for spectral function, trace of self-energy and response function.
 linestyles_A = [{}, {"ls": "--", "marker": "x", "markevery": 30}]
 linestyles_TrSigma = [

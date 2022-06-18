@@ -8,28 +8,47 @@ import os
 from typing import Sequence, List, Optional
 from itertools import product
 
+import pickle
+import json
 import cirq
 import h5py
 import numpy as np
 import matplotlib.pyplot as plt
+from fd_greens.cirq_ver.circuit_string_converter import CircuitStringConverter
+from fd_greens.cirq_ver.postprocessing import process_bitstring_counts
+
+from fd_greens.cirq_ver.utilities import get_non_z_locations, histogram_to_array
+
+from .parameters import FIGURE_DPI
 
 
 def get_circuit_labels(n_orbitals: int, mode: str = 'greens', spin: str = '') -> List[str]:
-    """Returns the circuit labels of a """
+    """Returns the circuit labels of a greens or resp calculation.
+    
+    Args:
+        n_orbitals: Number of orbitals.
+        mode: Calculation mode. ``'greens'`` or ``'resp'``.
+        spin: Spin states included in the calculation. If ``'greens'``, ``spin`` must be
+            ``'u'`` or ``'d'``; if ``'resp'``, ``spin`` must be ``''``.
+        
+    Returns:
+        circuit_labels: A list of strings corresponding to the circuit labels.
+    """
     assert mode in ['greens', 'resp']
     if mode == 'greens':
         assert spin in ['u', 'd']
     else:
         assert spin == ''
 
-    orbital_labels = [str(i) for i in range(n_orbitals)]
-
+    # For Green's function, orbital labels are just strings of the orbital indices.
+    # For response function, orbital labels are orbital indices with 'u' or 'd' suffix.
     if mode == 'greens':
         orbital_labels = [str(i) for i in range(n_orbitals)]
     elif mode == 'resp':
         orbital_labels = list(product(range(n_orbitals), ['u', 'd']))
         orbital_labels = [f'{x[0]}{x[1]}' for x in orbital_labels]
 
+    # Circuit labels include diagonal and off-diagonal combinations of orbital labels.
     circuit_labels = []
     for i in range(len(orbital_labels)):
         circuit_labels.append(f'circ{orbital_labels[i]}{spin}')
@@ -37,6 +56,11 @@ def get_circuit_labels(n_orbitals: int, mode: str = 'greens', spin: str = '') ->
             circuit_labels.append(f'circ{orbital_labels[i]}{orbital_labels[j]}{spin}')
     
     return circuit_labels
+
+def get_tomography_labels(n_qubits: int) -> List[str]:
+    """Returns the tomography labels on a certain number of qubits."""
+    tomography_labels = [''.join(x) for x in product('xyz', repeat=n_qubits)]
+    return tomography_labels
 
 def initialize_hdf5(
     fname: str = 'lih',
@@ -63,20 +87,12 @@ def initialize_hdf5(
     else:
         h5file = h5py.File(h5fname, 'w')
 
-    if mode == 'greens':
-        orbital_labels = [str(i) for i in range(n_orbitals)]
-    elif mode == 'resp':
-        orbital_labels = list(product(range(n_orbitals), ['u', 'd']))
-        orbital_labels = [f'{x[0]}{x[1]}' for x in orbital_labels]
-
-    # TODO: group_names should be constructed from get_circuit_labels.
-    group_names = ['gs', 'es', 'amp']
-    for i in range(len(orbital_labels)):
-        group_names.append(f'circ{orbital_labels[i]}{spin}')
-        for j in range(i + 1, len(orbital_labels)):
-            group_names.append(f'circ{orbital_labels[i]}{orbital_labels[j]}{spin}')
+    # Groups contain observable groups and circuit groups.
+    circuit_labels = get_circuit_labels(n_orbitals, mode=mode, spin=spin)
+    group_names = ['gs', 'es', 'amp'] + circuit_labels
 
     for group_name in group_names:
+        # Create the group if it does not exist. If overwrite is set to True then overwrite the group.
         if group_name in h5file.keys():
             if overwrite:
                 del h5file[group_name]
@@ -84,10 +100,11 @@ def initialize_hdf5(
         else:
             h5file.create_group(group_name)
 
+        # Create datasets if create_datasets is set to True.
         if create_datasets and group_name not in ['gs', 'es', 'amp']:
-            tomography_labels = [''.join(x) for x in product('xyz', repeat=2)]
+            tomography_labels = [''.join(x) for x in product('xyz', repeat=2)] # XXX: 2 is hardcoded
             for tomography_label in tomography_labels:
-                print(f'Creating {group_name}/{tomography_label}')
+                print(f'Creating {group_name}/{tomography_label} in {fname}.h5.')
                 h5file.create_dataset(f'{group_name}/{tomography_label}', data='')
     
     h5file.close()
@@ -140,7 +157,7 @@ def plot_spectral_function(
 
     if not os.path.exists(dirname):
         os.makedirs(dirname)
-    fig.savefig(f"{dirname}/{figname}.png", dpi=300, bbox_inches="tight")
+    fig.savefig(f"{dirname}/{figname}.png", dpi=FIGURE_DPI, bbox_inches="tight")
 
 plot_A = plot_spectral_function
 
@@ -194,7 +211,7 @@ def plot_trace_self_energy(
 
     if not os.path.exists(dirname):
         os.makedirs(dirname)
-    fig.savefig(f"{dirname}/{figname}.png", dpi=300, bbox_inches="tight")
+    fig.savefig(f"{dirname}/{figname}.png", dpi=FIGURE_DPI, bbox_inches="tight")
 
 plot_TrS = plot_trace_self_energy
 
@@ -250,7 +267,7 @@ def plot_response_function(
 
         if not os.path.exists(dirname):
             os.makedirs(dirname)
-        fig.savefig(f"{dirname}/{figname}{circ_label}.png", dpi=300, bbox_inches="tight")
+        fig.savefig(f"{dirname}/{figname}{circ_label}.png", dpi=FIGURE_DPI, bbox_inches="tight")
 
 plot_chi = plot_response_function
 
@@ -308,8 +325,101 @@ def plot_counts(
     if not os.path.exists(dirname):
         os.makedirs(dirname)
     fig.set_facecolor('white')
-    fig.savefig(f"{dirname}/counts_{dset_name_sim.replace('/', '_')}.png", dpi=300, bbox_inches="tight")
+    fig.savefig(f"{dirname}/counts_{dset_name_sim.replace('/', '_')}.png", dpi=FIGURE_DPI, bbox_inches="tight")
     plt.close(fig)
+
+def plot_fidelity_by_depth(
+    fname_sim: str,
+    fname_expt: str,
+    circ_name_sim: str,
+    circ_name_expt: str,
+    n_qubits: int,
+    pad_zero: Optional[str] = None,
+    dirname: str = 'fid_by_depth',
+    figname: str = 'fid_by_depth',
+    repetitions: int = 5000,
+    mark_itoffoli: bool = False,
+) -> None:
+    """Plots the fidelity between simulated and experimental circuits vs circuit depth."""
+    # If pad_zero not given, can deduce from n_qubits. For 3-qubit circuits, 
+    # assume the experiments are run on Q4, Q5, Q6.
+    if pad_zero is None:
+        if n_qubits == 3:
+            pad_zero = 'end'
+        elif n_qubits == 4:
+            pad_zero = ''
+
+    # Create the qubits and circuit string converter.
+    qubits = cirq.LineQubit.range(n_qubits)
+    converter = CircuitStringConverter(qubits)
+
+    # Load simulation circuit.
+    with h5py.File(fname_sim + '.h5', 'r') as h5file:
+        qtrl_strings = json.loads(h5file[circ_name_sim][()])
+    
+    circuit_sim = converter.convert_strings_to_circuit(qtrl_strings)
+    non_z_locations_sim = get_non_z_locations(circuit_sim)
+    # print(f'{len(circuit_sim) = }')
+
+    # Load experimental circuit and data.
+    pkl_data = pickle.load(open(fname_expt + '.pkl', 'rb'))
+    circuit_expt = pkl_data[circ_name_expt + '_by_depth']['circs'][-1]
+    del_inds = []
+    for i, x in enumerate(circuit_expt[:-1]):
+        if circuit_expt[i] == ['CZ/C7T6'] and circuit_expt[i + 1] == ['CZ/C5T4']:
+            circuit_expt[i] = ['CZ/C7T6', 'CZ/C5T4']
+            del_inds.append(i + 1)
+    circuit_expt = [circuit_expt[i] for i in range(len(circuit_expt)) if i not in del_inds]
+    results_expt = pkl_data[circ_name_expt + '_by_depth']['results']
+    print(f'{len(circuit_expt) = }')
+    print(f'{len(results_expt) = }')
+    non_z_locations_expt = get_non_z_locations(circuit_expt)
+
+    for i, (a, b) in enumerate(zip(qtrl_strings, circuit_expt)):
+        if qtrl_strings[i] != circuit_expt[i]:
+            print(i)
+            print(qtrl_strings[i])
+            print(circuit_expt[i])
+            print('-')
+
+    if len(non_z_locations_sim) != len(non_z_locations_expt):
+        print(f'{len(non_z_locations_sim)} != {len(non_z_locations_expt)}')
+    
+    fidelities = []
+    locations_itoffoli = []
+    for i, (i_sim, i_expt) in enumerate(zip(non_z_locations_sim[:45], non_z_locations_expt[:45])):
+        print(i, i_sim, i_expt)
+        # If mark_toffoli set to True, obtain the locations of iToffoli gates in natural running indices.
+        if mark_itoffoli:
+            moment = circuit_sim[i_sim]
+            if len(moment) == 1 and moment.operations[0].gate.num_qubits() == 3:
+                locations_itoffoli.append(i)
+
+        # Compute the simultated bitstring count.
+        circuit_moment = circuit_sim[:i_sim + 1]
+        circuit_moment += [cirq.measure(q) for q in qubits]
+        result_moment = cirq.Simulator().run(circuit_moment, repetitions=repetitions)
+        histogram = result_moment.multi_measurement_histogram(keys=[str(i) for i in range(n_qubits)])
+        array_sim = histogram_to_array(histogram)
+
+        # Obtain the array of the experimental bitstring counts.
+        array_expt = process_bitstring_counts(results_expt[i_expt], pad_zero=pad_zero)
+        
+        # Compute the fidelity (1 - TVD).
+        fidelity = 1 - np.sum(np.abs(array_sim - array_expt)) / 2
+        fidelities.append(fidelity)
+
+    plt.clf()
+    fig, ax = plt.subplots()
+    ax.plot(fidelities, marker='.')
+    if mark_itoffoli:
+        ax.plot(fidelities, color='r', ls='', marker='x', ms=10, mew=2, markevery=locations_itoffoli)
+    ax.set_xlabel("Circuit depth")
+    ax.set_ylabel("Fidelity (1 - TVD)")
+
+    if not os.path.exists(dirname):
+        os.makedirs(dirname)
+    fig.savefig(f'{dirname}/{figname}.png', dpi=FIGURE_DPI, bbox_inches='tight')
 
 
 def print_circuit(circuit: cirq.Circuit) -> None:
