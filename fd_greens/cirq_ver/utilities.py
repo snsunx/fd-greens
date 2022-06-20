@@ -197,7 +197,7 @@ def get_non_z_locations(circuit: Union[cirq.Circuit, List[List[str]]], include_l
             locations.append(i)
 
     if include_last:
-        locations.append(len(circuit) - 1)
+        pass # locations.append(len(circuit) - 1)
     
     return locations
 

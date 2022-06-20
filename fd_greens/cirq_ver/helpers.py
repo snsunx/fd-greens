@@ -14,10 +14,10 @@ import cirq
 import h5py
 import numpy as np
 import matplotlib.pyplot as plt
-from fd_greens.cirq_ver.circuit_string_converter import CircuitStringConverter
-from fd_greens.cirq_ver.postprocessing import process_bitstring_counts
 
-from fd_greens.cirq_ver.utilities import get_non_z_locations, histogram_to_array
+from .circuit_string_converter import CircuitStringConverter
+from .postprocessing import process_bitstring_counts
+from .utilities import get_non_z_locations, histogram_to_array
 
 from .parameters import FIGURE_DPI
 
@@ -108,6 +108,33 @@ def initialize_hdf5(
                 h5file.create_dataset(f'{group_name}/{tomography_label}', data='')
     
     h5file.close()
+
+def copy_simulation_data(fname_expt: str, fname_sim: str, mode: str = 'greens') -> None:
+    """Copy ground- and excited states simulation data to experimental HDF5 file.
+    
+    Args:
+        fname_expt: The experimental HDF5 file name.
+        fname_sim: The simulation HDF5 file name.
+        mode: The calculation mode. Either ``'greens'`` or ``'resp'``.
+    """
+    assert mode in ['greens', 'resp']
+    h5file_sim = h5py.File(fname_sim + '.h5', 'r')
+    h5file_expt = h5py.File(fname_expt + '.h5', 'r+')
+
+    del h5file_expt['gs']
+    del h5file_expt['es']
+    h5file_expt['gs/energy'] = h5file_sim['gs/energy'][()]
+    if mode == 'greens':
+        h5file_expt['es/energies_e'] = h5file_sim['es/energies_e'][:]
+        h5file_expt['es/energies_h'] = h5file_sim['es/energies_h'][:]
+        h5file_expt['es/states_e'] = h5file_sim['es/states_e'][:]
+        h5file_expt['es/states_h'] = h5file_sim['es/states_h'][:]
+    else:
+        h5file_expt['es/energies'] = h5file_sim['es/energies'][:]
+        h5file_expt['es/states'] = h5file_sim['es/states'][:]
+
+    h5file_expt.close()
+    h5file_sim.close()
 
 def plot_spectral_function(
     fnames: Sequence[str],
@@ -272,7 +299,7 @@ def plot_response_function(
 plot_chi = plot_response_function
 
 
-def plot_counts(
+def plot_bitstring_counts(
     fname_sim: str, 
     fname_expt: str,
     dset_name_sim: str,
@@ -328,6 +355,8 @@ def plot_counts(
     fig.savefig(f"{dirname}/counts_{dset_name_sim.replace('/', '_')}.png", dpi=FIGURE_DPI, bbox_inches="tight")
     plt.close(fig)
 
+plot_counts = plot_bitstring_counts
+
 def plot_fidelity_by_depth(
     fname_sim: str,
     fname_expt: str,
@@ -365,30 +394,30 @@ def plot_fidelity_by_depth(
     pkl_data = pickle.load(open(fname_expt + '.pkl', 'rb'))
     circuit_expt = pkl_data[circ_name_expt + '_by_depth']['circs'][-1]
     del_inds = []
+    # XXX: The following is not necessarily right.
     for i, x in enumerate(circuit_expt[:-1]):
         if circuit_expt[i] == ['CZ/C7T6'] and circuit_expt[i + 1] == ['CZ/C5T4']:
             circuit_expt[i] = ['CZ/C7T6', 'CZ/C5T4']
             del_inds.append(i + 1)
+        elif circuit_expt[i] == ['CZ/C5T4'] and circuit_expt[i + 1] == ['CZ/C7T6']:
+            circuit_expt[i] = ['CZ/C7T6', 'CZ/C5T4']
+            del_inds.append(i + 1)
     circuit_expt = [circuit_expt[i] for i in range(len(circuit_expt)) if i not in del_inds]
     results_expt = pkl_data[circ_name_expt + '_by_depth']['results']
-    print(f'{len(circuit_expt) = }')
-    print(f'{len(results_expt) = }')
+    circuit_sim = converter.convert_strings_to_circuit(circuit_expt)
     non_z_locations_expt = get_non_z_locations(circuit_expt)
 
-    for i, (a, b) in enumerate(zip(qtrl_strings, circuit_expt)):
-        if qtrl_strings[i] != circuit_expt[i]:
-            print(i)
-            print(qtrl_strings[i])
-            print(circuit_expt[i])
-            print('-')
+    # print_circuit(circuit_sim)
+    # print(f'{len(circuit_expt) = }')
+    # print(f'{len(results_expt) = }')
 
     if len(non_z_locations_sim) != len(non_z_locations_expt):
         print(f'{len(non_z_locations_sim)} != {len(non_z_locations_expt)}')
     
     fidelities = []
     locations_itoffoli = []
-    for i, (i_sim, i_expt) in enumerate(zip(non_z_locations_sim[:45], non_z_locations_expt[:45])):
-        print(i, i_sim, i_expt)
+    for i, (i_sim, i_expt) in enumerate(zip(non_z_locations_sim, non_z_locations_expt)):
+        # print(i, i_sim, i_expt)
         # If mark_toffoli set to True, obtain the locations of iToffoli gates in natural running indices.
         if mark_itoffoli:
             moment = circuit_sim[i_sim]
