@@ -7,6 +7,7 @@ Helpers (:mod:`fd_greens.helpers`)
 import os
 from typing import Sequence, List, Optional
 from itertools import product
+import warnings
 
 import pickle
 import json
@@ -17,7 +18,7 @@ import matplotlib.pyplot as plt
 
 from .circuit_string_converter import CircuitStringConverter
 from .postprocessing import process_bitstring_counts
-from .utilities import get_non_z_locations, histogram_to_array
+from .utilities import combine_simultaneous_cz, get_non_z_locations, histogram_to_array, split_simultaneous_cz
 
 from .parameters import FIGURE_DPI
 
@@ -58,7 +59,14 @@ def get_circuit_labels(n_orbitals: int, mode: str = 'greens', spin: str = '') ->
     return circuit_labels
 
 def get_tomography_labels(n_qubits: int) -> List[str]:
-    """Returns the tomography labels on a certain number of qubits."""
+    """Returns the tomography labels on a given number of qubits.
+    
+    Args:
+        n_qubits: Number of qubits to be tomographed.
+        
+    Returns:
+        tomography_labels: The tomography labels.
+    """
     tomography_labels = [''.join(x) for x in product('xyz', repeat=n_qubits)]
     return tomography_labels
 
@@ -370,8 +378,8 @@ def plot_fidelity_by_depth(
     mark_itoffoli: bool = False,
 ) -> None:
     """Plots the fidelity between simulated and experimental circuits vs circuit depth."""
-    # If pad_zero not given, can deduce from n_qubits. For 3-qubit circuits, 
-    # assume the experiments are run on Q4, Q5, Q6.
+    # If pad_zero not given, can deduce from n_qubits. 
+    # For 3-qubit circuits, assume the experiments are run on Q4, Q5, Q6.
     if pad_zero is None:
         if n_qubits == 3:
             pad_zero = 'end'
@@ -385,48 +393,33 @@ def plot_fidelity_by_depth(
     # Load simulation circuit.
     with h5py.File(fname_sim + '.h5', 'r') as h5file:
         qtrl_strings = json.loads(h5file[circ_name_sim][()])
-    
     circuit_sim = converter.convert_strings_to_circuit(qtrl_strings)
     non_z_locations_sim = get_non_z_locations(circuit_sim)
     # print(f'{len(circuit_sim) = }')
 
     # Load experimental circuit and data.
     pkl_data = pickle.load(open(fname_expt + '.pkl', 'rb'))
-    circuit_expt = pkl_data[circ_name_expt + '_by_depth']['circs'][-1]
-    del_inds = []
-    # XXX: The following is not necessarily right.
-    for i, x in enumerate(circuit_expt[:-1]):
-        if circuit_expt[i] == ['CZ/C7T6'] and circuit_expt[i + 1] == ['CZ/C5T4']:
-            circuit_expt[i] = ['CZ/C7T6', 'CZ/C5T4']
-            del_inds.append(i + 1)
-        elif circuit_expt[i] == ['CZ/C5T4'] and circuit_expt[i + 1] == ['CZ/C7T6']:
-            circuit_expt[i] = ['CZ/C7T6', 'CZ/C5T4']
-            del_inds.append(i + 1)
-    circuit_expt = [circuit_expt[i] for i in range(len(circuit_expt)) if i not in del_inds]
+    qtrl_strings_expt = pkl_data[circ_name_expt + '_by_depth']['circs'][-1]
     results_expt = pkl_data[circ_name_expt + '_by_depth']['results']
-    circuit_sim = converter.convert_strings_to_circuit(circuit_expt)
-    non_z_locations_expt = get_non_z_locations(circuit_expt)
+    non_z_locations_expt = get_non_z_locations(qtrl_strings_expt)
+    non_z_locations_expt_comp = get_non_z_locations(combine_simultaneous_cz(qtrl_strings_expt))
+    # print(f'{len(non_z_locations_expt) = }')
+    # print(f'{len(non_z_locations_expt_comp) = }')
 
-    # print_circuit(circuit_sim)
-    # print(f'{len(circuit_expt) = }')
-    # print(f'{len(results_expt) = }')
-
-    if len(non_z_locations_sim) != len(non_z_locations_expt):
-        print(f'{len(non_z_locations_sim)} != {len(non_z_locations_expt)}')
+    if len(non_z_locations_sim) != len(non_z_locations_expt_comp):
+        warnings.warn("Circuit depth don't match!")
     
     fidelities = []
     locations_itoffoli = []
-    for i, (i_sim, i_expt) in enumerate(zip(non_z_locations_sim, non_z_locations_expt)):
-        # print(i, i_sim, i_expt)
+    for i, (i_sim, i_expt) in enumerate(zip(non_z_locations_sim, non_z_locations_expt_comp)):
         # If mark_toffoli set to True, obtain the locations of iToffoli gates in natural running indices.
         if mark_itoffoli:
             moment = circuit_sim[i_sim]
             if len(moment) == 1 and moment.operations[0].gate.num_qubits() == 3:
                 locations_itoffoli.append(i)
 
-        # Compute the simultated bitstring count.
-        circuit_moment = circuit_sim[:i_sim + 1]
-        circuit_moment += [cirq.measure(q) for q in qubits]
+        # Compute the simulated bitstring counts.
+        circuit_moment = circuit_sim[:i_sim + 1] + [cirq.measure(q) for q in qubits]
         result_moment = cirq.Simulator().run(circuit_moment, repetitions=repetitions)
         histogram = result_moment.multi_measurement_histogram(keys=[str(i) for i in range(n_qubits)])
         array_sim = histogram_to_array(histogram)
@@ -436,8 +429,10 @@ def plot_fidelity_by_depth(
         
         # Compute the fidelity (1 - TVD).
         fidelity = 1 - np.sum(np.abs(array_sim - array_expt)) / 2
+        # print(f'{fidelity = }')
         fidelities.append(fidelity)
 
+    
     plt.clf()
     fig, ax = plt.subplots()
     ax.plot(fidelities, marker='.')

@@ -160,24 +160,7 @@ def split_circuit_across_moment(circuit: cirq.Circuit, moment_split: cirq.Moment
     circuits.append(cirq.Circuit(moments))
     return circuits
 
-def get_circuit_depth(circuit: cirq.Circuit) -> int:
-    """Returns the circuit depth by excluding Z gates.
-    
-    Args:
-        circuit: The circuit on which depth is to be calculated.
-    
-    Returns:
-        depth: The depth of the circuit.
-    """
-    depth = 0
-    for moment in circuit:
-        is_z_gates = [isinstance(op.gate, cirq.ZPowGate) for op in moment]
-        if all(is_z_gates):
-            continue
-        depth += 1
-    return depth
-
-def get_non_z_locations(circuit: Union[cirq.Circuit, List[List[str]]], include_last: bool = True) -> List[int]:
+def get_non_z_locations(circuit: Union[cirq.Circuit, List[List[str]]]) -> List[int]:
     """Returns the non-Z locations of a circuit.
     
     Args:
@@ -187,19 +170,85 @@ def get_non_z_locations(circuit: Union[cirq.Circuit, List[List[str]]], include_l
         locations: A list of integers indicating the non-Z locations.
     """
     locations = []
+
     for i, moment in enumerate(circuit):
         if isinstance(moment, cirq.Moment):
-            is_z_gates = [isinstance(op.gate, cirq.ZPowGate) for op in moment]
+            is_z_gate = [isinstance(op.gate, cirq.ZPowGate) for op in moment]
         else:
-            is_z_gates = [re.findall('Q\d/Z.+', s) != [] or re.findall('CP.+', s) != [] for s in moment]
+            is_z_gate = [re.findall('Q\d/Z.+', s) != [] or re.findall('CP.+', s) != [] for s in moment]
          
-        if not all(is_z_gates):
+        if not all(is_z_gate):
             locations.append(i)
-
-    if include_last:
-        pass # locations.append(len(circuit) - 1)
     
     return locations
+
+def get_circuit_depth(circuit: Union[cirq.Circuit, List[List[str]]]) -> int:
+    """Returns the circuit depth by excluding Z and CP gates.
+    
+    Args:
+        circuit: A circuit in either Cirq circuit form or Qtrl strings form.
+    
+    Returns:
+        depth: The depth of the circuit.
+    """
+    depth = len(get_non_z_locations(circuit)) 
+    return depth
+
+def get_n_simultaneous_cz(qtrl_strings: List[List[str]]) -> int:
+    """Returns the number of simultaneous CZ gates."""
+    n_simul_cz = 0
+    for i in range(len(qtrl_strings) - 1):
+        if qtrl_strings[i] == ['CZ/C7T6'] and qtrl_strings[i + 1] == ['CZ/C5T4']:
+            n_simul_cz += 1
+        if qtrl_strings[i] == ['CZ/C5T4'] and qtrl_strings[i + 1] == ['CZ/C7T6']:
+            n_simul_cz += 1
+    return n_simul_cz
+
+def split_simultaneous_cz(circuit: Union[cirq.Circuit, List[List[str]]]) -> None:
+    """Splits simultaneous CZ/CS/CSDs onto different moments."""
+    circuit_new = []
+    for moment in circuit:
+        if isinstance(moment, cirq.Moment):
+            is_cz_gate = [isinstance(op.gate, cirq.CZPowGate) for op in moment]
+        else:
+            is_cz_gate = [re.findall('C(Z|S|SD)/.+', s) for s in moment]
+
+        if all(is_cz_gate) and len(is_cz_gate) > 1:
+            for op in moment:
+                circuit_new.append([op])
+        else:
+            circuit_new.append(moment)
+        
+    if isinstance(circuit, cirq.Circuit):
+        circuit_new = cirq.Circuit([cirq.Moment(l) for l in circuit_new])
+
+    return circuit_new
+
+def combine_simultaneous_cz(circuit: Union[cirq.Circuit, List[List[str]]]) -> None:
+    """Combines simultaneous CZ/CS/CSDs into the same moment."""
+    for i in range(len(circuit) - 1):
+        if isinstance(circuit[i], cirq.Moment):
+            is_simul_cz = (
+                len(circuit[i]) == 1 and list(circuit[i])[0].gate == cirq.CZ and
+                len(circuit[i + 1]) == 1 and list(circuit[i + 1])[0].gate == cirq.CZ and
+                len(circuit[i].qubits.intersection(circuit[i + 1].qubits)) == 0
+            )
+            if is_simul_cz:
+                circuit[i] = circuit[i] + circuit[i + 1]
+                circuit[i + 1] = cirq.Moment()
+        else:
+            is_simul_cz = ((circuit[i], circuit[i + 1]) == (['CZ/C7T6'], ['CZ/C5T4']) or
+                (circuit[i], circuit[i + 1]) ==  (['CZ/C5T4'], ['CZ/C7T6']))
+
+            if is_simul_cz:
+                circuit[i] = ['CZ/C7T6', 'CZ/C5T4']
+                circuit[i + 1] = None
+
+    if isinstance(circuit, cirq.Circuit):
+        cirq.DropEmptyMoments().optimize_circuit(circuit)
+    else:
+        circuit = [moment for moment in circuit if moment != None]
+    return circuit
 
 def print_circuit_statistics(circuit: cirq.Circuit) -> None:
     """Prints out circuit statistics.

@@ -9,7 +9,7 @@ def main():
     pkl_data = pickle.load(open('resp_3A_run0616_0.pkl', 'rb'))
 
     for circ_label in get_circuit_labels(2, 'resp', ''):
-        for tomo_label in get_tomography_labels(2):
+        for tomo_label in ['zz']:
             if 'results' in pkl_data[f'{circ_label}{tomo_label}_by_depth'].keys():
                 print(f'Plotting fidelity by depth of {circ_label}/{tomo_label}.')
                 plot_fidelity_by_depth(
