@@ -205,7 +205,11 @@ def get_n_simultaneous_cz(qtrl_strings: List[List[str]]) -> int:
     return n_simul_cz
 
 def split_simultaneous_cz(circuit: Union[cirq.Circuit, List[List[str]]]) -> None:
-    """Splits simultaneous CZ/CS/CSDs onto different moments."""
+    """Splits simultaneous CZ/CS/CSDs onto different moments.
+    
+    Args:
+        circuit: The circuit in either Cirq circuit form or Qtrl strings form.
+    """
     circuit_new = []
     for moment in circuit:
         if isinstance(moment, cirq.Moment):
@@ -225,7 +229,11 @@ def split_simultaneous_cz(circuit: Union[cirq.Circuit, List[List[str]]]) -> None
     return circuit_new
 
 def combine_simultaneous_cz(circuit: Union[cirq.Circuit, List[List[str]]]) -> None:
-    """Combines simultaneous CZ/CS/CSDs into the same moment."""
+    """Combines simultaneous CZ/CS/CSDs into the same moment.
+    
+    Args:
+        circuit: The circuit in either Cirq circuit form or Qtrl strings form.
+    """
     for i in range(len(circuit) - 1):
         if isinstance(circuit[i], cirq.Moment):
             is_simul_cz = (

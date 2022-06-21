@@ -23,6 +23,9 @@ ITOFFOLI_Z_ANGLE = 20.67
 # Whether to force putting CS dagger gates on qubits 4 and 5. Should be set to False.
 CSD_IN_ITOFFOLI_ON_45 = False
 
+# Whether to split simultaneous CZ/CS/CSD onto different moments. Should be set to True.
+SPLIT_SIMULTANEOUS_CZS = True
+
 # Whether to check original and transpiled circuits are equal. Should be set to True.
 CHECK_CIRCUITS = True
 

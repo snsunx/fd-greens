@@ -13,7 +13,7 @@ import cirq
 
 from .transpilation import C0C0iXGate
 from .utilities import get_gate_counts
-from .parameters import CHECK_CIRCUITS, ADJUST_CS_CSD_GATES, WRAP_Z_AROUND_ITOFFOLI, ITOFFOLI_Z_ANGLE
+from .parameters import CHECK_CIRCUITS, ADJUST_CS_CSD_GATES, WRAP_Z_AROUND_ITOFFOLI, ITOFFOLI_Z_ANGLE, SPLIT_SIMULTANEOUS_CZS
 
 
 class CircuitStringConverter:
@@ -211,7 +211,13 @@ class CircuitStringConverter:
                 
                 strings_moment.append(qtrl_string)
             
-            if strings_moment != []:  # [] when all identities or measurements
+            if SPLIT_SIMULTANEOUS_CZS and (
+                re.findall("C(?:Z|S|SD)/C5T4_C(?:Z|S|SD)/C7T6", '_'.join(strings_moment)) != [] or 
+                re.findall("C(?:Z|S|SD)/C7T6_C(?:Z|S|SD)/C5T4", '_'.join(strings_moment)) != []):
+                i_moment += 2
+                qtrl_strings.append([strings_moment[0]])
+                qtrl_strings.append([strings_moment[1]])
+            elif strings_moment != []: # [] when all identities or measurements
                 i_moment += 1
                 qtrl_strings.append(strings_moment)
 
