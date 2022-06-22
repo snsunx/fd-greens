@@ -1,7 +1,7 @@
 import sys
 sys.path.append('../../..')
 
-from fd_greens.cirq_ver.helpers import get_tomography_labels, plot_counts, get_circuit_labels
+from fd_greens import get_tomography_labels, plot_counts, get_circuit_labels
 
 def main():
 	for circ_name in get_circuit_labels(2, 'resp'):

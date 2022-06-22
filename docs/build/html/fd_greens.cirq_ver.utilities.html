@@ -157,15 +157,57 @@ with <code class="docutils literal notranslate"><span class="pre">criterion</spa
 </dd></dl>
 
 <dl class="py function">
-<dt class="sig sig-object py" id="fd_greens.cirq_ver.utilities.get_circuit_depth">
-<span class="sig-name descname"><span class="pre">get_circuit_depth</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">circuit</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">cirq.circuits.circuit.Circuit</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">int</span></span></span><a class="reference internal" href="_modules/fd_greens/cirq_ver/utilities.html#get_circuit_depth"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#fd_greens.cirq_ver.utilities.get_circuit_depth" title="Permalink to this definition"></a></dt>
-<dd><p>Returns the circuit depth by excluding Z gates.</p>
+<dt class="sig sig-object py" id="fd_greens.cirq_ver.utilities.get_non_z_locations">
+<span class="sig-name descname"><span class="pre">get_non_z_locations</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">circuit</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">cirq.circuits.circuit.Circuit</span><span class="p"><span class="pre">,</span> </span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/fd_greens/cirq_ver/utilities.html#get_non_z_locations"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#fd_greens.cirq_ver.utilities.get_non_z_locations" title="Permalink to this definition"></a></dt>
+<dd><p>Returns the non-Z locations of a circuit.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>circuit</strong> – The circuit on which depth is to be calculated.</p>
+<dd class="field-odd"><p><strong>circuit</strong> – A circuit in either Cirq circuit form or Qtrl strings form.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>locations</strong> – A list of integers indicating the non-Z locations.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="fd_greens.cirq_ver.utilities.get_circuit_depth">
+<span class="sig-name descname"><span class="pre">get_circuit_depth</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">circuit</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">cirq.circuits.circuit.Circuit</span><span class="p"><span class="pre">,</span> </span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">int</span></span></span><a class="reference internal" href="_modules/fd_greens/cirq_ver/utilities.html#get_circuit_depth"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#fd_greens.cirq_ver.utilities.get_circuit_depth" title="Permalink to this definition"></a></dt>
+<dd><p>Returns the circuit depth by excluding Z and CP gates.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>circuit</strong> – A circuit in either Cirq circuit form or Qtrl strings form.</p>
 </dd>
 <dt class="field-even">Returns</dt>
 <dd class="field-even"><p><strong>depth</strong> – The depth of the circuit.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="fd_greens.cirq_ver.utilities.get_n_simultaneous_cz">
+<span class="sig-name descname"><span class="pre">get_n_simultaneous_cz</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">qtrl_strings</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">int</span></span></span><a class="reference internal" href="_modules/fd_greens/cirq_ver/utilities.html#get_n_simultaneous_cz"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#fd_greens.cirq_ver.utilities.get_n_simultaneous_cz" title="Permalink to this definition"></a></dt>
+<dd><p>Returns the number of simultaneous CZ gates.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="fd_greens.cirq_ver.utilities.split_simultaneous_cz">
+<span class="sig-name descname"><span class="pre">split_simultaneous_cz</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">circuit</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">cirq.circuits.circuit.Circuit</span><span class="p"><span class="pre">,</span> </span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/fd_greens/cirq_ver/utilities.html#split_simultaneous_cz"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#fd_greens.cirq_ver.utilities.split_simultaneous_cz" title="Permalink to this definition"></a></dt>
+<dd><p>Splits simultaneous CZ/CS/CSDs onto different moments.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>circuit</strong> – The circuit in either Cirq circuit form or Qtrl strings form.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="fd_greens.cirq_ver.utilities.combine_simultaneous_cz">
+<span class="sig-name descname"><span class="pre">combine_simultaneous_cz</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">circuit</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">cirq.circuits.circuit.Circuit</span><span class="p"><span class="pre">,</span> </span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/fd_greens/cirq_ver/utilities.html#combine_simultaneous_cz"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#fd_greens.cirq_ver.utilities.combine_simultaneous_cz" title="Permalink to this definition"></a></dt>
+<dd><p>Combines simultaneous CZ/CS/CSDs into the same moment.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>circuit</strong> – The circuit in either Cirq circuit form or Qtrl strings form.</p>
 </dd>
 </dl>
 </dd></dl>

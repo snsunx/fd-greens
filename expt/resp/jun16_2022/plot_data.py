@@ -6,13 +6,14 @@ sys.path.append('../../..')
 import pickle
 import numpy as np
 
-from fd_greens import initialize_hdf5, ResponseFunction, get_lih_hamiltonian
-from fd_greens.cirq_ver.postprocessing import process_bitstring_counts
-from fd_greens.cirq_ver.parameters import HARTREE_TO_EV
-from fd_greens.cirq_ver.helpers import copy_simulation_data
-from fd_greens.cirq_ver.helpers import plot_response_function
-from fd_greens.cirq_ver.parameters import linestyles_chi
-
+from fd_greens import (
+    initialize_hdf5,
+    ResponseFunction,
+    get_lih_hamiltonian,
+    copy_simulation_data,
+    plot_response_function,
+    process_bitstring_counts,
+    HARTREE_TO_EV)
 
 def main_process():
     """Processes bitstring counts and save to file."""
@@ -52,7 +53,7 @@ def main_plot():
     h5fnames = ['lih_resp_sim', 'lih_3A_expt']
     suffixes = ['', '']
     labels = ['Sim', 'Expt']
-    plot_response_function(h5fnames, suffixes, linestyles=linestyles_chi, labels=labels, text="legend", dirname=f"figs/data")
+    plot_response_function(h5fnames, suffixes, labels=labels, text="legend", dirname=f"figs/data")
 
 if __name__ == '__main__':
     # main_process()

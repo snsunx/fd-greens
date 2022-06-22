@@ -17,7 +17,7 @@ from .circuit_constructor import CircuitConstructor
 from .circuit_string_converter import CircuitStringConverter
 from .transpilation import transpile_into_berkeley_gates
 from .parameters import get_method_indices_pairs
-from .utilities import histogram_to_array
+from .general_utils import histogram_to_array
 
 
 class ExcitedAmplitudesSolver:

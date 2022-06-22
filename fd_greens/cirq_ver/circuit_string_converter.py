@@ -12,7 +12,7 @@ import numpy as np
 import cirq
 
 from .transpilation import C0C0iXGate
-from .utilities import get_gate_counts
+from .general_utils import get_gate_counts
 from .parameters import CHECK_CIRCUITS, ADJUST_CS_CSD_GATES, WRAP_Z_AROUND_ITOFFOLI, ITOFFOLI_Z_ANGLE, SPLIT_SIMULTANEOUS_CZS
 
 

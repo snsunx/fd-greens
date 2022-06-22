@@ -251,10 +251,10 @@
 <span class="sd">            save_data: Whether to save the response function to file.</span>
 
 <span class="sd">        Returns:</span>
-<span class="sd">            chis_all: A dictionary from orbital strings to the corresponding charge-charge response functions.</span>
+<span class="sd">            chis_all (Optional): A dictionary from orbital strings to the corresponding charge-charge response functions.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="c1"># Sum over spins in N</span>
-        <span class="n">N_summed</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">N</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">n_orbitals</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_orbitals</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span><span class="o">.</span><span class="n">sum</span><span class="p">((</span><span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">))</span>
+        <span class="c1"># Sum over spins in N.</span>
+        <span class="n">N_summed</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">N</span><span class="p">[</span><span class="s1">&#39;n&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">n_orbitals</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_orbitals</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_states</span><span class="p">[</span><span class="s1">&#39;n&#39;</span><span class="p">]))</span><span class="o">.</span><span class="n">sum</span><span class="p">((</span><span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">))</span>
 
         <span class="n">chis_all</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
         <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n_orbitals</span><span class="p">):</span>

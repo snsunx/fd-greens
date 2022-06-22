@@ -13,7 +13,7 @@ import numpy as np
 import cirq
 
 from .transpilation import transpile_1q_gates
-from .utilities import get_gate_counts
+from .general_utils import get_gate_counts
 
 
 class CircuitConstructor:

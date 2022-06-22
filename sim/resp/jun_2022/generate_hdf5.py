@@ -30,6 +30,7 @@ def main():
     amp_solver.run()
 
     resp = ResponseFunction(hamiltonian, fname=fname, method=method)
+
     if method == 'exact':
         N = resp.N['n']
 

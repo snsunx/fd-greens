@@ -4,11 +4,17 @@ sys.path.append('../../..')
 import pickle
 import numpy as np
 
-from fd_greens import initialize_hdf5, GreensFunction, get_lih_hamiltonian
-from fd_greens.cirq_ver.postprocessing import process_bitstring_counts
-from fd_greens.cirq_ver.helpers import copy_simulation_data, plot_spectral_function, plot_trace_self_energy
-from fd_greens.cirq_ver.parameters import HARTREE_TO_EV, linestyles_A, linestyles_TrSigma
+from fd_greens import (
+    initialize_hdf5,
+    GreensFunction,
+    get_lih_hamiltonian,
+    copy_simulation_data,
+    process_bitstring_counts,
+    plot_spectral_function,
+    plot_trace_self_energy,
+    HARTREE_TO_EV)
 
+# TODO: Write this into a function.
 def main_process():
     print("Start processing results.")
 
@@ -38,20 +44,20 @@ def main_process():
     print("Finished processing results.")
 
 
-
 def main_generate():
     print("Start generating data.")
     
     hamiltonian = get_lih_hamiltonian(3.0)
     omegas = np.arange(-20, 20, 0.01)
     eta = 0.02 * HARTREE_TO_EV
-    for spin in ['u', 'd']:
-        for fname in ['lih_3A_sim', 'lih_3A_expt']:
+    for spin in ['u']:
+        for fname in ['lih_3A_expt']:
             greens = GreensFunction(hamiltonian, fname=fname, method='tomo', spin=spin)
             greens.spectral_function(omegas, eta)
             greens.self_energy(omegas, eta)
 
     print("Finished generating data.")
+
 
 def main_plot():
     print("Start plotting data.")
@@ -60,13 +66,13 @@ def main_plot():
     suffixes = ['', '']
     labels = ['Sim', 'Expt']
 
-    plot_spectral_function(h5fnames, suffixes, linestyles=linestyles_A, labels=labels, text="legend", dirname="figs/data")
-    plot_trace_self_energy(h5fnames, suffixes, linestyles=linestyles_TrSigma, labels=labels, text="legend", dirname="figs/data")
+    plot_spectral_function(h5fnames, suffixes, labels=labels, text="legend", dirname="figs/data")
+    plot_trace_self_energy(h5fnames, suffixes, labels=labels, text="legend", dirname="figs/data")
 
     print("Finished plotting data.")
 
 
 if __name__ == '__main__':
-    main_process()
+    # main_process()
     main_generate()
     main_plot()

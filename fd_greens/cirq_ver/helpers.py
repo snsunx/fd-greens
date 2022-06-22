@@ -5,22 +5,14 @@ Helpers (:mod:`fd_greens.helpers`)
 """
 
 import os
-from typing import Sequence, List, Optional
+from typing import List, Optional
 from itertools import product
-import warnings
 
-import pickle
-import json
 import cirq
 import h5py
 import numpy as np
-import matplotlib.pyplot as plt
 
-from .circuit_string_converter import CircuitStringConverter
-from .postprocessing import process_bitstring_counts
-from .utilities import combine_simultaneous_cz, get_non_z_locations, histogram_to_array, split_simultaneous_cz
-
-from .parameters import FIGURE_DPI
+from .general_utils import histogram_to_array
 
 
 def get_circuit_labels(n_orbitals: int, mode: str = 'greens', spin: str = '') -> List[str]:
@@ -118,7 +110,7 @@ def initialize_hdf5(
     h5file.close()
 
 def copy_simulation_data(fname_expt: str, fname_sim: str, mode: str = 'greens') -> None:
-    """Copy ground- and excited states simulation data to experimental HDF5 file.
+    """Copy ground- and excited-states simulation data to experimental HDF5 file.
     
     Args:
         fname_expt: The experimental HDF5 file name.
@@ -144,307 +136,55 @@ def copy_simulation_data(fname_expt: str, fname_sim: str, mode: str = 'greens') 
     h5file_expt.close()
     h5file_sim.close()
 
-def plot_spectral_function(
-    fnames: Sequence[str],
-    suffixes: Sequence[str],
-    labels: Sequence[str] = None,
-    annotations: Optional[Sequence[dict]] = None,
-    linestyles: Optional[Sequence[dict]] = None,
-    dirname: str = "figs",
-    figname: str = "A",
-    text: Optional[str] = None,
-    n_curves: Optional[int] = None,
-) -> None:
-    """Plots the spectral function.
+def process_bitstring_counts(
+    histogram: dict,
+    confusion_matrix: Optional[np.ndarray] = None,
+    pad_zero: str = '',
+    fname: Optional[str] = None,
+    dset_name: Optional[str] = None,
+    counts_name: Optional[str] = None
+) -> Optional[np.ndarray]:
+    """Processes bitstring counts.
     
     Args:
-        fnames: Names of the HDF5 files from which the curves are generated.
-        suffixes: Suffixes of the curves.
-        labels: Legend labels of the curves.
-        annotations: Annotation options to be passed into ax.text.
-        linestyles: The linestyles of the curves to be passed into ax.plot.
-        figname: The name of the figure to be saved.
-        text: Whether to add labels by legend, annotation or none.
-        n_curves: Number of curves.
+        histogram: The histogram of the bitstring counts.
+        confusion_matrix: The confusion matrix for readout error mitigation.
+        pad_zero: Where to pad zeros in the bitstrings. ``'front'`` or ``'end'``
+            for three qubits, ``''`` for four qubits.
+        fname: The HDF5 file name to save the processed bitstring counts to.
+        dset_name: The dataset name.
+        counts_name: The bitstring counts name.
+
+    Returns:
+        array (Optional): The bitstring counts array if ``fname`` is not given.
     """
-    assert text in [None, "legend", "annotation"]
-
-    if n_curves is None:
-        n_curves = max(len(fnames), len(suffixes))
-    if labels is None:
-        labels = [s[1:] for s in suffixes]
-    if linestyles is None:
-        linestyles = [{}] * n_curves
-
-    plt.clf()
-    fig, ax = plt.subplots()
-    # for h5fname, suffix, label, linestyle in zip(fnames, suffixes, labels, linestyles):
-    for i in range(n_curves):
-        omegas, As = np.loadtxt(f"data/{fnames[i]}{suffixes[i]}_A.dat").T
-        ax.plot(omegas, As, label=labels[i], **linestyles[i])
-    ax.set_xlabel("$\omega$ (eV)")
-    ax.set_ylabel("$A$ (eV$^{-1}$)")
-    if text == "legend":
-        ax.legend()
-    elif text == "annotation":
-        for i in range(n_curves):
-            ax.text(**annotations[i], transform=ax.transAxes)
-
-    if not os.path.exists(dirname):
-        os.makedirs(dirname)
-    fig.savefig(f"{dirname}/{figname}.png", dpi=FIGURE_DPI, bbox_inches="tight")
-
-plot_A = plot_spectral_function
-
-
-def plot_trace_self_energy(
-    fnames: Sequence[str],
-    suffixes: Sequence[str],
-    labels: Optional[Sequence[str]] = None,
-    annotations: Optional[Sequence[str]] = None,
-    dirname: str = "figs",
-    figname: str = "TrSigma",
-    linestyles: Optional[Sequence[dict]] = None,
-    text: str = None,
-    n_curves: Optional[int] = None,
-) -> None:
-    """Plots the trace of the self-energy.
+    assert pad_zero in ['', 'front', 'end']
     
-    Args:
-        fnames: Names of the HDF5 files from which the curves are generated.
-        suffixes: Suffixes of the curves.
-        labels: Legend labels of the curves.
-        annotations: Annotation options to be passed into ax.text.
-        linestyles: The linestyles of the curves to be passed into ax.plot.
-        figname: The name of the figure to be saved.
-        text: Whether to add labels by legend, annotation or none.
-        n_curves: Number of curves.
-    """
-    assert text in [None, "legend", "annotation"]
+    n_qubits = len(list(histogram.keys())[0])
+    array = histogram_to_array(histogram, n_qubits=n_qubits, base=3)
 
-    if n_curves is None:
-        n_curves = 2 * max(len(fnames), len(suffixes))
-    if labels is None:
-        labels = [s[1:] for s in suffixes]
-    if linestyles is None:
-        linestyles = [{}] * n_curves
-
-    plt.clf()
-    fig, ax = plt.subplots()
-    # for h5fname, suffix, label, linestyle in zip(fnames, suffixes, labels, linestyles):
-    for i in range(n_curves // 2):
-        omegas, real, imag = np.loadtxt(f"data/{fnames[i]}{suffixes[i]}_TrSigma.dat").T
-        ax.plot(omegas, real, label=labels[i] + " (real)", **linestyles[2 * i])
-        ax.plot(omegas, imag, label=labels[i] + " (imag)", **linestyles[2 * i + 1])
-    ax.set_xlabel("$\omega$ (eV)")
-    ax.set_ylabel("Tr$\Sigma$ (eV)")
-    if text == "legend":
-        ax.legend()
-    elif text == "annotation":
-        for i in range(n_curves):
-            ax.text(**annotations[i], transform=ax.transAxes)
-
-    if not os.path.exists(dirname):
-        os.makedirs(dirname)
-    fig.savefig(f"{dirname}/{figname}.png", dpi=FIGURE_DPI, bbox_inches="tight")
-
-plot_TrS = plot_trace_self_energy
-
-
-def plot_response_function(
-    fnames: Sequence[str],
-    suffixes: Sequence[str],
-    labels: Optional[Sequence[str]] = None,
-    annotations: Optional[Sequence[str]] = None,
-    dirname: str = "figs",
-    figname: str = "chi",
-    circ_label: str = "00",
-    linestyles: Sequence[dict] = None,
-    text: Optional[str] = None,
-    n_curves: Optional[int] = None,
-) -> None:
-    """Plots the charge-charge response function.
-
-    Args:
-        fnames: Names of the HDF5 files from which the curves are generated.
-        suffixes: Suffixes of the curves.
-        labels: Legend labels of the curves.
-        annotations: Annotation options to be passed into ax.text.
-        linestyles: The linestyles of the curves to be passed into ax.plot.
-        figname: The name of the figure to be saved.
-        circ_label: The circuit label.
-        text: Whether to add labels by legend, annotation or none.
-        n_curves: Number of curves.
-    """
-    if n_curves is None:
-        n_curves = 2 * max(len(fnames), len(suffixes))
-    if labels is None:
-        labels = [s[1:] for s in suffixes]
-    if linestyles is None:
-        linestyles = [{}] * n_curves
-
-    # for h5fname, suffix, label, linestyle in zip(fnames, suffixes, labels, linestyles):
-    for circ_label in ['00', '01', '10', '11']:
-        plt.clf()
-        fig, ax = plt.subplots()
-        for i in range(n_curves // 2):
-            omegas, real, imag = np.loadtxt(f"data/{fnames[i]}{suffixes[i]}_chi{circ_label}.dat").T
-            ax.plot(omegas, real, label=labels[i] + " (real)", **linestyles[2 * i])
-            ax.plot(omegas, imag, label=labels[i] + " (imag)", **linestyles[2 * i + 1])
-        ax.set_xlabel("$\omega$ (eV)")
-        ax.set_ylabel("$\chi_{" + circ_label + "}$ (eV$^{-1}$)")
-        if text == "legend":
-            ax.legend()
-        elif text == "annotation":
-            # for kwargs in annotations:
-            for i in range(n_curves):
-                ax.text(**annotations[i], transform=ax.transAxes)
-
-        if not os.path.exists(dirname):
-            os.makedirs(dirname)
-        fig.savefig(f"{dirname}/{figname}{circ_label}.png", dpi=FIGURE_DPI, bbox_inches="tight")
-
-plot_chi = plot_response_function
-
-
-def plot_bitstring_counts(
-    fname_sim: str, 
-    fname_expt: str,
-    dset_name_sim: str,
-    dset_name_expt: str,
-    counts_name_sim: str = '',
-    counts_name_expt: str = '', 
-    width: float = 0.5,
-    dirname: str = 'figs'
-) -> None:
-    """Plots the simulation and experimental bitstring counts along with total variational distance.
+    # Perform readout error mitigation if confusion matrix is given.
+    if confusion_matrix is not None:
+        array = np.linalg.lstsq(confusion_matrix, array)[0]
     
-    Args:
-        fname_sim: Name of the simulation HDF5 file.
-        fname_expt: Name of the experimental HDF5 file.
-        dset_name_sim: Name of the simulation dataset.
-        dset_name_expt: Name of the experimental dataset.
-        counts_name_sim: Name of the simulation bitstring counts.
-        counts_name_expt: Name fo the experimental bitstring counts.
-        width: Width of bars in the bar chart.
-    """
-    # print(fname_sim)
-    # h5file_sim = h5py.File(fname_sim + '.h5', 'r')
-    # h5file_expt = h5py.File(fname_expt + '.h5', 'r')
-    with h5py.File(fname_sim + '.h5', 'r') as h5file_sim:
-        array_sim = h5file_sim[dset_name_sim].attrs[counts_name_sim][:]
-    with h5py.File(fname_expt + '.h5', 'r') as h5file_expt:
-        array_expt = h5file_expt[dset_name_expt].attrs[counts_name_expt][:]
+    # Restrict to qubit subspace.
+    if pad_zero == 'front':
+        indices = [int('0' + ''.join(x), 3) for x in product('01', repeat=n_qubits - 1)]
+    elif pad_zero == 'end':
+        indices = [int(''.join(x) + '0', 3) for x in product('01', repeat=n_qubits - 1)]
+    else:
+        indices = [int(''.join(x), 3) for x in product('01', repeat=n_qubits)]    
+    array = array[indices]
+    array = array / np.sum(array)
 
-    # Compute total variational distance.
-    assert abs(np.sum(array_sim) - 1) < 1e-8
-    assert abs(np.sum(array_expt) - 1) < 1e-8
-    distance = np.sum(np.abs(array_sim - array_expt)) / 2
-
-    # Create x tick locations and labels.
-    n_qubits = int(np.log2(len(array_sim)))
-    x = np.arange(2 ** n_qubits)
-    tick_labels = ["".join(y) for y in product("01", repeat=n_qubits)]
-
-    plt.clf()
-    fig, ax = plt.subplots(figsize=(len(array_sim) * 0.6 + 2, 4))
-    ax.bar(x - width / 3, array_sim, width / 1.5, label="Sim")
-    ax.bar(x + width / 3, array_expt, width / 1.5, label="Expt")
-    ax.set_xticks(x)
-    ax.set_xticklabels(tick_labels)
-    ax.set_xlabel("Bitstring")
-    ax.set_ylabel("Ratio")
-    ax.set_title(f"Fidelity (1 - TVD): {1 - distance:.4f}")
-    ax.legend()
-
-    if not os.path.exists(dirname):
-        os.makedirs(dirname)
-    fig.set_facecolor('white')
-    fig.savefig(f"{dirname}/counts_{dset_name_sim.replace('/', '_')}.png", dpi=FIGURE_DPI, bbox_inches="tight")
-    plt.close(fig)
-
-plot_counts = plot_bitstring_counts
-
-def plot_fidelity_by_depth(
-    fname_sim: str,
-    fname_expt: str,
-    circ_name_sim: str,
-    circ_name_expt: str,
-    n_qubits: int,
-    pad_zero: Optional[str] = None,
-    dirname: str = 'fid_by_depth',
-    figname: str = 'fid_by_depth',
-    repetitions: int = 5000,
-    mark_itoffoli: bool = False,
-) -> None:
-    """Plots the fidelity between simulated and experimental circuits vs circuit depth."""
-    # If pad_zero not given, can deduce from n_qubits. 
-    # For 3-qubit circuits, assume the experiments are run on Q4, Q5, Q6.
-    if pad_zero is None:
-        if n_qubits == 3:
-            pad_zero = 'end'
-        elif n_qubits == 4:
-            pad_zero = ''
-
-    # Create the qubits and circuit string converter.
-    qubits = cirq.LineQubit.range(n_qubits)
-    converter = CircuitStringConverter(qubits)
-
-    # Load simulation circuit.
-    with h5py.File(fname_sim + '.h5', 'r') as h5file:
-        qtrl_strings = json.loads(h5file[circ_name_sim][()])
-    circuit_sim = converter.convert_strings_to_circuit(qtrl_strings)
-    non_z_locations_sim = get_non_z_locations(circuit_sim)
-    # print(f'{len(circuit_sim) = }')
-
-    # Load experimental circuit and data.
-    pkl_data = pickle.load(open(fname_expt + '.pkl', 'rb'))
-    qtrl_strings_expt = pkl_data[circ_name_expt + '_by_depth']['circs'][-1]
-    results_expt = pkl_data[circ_name_expt + '_by_depth']['results']
-    non_z_locations_expt = get_non_z_locations(qtrl_strings_expt)
-    non_z_locations_expt_comp = get_non_z_locations(combine_simultaneous_cz(qtrl_strings_expt))
-    # print(f'{len(non_z_locations_expt) = }')
-    # print(f'{len(non_z_locations_expt_comp) = }')
-
-    if len(non_z_locations_sim) != len(non_z_locations_expt_comp):
-        warnings.warn("Circuit depth don't match!")
-    
-    fidelities = []
-    locations_itoffoli = []
-    for i, (i_sim, i_expt) in enumerate(zip(non_z_locations_sim, non_z_locations_expt_comp)):
-        # If mark_toffoli set to True, obtain the locations of iToffoli gates in natural running indices.
-        if mark_itoffoli:
-            moment = circuit_sim[i_sim]
-            if len(moment) == 1 and moment.operations[0].gate.num_qubits() == 3:
-                locations_itoffoli.append(i)
-
-        # Compute the simulated bitstring counts.
-        circuit_moment = circuit_sim[:i_sim + 1] + [cirq.measure(q) for q in qubits]
-        result_moment = cirq.Simulator().run(circuit_moment, repetitions=repetitions)
-        histogram = result_moment.multi_measurement_histogram(keys=[str(i) for i in range(n_qubits)])
-        array_sim = histogram_to_array(histogram)
-
-        # Obtain the array of the experimental bitstring counts.
-        array_expt = process_bitstring_counts(results_expt[i_expt], pad_zero=pad_zero)
-        
-        # Compute the fidelity (1 - TVD).
-        fidelity = 1 - np.sum(np.abs(array_sim - array_expt)) / 2
-        # print(f'{fidelity = }')
-        fidelities.append(fidelity)
-
-    
-    plt.clf()
-    fig, ax = plt.subplots()
-    ax.plot(fidelities, marker='.')
-    if mark_itoffoli:
-        ax.plot(fidelities, color='r', ls='', marker='x', ms=10, mew=2, markevery=locations_itoffoli)
-    ax.set_xlabel("Circuit depth")
-    ax.set_ylabel("Fidelity (1 - TVD)")
-
-    if not os.path.exists(dirname):
-        os.makedirs(dirname)
-    fig.savefig(f'{dirname}/{figname}.png', dpi=FIGURE_DPI, bbox_inches='tight')
-
+    if fname is not None:
+        assert dset_name is not None
+        assert counts_name is not None
+        h5file = h5py.File(fname + '.h5', 'r+')
+        h5file[dset_name].attrs[counts_name] = array
+        h5file.close()
+    else:
+        return array
 
 def print_circuit(circuit: cirq.Circuit) -> None:
     """Prints out a circuit 10 elements at a time.

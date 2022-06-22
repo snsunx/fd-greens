@@ -14,7 +14,7 @@ import numpy as np
 from .molecular_hamiltonian import MolecularHamiltonian
 from .qubit_indices import QubitIndices
 from .parameters import REVERSE_QUBIT_ORDER, get_method_indices_pairs
-from .utilities import reverse_qubit_order, two_qubit_state_tomography
+from .general_utils import reverse_qubit_order, two_qubit_state_tomography
 
 np.set_printoptions(precision=6)
 
@@ -188,10 +188,10 @@ class ResponseFunction:
             save_data: Whether to save the response function to file.
 
         Returns:
-            chis_all: A dictionary from orbital strings to the corresponding charge-charge response functions.
+            chis_all (Optional): A dictionary from orbital strings to the corresponding charge-charge response functions.
         """
-        # Sum over spins in N
-        N_summed = self.N['n'].reshape((self.n_orbitals, 2, self.n_orbitals, 2, 3)).sum((1, 3))
+        # Sum over spins in N.
+        N_summed = self.N['n'].reshape((self.n_orbitals, 2, self.n_orbitals, 2, self.n_states['n'])).sum((1, 3))
 
         chis_all = dict()
         for i in range(self.n_orbitals):

@@ -14,8 +14,8 @@ def main():
 	qubits = cirq.LineQubit.range(4)
 	hamiltonian = get_lih_hamiltonian(3.0)
 	fname = 'lih_3A_sim'
-	method = 'exact'
-	spin = 'u'
+	method = 'tomo'
+	spin = 'd'
 	
 	initialize_hdf5(fname, mode='greens', spin=spin)
 

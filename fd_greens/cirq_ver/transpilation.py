@@ -12,7 +12,7 @@ import cirq
 
 from fd_greens.cirq_ver.parameters import CSD_IN_ITOFFOLI_ON_45
 
-from .utilities import unitary_equal
+from .general_utils import unitary_equal
 from .parameters import CHECK_CIRCUITS
 
 
@@ -193,7 +193,7 @@ def convert_swap_to_cz(circuit: cirq.Circuit) -> cirq.Circuit:
 
 # TODO: This can be combined with transpile_1q_gates into a single function.
 def convert_phxz_to_xpi2(circuit: cirq.Circuit) -> cirq.Circuit:
-    """Converts ``PhasedXZGate``s to X(pi/2) gates and virtual Z gates.
+    """Converts ``PhasedXZGate`` s to X(pi/2) gates and virtual Z gates.
     
     Args:
         circuit: The circuit to be converted.

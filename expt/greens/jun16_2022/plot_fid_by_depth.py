@@ -3,7 +3,7 @@ sys.path.append('../../..')
 
 import pickle
 
-from fd_greens.cirq_ver.helpers import get_circuit_labels, get_tomography_labels, plot_fidelity_by_depth
+from fd_greens import get_circuit_labels, get_tomography_labels, plot_fidelity_by_depth
 
 
 def main():

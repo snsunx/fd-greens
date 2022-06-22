@@ -70,21 +70,33 @@
 <span class="kn">from</span> <span class="nn">dataclasses</span> <span class="kn">import</span> <span class="n">dataclass</span>
 <span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">List</span><span class="p">,</span> <span class="n">Sequence</span>
 
-<span class="c1"># Hartree to electron volts conversion.</span>
-<span class="n">HARTREE_TO_EV</span> <span class="o">=</span> <span class="mf">27.211386245988</span>
+<span class="n">HARTREE_TO_EV</span> <span class="o">=</span> <span class="mf">27.211386245988</span> <span class="c1"># Hartree to electron volts conversion.</span>
+<span class="n">REVERSE_QUBIT_ORDER</span> <span class="o">=</span> <span class="kc">False</span>     <span class="c1"># Whether to reverse qubit order for Qiskit qubit-order postprocessing.</span>
 
-<span class="c1"># Whether to reverse qubit order for Qiskit qubit-order postprocessing. Should be set to False.</span>
-<span class="n">REVERSE_QUBIT_ORDER</span> <span class="o">=</span> <span class="kc">False</span>
-
-<span class="c1"># Whether to apply native CS/CSD gates on qubit pairs and wrap Z rotation gates around iToffoli</span>
-<span class="c1"># for hardware runs. Should be set to True.</span>
-<span class="n">ADJUST_GATES_FOR_HARDWARE</span> <span class="o">=</span> <span class="kc">True</span>
-
-<span class="c1"># Whether to force putting CS dagger gates on qubits 4 and 5. Should be set to False.</span>
-<span class="n">CSD_IN_ITOFFOLI_ON_45</span> <span class="o">=</span> <span class="kc">False</span>
-
-<span class="c1"># Whether to check original and transpiled circuits are equal. Should be set to True.</span>
+<span class="c1"># Circuit construction parameters.</span>
+<span class="n">ADJUST_CS_CSD_GATES</span> <span class="o">=</span> <span class="kc">True</span>      <span class="c1"># Whether to apply native CS/CSD gates on corresponding qubit pairs.</span>
+<span class="n">WRAP_Z_AROUND_ITOFFOLI</span> <span class="o">=</span> <span class="kc">True</span>   <span class="c1"># Whether to wrap Z rotation gates around iToffoli for hardware runs.</span>
+<span class="n">ITOFFOLI_Z_ANGLE</span> <span class="o">=</span> <span class="mf">20.67</span>        <span class="c1"># Adjustment Z gate angles in degree.</span>
+<span class="n">CSD_IN_ITOFFOLI_ON_45</span> <span class="o">=</span> <span class="kc">False</span>   <span class="c1"># Whether to force plutting CS dagger gates on qubits 4 and 5.</span>
+<span class="n">SPLIT_SIMULTANEOUS_CZS</span> <span class="o">=</span> <span class="kc">True</span>   <span class="c1"># Whether to split simultaneous CZ/CS/CSD onto different moments.</span>
 <span class="n">CHECK_CIRCUITS</span> <span class="o">=</span> <span class="kc">True</span>
+
+<span class="c1"># Figure-related parameters.</span>
+<span class="n">linestyles_A</span> <span class="o">=</span> <span class="p">[{},</span> <span class="p">{</span><span class="s2">&quot;ls&quot;</span><span class="p">:</span> <span class="s2">&quot;--&quot;</span><span class="p">,</span> <span class="s2">&quot;marker&quot;</span><span class="p">:</span> <span class="s2">&quot;x&quot;</span><span class="p">,</span> <span class="s2">&quot;markevery&quot;</span><span class="p">:</span> <span class="mi">30</span><span class="p">}]</span>
+<span class="n">linestyles_TrSigma</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="p">{</span><span class="s2">&quot;color&quot;</span><span class="p">:</span> <span class="s2">&quot;xkcd:red&quot;</span><span class="p">},</span>
+    <span class="p">{</span><span class="s2">&quot;color&quot;</span><span class="p">:</span> <span class="s2">&quot;xkcd:blue&quot;</span><span class="p">},</span>
+    <span class="p">{</span><span class="s2">&quot;ls&quot;</span><span class="p">:</span> <span class="s2">&quot;--&quot;</span><span class="p">,</span> <span class="s2">&quot;marker&quot;</span><span class="p">:</span> <span class="s2">&quot;x&quot;</span><span class="p">,</span> <span class="s2">&quot;markevery&quot;</span><span class="p">:</span> <span class="mi">100</span><span class="p">,</span> <span class="s2">&quot;color&quot;</span><span class="p">:</span> <span class="s2">&quot;xkcd:rose pink&quot;</span><span class="p">},</span>
+    <span class="p">{</span><span class="s2">&quot;ls&quot;</span><span class="p">:</span> <span class="s2">&quot;--&quot;</span><span class="p">,</span> <span class="s2">&quot;marker&quot;</span><span class="p">:</span> <span class="s2">&quot;x&quot;</span><span class="p">,</span> <span class="s2">&quot;markevery&quot;</span><span class="p">:</span> <span class="mi">100</span><span class="p">,</span> <span class="s2">&quot;color&quot;</span><span class="p">:</span> <span class="s2">&quot;xkcd:azure&quot;</span><span class="p">},</span>
+<span class="p">]</span>
+<span class="n">linestyles_chi</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="p">{</span><span class="s2">&quot;color&quot;</span><span class="p">:</span> <span class="s2">&quot;xkcd:red&quot;</span><span class="p">},</span>
+    <span class="p">{</span><span class="s2">&quot;color&quot;</span><span class="p">:</span> <span class="s2">&quot;xkcd:blue&quot;</span><span class="p">},</span>
+    <span class="p">{</span><span class="s2">&quot;ls&quot;</span><span class="p">:</span> <span class="s2">&quot;--&quot;</span><span class="p">,</span> <span class="s2">&quot;marker&quot;</span><span class="p">:</span> <span class="s2">&quot;x&quot;</span><span class="p">,</span> <span class="s2">&quot;markevery&quot;</span><span class="p">:</span> <span class="mi">100</span><span class="p">,</span> <span class="s2">&quot;color&quot;</span><span class="p">:</span> <span class="s2">&quot;xkcd:rose pink&quot;</span><span class="p">},</span>
+    <span class="p">{</span><span class="s2">&quot;ls&quot;</span><span class="p">:</span> <span class="s2">&quot;--&quot;</span><span class="p">,</span> <span class="s2">&quot;marker&quot;</span><span class="p">:</span> <span class="s2">&quot;x&quot;</span><span class="p">,</span> <span class="s2">&quot;markevery&quot;</span><span class="p">:</span> <span class="mi">100</span><span class="p">,</span> <span class="s2">&quot;color&quot;</span><span class="p">:</span> <span class="s2">&quot;xkcd:azure&quot;</span><span class="p">},</span>
+<span class="p">]</span>
+<span class="n">FIGURE_DPI</span> <span class="o">=</span> <span class="mi">250</span>
+
 
 <div class="viewcode-block" id="MethodIndicesPairs"><a class="viewcode-back" href="../../../fd_greens.cirq_ver.parameters.html#fd_greens.cirq_ver.parameters.MethodIndicesPairs">[docs]</a><span class="nd">@dataclass</span>
 <span class="k">class</span> <span class="nc">MethodIndicesPairs</span><span class="p">:</span>

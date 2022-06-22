@@ -14,7 +14,7 @@ import numpy as np
 from .molecular_hamiltonian import MolecularHamiltonian
 from .qubit_indices import QubitIndices
 from .parameters import REVERSE_QUBIT_ORDER, get_method_indices_pairs
-from .utilities import reverse_qubit_order, two_qubit_state_tomography
+from .general_utils import reverse_qubit_order, two_qubit_state_tomography
 
 np.set_printoptions(precision=6)
 

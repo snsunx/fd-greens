@@ -11,7 +11,7 @@ from itertools import product
 import numpy as np
 from deprecated import deprecated
 
-from .utilities import histogram_to_array, reverse_qubit_order
+from .general_utils import reverse_qubit_order
 
 @deprecated
 def restrict_to_qubit_subspace(
@@ -53,47 +53,6 @@ def restrict_to_qubit_subspace(
     if reverse:
         arr_new = reverse_qubit_order(arr_new)
     return arr_new
-
-def process_bitstring_counts(
-    histogram: dict,
-    confusion_matrix: Optional[np.ndarray] = None,
-    pad_zero: str = '',
-    fname: Optional[str] = None,
-    dset_name: Optional[str] = None,
-    counts_name: Optional[str] = None
-) -> np.ndarray:
-    """Processes bitstring counts."""
-    assert pad_zero in ['', 'front', 'end']
-
-    # TODO: n_qubits should be set in all cases.
-    # if confusion_matrix is not None:
-    #     n_qubits = int(np.log(confusion_matrix.shape[0]) / np.log(3))
-    
-    n_qubits = len(list(histogram.keys())[0])
-    array = histogram_to_array(histogram, n_qubits=n_qubits, base=3)
-
-    # Perform readout error mitigation if confusion matrix is given.
-    if confusion_matrix is not None:
-        array = np.linalg.lstsq(confusion_matrix, array)[0]
-    
-    # Restrict to qubit subspace.
-    if pad_zero == 'front':
-        indices = [int('0' + ''.join(x), 3) for x in product('01', repeat=n_qubits - 1)]
-    elif pad_zero == 'end':
-        indices = [int(''.join(x) + '0', 3) for x in product('01', repeat=n_qubits - 1)]
-    else:
-        indices = [int(''.join(x), 3) for x in product('01', repeat=n_qubits)]    
-    array = array[indices]
-    array = array / np.sum(array)
-
-    if fname is not None:
-        assert dset_name is not None
-        assert counts_name is not None
-        h5file = h5py.File(fname + '.h5', 'r+')
-        h5file[dset_name].attrs[counts_name] = array
-        h5file.close()
-    else:
-        return array
 
 @deprecated
 def process_berkeley_results(

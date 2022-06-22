@@ -76,7 +76,7 @@
 
 <span class="kn">from</span> <span class="nn">.transpilation</span> <span class="kn">import</span> <span class="n">C0C0iXGate</span>
 <span class="kn">from</span> <span class="nn">.utilities</span> <span class="kn">import</span> <span class="n">get_gate_counts</span>
-<span class="kn">from</span> <span class="nn">.parameters</span> <span class="kn">import</span> <span class="n">ADJUST_GATES_FOR_HARDWARE</span><span class="p">,</span> <span class="n">CHECK_CIRCUITS</span>
+<span class="kn">from</span> <span class="nn">.parameters</span> <span class="kn">import</span> <span class="n">CHECK_CIRCUITS</span><span class="p">,</span> <span class="n">ADJUST_CS_CSD_GATES</span><span class="p">,</span> <span class="n">WRAP_Z_AROUND_ITOFFOLI</span><span class="p">,</span> <span class="n">ITOFFOLI_Z_ANGLE</span><span class="p">,</span> <span class="n">SPLIT_SIMULTANEOUS_CZS</span>
 
 
 <div class="viewcode-block" id="CircuitStringConverter"><a class="viewcode-back" href="../../../fd_greens.cirq_ver.circuit_string_converter.html#fd_greens.cirq_ver.circuit_string_converter.CircuitStringConverter">[docs]</a><span class="k">class</span> <span class="nc">CircuitStringConverter</span><span class="p">:</span>
@@ -121,6 +121,8 @@
                 <span class="n">gate</span> <span class="o">=</span> <span class="n">cirq</span><span class="o">.</span><span class="n">CZPowGate</span><span class="p">(</span><span class="n">exponent</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)</span>
             <span class="k">elif</span> <span class="n">gstring</span> <span class="o">==</span> <span class="s2">&quot;CSD&quot;</span><span class="p">:</span>
                 <span class="n">gate</span> <span class="o">=</span> <span class="n">cirq</span><span class="o">.</span><span class="n">CZPowGate</span><span class="p">(</span><span class="n">exponent</span><span class="o">=-</span><span class="mf">0.5</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">gstring</span> <span class="o">==</span> <span class="s2">&quot;CP&quot;</span><span class="p">:</span>
+                <span class="n">gate</span> <span class="o">=</span> <span class="n">cirq</span><span class="o">.</span><span class="n">I</span>
             <span class="k">elif</span> <span class="n">gstring</span> <span class="o">==</span> <span class="s2">&quot;TOF&quot;</span><span class="p">:</span>
                 <span class="n">gate</span> <span class="o">=</span> <span class="n">C0C0iXGate</span><span class="p">()</span>
             <span class="k">elif</span> <span class="n">gstring</span> <span class="o">==</span> <span class="s2">&quot;SWAP&quot;</span><span class="p">:</span>
@@ -133,7 +135,10 @@
             <span class="k">if</span> <span class="n">gate_name</span> <span class="o">==</span> <span class="s2">&quot;X&quot;</span><span class="p">:</span>
                 <span class="n">gate</span> <span class="o">=</span> <span class="n">cirq</span><span class="o">.</span><span class="n">XPowGate</span><span class="p">(</span><span class="n">exponent</span><span class="o">=</span><span class="n">exponent</span><span class="p">)</span>
             <span class="k">elif</span> <span class="n">gate_name</span> <span class="o">==</span> <span class="s2">&quot;Z&quot;</span><span class="p">:</span>
-                <span class="n">gate</span> <span class="o">=</span> <span class="n">cirq</span><span class="o">.</span><span class="n">ZPowGate</span><span class="p">(</span><span class="n">exponent</span><span class="o">=</span><span class="n">exponent</span><span class="p">)</span>
+                <span class="k">if</span> <span class="nb">abs</span><span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">exponent</span><span class="p">)</span> <span class="o">-</span> <span class="n">ITOFFOLI_Z_ANGLE</span> <span class="o">/</span> <span class="mf">180.0</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mf">1e-8</span><span class="p">:</span>
+                    <span class="n">gate</span> <span class="o">=</span> <span class="n">cirq</span><span class="o">.</span><span class="n">I</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">gate</span> <span class="o">=</span> <span class="n">cirq</span><span class="o">.</span><span class="n">ZPowGate</span><span class="p">(</span><span class="n">exponent</span><span class="o">=</span><span class="n">exponent</span><span class="p">)</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Parametrized gate can only be X or Z. Got </span><span class="si">{</span><span class="n">gate_name</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">gate</span>
@@ -202,10 +207,15 @@
                     <span class="n">qstring</span><span class="p">,</span> <span class="n">gstring</span> <span class="o">=</span> <span class="n">string</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;/&quot;</span><span class="p">)</span>
                 <span class="k">else</span><span class="p">:</span>  <span class="c1"># multi-qubit gate</span>
                     <span class="n">gstring</span><span class="p">,</span> <span class="n">qstring</span> <span class="o">=</span> <span class="n">string</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;/&quot;</span><span class="p">)</span>
+                
                 <span class="n">qubits</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_qstring_to_qubits</span><span class="p">(</span><span class="n">qstring</span><span class="p">)</span>
                 <span class="n">gate</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_gstring_to_gate</span><span class="p">(</span><span class="n">gstring</span><span class="p">)</span>
-                <span class="n">ops_moment</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">gate</span><span class="p">(</span><span class="o">*</span><span class="n">qubits</span><span class="p">))</span>
-            <span class="n">circuit</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">cirq</span><span class="o">.</span><span class="n">Moment</span><span class="p">(</span><span class="n">ops_moment</span><span class="p">))</span>
+                <span class="c1"># print(f&quot;{gate = }&quot;)</span>
+                <span class="k">if</span> <span class="n">gate</span> <span class="o">!=</span> <span class="n">cirq</span><span class="o">.</span><span class="n">I</span><span class="p">:</span> <span class="c1"># Z and CP around iToffoli</span>
+                    <span class="n">ops_moment</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">gate</span><span class="p">(</span><span class="o">*</span><span class="n">qubits</span><span class="p">))</span>
+            
+            <span class="k">if</span> <span class="n">ops_moment</span> <span class="o">!=</span> <span class="p">[]:</span>
+                <span class="n">circuit</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">cirq</span><span class="o">.</span><span class="n">Moment</span><span class="p">(</span><span class="n">ops_moment</span><span class="p">))</span>
 
         <span class="k">return</span> <span class="n">circuit</span></div>
 
@@ -218,7 +228,6 @@
 <span class="sd">        Returns:</span>
 <span class="sd">            qtrl_strings: The Qtrl strings corresponding to the Cirq circuit.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-
         <span class="n">qtrl_strings</span> <span class="o">=</span> <span class="p">[]</span>
 
         <span class="n">i_moment</span> <span class="o">=</span> <span class="mi">0</span>
@@ -244,7 +253,7 @@
                 <span class="k">else</span><span class="p">:</span>
                     <span class="n">qtrl_string</span> <span class="o">=</span> <span class="n">gstring</span> <span class="o">+</span> <span class="s2">&quot;/&quot;</span> <span class="o">+</span> <span class="n">qstring</span>
 
-                <span class="k">if</span> <span class="n">ADJUST_GATES_FOR_HARDWARE</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">ADJUST_CS_CSD_GATES</span><span class="p">:</span>
                     <span class="k">if</span> <span class="n">qtrl_string</span> <span class="o">==</span> <span class="s1">&#39;CS/C5T4&#39;</span><span class="p">:</span>
                         <span class="n">qtrl_string</span> <span class="o">=</span> <span class="n">qtrl_string</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;CS&#39;</span><span class="p">,</span> <span class="s1">&#39;CSD&#39;</span><span class="p">)</span>
                         <span class="n">adjustments</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">i_moment</span><span class="p">,</span> <span class="p">[</span><span class="s1">&#39;CZ/C5T4&#39;</span><span class="p">]))</span>
@@ -257,22 +266,30 @@
                         <span class="n">qtrl_string</span> <span class="o">=</span> <span class="n">qtrl_string</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;CS&#39;</span><span class="p">,</span> <span class="s1">&#39;CSD&#39;</span><span class="p">)</span>
                         <span class="n">adjustments</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">i_moment</span><span class="p">,</span> <span class="p">[</span><span class="s1">&#39;CZ/C7T6&#39;</span><span class="p">]))</span>
                 
+                <span class="k">if</span> <span class="n">WRAP_Z_AROUND_ITOFFOLI</span><span class="p">:</span>
                     <span class="k">if</span> <span class="n">qtrl_string</span> <span class="o">==</span> <span class="s1">&#39;TOF/C4C6T5&#39;</span><span class="p">:</span>
-                        <span class="n">adjustments</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">i_moment</span><span class="p">,</span> <span class="p">[</span><span class="s1">&#39;Q5/Z-20.67&#39;</span><span class="p">]))</span>
-                        <span class="n">adjustments</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">i_moment</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="p">[</span><span class="s1">&#39;Q5/Z20.67&#39;</span><span class="p">]))</span>
+                        <span class="n">adjustments</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">i_moment</span><span class="p">,</span> <span class="p">[</span><span class="sa">f</span><span class="s1">&#39;Q5/Z-</span><span class="si">{</span><span class="n">ITOFFOLI_Z_ANGLE</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">]))</span>
+                        <span class="n">adjustments</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">i_moment</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="p">[</span><span class="sa">f</span><span class="s1">&#39;Q5/Z</span><span class="si">{</span><span class="n">ITOFFOLI_Z_ANGLE</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">]))</span>
+                        <span class="n">adjustments</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">i_moment</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="p">[</span><span class="s1">&#39;CP/C7T6&#39;</span><span class="p">]))</span>
                 
                 <span class="n">strings_moment</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">qtrl_string</span><span class="p">)</span>
             
-            <span class="k">if</span> <span class="n">strings_moment</span> <span class="o">!=</span> <span class="p">[]:</span>  <span class="c1"># [] when all identities or measurements</span>
+            <span class="k">if</span> <span class="n">SPLIT_SIMULTANEOUS_CZS</span> <span class="ow">and</span> <span class="p">(</span>
+                <span class="n">re</span><span class="o">.</span><span class="n">findall</span><span class="p">(</span><span class="s2">&quot;C(?:Z|S|SD)/C5T4_C(?:Z|S|SD)/C7T6&quot;</span><span class="p">,</span> <span class="s1">&#39;_&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">strings_moment</span><span class="p">))</span> <span class="o">!=</span> <span class="p">[]</span> <span class="ow">or</span> 
+                <span class="n">re</span><span class="o">.</span><span class="n">findall</span><span class="p">(</span><span class="s2">&quot;C(?:Z|S|SD)/C7T6_C(?:Z|S|SD)/C5T4&quot;</span><span class="p">,</span> <span class="s1">&#39;_&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">strings_moment</span><span class="p">))</span> <span class="o">!=</span> <span class="p">[]):</span>
+                <span class="n">i_moment</span> <span class="o">+=</span> <span class="mi">2</span>
+                <span class="n">qtrl_strings</span><span class="o">.</span><span class="n">append</span><span class="p">([</span><span class="n">strings_moment</span><span class="p">[</span><span class="mi">0</span><span class="p">]])</span>
+                <span class="n">qtrl_strings</span><span class="o">.</span><span class="n">append</span><span class="p">([</span><span class="n">strings_moment</span><span class="p">[</span><span class="mi">1</span><span class="p">]])</span>
+            <span class="k">elif</span> <span class="n">strings_moment</span> <span class="o">!=</span> <span class="p">[]:</span> <span class="c1"># [] when all identities or measurements</span>
                 <span class="n">i_moment</span> <span class="o">+=</span> <span class="mi">1</span>
                 <span class="n">qtrl_strings</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">strings_moment</span><span class="p">)</span>
 
         
         <span class="c1"># Insert adjustment gates to qtrl_strings.</span>
-        <span class="n">offset</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">moment_offset</span> <span class="o">=</span> <span class="mi">0</span>
         <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">strings_moment</span> <span class="ow">in</span> <span class="n">adjustments</span><span class="p">:</span>
-            <span class="n">qtrl_strings</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="n">i</span> <span class="o">+</span> <span class="n">offset</span><span class="p">,</span> <span class="n">strings_moment</span><span class="p">)</span>
-            <span class="n">offset</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="n">qtrl_strings</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="n">i</span> <span class="o">+</span> <span class="n">moment_offset</span><span class="p">,</span> <span class="n">strings_moment</span><span class="p">)</span>
+            <span class="n">moment_offset</span> <span class="o">+=</span> <span class="mi">1</span>
         
         <span class="k">return</span> <span class="n">qtrl_strings</span></div></div>
 </pre></div>

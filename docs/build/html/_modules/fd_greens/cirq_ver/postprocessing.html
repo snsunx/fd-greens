@@ -72,10 +72,12 @@
 <span class="kn">from</span> <span class="nn">itertools</span> <span class="kn">import</span> <span class="n">product</span>
 
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">deprecated</span> <span class="kn">import</span> <span class="n">deprecated</span>
 
-<span class="kn">from</span> <span class="nn">.utilities</span> <span class="kn">import</span> <span class="n">histogram_to_array</span><span class="p">,</span> <span class="n">reverse_qubit_order</span>
+<span class="kn">from</span> <span class="nn">.utilities</span> <span class="kn">import</span> <span class="n">reverse_qubit_order</span>
 
-<div class="viewcode-block" id="restrict_to_qubit_subspace"><a class="viewcode-back" href="../../../fd_greens.cirq_ver.postprocessing.html#fd_greens.cirq_ver.postprocessing.restrict_to_qubit_subspace">[docs]</a><span class="k">def</span> <span class="nf">restrict_to_qubit_subspace</span><span class="p">(</span>
+<div class="viewcode-block" id="restrict_to_qubit_subspace"><a class="viewcode-back" href="../../../fd_greens.cirq_ver.postprocessing.html#fd_greens.cirq_ver.postprocessing.restrict_to_qubit_subspace">[docs]</a><span class="nd">@deprecated</span>
+<span class="k">def</span> <span class="nf">restrict_to_qubit_subspace</span><span class="p">(</span>
     <span class="n">arr</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">circ_label</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">reverse</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;Restricts the bitstrings counts to the qubit subspace.</span>
@@ -115,49 +117,8 @@
         <span class="n">arr_new</span> <span class="o">=</span> <span class="n">reverse_qubit_order</span><span class="p">(</span><span class="n">arr_new</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">arr_new</span></div>
 
-<div class="viewcode-block" id="process_bitstring_counts"><a class="viewcode-back" href="../../../fd_greens.cirq_ver.postprocessing.html#fd_greens.cirq_ver.postprocessing.process_bitstring_counts">[docs]</a><span class="k">def</span> <span class="nf">process_bitstring_counts</span><span class="p">(</span>
-    <span class="n">histogram</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span>
-    <span class="n">confusion_matrix</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">pad_zero</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span><span class="p">,</span>
-    <span class="n">fname</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">dset_name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">counts_name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Processes bitstring counts.&quot;&quot;&quot;</span>
-    <span class="k">assert</span> <span class="n">pad_zero</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="s1">&#39;front&#39;</span><span class="p">,</span> <span class="s1">&#39;end&#39;</span><span class="p">]</span>
-
-    <span class="c1"># TODO: n_qubits should be set in all cases.</span>
-    <span class="c1"># if confusion_matrix is not None:</span>
-    <span class="c1">#     n_qubits = int(np.log(confusion_matrix.shape[0]) / np.log(3))</span>
-    
-    <span class="n">n_qubits</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">histogram</span><span class="o">.</span><span class="n">keys</span><span class="p">())[</span><span class="mi">0</span><span class="p">])</span>
-    <span class="n">array</span> <span class="o">=</span> <span class="n">histogram_to_array</span><span class="p">(</span><span class="n">histogram</span><span class="p">,</span> <span class="n">n_qubits</span><span class="o">=</span><span class="n">n_qubits</span><span class="p">,</span> <span class="n">base</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
-
-    <span class="c1"># Perform readout error mitigation if confusion matrix is given.</span>
-    <span class="k">if</span> <span class="n">confusion_matrix</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="n">array</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">lstsq</span><span class="p">(</span><span class="n">confusion_matrix</span><span class="p">,</span> <span class="n">array</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
-    
-    <span class="c1"># Restrict to qubit subspace.</span>
-    <span class="k">if</span> <span class="n">pad_zero</span> <span class="o">==</span> <span class="s1">&#39;front&#39;</span><span class="p">:</span>
-        <span class="n">indices</span> <span class="o">=</span> <span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="s1">&#39;0&#39;</span> <span class="o">+</span> <span class="s1">&#39;&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">x</span><span class="p">),</span> <span class="mi">3</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">product</span><span class="p">(</span><span class="s1">&#39;01&#39;</span><span class="p">,</span> <span class="n">repeat</span><span class="o">=</span><span class="n">n_qubits</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)]</span>
-    <span class="k">elif</span> <span class="n">pad_zero</span> <span class="o">==</span> <span class="s1">&#39;end&#39;</span><span class="p">:</span>
-        <span class="n">indices</span> <span class="o">=</span> <span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="s1">&#39;&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">+</span> <span class="s1">&#39;0&#39;</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">product</span><span class="p">(</span><span class="s1">&#39;01&#39;</span><span class="p">,</span> <span class="n">repeat</span><span class="o">=</span><span class="n">n_qubits</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)]</span>
-    <span class="k">else</span><span class="p">:</span>
-        <span class="n">indices</span> <span class="o">=</span> <span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="s1">&#39;&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">x</span><span class="p">),</span> <span class="mi">3</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">product</span><span class="p">(</span><span class="s1">&#39;01&#39;</span><span class="p">,</span> <span class="n">repeat</span><span class="o">=</span><span class="n">n_qubits</span><span class="p">)]</span>    
-    <span class="n">array</span> <span class="o">=</span> <span class="n">array</span><span class="p">[</span><span class="n">indices</span><span class="p">]</span>
-    <span class="n">array</span> <span class="o">=</span> <span class="n">array</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">array</span><span class="p">)</span>
-
-    <span class="k">if</span> <span class="n">fname</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="k">assert</span> <span class="n">dset_name</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
-        <span class="k">assert</span> <span class="n">counts_name</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
-        <span class="n">h5file</span> <span class="o">=</span> <span class="n">h5py</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="n">fname</span> <span class="o">+</span> <span class="s1">&#39;.h5&#39;</span><span class="p">,</span> <span class="s1">&#39;r+&#39;</span><span class="p">)</span>
-        <span class="n">h5file</span><span class="p">[</span><span class="n">dset_name</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="n">counts_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">array</span>
-        <span class="n">h5file</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
-    <span class="k">else</span><span class="p">:</span>
-        <span class="k">return</span> <span class="n">array</span></div>
-
-
-<div class="viewcode-block" id="process_berkeley_results"><a class="viewcode-back" href="../../../fd_greens.cirq_ver.postprocessing.html#fd_greens.cirq_ver.postprocessing.process_berkeley_results">[docs]</a><span class="k">def</span> <span class="nf">process_berkeley_results</span><span class="p">(</span>
+<div class="viewcode-block" id="process_berkeley_results"><a class="viewcode-back" href="../../../fd_greens.cirq_ver.postprocessing.html#fd_greens.cirq_ver.postprocessing.process_berkeley_results">[docs]</a><span class="nd">@deprecated</span>
+<span class="k">def</span> <span class="nf">process_berkeley_results</span><span class="p">(</span>
     <span class="n">h5fname</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">circ_label</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">tomo_label</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">counts_name</span><span class="p">:</span> <span class="nb">str</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;Processes the Berkeley hardware results and saves the processed bitstring counts </span>
@@ -179,8 +140,8 @@
     <span class="n">counts_exp_proc</span> <span class="o">=</span> <span class="n">restrict_to_qubit_subspace</span><span class="p">(</span><span class="n">counts_exp</span><span class="p">,</span> <span class="n">circ_label</span><span class="o">=</span><span class="n">circ_label</span><span class="p">)</span>
     <span class="n">dset</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">counts_name</span><span class="si">}</span><span class="s2">_exp_proc&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">counts_exp_proc</span></div>
 
-
-<div class="viewcode-block" id="compute_tvd"><a class="viewcode-back" href="../../../fd_greens.cirq_ver.postprocessing.html#fd_greens.cirq_ver.postprocessing.compute_tvd">[docs]</a><span class="k">def</span> <span class="nf">compute_tvd</span><span class="p">(</span><span class="n">h5fname</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">circ_label</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">counts_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<div class="viewcode-block" id="compute_tvd"><a class="viewcode-back" href="../../../fd_greens.cirq_ver.postprocessing.html#fd_greens.cirq_ver.postprocessing.compute_tvd">[docs]</a><span class="nd">@deprecated</span>
+<span class="k">def</span> <span class="nf">compute_tvd</span><span class="p">(</span><span class="n">h5fname</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">circ_label</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">counts_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;Calculates the average total variational distance (TVD) of a circuit.</span>
 <span class="sd">    </span>
 <span class="sd">    Args:</span>
