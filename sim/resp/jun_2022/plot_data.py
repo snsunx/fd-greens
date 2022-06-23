@@ -19,10 +19,10 @@ def main_process():
     """Processes bitstring counts and save to file."""
 
     # Load circuit labels and bitstring counts from files.
-    pkl_data = pickle.load(open(f'resp_3A_run0616_0.pkl', 'rb'))
+    pkl_data = pickle.load(open(f'resp_3A_run0621_0.pkl', 'rb'))
     labels = pkl_data['full']['labels']
     counts = pkl_data['full']['results']
-    confusion_matrix = np.load(f'response_greens_0616_0.npy')
+    confusion_matrix = np.load(f'response_greens_0621_0.npy')
 
     # Initialize HDF5 files to store processed bitstring counts.
     fname = f'lih_3A_expt'
@@ -45,17 +45,17 @@ def main_generate():
     hamiltonian = get_lih_hamiltonian(3.0)
     omegas = np.arange(-20, 20, 0.01)
     eta = 0.02 * HARTREE_TO_EV
-    for fname in ['lih_resp_exact']:
-        resp = ResponseFunction(hamiltonian, fname=fname, method='exact')
+    for fname in ['lih_resp_tomo']:
+        resp = ResponseFunction(hamiltonian, fname=fname, method='tomo')
         resp.response_function(omegas, eta)
 
 def main_plot():
-    h5fnames = ['lih_resp_exact', 'lih_3A_expt']
+    h5fnames = ['lih_resp_exact', 'lih_resp_tomo']
     suffixes = ['', '']
-    labels = ['Exact', 'Expt']
+    labels = ['Exact', 'Sim']
     plot_response_function(h5fnames, suffixes, labels=labels, text="legend", dirname=f"figs/data")
 
 if __name__ == '__main__':
     # main_process()
-    # main_generate()
+    main_generate()
     main_plot()

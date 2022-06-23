@@ -17,7 +17,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from .circuit_string_converter import CircuitStringConverter
-from .general_utils import combine_simultaneous_cz, get_non_z_locations, histogram_to_array
+from .general_utils import get_non_z_locations, histogram_to_array
 from .helpers import process_bitstring_counts
 
 
@@ -25,14 +25,14 @@ LINESTYLES_A = [{}, {"ls": "--", "marker": "x", "markevery": 30}]
 LINESTYLES_TRSIGMA = [
     {"color": "xkcd:red"},
     {"color": "xkcd:blue"},
-    {"ls": "--", "marker": "x", "markevery": 100, "color": "xkcd:rose pink"},
-    {"ls": "--", "marker": "x", "markevery": 100, "color": "xkcd:azure"},
+    {"ls": "--", "marker": "x", "markevery": 100, "color": "xkcd:orange"},
+    {"ls": "--", "marker": "x", "markevery": 100, "color": "xkcd:teal"},
 ]
 LINESTYLES_CHI = [
     {"color": "xkcd:red"},
     {"color": "xkcd:blue"},
-    {"ls": "--", "marker": "x", "markevery": 100, "color": "xkcd:rose pink"},
-    {"ls": "--", "marker": "x", "markevery": 100, "color": "xkcd:azure"},
+    {"ls": "--", "marker": "x", "markevery": 100, "color": "xkcd:orange"},
+    {"ls": "--", "marker": "x", "markevery": 100, "color": "xkcd:teal"},
 ]
 FIGURE_DPI = 250
 
@@ -46,7 +46,7 @@ def plot_spectral_function(
     dirname: str = "figs",
     figname: str = "A",
     text: Optional[str] = None,
-    n_curves: Optional[int] = None,
+    n_curves: Optional[int] = None
 ) -> None:
     """Plots the spectral function.
     
@@ -100,6 +100,7 @@ def plot_trace_self_energy(
     linestyles: Sequence[dict] = LINESTYLES_TRSIGMA,
     text: str = None,
     n_curves: Optional[int] = None,
+    separate_real_imag: bool = True
 ) -> None:
     """Plots the trace of the self-energy.
     
@@ -123,19 +124,37 @@ def plot_trace_self_energy(
         linestyles = [{}] * n_curves
 
     plt.clf()
-    fig, ax = plt.subplots()
-    # for h5fname, suffix, label, linestyle in zip(fnames, suffixes, labels, linestyles):
-    for i in range(n_curves // 2):
-        omegas, real, imag = np.loadtxt(f"data/{fnames[i]}{suffixes[i]}_TrSigma.dat").T
-        ax.plot(omegas, real, label=labels[i] + " (real)", **linestyles[2 * i])
-        ax.plot(omegas, imag, label=labels[i] + " (imag)", **linestyles[2 * i + 1])
-    ax.set_xlabel("$\omega$ (eV)")
-    ax.set_ylabel("Tr$\Sigma$ (eV)")
-    if text == "legend":
-        ax.legend()
-    elif text == "annotation":
-        for i in range(n_curves):
-            ax.text(**annotations[i], transform=ax.transAxes)
+    if separate_real_imag:
+        fig, axes = plt.subplots(1, 2, figsize=(12, 4))
+        for i in range(n_curves // 2):
+            omegas, real, imag = np.loadtxt(f"data/{fnames[i]}{suffixes[i]}_TrSigma.dat").T
+
+            axes[0].plot(omegas, real, label=labels[i], **linestyles[2 * i])
+            axes[0].set_xlabel("$\omega$ (eV)")
+            axes[0].set_ylabel("Re Tr$\Sigma$ (eV)")
+
+            axes[1].plot(omegas, imag, label=labels[i], **linestyles[2 * i + 1])
+            axes[1].set_xlabel("$\omega$ (eV)")
+            axes[1].set_ylabel("Im Tr$\Sigma$ (eV)")
+            if text == "legend":
+                axes[0].legend()
+                axes[1].legend()
+            elif text == "annotation":
+                pass
+    else:
+        fig, ax = plt.subplots()
+        # for h5fname, suffix, label, linestyle in zip(fnames, suffixes, labels, linestyles):
+        for i in range(n_curves // 2):
+            omegas, real, imag = np.loadtxt(f"data/{fnames[i]}{suffixes[i]}_TrSigma.dat").T
+            ax.plot(omegas, real, label=labels[i] + " (real)", **linestyles[2 * i])
+            ax.plot(omegas, imag, label=labels[i] + " (imag)", **linestyles[2 * i + 1])
+        ax.set_xlabel("$\omega$ (eV)")
+        ax.set_ylabel("Tr$\Sigma$ (eV)")
+        if text == "legend":
+            ax.legend()
+        elif text == "annotation":
+            for i in range(n_curves):
+                ax.text(**annotations[i], transform=ax.transAxes)
 
     if not os.path.exists(dirname):
         os.makedirs(dirname)
@@ -155,6 +174,7 @@ def plot_response_function(
     linestyles: Sequence[dict] = LINESTYLES_CHI,
     text: Optional[str] = None,
     n_curves: Optional[int] = None,
+    separate_real_imag: bool = True
 ) -> None:
     """Plots the charge-charge response function.
 
@@ -179,19 +199,38 @@ def plot_response_function(
     # for h5fname, suffix, label, linestyle in zip(fnames, suffixes, labels, linestyles):
     for circ_label in ['00', '01', '10', '11']:
         plt.clf()
-        fig, ax = plt.subplots()
-        for i in range(n_curves // 2):
-            omegas, real, imag = np.loadtxt(f"data/{fnames[i]}{suffixes[i]}_chi{circ_label}.dat").T
-            ax.plot(omegas, real, label=labels[i] + " (real)", **linestyles[2 * i])
-            ax.plot(omegas, imag, label=labels[i] + " (imag)", **linestyles[2 * i + 1])
-        ax.set_xlabel("$\omega$ (eV)")
-        ax.set_ylabel("$\chi_{" + circ_label + "}$ (eV$^{-1}$)")
-        if text == "legend":
-            ax.legend()
-        elif text == "annotation":
-            # for kwargs in annotations:
-            for i in range(n_curves):
-                ax.text(**annotations[i], transform=ax.transAxes)
+        if separate_real_imag:
+            fig, axes = plt.subplots(1, 2, figsize=(12, 4))
+
+            for i in range(n_curves // 2):
+                omegas, real, imag = np.loadtxt(f"data/{fnames[i]}{suffixes[i]}_chi{circ_label}.dat").T
+
+                axes[0].plot(omegas, real, label=labels[i], **linestyles[2 * i])
+                axes[0].set_xlabel("$\omega$ (eV)")
+                axes[0].set_ylabel("Re $\chi_{" + circ_label + "}$ (eV$^{-1}$)")
+                
+                axes[1].plot(omegas, imag, label=labels[i], **linestyles[2 * i + 1])
+                axes[1].set_xlabel("$\omega$ (eV)")
+                axes[1].set_ylabel("Im $\chi_{" + circ_label + "}$ (eV$^{-1}$)")
+
+            if text == "legend":
+                axes[0].legend()
+                axes[1].legend()
+
+        else:
+            fig, ax = plt.subplots()
+            for i in range(n_curves // 2):
+                omegas, real, imag = np.loadtxt(f"data/{fnames[i]}{suffixes[i]}_chi{circ_label}.dat").T
+                ax.plot(omegas, real, label=labels[i] + " (real)", **linestyles[2 * i])
+                ax.plot(omegas, imag, label=labels[i] + " (imag)", **linestyles[2 * i + 1])
+            ax.set_xlabel("$\omega$ (eV)")
+            ax.set_ylabel("$\chi_{" + circ_label + "}$ (eV$^{-1}$)")
+            if text == "legend":
+                ax.legend()
+            elif text == "annotation":
+                # for kwargs in annotations:
+                for i in range(n_curves):
+                    ax.text(**annotations[i], transform=ax.transAxes)
 
         if not os.path.exists(dirname):
             os.makedirs(dirname)
@@ -295,24 +334,26 @@ def plot_fidelity_by_depth(
     qtrl_strings_expt = pkl_data[circ_name_expt + '_by_depth']['circs'][-1]
     results_expt = pkl_data[circ_name_expt + '_by_depth']['results']
     non_z_locations_expt = get_non_z_locations(qtrl_strings_expt)
-    non_z_locations_expt_comp = get_non_z_locations(combine_simultaneous_cz(qtrl_strings_expt))
+    # non_z_locations_expt_comp = get_non_z_locations(combine_simultaneous_cz(qtrl_strings_expt))
     # print(f'{len(non_z_locations_expt) = }')
     # print(f'{len(non_z_locations_expt_comp) = }')
 
-    if len(non_z_locations_sim) != len(non_z_locations_expt_comp):
+    if len(non_z_locations_sim) != len(non_z_locations_expt):
         warnings.warn("Circuit depth don't match!")
     
     fidelities = []
     locations_itoffoli = []
-    for i, (i_sim, i_expt) in enumerate(zip(non_z_locations_sim, non_z_locations_expt_comp)):
+    for i, (i_sim, i_expt) in enumerate(zip(non_z_locations_sim, non_z_locations_expt)):
         # If mark_toffoli set to True, obtain the locations of iToffoli gates in natural running indices.
+        # print('i = ', i, i_sim, i_expt)
+        assert qtrl_strings[i_expt] == qtrl_strings_expt[i_expt]
         if mark_itoffoli:
-            moment = circuit_sim[i_sim]
+            moment = converter.convert_strings_to_circuit([qtrl_strings_expt[i_expt]]).moments[0]
             if len(moment) == 1 and moment.operations[0].gate.num_qubits() == 3:
                 locations_itoffoli.append(i)
 
         # Compute the simulated bitstring counts.
-        circuit_moment = circuit_sim[:i_sim + 1] + [cirq.measure(q) for q in qubits]
+        circuit_moment = converter.convert_strings_to_circuit(qtrl_strings[:i_expt + 1]) + [cirq.measure(q) for q in qubits]
         result_moment = cirq.Simulator().run(circuit_moment, repetitions=repetitions)
         histogram = result_moment.multi_measurement_histogram(keys=[str(i) for i in range(n_qubits)])
         array_sim = histogram_to_array(histogram)
@@ -337,4 +378,3 @@ def plot_fidelity_by_depth(
     if not os.path.exists(dirname):
         os.makedirs(dirname)
     fig.savefig(f'{dirname}/{figname}.png', dpi=FIGURE_DPI, bbox_inches='tight')
-

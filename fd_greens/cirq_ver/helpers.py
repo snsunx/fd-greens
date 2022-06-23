@@ -67,17 +67,20 @@ def initialize_hdf5(
     mode: str = 'greens',
     spin: str = '',
     n_orbitals: int = 2,
+    n_tomography: int = 2,
     overwrite: bool = True,
     create_datasets: bool = False
 ) -> None:
-    """Initializes an HDF5 file.
+    """Initializes an HDF5 file for Green's function or response function calculation.
     
     Args:
         fname: The HDF5 file name.
         mode: Calculation mode. Either ``'greens'`` or ``'resp'``.
         spin: Spin of the second-quantized operators.
         n_orbitals: Number of orbitals. Defaults to 2.
+        n_tomography: Number of qubits to be tomographed. Defaults to 2.
         overwrite: Whether to overwrite groups if they are found in the HDF5 file.
+        create_datasets: Whether to create datasets in the HDF5 file.
     """
     assert mode in ['greens', 'resp']
     
@@ -102,7 +105,7 @@ def initialize_hdf5(
 
         # Create datasets if create_datasets is set to True.
         if create_datasets and group_name not in ['gs', 'es', 'amp']:
-            tomography_labels = [''.join(x) for x in product('xyz', repeat=2)] # XXX: 2 is hardcoded
+            tomography_labels = [''.join(x) for x in product('xyz', repeat=n_tomography)]
             for tomography_label in tomography_labels:
                 print(f'Creating {group_name}/{tomography_label} in {fname}.h5.')
                 h5file.create_dataset(f'{group_name}/{tomography_label}', data='')

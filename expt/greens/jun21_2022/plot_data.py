@@ -19,10 +19,10 @@ def main_process():
     print("Start processing results.")
 
     # Load circuit labels and bitstring counts from files.
-    pkl_data = pickle.load(open(f'greens_3A_run0616_0.pkl', 'rb'))
+    pkl_data = pickle.load(open(f'greens_3A_run0621_0.pkl', 'rb'))
     labels = pkl_data['full']['labels']
     results = pkl_data['full']['results']
-    confusion_matrix = np.load(f'response_greens_0616_0.npy')
+    confusion_matrix = np.load(f'response_greens_0621_0.npy')
 
     # Initialize HDF5 files to store processed bitstring counts.
     fname = f'lih_3A_expt'
