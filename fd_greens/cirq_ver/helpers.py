@@ -145,7 +145,8 @@ def process_bitstring_counts(
     pad_zero: str = '',
     fname: Optional[str] = None,
     dset_name: Optional[str] = None,
-    counts_name: Optional[str] = None
+    counts_name: Optional[str] = None,
+    mitigation_before_restriction: bool = True
 ) -> Optional[np.ndarray]:
     """Processes bitstring counts.
     
@@ -166,26 +167,40 @@ def process_bitstring_counts(
     n_qubits = len(list(histogram.keys())[0])
     array = histogram_to_array(histogram, n_qubits=n_qubits, base=3)
 
-    # Perform readout error mitigation if confusion matrix is given.
-    if confusion_matrix is not None:
-        array = np.linalg.lstsq(confusion_matrix, array)[0]
-    
-    # Restrict to qubit subspace.
+    # Qubit subspace indices.
     if pad_zero == 'front':
         indices = [int('0' + ''.join(x), 3) for x in product('01', repeat=n_qubits - 1)]
     elif pad_zero == 'end':
         indices = [int(''.join(x) + '0', 3) for x in product('01', repeat=n_qubits - 1)]
     else:
-        indices = [int(''.join(x), 3) for x in product('01', repeat=n_qubits)]    
-    array = array[indices]
-    array = array / np.sum(array)
+        indices = [int(''.join(x), 3) for x in product('01', repeat=n_qubits)]
 
-    if fname is not None:
-        assert dset_name is not None
-        assert counts_name is not None
-        h5file = h5py.File(fname + '.h5', 'r+')
-        h5file[dset_name].attrs[counts_name] = array
-        h5file.close()
+    # Perform readout error mitigation if confusion matrix is given.
+    if confusion_matrix is not None:
+        if mitigation_before_restriction:
+            # Matrix inversion.
+            array = np.linalg.lstsq(confusion_matrix, array)[0]
+
+            # Restrict to qubit subspace.
+            array = array[indices]
+            array = array / np.sum(array)
+        else:
+            # Restrict to qubit subspace.
+            confusion_matrix = confusion_matrix[indices][:, indices]
+            array = array[indices]
+            array = array / np.sum(array)
+
+            # Matrix inversion.
+            array = np.linalg.lstsq(confusion_matrix, array)[0]
+
+    else:
+        # Restrict to qubit subspace.
+        array = array[indices]
+        array = array / np.sum(array)
+
+    if fname is not None and dset_name is not None and counts_name is not None:
+        with h5py.File(fname + '.h5', 'r+') as h5file:
+            h5file[dset_name].attrs[counts_name] = array
     else:
         return array
 

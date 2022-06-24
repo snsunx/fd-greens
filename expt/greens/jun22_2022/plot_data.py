@@ -6,7 +6,7 @@ from fd_greens import plot_spectral_function, plot_trace_self_energy
 def main():
     print("Start plotting data.")
 
-    fnames = ['lih_3A_exact', 'lih_3A_expt_batched', 'lih_3A_expt_batched']
+    fnames = ['lih_3A_exact', 'lih_3A_expt1', 'lih_3A_expt1']
     suffixes = ['', '', '_miti']
     labels = ['Exact', 'Expt', 'Expt (miti)']
 

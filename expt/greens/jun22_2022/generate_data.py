@@ -21,7 +21,7 @@ def main():
     omegas = np.arange(-20, 20, 0.01)
     eta = 0.02 * HARTREE_TO_EV
     for spin in ['u']:
-        for fname in ['lih_3A_exact', 'lih_3A_expt_batched']:
+        for fname in ['lih_3A_exact', 'lih_3A_expt1']:
             if 'exact' in fname:
                 greens = GreensFunction(hamiltonian, fname=fname, method='exact', spin=spin)
                 greens.spectral_function(omegas, eta)
