@@ -25,7 +25,7 @@ def main_process():
     confusion_matrix = np.load(f'response_greens_0621_0.npy')
 
     # Initialize HDF5 files to store processed bitstring counts.
-    fname = f'lih_3A_expt'
+    fname = f'lih_resp_expt'
     initialize_hdf5(fname, mode='resp', create_datasets=True)
     copy_simulation_data(fname, 'lih_resp_sim', 'resp')
 
@@ -45,17 +45,19 @@ def main_generate():
     hamiltonian = get_lih_hamiltonian(3.0)
     omegas = np.arange(-20, 20, 0.01)
     eta = 0.02 * HARTREE_TO_EV
-    for fname in ['lih_resp_sim', 'lih_3A_expt']:
-        resp = ResponseFunction(hamiltonian, fname=fname, method='tomo')
+    for fname in ['lih_resp_exact']:
+        if 'exact' in fname:
+            resp = ResponseFunction(hamiltonian, fname=fname, method='exact')
+        else:
+            resp = ResponseFunction(hamiltonian, fname=fname, method='tomo', suffix='_miti')
         resp.response_function(omegas, eta)
 
 def main_plot():
-    h5fnames = ['lih_resp_exact', 'lih_3A_expt']
-    suffixes = ['', '']
-    labels = ['Exact', 'Expt']
+    h5fnames = ['lih_resp_exact', 'lih_resp_expt', 'lih_resp_expt']
+    suffixes = ['', '', '_miti']
+    labels = ['Exact', 'Expt', 'Expt (miti)']
     plot_response_function(h5fnames, suffixes, labels=labels, text="legend", dirname=f"figs/data")
 
 if __name__ == '__main__':
-    # main_process()
     # main_generate()
     main_plot()

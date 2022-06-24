@@ -16,7 +16,7 @@ from .qubit_indices import QubitIndices
 from .parameters import REVERSE_QUBIT_ORDER, get_method_indices_pairs
 from .general_utils import reverse_qubit_order, two_qubit_state_tomography
 
-np.set_printoptions(precision=6)
+np.set_printoptions(precision=6, suppress=True)
 
 class ResponseFunction:
     """Frequency-domain charge-charge response function."""
@@ -27,7 +27,7 @@ class ResponseFunction:
         fname: str = 'lih',
         suffix: str = '',
         method: str = 'exact',
-        verbose: bool = True
+        verbose: bool = False
     ) -> None:
         """Initializes a ``ResponseFunction`` object.
         
@@ -100,7 +100,7 @@ class ResponseFunction:
                             array_raw = reverse_qubit_order(array_raw)
                             array_label =  array_raw[ancilla_index :: 2]  / repetitions
                         else:
-                            array_label =  array_raw[ancilla_index * 4:(ancilla_index + 1) * 4] / repetitions
+                            array_label =  array_raw[ancilla_index * 4 : (ancilla_index + 1) * 4] / repetitions
                         array_all += list(array_label)
                     
                     density_matrix = two_qubit_state_tomography(array_all)
@@ -193,9 +193,12 @@ class ResponseFunction:
         # Sum over spins in N.
         N_summed = self.N['n'].reshape((self.n_orbitals, 2, self.n_orbitals, 2, self.n_states['n'])).sum((1, 3))
 
+        print(f"{N_summed[0, 1] = }")
+        print(self.energies['n'] - self.energies['gs'])
+
         chis_all = dict()
         for i in range(self.n_orbitals):
-            for j in range(self.n_orbitals):
+            for j in range(self.n_orbitals):  
                 chis = []
 
                 for omega in omegas:

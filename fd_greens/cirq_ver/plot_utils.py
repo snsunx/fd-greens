@@ -21,19 +21,24 @@ from .general_utils import get_non_z_locations, histogram_to_array
 from .helpers import process_bitstring_counts
 
 
-LINESTYLES_A = [{}, {"ls": "--", "marker": "x", "markevery": 30}]
+LINESTYLES_A = [{}, {"ls": "--", "marker": "x", "markevery": 30}, {"ls": "--", "marker": "x", "markevery": 30}]
 LINESTYLES_TRSIGMA = [
     {"color": "xkcd:red"},
     {"color": "xkcd:blue"},
     {"ls": "--", "marker": "x", "markevery": 100, "color": "xkcd:orange"},
     {"ls": "--", "marker": "x", "markevery": 100, "color": "xkcd:teal"},
+    {"ls": "--", "marker": "x", "markevery": 100, "color": "xkcd:purple"},
+    {"ls": "--", "marker": "x", "markevery": 100, "color": "xkcd:indigo"},
 ]
-LINESTYLES_CHI = [
-    {"color": "xkcd:red"},
-    {"color": "xkcd:blue"},
-    {"ls": "--", "marker": "x", "markevery": 100, "color": "xkcd:orange"},
-    {"ls": "--", "marker": "x", "markevery": 100, "color": "xkcd:teal"},
-]
+LINESTYLES_CHI = LINESTYLES_TRSIGMA
+# [
+#     {"color": "xkcd:red"},
+#     {"color": "xkcd:blue"},
+#     {"ls": "--", "marker": "x", "markevery": 100, "color": "xkcd:orange"},
+#     {"ls": "--", "marker": "x", "markevery": 100, "color": "xkcd:teal"},
+#     {"ls": "--", "marker": "x", "markevery": 100, "color": "xkcd:rose pink"},
+#     {"ls": "--", "marker": "x", "markevery": 100, "color": "xkcd:azure"},
+# ]
 FIGURE_DPI = 250
 
 
@@ -322,6 +327,7 @@ def plot_fidelity_by_depth(
     qubits = cirq.LineQubit.range(n_qubits)
     converter = CircuitStringConverter(qubits)
 
+    # TODO: The part below need to be written better.
     # Load simulation circuit.
     with h5py.File(fname_sim + '.h5', 'r') as h5file:
         qtrl_strings = json.loads(h5file[circ_name_sim][()])
