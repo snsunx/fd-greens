@@ -27,7 +27,7 @@ class ResponseFunction:
         fname: str = 'lih',
         suffix: str = '',
         method: str = 'exact',
-        verbose: bool = False
+        verbose: bool = True
     ) -> None:
         """Initializes a ``ResponseFunction`` object.
         
@@ -66,8 +66,23 @@ class ResponseFunction:
         self.T = {subscript: np.zeros((2 * self.n_orbitals, 2 * self.n_orbitals, self.n_states[subscript[0]]), 
                     dtype=complex) for subscript in ['np', 'nm']}
 
+        # Process results and save amplitudes to HDF5 file.
+        with h5py.File(self.h5fname, 'r+') as h5file:
+            for group_name in ['psi', 'rho', 'amp']:
+                if group_name in h5file:
+                    del h5file[group_name]
         self._process_diagonal()
         self._process_off_diagonal()
+        self.N_summed = {subscript: self.N[subscript].reshape(
+            (self.n_orbitals, 2, self.n_orbitals, 2, self.n_states[subscript])).sum((1, 3)) 
+            for subscript in ['n']}
+        with h5py.File(self.h5fname, 'r+') as h5file:
+            for subscript, array in self.N.items():
+                h5file[f'amp/N_{subscript}{self.suffix}'] = array
+            for subscript, array in self.N_summed.items():
+                h5file[f'amp/N_summed_{subscript}{self.suffix}'] = array
+            for subscript, array in self.T.items():
+                h5file[f'amp/T_{subscript}{self.suffix}'] = array
 
     def _process_diagonal(self) -> None:
         """Processes diagonal transition amplitudes results."""
@@ -85,6 +100,7 @@ class ResponseFunction:
                     if REVERSE_QUBIT_ORDER:
                         state_vector = reverse_qubit_order(state_vector)
                     state_vector = qubit_indices(state_vector)
+                    h5file[f'psi/{subscript}{i}{self.suffix}'] = state_vector
 
                     self.N[subscript][i, i] = np.abs(state_vectors_exact.conj().T @ state_vector) ** 2
 
@@ -105,6 +121,8 @@ class ResponseFunction:
                     
                     density_matrix = two_qubit_state_tomography(array_all)
                     density_matrix = qubit_indices.system(density_matrix)
+                    # print("Writing diagonal density matrix to HDF5 file.")
+                    h5file[f'rho/{subscript}{i}{self.suffix}'] = density_matrix
 
                     self.N[subscript][i, i] = [
                         (state_vectors_exact[:, j].conj() @ density_matrix @ state_vectors_exact[:, j]).real
@@ -134,6 +152,7 @@ class ResponseFunction:
                         if REVERSE_QUBIT_ORDER:
                             state_vector = reverse_qubit_order(state_vector)
                         state_vector = qubit_indices(state_vector)
+                        h5file[f'psi/{subscript}{i}{j}{self.suffix}'] = state_vector
 
                         self.T[subscript][i, j] = self.T[subscript][j, i] = np.abs(
                             state_vectors_exact.conj().T @ state_vector) ** 2
@@ -155,6 +174,8 @@ class ResponseFunction:
 
                         density_matrix = two_qubit_state_tomography(array_all)
                         density_matrix = qubit_indices.system(density_matrix)
+                        # print(f"Writing rho{i}{j} to HDF5 file.")
+                        h5file[f'rho/{subscript}{i}{j}{self.suffix}'] = density_matrix
 
                         self.T[subscript][i, j] = self.T[subscript][j, i] = [
                             (state_vectors_exact[:, k].conj() @ density_matrix @ state_vectors_exact[:, k]).real
@@ -163,7 +184,7 @@ class ResponseFunction:
                     if self.verbose:
                         print(f'T[{subscript}][{i}, {j}] = {self.T[subscript][i, j]}')
 
-        # Unpack T values to N values based on Eq. (18) of Kosugi and Matsushita 2021.
+        # Unpack T values to N values according to Eq. (18) of Kosugi and Matsushita 2021.
         for subscript in ['n']:
             for i in range(2 * self.n_orbitals):
                 for j in range(i + 1, 2 * self.n_orbitals):

@@ -92,7 +92,7 @@ def initialize_hdf5(
 
     # Groups contain observable groups and circuit groups.
     circuit_labels = get_circuit_labels(n_orbitals, mode=mode, spin=spin)
-    group_names = ['gs', 'es', 'amp'] + circuit_labels
+    group_names = ['gs', 'es', 'amp', 'psi', 'rho'] + circuit_labels
 
     for group_name in group_names:
         # Create the group if it does not exist. If overwrite is set to True then overwrite the group.
