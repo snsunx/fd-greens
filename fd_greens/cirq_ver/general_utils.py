@@ -4,6 +4,7 @@ Utilities (:mod:`fd_greens.general_utils`)
 ==========================================
 """
 
+from functools import reduce
 import re
 from itertools import product
 from typing import Optional, Callable, Union, List
@@ -290,39 +291,44 @@ def print_circuit_statistics(circuit: cirq.Circuit) -> None:
             # t_cz = 200
             print(f"Number of CS, CSD, CZ gates on qubits ({i}, {i + 1}) = {n_cs}, {n_csd}, {n_cz}")
 
-# TODO: Write a general implementation of state tomography.
-def two_qubit_state_tomography(result_array: np.ndarray) -> np.ndarray:
-    """Two-qubit quantum state tomography.
+def state_tomography(result_array: np.ndarray) -> np.ndarray:
+    """Quantum state tomography.
     
     Args:
         result_array: The array that contains normalized bitstring counts.
         
     Returns:
-        density_matrix: The density matrix obtained from state tomography.
+        density_matrix: The density matrix obtained from quantum state tomography.
     """
-    basis_matrix = []
-
+    # Create the basis and bistring labels.
+    n_qubits = int(np.log(len(result_array)) / np.log(6))
+    basis_labels = list(product('xyz', repeat=n_qubits))
+    bitstring_labels = list(product('01', repeat=n_qubits))
     if REVERSE_QUBIT_ORDER:
-        bases = [(f'{x[1]}{x[2]}', f'{x[0]}{x[3]}') for x in product('xyz', 'xyz', '01', '01')]
-    else:
-        bases = [(f'{x[0]}{x[2]}', f'{x[1]}{x[3]}') for x in product('xyz', 'xyz', '01', '01')]
+        basis_labels = [x[::-1] for x in basis_labels]
     
+    # Create a dictionary of all basis states.
     states = {
-        "x0": np.array([1.0, 1.0]) / np.sqrt(2),
-        "x1": np.array([1.0, -1.0]) / np.sqrt(2),
-        "y0": np.array([1.0, 1.0j]) / np.sqrt(2),
-        "y1": np.array([1.0, -1.0j]) / np.sqrt(2),
-        "z0": np.array([1.0, 0.0]),
-        "z1": np.array([0.0, 1.0]),
+        ('x', '0'): np.array([1.0, 1.0]) / np.sqrt(2),
+        ('x', '1'): np.array([1.0, -1.0]) / np.sqrt(2),
+        ('y', '0'): np.array([1.0, 1.0j]) / np.sqrt(2),
+        ('y', '1'): np.array([1.0, -1.0j]) / np.sqrt(2),
+        ('z', '0'): np.array([1.0, 0.0]),
+        ('z', '1'): np.array([0.0, 1.0]),
     }
 
-    for basis in bases:
-        basis_state = np.kron(states[basis[0]], states[basis[1]])
-        basis_vectorized = np.outer(basis_state, basis_state.conj()).reshape(-1)
-        basis_matrix.append(basis_vectorized)
+    # Construct the basis matrix.
+    basis_matrix = []
+    for basis_label in basis_labels:
+        for bitstring_label in bitstring_labels:
+            basis_state = reduce(np.kron, [states[(basis_label[i], bitstring_label[i])] for i in range(n_qubits)])
+            basis_vectorized = np.outer(basis_state, basis_state.conj()).reshape(-1)
+            basis_matrix.append(basis_vectorized)
     basis_matrix = np.array(basis_matrix)
 
     density_matrix = np.linalg.lstsq(basis_matrix, result_array)[0]
     dim = int(np.sqrt(density_matrix.shape[0]))
     density_matrix = density_matrix.reshape(dim, dim, order='F')
     return density_matrix
+
+two_qubit_state_tomography = state_tomography

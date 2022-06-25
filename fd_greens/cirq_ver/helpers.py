@@ -176,27 +176,17 @@ def process_bitstring_counts(
         indices = [int(''.join(x), 3) for x in product('01', repeat=n_qubits)]
 
     # Perform readout error mitigation if confusion matrix is given.
-    if confusion_matrix is not None:
-        if mitigation_before_restriction:
-            # Matrix inversion.
-            array = np.linalg.lstsq(confusion_matrix, array)[0]
+    if confusion_matrix is not None and mitigation_before_restriction:
+        array = np.linalg.lstsq(confusion_matrix, array)[0]
 
-            # Restrict to qubit subspace.
-            array = array[indices]
-            array = array / np.sum(array)
-        else:
-            # Restrict to qubit subspace.
-            confusion_matrix = confusion_matrix[indices][:, indices]
-            array = array[indices]
-            array = array / np.sum(array)
+    # Restrict the bitstring array to qubit subspace.
+    array = array[indices]
+    array = array / np.sum(array)
 
-            # Matrix inversion.
-            array = np.linalg.lstsq(confusion_matrix, array)[0]
-
-    else:
-        # Restrict to qubit subspace.
-        array = array[indices]
-        array = array / np.sum(array)
+    # Perform readout error mitigation if confusion matrix is given.
+    if confusion_matrix is not None and not mitigation_before_restriction:
+        confusion_matrix = confusion_matrix[indices][:, indices]
+        array = np.linalg.lstsq(confusion_matrix, array)[0]
 
     if fname is not None and dset_name is not None and counts_name is not None:
         with h5py.File(fname + '.h5', 'r+') as h5file:
