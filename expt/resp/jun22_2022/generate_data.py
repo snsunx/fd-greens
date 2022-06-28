@@ -18,9 +18,11 @@ def main():
             resp.response_function(omegas, eta)
         else:
             resp = ResponseFunction(hamiltonian, fname=fname, method='tomo')
+            resp.process()
             resp.response_function(omegas, eta)
 
             resp = ResponseFunction(hamiltonian, fname=fname, method='tomo', suffix='_miti')
+            resp.process()
             resp.response_function(omegas, eta)
 
 if __name__ == '__main__':

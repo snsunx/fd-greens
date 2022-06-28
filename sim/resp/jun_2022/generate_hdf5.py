@@ -15,7 +15,7 @@ from fd_greens import (
 def main():
     qubits = cirq.LineQubit.range(4)
     hamiltonian = get_lih_hamiltonian(3.0)
-    fname = 'lih_resp_tomo1'
+    fname = 'lih_resp_alltomo'
     method = 'tomo'
 
     initialize_hdf5(fname, mode='resp', spin='')
@@ -26,10 +26,10 @@ def main():
     es_solver = ExcitedStatesSolver(hamiltonian, fname=fname)
     es_solver.run()
 
-    amp_solver = ExcitedAmplitudesSolver(hamiltonian, qubits, method=method, fname=fname, repetitions=100000)
+    amp_solver = ExcitedAmplitudesSolver(hamiltonian, qubits, method=method, fname=fname, repetitions=1000)
     amp_solver.run()
 
-    resp = ResponseFunction(hamiltonian, fname=fname, method=method)
+    # resp = ResponseFunction(hamiltonian, fname=fname, method=method)
 
     if method == 'exact':
         N = resp.N['n']

@@ -46,13 +46,17 @@ def get_method_indices_pairs(spin: str) -> MethodIndicesPairs:
     Returns:
         method_indices_pairs: The method indices pairs.
     """
-    assert spin in ['u', 'd']
+    assert spin in ['u', 'd', '']
 
     if spin == 'u':
         methods = ['cnot', 'cnot', 'taper']
         indices = [(2, 0), (3, 1), (0, 1)]
 
     elif spin == 'd':
+        methods = ['cnot', 'cnot', 'swap', 'taper']
+        indices = [(2, 0), (3, 1), (2, 3), (0, 1)]
+
+    elif spin == '':
         methods = ['cnot', 'cnot', 'swap', 'taper']
         indices = [(2, 0), (3, 1), (2, 3), (0, 1)]
 

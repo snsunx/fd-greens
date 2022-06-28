@@ -64,7 +64,7 @@ class ExcitedAmplitudesSolver:
         self.circuit_constructor = CircuitConstructor(ansatz, self.qubits)
 
         self.charge_operators = ChargeOperators(self.qubits)
-        self.charge_operators.transform(get_method_indices_pairs('d'))
+        self.charge_operators.transform(get_method_indices_pairs(''))
 
     def _run_diagonal_circuits(self) -> None:
         """Runs diagonal transition amplitude circuits."""
@@ -90,7 +90,7 @@ class ExcitedAmplitudesSolver:
 
             if self.method == "tomo":
                 tomography_circuits = self.circuit_constructor.build_tomography_circuits(
-                    circuit, self.qubits[1:3], self.qubits[:3]) # XXX: 1:3 is hardcoded
+                    circuit, self.qubits[:3], self.qubits[:3]) # XXX: 1:3 is hardcoded
                 
                 for tomography_label, tomography_circuit in tomography_circuits.items():                    
                     self.circuits[f'{circuit_label}{tomography_label}'] = tomography_circuit
@@ -130,7 +130,7 @@ class ExcitedAmplitudesSolver:
 
                 if self.method == "tomo":
                     tomography_circuits = self.circuit_constructor.build_tomography_circuits(
-                        circuit, self.qubits[2:4], self.qubits[:4]) # XXX: 2:4 is hardcoded
+                        circuit, self.qubits[:4], self.qubits[:4]) # XXX: 2:4 is hardcoded
                     for tomography_label, tomography_circuit in tomography_circuits.items():
                         self.circuits[f'{circuit_label}{tomography_label}'] = tomography_circuit
                         qtrl_strings = self.circuit_string_converter.convert_circuit_to_strings(tomography_circuit)
