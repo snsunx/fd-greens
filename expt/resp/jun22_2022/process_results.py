@@ -24,7 +24,7 @@ def main():
     confusion_matrix = np.load(f'response_greens_0622_0.npy')
 
     # Initialize HDF5 files to store processed bitstring counts.
-    fname = f'lih_resp_expt'
+    fname = f'lih_resp_expt1'
     initialize_hdf5(fname, mode='resp', create_datasets=True)
     copy_simulation_data(fname, 'lih_resp_exact', 'resp')
 

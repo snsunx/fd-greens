@@ -11,7 +11,6 @@ from typing import Optional, Callable, Union, List
 
 import numpy as np
 import cirq
-from quimb import bloch_state
 
 from .parameters import REVERSE_QUBIT_ORDER
 
@@ -302,21 +301,32 @@ def get_bloch_vector(state: np.ndarray) -> np.ndarray:
     bloch_vector[2] = np.real(state[0][0] - state[1][1])
     return bloch_vector
 
-def get_fidelity(state1: np.ndarray, state2: np.ndarray) -> float:
-    """Returns the fidelity between two states."""
-    def normalize(state):
+def get_fidelity(state1: np.ndarray, state2: np.ndarray, purify: bool = False) -> float:
+    """Returns the fidelity between two states.
+    
+    Args:
+        state1: The first state.
+        state2: The second state.
+        purify: Whether to purify density matrices.
+    
+    Returns:
+        fidelity: The fidelity between two states.
+    """
+    def modify_state(state):
         if len(state.shape) == 1:
             if np.linalg.norm(state) != 1.0:
                 state = state / np.linalg.norm(state)
         elif len(state.shape) == 2:
-            e, v = np.linalg.eigh(state)
-            if np.trace(state) != 1.0:
-                state = state / np.trace(state)
+            state = project_density_matrix(state)
+            if purify:
+                state = purify_density_matrix(state)
         return state
 
-    state1 = normalize(state1)
-    state2 = normalize(state2)
+    state1 = modify_state(state1)
+    state2 = modify_state(state2)
 
+    # TODO: Cirq fidelity function requires the density matrices to be PSD.
+    # Need to implement a function without this constraint.
     fidelity = cirq.fidelity(state1, state2)
     return fidelity
 
@@ -345,16 +355,27 @@ def project_density_matrix(density_matrix: np.ndarray, normalize: bool = True) -
         eigvals_new[i] = eigvals[i] + accumulator / float(final_index)
     eigvals_new = np.flip(eigvals_new)
 
-    density_matrix = eigvecs @ np.diag(eigvals_new) @ eigvecs.conj().T
-    return density_matrix
+    density_matrix_new = eigvecs @ np.diag(eigvals_new) @ eigvecs.conj().T
+    return density_matrix_new
 
-def purify_density_matrix(density_matrix: np.ndarray, nsteps: int = 10) -> np.ndarray:
-    """Purifies a density matrix using McWeeney purification."""
+def purify_density_matrix(density_matrix: np.ndarray, niter: int = 10) -> np.ndarray:
+    """Purifies a density matrix using McWeeney purification.
+    
+    Args:
+        density_matrix: The density matrix to be purified.
+        niter: Number of iterations used in the purification algorithm.
+        
+    Returns:
+        density_matrix: The density matrix after purification.
+    """
     dim = density_matrix.shape[0]
-    for _ in range(nsteps):
+    for _ in range(niter):
         density_matrix = density_matrix @ density_matrix @ (3 * np.eye(dim) - 2 * density_matrix)
-        print("Trace = ", np.trace(density_matrix))
-        print("Purity =", np.trace(density_matrix @ density_matrix))
+        # print("<<< Density matrix eigvals = ", np.linalg.eigh(density_matrix)[0])
+        density_matrix = density_matrix / np.trace(density_matrix)
+        # print(">>> Density matrix eigvals = ", np.linalg.eigh(density_matrix)[0])
+        # print("Trace = ", np.trace(density_matrix))
+        # print("Purity =", np.trace(density_matrix @ density_matrix))
     return density_matrix
 
 def state_tomography(result_array: np.ndarray) -> np.ndarray:

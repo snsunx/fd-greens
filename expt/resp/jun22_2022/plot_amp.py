@@ -1,11 +1,17 @@
+import sys
+sys.path.append('../../..')
+
 import numpy as np
 import h5py
 import matplotlib.pyplot as plt
+
+from fd_greens.cirq_ver.general_utils import get_fidelity
 
 np.set_printoptions(precision=6, suppress=True)
 
 
 def load_data(fname, **kwargs) -> None:
+    """Loads all data into variables."""
     if 'exact' in fname:
         load_exact_data(fname, **kwargs)
     else:
@@ -30,7 +36,7 @@ def load_exact_data(fname) -> None:
         for i in range(4):
             psi_n[i] = h5file[f'psi/n{i}'][:]
             probs[i] = (psi_n[i].conj() @ psi_n[i]).real
-            print(f"probs[{i}] = ", probs[i])
+            # print(f"probs[{i}] = ", probs[i])
             for j in range(i + 1, 4):
                 psi_np[(i, j)] = h5file[f'psi/np{i}{j}'][:]
                 psi_nm[(i, j)] = h5file[f'psi/nm{i}{j}'][:]
@@ -58,7 +64,7 @@ def load_expt_data(fname, suffix=None) -> None:
         for i in range(4):
             rho_n[i] = h5file[f'rho{suffix}/n{i}'][:]
             probs[i] = np.sum(np.diag(rho_n[i])).real
-            print(f"probs[{i}] = ", probs[i])
+            # print(f"probs[{i}] = ", probs[i])
             for j in range(i + 1, 4):
                 rho_np[(i, j)] = h5file[f'rho{suffix}/np{i}{j}'][:]
                 rho_nm[(i, j)] = h5file[f'rho{suffix}/nm{i}{j}'][:]
@@ -69,6 +75,7 @@ def load_expt_data(fname, suffix=None) -> None:
 
 
 def plot(amp_exact, amp_expt, amp_name='N') -> None:
+    """Plots the exact and experimental N values and T values."""
     for i in range(4):
         if amp_name == 'N':
             j_start = i
@@ -85,47 +92,30 @@ def plot(amp_exact, amp_expt, amp_name='N') -> None:
             ax.legend()
             fig.savefig(f'figs/amp/{amp_name}{i}{j}.png', dpi=250, bbox_inches='tight')
 
-    
-def get_fidelity(rho, psi):
-    psi = psi / np.linalg.norm(psi)
-    rho = rho / np.trace(rho)
-    numer = (psi.conj() @ rho @ psi).real
 
-    import cirq
-    try:
-        numer1 = cirq.fidelity(psi, rho)
-        print(f"{numer = }, {numer1 = }")
-    except:
-        print("!!!", np.linalg.eigh(rho)[0])
-    
-    denom = psi.conj() @ psi * np.sum(np.diag(rho))
-    fid = numer / denom
-    return fid.real
-
-def plot_fid():
-
+def plot_fid(purify):
+    """Plots fidelities of state vectors and density matrices."""
     fidelities = np.zeros((4, 4))
     probs = np.zeros((4, 4))
 
     for i in range(4):
-        fidelities[i, i] = get_fidelity(rho_n[i], psi_n[i])
+        fidelities[i, i] = get_fidelity(rho_n[i], psi_n[i], purify=purify)
         # probs[i, i] = (psi_n[i].conj() @ psi_n[i]).real
-        probs[i, i] = np.sum(np.diag(rho_n[i]))
-        print(f"purity[{i}] = ", (np.trace(rho_n[i] @ rho_n[i]) / np.trace(rho_n[i]) ** 2 ).real)
+        # probs[i, i] = np.sum(np.diag(rho_n[i]), purify=True)
+        # print(f"purity[{i}] = ", (np.trace(rho_n[i] @ rho_n[i]) / np.trace(rho_n[i]) ** 2 ).real)
         for j in range(i + 1, 4):
-            fidelities[i, j] = get_fidelity(rho_np[(i, j)], psi_np[(i, j)])
-            fidelities[j, i] = get_fidelity(rho_nm[(i, j)], psi_nm[(i, j)])
+            fidelities[i, j] = get_fidelity(rho_np[(i, j)], psi_np[(i, j)], purify=purify)
+            fidelities[j, i] = get_fidelity(rho_nm[(i, j)], psi_nm[(i, j)], purify=purify)
             # probs[i, j] = (psi_np[(i, j)].conj() @ psi_np[(i, j)]).real
             # probs[j, i] = (psi_nm[(i, j)].conj() @ psi_nm[(i, j)]).real
-            probs[i, j] = np.trace(rho_np[(i, j)])
-            probs[j, i] = np.trace(rho_nm[(i, j)])
-            print(f"purity[{i}, {j}] = ", (np.trace(rho_np[(i, j)] @ rho_np[(i, j)]) / np.trace(rho_np[(i, j)]) ** 2).real)
-            print(f"purity[{j}, {i}] = ", (np.trace(rho_nm[(i, j)] @ rho_nm[(i, j)]) / np.trace(rho_nm[(i, j)]) ** 2).real)
+            # probs[i, j] = np.trace(rho_np[(i, j)])
+            # probs[j, i] = np.trace(rho_nm[(i, j)])
+            # print(f"purity[{i}, {j}] = ", (np.trace(rho_np[(i, j)] @ rho_np[(i, j)]) / np.trace(rho_np[(i, j)]) ** 2).real)
+            # print(f"purity[{j}, {i}] = ", (np.trace(rho_nm[(i, j)] @ rho_nm[(i, j)]) / np.trace(rho_nm[(i, j)]) ** 2).real)
 
 
     print('fid\n', fidelities)
-    print('probs\n', probs)
-
+    # print('probs\n', probs)
 
     plt.clf()
     plt.imshow(fidelities)
@@ -137,13 +127,15 @@ def plot_fid():
     plt.colorbar()
     plt.savefig('figs/amp/probs.png', dpi=250)
 
-
-if __name__ == '__main__':
+def main():
     load_data('lih_resp_exact')
     load_data('lih_resp_expt')
 
     # plot(N_n_exact, N_n_expt, 'N')
     # plot(T_np_exact, T_np_expt, 'T_np')
     # plot(T_nm_exact, T_nm_expt, 'T_nm')
-    plot_fid()
+    plot_fid(True)
 
+
+if __name__ == '__main__':
+    main()

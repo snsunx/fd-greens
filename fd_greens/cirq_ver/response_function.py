@@ -13,8 +13,8 @@ import numpy as np
 
 from .molecular_hamiltonian import MolecularHamiltonian
 from .qubit_indices import QubitIndices
-from .parameters import REVERSE_QUBIT_ORDER, get_method_indices_pairs
-from .general_utils import reverse_qubit_order, two_qubit_state_tomography
+from .parameters import PROJECT_DENSITY_MATRICES, PURIFY_DENSITY_MATRICES, REVERSE_QUBIT_ORDER, get_method_indices_pairs
+from .general_utils import project_density_matrix, purify_density_matrix, reverse_qubit_order, two_qubit_state_tomography
 
 np.set_printoptions(precision=6, suppress=True)
 
@@ -101,12 +101,21 @@ class ResponseFunction:
                             array_label =  array_raw[ancilla_index * 4 : (ancilla_index + 1) * 4] / repetitions
                         array_all += list(array_label)
                     
+                    # Slice the density matrix and save to HDF5 file.
                     density_matrix = two_qubit_state_tomography(array_all)
                     density_matrix = qubit_indices.system(density_matrix)
                     h5file[f'rho{self.suffix}/{subscript}{i}'] = density_matrix
 
+                    # Normalize and optionally project or purify the density matrix.
+                    trace = np.trace(density_matrix)
+                    density_matrix /= trace
+                    if PROJECT_DENSITY_MATRICES:
+                        density_matrix = project_density_matrix(density_matrix)
+                    if PURIFY_DENSITY_MATRICES:
+                        density_matrix = purify_density_matrix(density_matrix)
+
                     self.N[subscript][i, i] = [
-                        (state_vectors_exact[:, j].conj() @ density_matrix @ state_vectors_exact[:, j]).real
+                        trace * (state_vectors_exact[:, j].conj() @ density_matrix @ state_vectors_exact[:, j]).real
                         for j in range(self.n_states[subscript])]
                 
                 if self.verbose:
@@ -153,12 +162,21 @@ class ResponseFunction:
                                 array_label = array_raw[ancilla_index * 4 : (ancilla_index + 1) * 4] / repetitions
                             array_all += list(array_label)
 
+                        # Slice the density matrix and save to HDF5 file.
                         density_matrix = two_qubit_state_tomography(array_all)
                         density_matrix = qubit_indices.system(density_matrix)
                         h5file[f'rho{self.suffix}/{subscript}{i}{j}'] = density_matrix
 
+                        # Normalize and optionally project or purify the density matrix.
+                        trace = np.trace(density_matrix)
+                        density_matrix /= trace
+                        if PROJECT_DENSITY_MATRICES:
+                            density_matrix = project_density_matrix(density_matrix)
+                        if PURIFY_DENSITY_MATRICES:
+                            density_matrix = purify_density_matrix(density_matrix)
+
                         self.T[subscript][i, j] = self.T[subscript][j, i] = [
-                            (state_vectors_exact[:, k].conj() @ density_matrix @ state_vectors_exact[:, k]).real
+                            trace * (state_vectors_exact[:, k].conj() @ density_matrix @ state_vectors_exact[:, k]).real
                             for k in range(self.n_states[subscript[0]])]
 
                     if self.verbose:

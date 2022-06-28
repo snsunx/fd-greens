@@ -9,6 +9,8 @@ from typing import List, Sequence
 
 HARTREE_TO_EV = 27.211386245988 # Hartree to electron volts conversion.
 REVERSE_QUBIT_ORDER = False     # Whether to reverse qubit order for Qiskit qubit-order postprocessing.
+PROJECT_DENSITY_MATRICES = True # Whether to project density matrices to be positive semidefinite.
+PURIFY_DENSITY_MATRICES = True  # Whether to purify density matrices.
 
 # Circuit construction parameters.
 ADJUST_CS_CSD_GATES = True      # Whether to apply native CS/CSD gates on corresponding qubit pairs.
