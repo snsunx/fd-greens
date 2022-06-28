@@ -11,6 +11,7 @@ from typing import Optional, Callable, Union, List
 
 import numpy as np
 import cirq
+from quimb import bloch_state
 
 from .parameters import REVERSE_QUBIT_ORDER
 
@@ -290,6 +291,71 @@ def print_circuit_statistics(circuit: cirq.Circuit) -> None:
                 criterion=lambda op: op.gate == cirq.CZPowGate(exponent=1.0) and set(op.qubits) == set(qubit_pair))
             # t_cz = 200
             print(f"Number of CS, CSD, CZ gates on qubits ({i}, {i + 1}) = {n_cs}, {n_csd}, {n_cz}")
+
+def get_bloch_vector(state: np.ndarray) -> np.ndarray:
+    """Returns the Bloch vector of a state."""
+    if len(state.shape) == 1:
+        state = np.outer(state, state.conj())
+    bloch_vector = np.zeros((3,))
+    bloch_vector[0] = 2 * np.real(state[0][1])
+    bloch_vector[1] = 2 * np.imag(state[1][0])
+    bloch_vector[2] = np.real(state[0][0] - state[1][1])
+    return bloch_vector
+
+def get_fidelity(state1: np.ndarray, state2: np.ndarray) -> float:
+    """Returns the fidelity between two states."""
+    def normalize(state):
+        if len(state.shape) == 1:
+            if np.linalg.norm(state) != 1.0:
+                state = state / np.linalg.norm(state)
+        elif len(state.shape) == 2:
+            e, v = np.linalg.eigh(state)
+            if np.trace(state) != 1.0:
+                state = state / np.trace(state)
+        return state
+
+    state1 = normalize(state1)
+    state2 = normalize(state2)
+
+    fidelity = cirq.fidelity(state1, state2)
+    return fidelity
+
+def project_density_matrix(density_matrix: np.ndarray, normalize: bool = True) -> np.ndarray:
+    """Projects a density matrix to its closest positive semi-definite equilvalent."""
+    if normalize:
+        density_matrix = density_matrix / np.trace(density_matrix)
+
+    eigvals, eigvecs = np.linalg.eigh(density_matrix)
+    if np.min(eigvals) >= 0:
+        return density_matrix
+
+    # Flip the eigenvalues to decreasing order.
+    eigvals = np.flip(eigvals)
+    eigvals_new = np.zeros_like(eigvals)
+
+    final_index = len(eigvals)
+    accumulator = 0.0
+
+    while eigvals[final_index - 1] + accumulator / float(final_index) < 0:
+        accumulator += eigvals[final_index - 1]
+        final_index -= 1
+        # print("acc / final idx =", accumulator / float(final_index))
+
+    for i in range(final_index):
+        eigvals_new[i] = eigvals[i] + accumulator / float(final_index)
+    eigvals_new = np.flip(eigvals_new)
+
+    density_matrix = eigvecs @ np.diag(eigvals_new) @ eigvecs.conj().T
+    return density_matrix
+
+def purify_density_matrix(density_matrix: np.ndarray, nsteps: int = 10) -> np.ndarray:
+    """Purifies a density matrix using McWeeney purification."""
+    dim = density_matrix.shape[0]
+    for _ in range(nsteps):
+        density_matrix = density_matrix @ density_matrix @ (3 * np.eye(dim) - 2 * density_matrix)
+        print("Trace = ", np.trace(density_matrix))
+        print("Purity =", np.trace(density_matrix @ density_matrix))
+    return density_matrix
 
 def state_tomography(result_array: np.ndarray) -> np.ndarray:
     """Quantum state tomography.

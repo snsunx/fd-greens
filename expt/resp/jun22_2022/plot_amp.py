@@ -87,7 +87,17 @@ def plot(amp_exact, amp_expt, amp_name='N') -> None:
 
     
 def get_fidelity(rho, psi):
-    numer = psi.conj() @ rho @ psi
+    psi = psi / np.linalg.norm(psi)
+    rho = rho / np.trace(rho)
+    numer = (psi.conj() @ rho @ psi).real
+
+    import cirq
+    try:
+        numer1 = cirq.fidelity(psi, rho)
+        print(f"{numer = }, {numer1 = }")
+    except:
+        print("!!!", np.linalg.eigh(rho)[0])
+    
     denom = psi.conj() @ psi * np.sum(np.diag(rho))
     fid = numer / denom
     return fid.real
@@ -101,18 +111,16 @@ def plot_fid():
         fidelities[i, i] = get_fidelity(rho_n[i], psi_n[i])
         # probs[i, i] = (psi_n[i].conj() @ psi_n[i]).real
         probs[i, i] = np.sum(np.diag(rho_n[i]))
-        print(f"purity[{i}] = ", (np.trace(rho_n[i] @ rho_n[i]) / np.trace(rho_n[i]) / probs[i, i]).real)
+        print(f"purity[{i}] = ", (np.trace(rho_n[i] @ rho_n[i]) / np.trace(rho_n[i]) ** 2 ).real)
         for j in range(i + 1, 4):
             fidelities[i, j] = get_fidelity(rho_np[(i, j)], psi_np[(i, j)])
             fidelities[j, i] = get_fidelity(rho_nm[(i, j)], psi_nm[(i, j)])
             # probs[i, j] = (psi_np[(i, j)].conj() @ psi_np[(i, j)]).real
             # probs[j, i] = (psi_nm[(i, j)].conj() @ psi_nm[(i, j)]).real
-            probs[i, j] = np.sum(np.diag(rho_np[(i, j)]))
-            probs[j, i] = np.sum(np.diag(rho_nm[(i, j)]))
-            print(f"purity[{i}, {j}] = ", (np.trace(rho_np[(i, j)] @ rho_np[(i, j)]) / np.trace(rho_np[(i, j)]) / probs[i, j]).real)
-            print(f"purity[{j}, {i}] = ", (np.trace(rho_nm[(i, j)] @ rho_nm[(i, j)]) / np.trace(rho_nm[(i, j)]) / probs[j, i]).real)
-
-
+            probs[i, j] = np.trace(rho_np[(i, j)])
+            probs[j, i] = np.trace(rho_nm[(i, j)])
+            print(f"purity[{i}, {j}] = ", (np.trace(rho_np[(i, j)] @ rho_np[(i, j)]) / np.trace(rho_np[(i, j)]) ** 2).real)
+            print(f"purity[{j}, {i}] = ", (np.trace(rho_nm[(i, j)] @ rho_nm[(i, j)]) / np.trace(rho_nm[(i, j)]) ** 2).real)
 
 
     print('fid\n', fidelities)

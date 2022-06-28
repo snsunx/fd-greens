@@ -1,6 +1,20 @@
 """Make experimental density matrix physical/pure"""
 
 import numpy as np
+from scipy.stats import unitary_group
+
+def generate_density_matrix(n_qubits):
+    dim = 2 ** n_qubits
+
+    eigvals = np.random.rand(dim) - 0.5
+    eigvals = np.sort(eigvals)
+    eigvals /= np.sum(eigvals)
+    # print(f"{eigvals = }")
+
+    eigvecs = unitary_group.rvs(dim)
+    density_matrix = eigvecs @ np.diag(eigvals) @ eigvecs.conj().T
+    # print(density_matrix)
+    return density_matrix
 
 def project_and_normalize_density_matrix(rho_uncons):
     """Take a density matrix that is possibly not positive semi-definite, and also not trace one, and 
@@ -52,3 +66,10 @@ def mcweeny_purification(rho, n=10):
     for k in range(n):
         rho_n = rho_n @ rho_n @ (3 * np.eye(N) - 2 * rho_n)
     return rho_n
+
+if __name__ == '__main__':
+    rho = generate_density_matrix(2)
+    rho1 = project_and_normalize_density_matrix(rho)
+    rho2 = project_density_matrix(rho)
+
+    print(np.allclose(rho1, rho2))
