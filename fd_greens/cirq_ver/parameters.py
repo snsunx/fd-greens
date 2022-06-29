@@ -6,21 +6,57 @@ Parameters (:mod:`fd_greens.parameters`)
 
 from dataclasses import dataclass
 from typing import List, Sequence
+import h5py
 
 HARTREE_TO_EV = 27.211386245988 # Hartree to electron volts conversion.
 REVERSE_QUBIT_ORDER = False     # Whether to reverse qubit order for Qiskit qubit-order postprocessing.
-PROJECT_DENSITY_MATRICES = True # Whether to project density matrices to be positive semidefinite.
-PURIFY_DENSITY_MATRICES = True  # Whether to purify density matrices.
-CONVERT_CCZ_TO_ITOFFOLI = False  # Whether to convert CCZ gates to iToffoli gates.
+CHECK_CIRCUITS: bool = True
 
-# Circuit construction parameters.
-ADJUST_CS_CSD_GATES = True      # Whether to apply native CS/CSD gates on corresponding qubit pairs.
-WRAP_Z_AROUND_ITOFFOLI = True   # Whether to wrap Z rotation gates around iToffoli for hardware runs.
-ITOFFOLI_Z_ANGLE = 20.67        # Adjustment Z gate angles in degree.
-CONSTRAIN_CS_CSD = False        # Whether to force plutting CS dagger gates on qubits 4 and 5.
-SPLIT_SIMULTANEOUS_CZS = True   # Whether to split simultaneous CZ/CS/CSD onto different moments.
-CHECK_CIRCUITS = True           # Whether to check circuits in transpilation.
+@dataclass
+class CircuitConstructionParameters:
+    """Circuit construction parameters.
+    
+    Args:
+        WRAP_Z_AROUND_ITOFFOLI: Whether to wrap Z rotation gates around iToffoli for hardware runs.
+        ITOFFOLI_Z_ANGLE: Adjustment Z gate angles in degree.
+        CONSTRAIN_CS_CSD: Whether to force putting CS dagger gates on qubits 4 and 5 etc.
+        CONVERT_CCZ_TO_ITOFFOLI: Whether to convert CCZ gates to iToffoli gates.
+        ADJUST_CS_CSD: Whether to adjust CS/CSDs to the native CS/CSDs on corresponding qubit pairs.
+        SPLIT_SIMULTANEOUS_CZS: Whether to split simultaneous CZ/CS/CSD onto different moments.
+    """
+    WRAP_Z_AROUND_ITOFFOLI: bool = True
+    ITOFFOLI_Z_ANGLE: float = 20.67
+    CONSTRAIN_CS_CSD: bool = False
+    CONVERT_CCZ_TO_ITOFFOLI: bool = True
+    TOMOGRAPH_ALL_QUBITS: bool = False
+    
+    ADJUST_CS_CSD: bool = True
+    SPLIT_SIMULTANEOUS_CZS: bool = True
 
+    def write(self, fname: str) -> None:
+        with h5py.File(fname + '.h5', 'r+') as h5file:
+            dset = h5file['params/circ']
+            variables = vars(self)
+            for key, value in variables.items():
+                dset.attrs[key] = value
+
+@dataclass
+class ErrorMitigationParameters:
+    """Error Mitigation Parameters.
+    
+    Args:
+        PROJECT_DENSITY_MATRICES: Whether to project density matrices to being positive semidefinite.
+        PURIFY_DENSITY_MATRICES: Whether to purify density matrices.
+    """
+    PROJECT_DENSITY_MATRICES: bool = True
+    PURIFY_DENSITY_MATRICES: bool = True
+
+    def write(self, fname: str) -> None:
+        with h5py.File(fname + '.h5', 'r+') as h5file:
+            dset = h5file['params/miti']
+            variables = vars(self)
+            for key, value in variables.items():
+                dset.attrs[key] = value
 
 @dataclass
 class MethodIndicesPairs:

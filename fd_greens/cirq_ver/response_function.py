@@ -13,7 +13,8 @@ import numpy as np
 
 from .molecular_hamiltonian import MolecularHamiltonian
 from .qubit_indices import QubitIndices
-from .parameters import PROJECT_DENSITY_MATRICES, PURIFY_DENSITY_MATRICES, REVERSE_QUBIT_ORDER, get_method_indices_pairs
+from .parameters import ErrorMitigationParameters, get_method_indices_pairs, REVERSE_QUBIT_ORDER
+# from .parameters import PROJECT_DENSITY_MATRICES, PURIFY_DENSITY_MATRICES, REVERSE_QUBIT_ORDER, get_method_indices_pairs
 from .general_utils import project_density_matrix, purify_density_matrix, reverse_qubit_order, two_qubit_state_tomography
 
 np.set_printoptions(precision=6, suppress=True)
@@ -45,6 +46,9 @@ class ResponseFunction:
         self.suffix = suffix
         self.method = method
         self.verbose = verbose
+
+        self.parameters = ErrorMitigationParameters()
+        self.parameters.write(fname)
 
         # Load energies and state vectors from HDF5 file.
         with h5py.File(self.h5fname, 'r') as h5file:
@@ -109,9 +113,9 @@ class ResponseFunction:
                     # Normalize and optionally project or purify the density matrix.
                     trace = np.trace(density_matrix)
                     density_matrix /= trace
-                    if PROJECT_DENSITY_MATRICES:
+                    if self.parameters.PROJECT_DENSITY_MATRICES:
                         density_matrix = project_density_matrix(density_matrix)
-                    if PURIFY_DENSITY_MATRICES:
+                    if self.parameters.PURIFY_DENSITY_MATRICES:
                         density_matrix = purify_density_matrix(density_matrix)
 
                     self.N[subscript][i, i] = [
@@ -170,9 +174,9 @@ class ResponseFunction:
                         # Normalize and optionally project or purify the density matrix.
                         trace = np.trace(density_matrix)
                         density_matrix /= trace
-                        if PROJECT_DENSITY_MATRICES:
+                        if self.parameters.PROJECT_DENSITY_MATRICES:
                             density_matrix = project_density_matrix(density_matrix)
-                        if PURIFY_DENSITY_MATRICES:
+                        if self.parameters.PURIFY_DENSITY_MATRICES:
                             density_matrix = purify_density_matrix(density_matrix)
 
                         self.T[subscript][i, j] = self.T[subscript][j, i] = [

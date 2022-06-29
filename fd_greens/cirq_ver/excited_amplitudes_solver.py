@@ -16,7 +16,7 @@ from .operators import ChargeOperators
 from .circuit_constructor import CircuitConstructor
 from .circuit_string_converter import CircuitStringConverter
 from .transpilation import transpile_into_berkeley_gates
-from .parameters import get_method_indices_pairs
+from .parameters import CircuitConstructionParameters, get_method_indices_pairs
 from .general_utils import histogram_to_array
 
 
@@ -51,6 +51,9 @@ class ExcitedAmplitudesSolver:
         self.repetitions = repetitions
         self.h5fname = fname + '.h5'
         self.suffix = suffix
+
+        self.parameters = CircuitConstructionParameters()
+        self.parameters.write(fname)
 
         # Derived attributes.
         self.n_orbitals = len(self.hamiltonian.active_indices)
@@ -89,8 +92,13 @@ class ExcitedAmplitudesSolver:
             dset_transpiled.attrs[f'psi{self.suffix}'] = state_vector
 
             if self.method == "tomo":
-                tomography_circuits = self.circuit_constructor.build_tomography_circuits(
-                    circuit, self.qubits[:3], self.qubits[:3]) # XXX: 1:3 is hardcoded
+                # TODO: There should be a better way than writing [1:3].
+                if CircuitConstructionParameters.TOMOGRAPH_ALL_QUBITS:
+                    tomography_circuits = self.circuit_constructor.build_tomography_circuits(
+                        circuit, self.qubits[:3], self.qubits[:3])
+                else:
+                    tomography_circuits = self.circuit_constructor.build_tomography_circuits(
+                        circuit, self.qubits[1:3], self.qubits[:3])
                 
                 for tomography_label, tomography_circuit in tomography_circuits.items():                    
                     self.circuits[f'{circuit_label}{tomography_label}'] = tomography_circuit
@@ -129,8 +137,14 @@ class ExcitedAmplitudesSolver:
                 dset_transpiled.attrs[f'psi{self.suffix}'] = state_vector
 
                 if self.method == "tomo":
-                    tomography_circuits = self.circuit_constructor.build_tomography_circuits(
-                        circuit, self.qubits[:4], self.qubits[:4]) # XXX: 2:4 is hardcoded
+                    # TODO: There should be a better way than writing [2:4].
+                    if CircuitConstructionParameters.TOMOGRAPH_ALL_QUBITS:
+                        tomography_circuits = self.circuit_constructor.build_tomography_circuits(
+                            circuit, self.qubits[:4], self.qubits[:4])
+                    else:
+                        tomography_circuits = self.circuit_constructor.build_tomography_circuits(
+                            circuit, self.qubits[2:4], self.qubits[:4])
+
                     for tomography_label, tomography_circuit in tomography_circuits.items():
                         self.circuits[f'{circuit_label}{tomography_label}'] = tomography_circuit
                         qtrl_strings = self.circuit_string_converter.convert_circuit_to_strings(tomography_circuit)

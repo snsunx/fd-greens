@@ -13,7 +13,7 @@ import cirq
 
 from .transpilation import C0C0iXGate
 from .general_utils import get_gate_counts
-from .parameters import CHECK_CIRCUITS, ADJUST_CS_CSD_GATES, WRAP_Z_AROUND_ITOFFOLI, ITOFFOLI_Z_ANGLE, SPLIT_SIMULTANEOUS_CZS
+from .parameters import CHECK_CIRCUITS, CircuitConstructionParameters
 
 
 class CircuitStringConverter:
@@ -28,6 +28,8 @@ class CircuitStringConverter:
         """
         self.qubits = qubits
         self.offset = offset
+
+        self.parameters = CircuitConstructionParameters()
 
     def _qstring_to_qubits(self, qstring: str) -> List[cirq.Qid]:
         """Converts Qtrl qubit string to Cirq qubits."""
@@ -72,7 +74,7 @@ class CircuitStringConverter:
             if gate_name == "X":
                 gate = cirq.XPowGate(exponent=exponent)
             elif gate_name == "Z":
-                if abs(abs(exponent) - ITOFFOLI_Z_ANGLE / 180.0) < 1e-8:
+                if abs(abs(exponent) - self.parameters.ITOFFOLI_Z_ANGLE / 180.0) < 1e-8:
                     gate = cirq.I
                 else:
                     gate = cirq.ZPowGate(exponent=exponent)
@@ -190,7 +192,7 @@ class CircuitStringConverter:
                 else:
                     qtrl_string = gstring + "/" + qstring
 
-                if ADJUST_CS_CSD_GATES:
+                if self.parameters.ADJUST_CS_CSD:
                     if qtrl_string == 'CS/C5T4':
                         qtrl_string = qtrl_string.replace('CS', 'CSD')
                         adjustments.append((i_moment, ['CZ/C5T4']))
@@ -203,15 +205,16 @@ class CircuitStringConverter:
                         qtrl_string = qtrl_string.replace('CS', 'CSD')
                         adjustments.append((i_moment, ['CZ/C7T6']))
                 
-                if WRAP_Z_AROUND_ITOFFOLI:
+                if self.parameters.WRAP_Z_AROUND_ITOFFOLI:
+                    angle = self.parameters.ITOFFOLI_Z_ANGLE
                     if qtrl_string == 'TOF/C4C6T5':
-                        adjustments.append((i_moment, [f'Q5/Z-{ITOFFOLI_Z_ANGLE}']))
-                        adjustments.append((i_moment + 1, [f'Q5/Z{ITOFFOLI_Z_ANGLE}']))
+                        adjustments.append((i_moment, [f'Q5/Z-{angle}']))
+                        adjustments.append((i_moment + 1, [f'Q5/Z{angle}']))
                         adjustments.append((i_moment + 1, ['CP/C7T6']))
                 
                 strings_moment.append(qtrl_string)
             
-            if SPLIT_SIMULTANEOUS_CZS and (
+            if self.parameters.SPLIT_SIMULTANEOUS_CZS and (
                 re.findall("C(?:Z|S|SD)/C5T4_C(?:Z|S|SD)/C7T6", '_'.join(strings_moment)) != [] or 
                 re.findall("C(?:Z|S|SD)/C7T6_C(?:Z|S|SD)/C5T4", '_'.join(strings_moment)) != []):
                 i_moment += 2

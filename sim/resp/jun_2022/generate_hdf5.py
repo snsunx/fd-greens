@@ -15,7 +15,7 @@ from fd_greens import (
 def main():
     qubits = cirq.LineQubit.range(4)
     hamiltonian = get_lih_hamiltonian(3.0)
-    fname = 'lih_resp_2q'
+    fname = 'lih_resp_xxx'
     method = 'exact'
 
     initialize_hdf5(fname, mode='resp', spin='')
@@ -32,7 +32,7 @@ def main():
     resp = ResponseFunction(hamiltonian, fname=fname, method=method)
     resp.process()
 
-    if False: # method == 'exact':
+    if method == 'exact':
         N = resp.N['n']
 
         classical_solver = ClassicalAmplitudesSolver(hamiltonian, verbose=False)

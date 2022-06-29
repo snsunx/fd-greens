@@ -11,8 +11,7 @@ import numpy as np
 import cirq
 
 from .general_utils import unitary_equal
-from .parameters import CONSTRAIN_CS_CSD, CHECK_CIRCUITS, CONVERT_CCZ_TO_ITOFFOLI
-
+from .parameters import CircuitConstructionParameters, CHECK_CIRCUITS
 
 class C0C0iXGate(cirq.Gate):
     """The Berkeley iToffoli gate."""
@@ -112,7 +111,7 @@ def convert_ccz_to_c0c0ix(circuit: cirq.Circuit, spin: str) -> cirq.Circuit:
                     cirq.X(qubits[0]), cirq.H(qubits[1]), cirq.X(qubits[2]),
                 ]
 
-                if CONSTRAIN_CS_CSD:
+                if CircuitConstructionParameters.CONSTRAIN_CS_CSD:
                     qubits_csd = [qubits[0], qubits[1]]
                     qubits_swap = [qubits[1], qubits[2]]
                 else:
@@ -154,9 +153,8 @@ def convert_ccz_to_cz(circuit: cirq.Circuit) -> cirq.Circuit:
     """Decomposes CCZ gates to CZ gates in a circuit."""
     circuit_new = cirq.Circuit()
 
-    # TODO: The HTGate and THGate naming has some problem.
-    HTGate = cirq.PhasedXZGate(axis_phase_exponent=-0.75, x_exponent=0.5, z_exponent=-0.75)
-    THGate = cirq.PhasedXZGate(axis_phase_exponent=-0.5,x_exponent=0.5, z_exponent=-0.75)
+    HTGate = cirq.PhasedXZGate(axis_phase_exponent=-0.75, x_exponent=0.5, z_exponent=-0.75) # First T then H
+    THGate = cirq.PhasedXZGate(axis_phase_exponent=-0.5,x_exponent=0.5, z_exponent=-0.75) # First H then T
     HTHGate = cirq.PhasedXZGate(axis_phase_exponent=0.0, x_exponent=0.25, z_exponent=0.0)
     HTdaggerHGate = cirq.PhasedXZGate(axis_phase_exponent=-1.0, x_exponent=0.25, z_exponent=0.0)
 
@@ -308,7 +306,7 @@ def transpile_into_berkeley_gates(circuit: cirq.Circuit, spin: str = 'd') -> cir
     cirq.MergeInteractions(allow_partial_czs=False).optimize_circuit(circuit_new)
     
     # Three-qubit gate transpilation.
-    if CONVERT_CCZ_TO_ITOFFOLI:
+    if CircuitConstructionParameters.CONVERT_CCZ_TO_ITOFFOLI:
         circuit_new = convert_ccz_to_c0c0ix(circuit_new, spin)
     else:
         circuit_new = convert_ccz_to_cz(circuit_new)
