@@ -11,12 +11,13 @@ HARTREE_TO_EV = 27.211386245988 # Hartree to electron volts conversion.
 REVERSE_QUBIT_ORDER = False     # Whether to reverse qubit order for Qiskit qubit-order postprocessing.
 PROJECT_DENSITY_MATRICES = True # Whether to project density matrices to be positive semidefinite.
 PURIFY_DENSITY_MATRICES = True  # Whether to purify density matrices.
+CONVERT_CCZ_TO_ITOFFOLI = False  # Whether to convert CCZ gates to iToffoli gates.
 
 # Circuit construction parameters.
 ADJUST_CS_CSD_GATES = True      # Whether to apply native CS/CSD gates on corresponding qubit pairs.
 WRAP_Z_AROUND_ITOFFOLI = True   # Whether to wrap Z rotation gates around iToffoli for hardware runs.
 ITOFFOLI_Z_ANGLE = 20.67        # Adjustment Z gate angles in degree.
-CSD_IN_ITOFFOLI_ON_45 = False   # Whether to force plutting CS dagger gates on qubits 4 and 5.
+CONSTRAIN_CS_CSD = False        # Whether to force plutting CS dagger gates on qubits 4 and 5.
 SPLIT_SIMULTANEOUS_CZS = True   # Whether to split simultaneous CZ/CS/CSD onto different moments.
 CHECK_CIRCUITS = True           # Whether to check circuits in transpilation.
 

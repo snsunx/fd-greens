@@ -10,10 +10,8 @@ import warnings
 import numpy as np
 import cirq
 
-from fd_greens.cirq_ver.parameters import CSD_IN_ITOFFOLI_ON_45
-
 from .general_utils import unitary_equal
-from .parameters import CHECK_CIRCUITS
+from .parameters import CONSTRAIN_CS_CSD, CHECK_CIRCUITS, CONVERT_CCZ_TO_ITOFFOLI
 
 
 class C0C0iXGate(cirq.Gate):
@@ -114,7 +112,7 @@ def convert_ccz_to_c0c0ix(circuit: cirq.Circuit, spin: str) -> cirq.Circuit:
                     cirq.X(qubits[0]), cirq.H(qubits[1]), cirq.X(qubits[2]),
                 ]
 
-                if CSD_IN_ITOFFOLI_ON_45:
+                if CONSTRAIN_CS_CSD:
                     qubits_csd = [qubits[0], qubits[1]]
                     qubits_swap = [qubits[1], qubits[2]]
                 else:
@@ -144,6 +142,48 @@ def convert_ccz_to_c0c0ix(circuit: cirq.Circuit, spin: str) -> cirq.Circuit:
                     circuit_new.append(iswap_ops)
                     circuit_new.append(cizc_ops)
                 count += 1
+
+            else:
+                circuit_new.append(op)
+
+    if CHECK_CIRCUITS:
+        assert unitary_equal(circuit, circuit_new)
+    return circuit_new
+
+def convert_ccz_to_cz(circuit: cirq.Circuit) -> cirq.Circuit:
+    """Decomposes CCZ gates to CZ gates in a circuit."""
+    circuit_new = cirq.Circuit()
+
+    # TODO: The HTGate and THGate naming has some problem.
+    HTGate = cirq.PhasedXZGate(axis_phase_exponent=-0.75, x_exponent=0.5, z_exponent=-0.75)
+    THGate = cirq.PhasedXZGate(axis_phase_exponent=-0.5,x_exponent=0.5, z_exponent=-0.75)
+    HTHGate = cirq.PhasedXZGate(axis_phase_exponent=0.0, x_exponent=0.25, z_exponent=0.0)
+    HTdaggerHGate = cirq.PhasedXZGate(axis_phase_exponent=-1.0, x_exponent=0.25, z_exponent=0.0)
+
+    for moment in circuit.moments:
+        for op in moment:
+            if op.gate.__str__() == "CCZ":
+                qubits = op.qubits
+
+                circuit_new.append(cirq.H(qubits[2]))
+                circuit_new.append(cirq.CZ(qubits[1], qubits[2]))
+                circuit_new.append(HTdaggerHGate(qubits[2]))
+                circuit_new.append(cirq.SWAP(qubits[1], qubits[2]))
+
+                circuit_new.append(cirq.CZ(qubits[0], qubits[1]))
+                circuit_new.append(HTHGate(qubits[1]))
+                circuit_new.append(cirq.CZ(qubits[1], qubits[2]))
+                circuit_new.append(HTdaggerHGate(qubits[1]))
+                circuit_new.append(cirq.CZ(qubits[0], qubits[1]))
+
+                circuit_new.append(cirq.SWAP(qubits[1], qubits[2]))
+                circuit_new.append(HTGate(qubits[1]))
+                circuit_new.append(THGate(qubits[2]))
+                circuit_new.append(cirq.CZ(qubits[0], qubits[1]))
+                circuit_new.append(cirq.T(qubits[0]))
+                circuit_new.append(HTdaggerHGate(qubits[1]))
+                circuit_new.append(cirq.CZ(qubits[0], qubits[1]))
+                circuit_new.append(cirq.H(qubits[1]))
 
             else:
                 circuit_new.append(op)
@@ -268,7 +308,10 @@ def transpile_into_berkeley_gates(circuit: cirq.Circuit, spin: str = 'd') -> cir
     cirq.MergeInteractions(allow_partial_czs=False).optimize_circuit(circuit_new)
     
     # Three-qubit gate transpilation.
-    circuit_new = convert_ccz_to_c0c0ix(circuit_new, spin)
+    if CONVERT_CCZ_TO_ITOFFOLI:
+        circuit_new = convert_ccz_to_c0c0ix(circuit_new, spin)
+    else:
+        circuit_new = convert_ccz_to_cz(circuit_new)
     cirq.MergeInteractions(allow_partial_czs=True).optimize_circuit(circuit_new)
 
     # Two-qubit gate transpilation.
