@@ -166,20 +166,16 @@ class ResponseFunction:
                                 array_label = array_raw[ancilla_index * 4 : (ancilla_index + 1) * 4] / repetitions
                             array_all += list(array_label)
 
-                        # Slice the density matrix and save to HDF5 file.
+                        # Obtain the density matrix through tomography and optionally modify it.
                         density_matrix = two_qubit_state_tomography(array_all)
                         density_matrix = qubit_indices.system(density_matrix)
-
-                        # Normalize and optionally project or purify the density matrix.
                         trace = np.trace(density_matrix)
                         density_matrix /= trace
                         if self.parameters.PROJECT_DENSITY_MATRICES:
                             density_matrix = project_density_matrix(density_matrix)
                         if self.parameters.PURIFY_DENSITY_MATRICES:
                             density_matrix = purify_density_matrix(density_matrix)
-
                         h5file[f'rho{self.suffix}/{subscript}{i}{j}'] = density_matrix
-
 
                         self.T[subscript][i, j] = self.T[subscript][j, i] = [
                             trace * (state_vectors_exact[:, k].conj() @ density_matrix @ state_vectors_exact[:, k]).real
@@ -202,7 +198,7 @@ class ResponseFunction:
         h5file.close()
 
     def process(self) -> None:
-        """Processes both diagonal and off-diagonal results and saves to file."""
+        """Processes both diagonal and off-diagonal results and saves data to file."""
         # Delete the group names if they already exist.
         with h5py.File(self.h5fname, 'r+') as h5file:
             for group_name in [f'psi{self.suffix}', f'rho{self.suffix}', f'amp{self.suffix}']:

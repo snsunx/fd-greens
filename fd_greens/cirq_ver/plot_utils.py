@@ -31,14 +31,6 @@ LINESTYLES_TRSIGMA = [
     {"ls": "--", "marker": "x", "markevery": 100, "color": "xkcd:indigo"},
 ]
 LINESTYLES_CHI = LINESTYLES_TRSIGMA
-# [
-#     {"color": "xkcd:red"},
-#     {"color": "xkcd:blue"},
-#     {"ls": "--", "marker": "x", "markevery": 100, "color": "xkcd:orange"},
-#     {"ls": "--", "marker": "x", "markevery": 100, "color": "xkcd:teal"},
-#     {"ls": "--", "marker": "x", "markevery": 100, "color": "xkcd:rose pink"},
-#     {"ls": "--", "marker": "x", "markevery": 100, "color": "xkcd:azure"},
-# ]
 FIGURE_DPI = 250
 
 
@@ -48,7 +40,7 @@ def plot_spectral_function(
     labels: Sequence[str] = None,
     annotations: Optional[Sequence[dict]] = None,
     linestyles: Sequence[dict] = LINESTYLES_A,
-    dirname: str = "figs",
+    dirname: str = "figs/data",
     figname: str = "A",
     text: Optional[str] = None,
     n_curves: Optional[int] = None
@@ -100,7 +92,7 @@ def plot_trace_self_energy(
     suffixes: Sequence[str],
     labels: Optional[Sequence[str]] = None,
     annotations: Optional[Sequence[str]] = None,
-    dirname: str = "figs",
+    dirname: str = "figs/data",
     figname: str = "TrSigma",
     linestyles: Sequence[dict] = LINESTYLES_TRSIGMA,
     text: str = None,
@@ -173,7 +165,7 @@ def plot_response_function(
     suffixes: Sequence[str],
     labels: Optional[Sequence[str]] = None,
     annotations: Optional[Sequence[str]] = None,
-    dirname: str = "figs",
+    dirname: str = "figs/data",
     figname: str = "chi",
     circ_label: str = "00",
     linestyles: Sequence[dict] = LINESTYLES_CHI,
@@ -252,7 +244,8 @@ def plot_bitstring_counts(
     counts_name_sim: str = '',
     counts_name_expt: str = '', 
     width: float = 0.5,
-    dirname: str = 'figs'
+    dirname: str = 'figs/counts',
+    figname: str = 'counts'
 ) -> None:
     """Plots the simulation and experimental bitstring counts along with total variational distance.
     
@@ -297,7 +290,7 @@ def plot_bitstring_counts(
     if not os.path.exists(dirname):
         os.makedirs(dirname)
     fig.set_facecolor('white')
-    fig.savefig(f"{dirname}/counts_{dset_name_sim.replace('/', '_')}.png", dpi=FIGURE_DPI, bbox_inches="tight")
+    fig.savefig(f"{dirname}/{figname}_{dset_name_sim.replace('/', '_')}.png", dpi=FIGURE_DPI, bbox_inches="tight")
     plt.close(fig)
 
 plot_counts = plot_bitstring_counts
@@ -309,7 +302,7 @@ def plot_fidelity_by_depth(
     circ_name_expt: str,
     n_qubits: int,
     pad_zero: Optional[str] = None,
-    dirname: str = 'fid_by_depth',
+    dirname: str = 'figs/fid_by_depth',
     figname: str = 'fid_by_depth',
     repetitions: int = 5000,
     mark_itoffoli: bool = False,
@@ -359,7 +352,8 @@ def plot_fidelity_by_depth(
                 locations_itoffoli.append(i)
 
         # Compute the simulated bitstring counts.
-        circuit_moment = converter.convert_strings_to_circuit(qtrl_strings[:i_expt + 1]) + [cirq.measure(q) for q in qubits]
+        circuit_moment = converter.convert_strings_to_circuit(qtrl_strings[:i_expt + 1]) \
+             + [cirq.measure(q) for q in qubits]
         result_moment = cirq.Simulator().run(circuit_moment, repetitions=repetitions)
         histogram = result_moment.multi_measurement_histogram(keys=[str(i) for i in range(n_qubits)])
         array_sim = histogram_to_array(histogram)
@@ -389,38 +383,60 @@ def display_fidelities(
     fname_exact: str,
     fname_expt: str,
     subscript: str,
-    dirname: str = 'figs/fid',
+    spin: str = '',
+    dirname: str = 'figs/amp',
     figname: str = 'fid'
 ) -> None:
-    """Displays fidelities of exact state vectors and simulated """
+    """Displays fidelities between exact and experimental results.
+    
+    Args:
+        fname_exact: The file name of the exact calculation.
+        fname_expt: The file name of the experimental calculation.
+        subscript: The subscript of the quantities. ``'e'``, ``'h'`` or ``'n'``.
+        spin: The spin of the states.
+        dirname: The directory name.
+        figname: The figure name.
+    """
+    assert spin in ['u', 'd', '']
+    if not os.path.exists(dirname):
+        os.makedirs(dirname)
+
     h5file_exact = h5py.File(fname_exact + '.h5', 'r')
     h5file_expt = h5py.File(fname_expt + '.h5', 'r')
 
-    fidelities = np.zeros((4, 4))
+    # XXX: 2 and 4 are hardcoded.
+    if spin in ['u', 'd']:
+        dim = 2
+    else:
+        dim = 4
+    
+    fidelities = np.zeros((dim, dim))
 
-    for i in range(4):
-        state_exact = h5file_exact[f'psi/{subscript}{i}'][:]
-        state_expt = h5file_expt[f'rho/{subscript}{i}'][:]
+    for i in range(dim):
+        state_exact = h5file_exact[f'psi/{subscript}{i}{spin}'][:]
+        state_expt = h5file_expt[f'rho/{subscript}{i}{spin}'][:]
         fidelities[i, i] = get_fidelity(state_exact, state_expt)
-        for j in range(i + 1, 4):
-            state_exact = h5file_exact[f'psi/{subscript}p{i}{j}'][:]
-            state_expt = h5file_expt[f'rho/{subscript}p{i}{j}'][:]
+        for j in range(i + 1, dim):
+            # p is filled on the upper half triangle.
+            state_exact = h5file_exact[f'psi/{subscript}p{i}{j}{spin}'][:]
+            state_expt = h5file_expt[f'rho/{subscript}p{i}{j}{spin}'][:]
             fidelities[i, j] = get_fidelity(state_exact, state_expt)
 
-            state_exact = h5file_exact[f'psi/{subscript}m{i}{j}'][:]
-            state_expt = h5file_expt[f'rho/{subscript}m{i}{j}'][:]
+            # m is filled on the lower half triangle.
+            state_exact = h5file_exact[f'psi/{subscript}m{i}{j}{spin}'][:]
+            state_expt = h5file_expt[f'rho/{subscript}m{i}{j}{spin}'][:]
             fidelities[j, i] = get_fidelity(state_exact, state_expt)
 
     fig, ax = plt.subplots()
-    im = ax.imshow(fidelities)
-    for i in range(4):
-        for j in range(4):
+    im = ax.imshow(fidelities, vmin=0.0, vmax=1.0)
+    for i in range(dim):
+        for j in range(dim):
+            # Here x is the column index and y is the row index.
             if fidelities[i, j] > 0.2:
                 ax.text(j, i, f"{fidelities[i, j]:.2f}", color='black', ha='center', va='center')
             else:
                 ax.text(j, i, f"{fidelities[i, j]:.2f}", color='white', ha='center', va='center')
-
-    fig.colorbar(im)
+    fig.colorbar(im, ticks=np.arange(0.0, 1.0 + 1e-8, 0.2))
     fig.savefig(f'{dirname}/{figname}.png', dpi=FIGURE_DPI, bbox_inches='tight')
 
     h5file_exact.close()

@@ -13,9 +13,9 @@ from fd_greens import (
 def main():
 	qubits = cirq.LineQubit.range(4)
 	hamiltonian = get_lih_hamiltonian(3.0)
-	fname = 'lih_3A_2q'
+	fname = 'lih_3A_exact'
 	method = 'exact'
-	spin = 'u'
+	spin = 'd'
 	
 	initialize_hdf5(fname, mode='greens', spin=spin)
 
@@ -29,6 +29,7 @@ def main():
 	amp_solver.run()
 
 	greens = GreensFunction(hamiltonian, fname=fname, method=method, spin=spin)
+	greens.process()
 
 if __name__ == '__main__':
 	main()

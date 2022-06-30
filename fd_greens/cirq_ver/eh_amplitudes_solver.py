@@ -88,7 +88,11 @@ class EHAmplitudesSolver:
             circuit = transpile_into_berkeley_gates(circuit, self.spin)
             self.circuits[circuit_label] = circuit
             qtrl_strings = self.circuit_string_converter.convert_circuit_to_strings(circuit)
-            dset_transpiled = h5file.create_dataset(f"{circuit_label}/transpiled", data=json.dumps(qtrl_strings))
+
+            dset_name = f'{circuit_label}/transpiled'
+            if dset_name in h5file:
+                del h5file[dset_name]
+            dset_transpiled = h5file.create_dataset(dset_name, data=json.dumps(qtrl_strings))
 
             # Execute the circuit and store the statevector in the HDF5 file.
             state_vector = cirq.sim.final_state_vector(circuit)
@@ -107,8 +111,11 @@ class EHAmplitudesSolver:
                     # Save tomography circuit to HDF5 file.
                     self.circuits[circuit_label + tomography_label] = tomography_circuit
                     qtrl_strings = self.circuit_string_converter.convert_circuit_to_strings(tomography_circuit)
-                    dset_tomography = h5file.create_dataset(
-                        f"{circuit_label}/{tomography_label}", data=json.dumps(qtrl_strings))
+
+                    dset_name = f'{circuit_label}/{tomography_label}'
+                    if dset_name in h5file:
+                        del h5file[dset_name]
+                    dset_tomography = h5file.create_dataset(dset_name, data=json.dumps(qtrl_strings))
 
                     # Run tomography circuit and store results to HDF5 file.
                     result = cirq.Simulator().run(tomography_circuit, repetitions=self.repetitions)
@@ -136,7 +143,11 @@ class EHAmplitudesSolver:
                 circuit = transpile_into_berkeley_gates(circuit, self.spin)
                 self.circuits[circuit_label] = circuit
                 qtrl_strings = self.circuit_string_converter.convert_circuit_to_strings(circuit)
-                dset_transpiled = h5file.create_dataset(f"{circuit_label}/transpiled", data=json.dumps(qtrl_strings))
+                
+                dset_name = f'{circuit_label}/transpiled'
+                if dset_name in h5file:
+                    del h5file[dset_name]
+                dset_transpiled = h5file.create_dataset(dset_name, data=json.dumps(qtrl_strings))
 
                 # Run simulation and save results to HDF5 file.
                 state_vector = cirq.sim.final_state_vector(circuit)
@@ -155,8 +166,11 @@ class EHAmplitudesSolver:
                         # Save tomography circuit to HDF5 file.
                         self.circuits[circuit_label + tomography_label] = tomography_circuit
                         qtrl_strings = self.circuit_string_converter.convert_circuit_to_strings(tomography_circuit)
-                        dset_tomography = h5file.create_dataset(
-                            f"{circuit_label}/{tomography_label}", data=json.dumps(qtrl_strings))
+
+                        dset_name = f"{circuit_label}/{tomography_label}"
+                        if dset_name in h5file:
+                            del h5file[dset_name]
+                        dset_tomography = h5file.create_dataset(dset_name, data=json.dumps(qtrl_strings))
 
                         # Run simulation and save result to HDF5 file.
                         result = cirq.Simulator().run(tomography_circuit, repetitions=self.repetitions)

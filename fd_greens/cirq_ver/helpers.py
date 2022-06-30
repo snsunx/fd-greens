@@ -68,7 +68,7 @@ def initialize_hdf5(
     spin: str = '',
     n_orbitals: int = 2,
     n_tomography: int = 2,
-    overwrite: bool = True,
+    overwrite: bool = False,
     create_datasets: bool = False
 ) -> None:
     """Initializes an HDF5 file for Green's function or response function calculation.
@@ -96,11 +96,7 @@ def initialize_hdf5(
 
     for group_name in group_names:
         # Create the group if it does not exist. If overwrite is set to True then overwrite the group.
-        if group_name in h5file.keys():
-            if overwrite:
-                del h5file[group_name]
-                h5file.create_group(group_name)
-        else:
+        if group_name not in h5file.keys():
             h5file.create_group(group_name)
 
         # Create datasets if create_datasets is set to True.

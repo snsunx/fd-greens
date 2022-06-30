@@ -79,9 +79,7 @@ class GreensFunction:
                   for subscript in ["ep", "em", "hp", "hm"]}
         self.G = {subscript: np.zeros((self.n_orbitals, self.n_orbitals), dtype=complex)
                   for subscript in ["e", "h"]}
-        
-        self._process_diagonal_results()
-        self._process_off_diagonal_results()
+
 
     def _process_diagonal_results(self) -> None:
         """Processes diagonal transition amplitude results."""
@@ -99,6 +97,11 @@ class GreensFunction:
                     if REVERSE_QUBIT_ORDER:
                         state_vector = reverse_qubit_order(state_vector)
                     state_vector = qubit_indices(state_vector)
+
+                    dset_name = f'psi{self.suffix}/{subscript}{m}{self.spin}'
+                    if dset_name in h5file:
+                        del h5file[dset_name]
+                    h5file[dset_name] = state_vector
 
                     self.B[subscript][m, m] = np.abs(state_vectors_exact.conj().T @ state_vector) ** 2
 
@@ -127,6 +130,11 @@ class GreensFunction:
                     if self.parameters.PURIFY_DENSITY_MATRICES:
                         density_matrix = purify_density_matrix(density_matrix)
 
+                    dset_name = f'rho{self.suffix}/{subscript}{m}{self.spin}'
+                    if dset_name in h5file:
+                        del h5file[dset_name]
+                    h5file[dset_name] = density_matrix
+
                     self.B[subscript][m, m] = [
                         trace * (state_vectors_exact[:, i].conj() @ density_matrix @ state_vectors_exact[:, i]).real
                         for i in range(self.n_states[subscript])]
@@ -153,6 +161,11 @@ class GreensFunction:
                         if REVERSE_QUBIT_ORDER:
                             state_vector = reverse_qubit_order(state_vector)
                         state_vector = qubit_indices(state_vector)
+
+                        dset_name = f'psi{self.suffix}/{subscript}{m}{n}{self.spin}'
+                        if dset_name in h5file:
+                            del h5file[dset_name]
+                        h5file[dset_name] = state_vector
 
                         self.D[subscript][m, n] = self.D[subscript][n, m] = \
                             np.abs(state_vectors_exact.conj().T @ state_vector) ** 2
@@ -181,7 +194,12 @@ class GreensFunction:
                             density_matrix = project_density_matrix(density_matrix)
                         if self.parameters.PURIFY_DENSITY_MATRICES:
                             density_matrix = purify_density_matrix(density_matrix)
-                        
+
+                        dset_name = f'rho{self.suffix}/{subscript}{m}{n}{self.spin}'
+                        if dset_name in h5file:
+                            del h5file[dset_name]
+                        h5file[dset_name] = density_matrix
+
                         self.D[subscript][m, n] = self.D[subscript][n, m] = [
                             trace * (state_vectors_exact[:, i].conj() @ density_matrix @ state_vectors_exact[:, i]).real
                             for i in range(self.n_states[subscript[0]])]
@@ -200,6 +218,25 @@ class GreensFunction:
                         print(f"B[{subscript}][{m}, {n}] =", self.B[subscript][m, n])
 
         h5file.close()
+
+    def process(self):
+        """Processes both diagonal and off-diagonal results and saves data to file."""
+        # Call the private functions to process results.
+        self._process_diagonal_results()
+        self._process_off_diagonal_results()
+
+        # Save B and D to HDF5 file.
+        with h5py.File(self.h5fname, 'r+') as h5file:
+            for subscript, array in self.B.items():
+                dset_name = f'amp{self.suffix}/B_{subscript}'
+                if dset_name in h5file:
+                    del h5file[dset_name]
+                h5file[dset_name] = array
+            for subscript, array in self.D.items():
+                dset_name = f'amp{self.suffix}/D_{subscript}'
+                if dset_name in h5file:
+                    del h5file[dset_name]
+                h5file[dset_name] = array
 
     def mean_field_greens_function(self, omega: float, eta: float = 0.0) -> np.ndarray:
         """Returns the mean-field Green's function.

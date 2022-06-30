@@ -151,13 +151,13 @@ class GroundStateSolver:
 
     def _save_data(self) -> None:
         """Saves ground state energy and ansatz to hdf5 file."""
-        h5file = h5py.File(self.h5fname, "r+")
-        
-        h5file['gs/energy'] = self.energy
-        qtrl_strings = self.circuit_string_converter.convert_circuit_to_strings(self.ansatz)
-        h5file['gs/ansatz'] = json.dumps(qtrl_strings)
+        with h5py.File(self.h5fname, 'r+') as h5file:
+            if 'gs' in h5file:
+                del h5file['gs']
 
-        h5file.close()
+            h5file['gs/energy'] = self.energy
+            qtrl_strings = self.circuit_string_converter.convert_circuit_to_strings(self.ansatz)
+            h5file['gs/ansatz'] = json.dumps(qtrl_strings)
 
     def run(self) -> None:
         """Runs the ground-state calculation with exact two-qubit gate decomposition."""
