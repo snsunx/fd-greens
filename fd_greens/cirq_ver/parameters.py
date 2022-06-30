@@ -27,7 +27,7 @@ class CircuitConstructionParameters:
     WRAP_Z_AROUND_ITOFFOLI: bool = True
     ITOFFOLI_Z_ANGLE: float = 20.67
     CONSTRAIN_CS_CSD: bool = False
-    CONVERT_CCZ_TO_ITOFFOLI: bool = True
+    CONVERT_CCZ_TO_ITOFFOLI: bool = False
     TOMOGRAPH_ALL_QUBITS: bool = False
     
     ADJUST_CS_CSD: bool = True
@@ -75,7 +75,7 @@ class MethodIndicesPairs:
     def __iter__(self):
         return zip(self.methods, self.indices)
 
-
+# TODO: Write this as a method of MethodIndicesPairs.
 def get_method_indices_pairs(spin: str) -> MethodIndicesPairs:
     """Returns the method indices pairs corresponding to a given spin label.
     

@@ -17,7 +17,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from .circuit_string_converter import CircuitStringConverter
-from .general_utils import get_non_z_locations, histogram_to_array
+from .general_utils import get_fidelity, get_non_z_locations, histogram_to_array
 from .helpers import process_bitstring_counts
 
 
@@ -384,3 +384,45 @@ def plot_fidelity_by_depth(
     if not os.path.exists(dirname):
         os.makedirs(dirname)
     fig.savefig(f'{dirname}/{figname}.png', dpi=FIGURE_DPI, bbox_inches='tight')
+
+def display_fidelities(
+    fname_exact: str,
+    fname_expt: str,
+    subscript: str,
+    dirname: str = 'figs/fid',
+    figname: str = 'fid'
+) -> None:
+    """Displays fidelities of exact state vectors and simulated """
+    h5file_exact = h5py.File(fname_exact + '.h5', 'r')
+    h5file_expt = h5py.File(fname_expt + '.h5', 'r')
+
+    fidelities = np.zeros((4, 4))
+
+    for i in range(4):
+        state_exact = h5file_exact[f'psi/{subscript}{i}'][:]
+        state_expt = h5file_expt[f'rho/{subscript}{i}'][:]
+        fidelities[i, i] = get_fidelity(state_exact, state_expt)
+        for j in range(i + 1, 4):
+            state_exact = h5file_exact[f'psi/{subscript}p{i}{j}'][:]
+            state_expt = h5file_expt[f'rho/{subscript}p{i}{j}'][:]
+            fidelities[i, j] = get_fidelity(state_exact, state_expt)
+
+            state_exact = h5file_exact[f'psi/{subscript}m{i}{j}'][:]
+            state_expt = h5file_expt[f'rho/{subscript}m{i}{j}'][:]
+            fidelities[j, i] = get_fidelity(state_exact, state_expt)
+
+    fig, ax = plt.subplots()
+    im = ax.imshow(fidelities)
+    for i in range(4):
+        for j in range(4):
+            if fidelities[i, j] > 0.2:
+                ax.text(j, i, f"{fidelities[i, j]:.2f}", color='black', ha='center', va='center')
+            else:
+                ax.text(j, i, f"{fidelities[i, j]:.2f}", color='white', ha='center', va='center')
+
+    fig.colorbar(im)
+    fig.savefig(f'{dirname}/{figname}.png', dpi=FIGURE_DPI, bbox_inches='tight')
+
+    h5file_exact.close()
+    h5file_expt.close()
+    

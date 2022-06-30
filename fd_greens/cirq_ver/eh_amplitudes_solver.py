@@ -15,7 +15,7 @@ from .operators import SecondQuantizedOperators
 from .circuit_constructor import CircuitConstructor
 from .circuit_string_converter import CircuitStringConverter
 from .transpilation import transpile_into_berkeley_gates
-from .parameters import get_method_indices_pairs
+from .parameters import CircuitConstructionParameters, get_method_indices_pairs
 from .general_utils import histogram_to_array
 
 
@@ -55,6 +55,9 @@ class EHAmplitudesSolver:
         self.spin = spin
         self.suffix = suffix
 
+        self.parameters = CircuitConstructionParameters()
+        self.parameters.write(fname)
+
         self.n_orbitals = len(self.hamiltonian.active_indices)
 
         self.circuits = dict()
@@ -68,8 +71,6 @@ class EHAmplitudesSolver:
         self.second_quantized_operators = SecondQuantizedOperators(
             self.qubits, self.spin, factor=(-1) ** (self.spin == 'd'))
         self.second_quantized_operators.transform(get_method_indices_pairs(spin))
-        # for x in self.second_quantized_operators:
-        #     print(x)
 
     def _run_diagonal_circuits(self) -> None:
         """Runs diagonal transition amplitude circuits."""
@@ -95,8 +96,12 @@ class EHAmplitudesSolver:
             dset_transpiled.attrs[f"psi{self.suffix}"] = state_vector
 
             if self.method == "tomo":
-                tomography_circuits = self.circuit_constructor.build_tomography_circuits(
-                    circuit, self.qubits[1:3], self.qubits[:3]) # XXX: 1:3 is hardcoded
+                if self.parameters.TOMOGRAPH_ALL_QUBITS:
+                    tomography_circuits = self.circuit_constructor.build_tomography_circuits(
+                        circuit, self.qubits[:3], self.qubits[:3])
+                else:
+                    tomography_circuits = self.circuit_constructor.build_tomography_circuits(
+                        circuit, self.qubits[1:3], self.qubits[:3])
 
                 for tomography_label, tomography_circuit in tomography_circuits.items():
                     # Save tomography circuit to HDF5 file.
@@ -139,8 +144,12 @@ class EHAmplitudesSolver:
 
                 # Apply tomography and measurement gates and save to HDF5 file.
                 if self.method == "tomo":
-                    tomography_circuits = self.circuit_constructor.build_tomography_circuits(
-                        circuit, self.qubits[2:4], self.qubits[:4]) # XXX: 2:4 is hardcoded
+                    if self.parameters.TOMOGRAPH_ALL_QUBITS:
+                        tomography_circuits = self.circuit_constructor.build_tomography_circuits(
+                            circuit, self.qubits[:4], self.qubits[:4])
+                    else:
+                        tomography_circuits = self.circuit_constructor.build_tomography_circuits(
+                            circuit, self.qubits[2:4], self.qubits[:4])
 
                     for tomography_label, tomography_circuit in tomography_circuits.items():
                         # Save tomography circuit to HDF5 file.

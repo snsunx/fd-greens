@@ -13,8 +13,8 @@ import numpy as np
 
 from .molecular_hamiltonian import MolecularHamiltonian
 from .qubit_indices import QubitIndices
-from .parameters import REVERSE_QUBIT_ORDER, get_method_indices_pairs
-from .general_utils import reverse_qubit_order, two_qubit_state_tomography
+from .parameters import REVERSE_QUBIT_ORDER, ErrorMitigationParameters, get_method_indices_pairs
+from .general_utils import project_density_matrix, purify_density_matrix, reverse_qubit_order, two_qubit_state_tomography
 
 np.set_printoptions(precision=6)
 
@@ -51,6 +51,9 @@ class GreensFunction:
         self.spin = spin
         self.method = method
         self.verbose = verbose
+
+        self.parameters = ErrorMitigationParameters()
+        self.parameters.write(fname)
 
         # Load energies and state vectors from HDF5 file.
         with h5py.File(self.h5fname, "r") as h5file:
@@ -117,8 +120,15 @@ class GreensFunction:
                     density_matrix = two_qubit_state_tomography(array_all)
                     density_matrix = qubit_indices.system(density_matrix)
 
+                    trace = np.trace(density_matrix)
+                    density_matrix /= trace
+                    if self.parameters.PROJECT_DENSITY_MATRICES:
+                        density_matrix = project_density_matrix(density_matrix)
+                    if self.parameters.PURIFY_DENSITY_MATRICES:
+                        density_matrix = purify_density_matrix(density_matrix)
+
                     self.B[subscript][m, m] = [
-                        (state_vectors_exact[:, i].conj() @ density_matrix @ state_vectors_exact[:, i]).real
+                        trace * (state_vectors_exact[:, i].conj() @ density_matrix @ state_vectors_exact[:, i]).real
                         for i in range(self.n_states[subscript])]
 
                 if self.verbose:
@@ -164,9 +174,16 @@ class GreensFunction:
 
                         density_matrix = two_qubit_state_tomography(array_all)
                         density_matrix = qubit_indices.system(density_matrix)
+
+                        trace = np.trace(density_matrix)
+                        density_matrix /= trace
+                        if self.parameters.PROJECT_DENSITY_MATRICES:
+                            density_matrix = project_density_matrix(density_matrix)
+                        if self.parameters.PURIFY_DENSITY_MATRICES:
+                            density_matrix = purify_density_matrix(density_matrix)
                         
                         self.D[subscript][m, n] = self.D[subscript][n, m] = [
-                            (state_vectors_exact[:, i].conj() @ density_matrix @ state_vectors_exact[:, i]).real
+                            trace * (state_vectors_exact[:, i].conj() @ density_matrix @ state_vectors_exact[:, i]).real
                             for i in range(self.n_states[subscript[0]])]
 
                     if self.verbose:

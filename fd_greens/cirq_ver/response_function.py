@@ -14,7 +14,6 @@ import numpy as np
 from .molecular_hamiltonian import MolecularHamiltonian
 from .qubit_indices import QubitIndices
 from .parameters import ErrorMitigationParameters, get_method_indices_pairs, REVERSE_QUBIT_ORDER
-# from .parameters import PROJECT_DENSITY_MATRICES, PURIFY_DENSITY_MATRICES, REVERSE_QUBIT_ORDER, get_method_indices_pairs
 from .general_utils import project_density_matrix, purify_density_matrix, reverse_qubit_order, two_qubit_state_tomography
 
 np.set_printoptions(precision=6, suppress=True)
@@ -108,7 +107,6 @@ class ResponseFunction:
                     # Slice the density matrix and save to HDF5 file.
                     density_matrix = two_qubit_state_tomography(array_all)
                     density_matrix = qubit_indices.system(density_matrix)
-                    h5file[f'rho{self.suffix}/{subscript}{i}'] = density_matrix
 
                     # Normalize and optionally project or purify the density matrix.
                     trace = np.trace(density_matrix)
@@ -117,6 +115,8 @@ class ResponseFunction:
                         density_matrix = project_density_matrix(density_matrix)
                     if self.parameters.PURIFY_DENSITY_MATRICES:
                         density_matrix = purify_density_matrix(density_matrix)
+
+                    h5file[f'rho{self.suffix}/{subscript}{i}'] = density_matrix
 
                     self.N[subscript][i, i] = [
                         trace * (state_vectors_exact[:, j].conj() @ density_matrix @ state_vectors_exact[:, j]).real
@@ -169,7 +169,6 @@ class ResponseFunction:
                         # Slice the density matrix and save to HDF5 file.
                         density_matrix = two_qubit_state_tomography(array_all)
                         density_matrix = qubit_indices.system(density_matrix)
-                        h5file[f'rho{self.suffix}/{subscript}{i}{j}'] = density_matrix
 
                         # Normalize and optionally project or purify the density matrix.
                         trace = np.trace(density_matrix)
@@ -178,6 +177,9 @@ class ResponseFunction:
                             density_matrix = project_density_matrix(density_matrix)
                         if self.parameters.PURIFY_DENSITY_MATRICES:
                             density_matrix = purify_density_matrix(density_matrix)
+
+                        h5file[f'rho{self.suffix}/{subscript}{i}{j}'] = density_matrix
+
 
                         self.T[subscript][i, j] = self.T[subscript][j, i] = [
                             trace * (state_vectors_exact[:, k].conj() @ density_matrix @ state_vectors_exact[:, k]).real
@@ -241,9 +243,6 @@ class ResponseFunction:
         """
         # Sum over spins in N.
         N_summed = self.N['n'].reshape((self.n_orbitals, 2, self.n_orbitals, 2, self.n_states['n'])).sum((1, 3))
-
-        print(f"{N_summed[0, 1] = }")
-        print(self.energies['n'] - self.energies['gs'])
 
         chis_all = dict()
         for i in range(self.n_orbitals):
