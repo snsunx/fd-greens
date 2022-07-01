@@ -42,7 +42,7 @@ class CircuitConstructionParameters:
 
 @dataclass
 class ErrorMitigationParameters:
-    """Error Mitigation Parameters.
+    """Error mitigation parameters.
     
     Args:
         PROJECT_DENSITY_MATRICES: Whether to project density matrices to being positive semidefinite.

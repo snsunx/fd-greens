@@ -52,6 +52,7 @@ class GreensFunction:
         self.method = method
         self.verbose = verbose
 
+        print("Parameters write")
         self.parameters = ErrorMitigationParameters()
         self.parameters.write(fname)
 
