@@ -4,7 +4,9 @@ Helpers (:mod:`fd_greens.helpers`)
 ==================================
 """
 
+import pickle
 import os
+import json
 from typing import List, Optional
 from itertools import product
 
@@ -29,9 +31,12 @@ def get_circuit_labels(n_orbitals: int, mode: str = 'greens', spin: str = '') ->
     """
     assert mode in ['greens', 'resp']
     if mode == 'greens':
-        assert spin in ['u', 'd']
+        assert spin in ['u', 'd', 'ud']
     else:
         assert spin == ''
+
+    if spin == 'ud':
+        return get_circuit_labels(n_orbitals, spin='u') + get_circuit_labels(n_orbitals, spin='d')
 
     # For Green's function, orbital labels are just strings of the orbital indices.
     # For response function, orbital labels are orbital indices with 'u' or 'd' suffix.
@@ -68,7 +73,6 @@ def initialize_hdf5(
     spin: str = '',
     n_orbitals: int = 2,
     n_tomography: int = 2,
-    overwrite: bool = False,
     create_datasets: bool = False
 ) -> None:
     """Initializes an HDF5 file for Green's function or response function calculation.
@@ -83,6 +87,29 @@ def initialize_hdf5(
         create_datasets: Whether to create datasets in the HDF5 file.
     """
     assert mode in ['greens', 'resp']
+    if mode == 'greens':
+        assert spin in ['u', 'd', 'ud']
+    else:
+        assert spin == ''
+
+    if spin == 'ud':
+        initialize_hdf5(
+            fname=fname, 
+            mode=mode,
+            spin='u',
+            n_orbitals=n_orbitals,
+            n_tomography=n_tomography,
+            create_datasets=create_datasets
+        )
+        initialize_hdf5(
+            fname=fname, 
+            mode=mode,
+            spin='d',
+            n_orbitals=n_orbitals,
+            n_tomography=n_tomography,
+            create_datasets=create_datasets
+        )
+        return
     
     h5fname = fname + '.h5'
     if os.path.exists(h5fname):
@@ -108,32 +135,32 @@ def initialize_hdf5(
     
     h5file.close()
 
-def copy_simulation_data(fname_expt: str, fname_sim: str, mode: str = 'greens') -> None:
+def copy_simulation_data(fname_expt: str, fname_exact: str, mode: str = 'greens') -> None:
     """Copy ground- and excited-states simulation data to experimental HDF5 file.
     
     Args:
         fname_expt: The experimental HDF5 file name.
-        fname_sim: The simulation HDF5 file name.
+        fname_exact: The simulation HDF5 file name.
         mode: The calculation mode. Either ``'greens'`` or ``'resp'``.
     """
     assert mode in ['greens', 'resp']
-    h5file_sim = h5py.File(fname_sim + '.h5', 'r')
+    h5file_exact = h5py.File(fname_exact + '.h5', 'r')
     h5file_expt = h5py.File(fname_expt + '.h5', 'r+')
 
     del h5file_expt['gs']
     del h5file_expt['es']
-    h5file_expt['gs/energy'] = h5file_sim['gs/energy'][()]
+    h5file_expt['gs/energy'] = h5file_exact['gs/energy'][()]
     if mode == 'greens':
-        h5file_expt['es/energies_e'] = h5file_sim['es/energies_e'][:]
-        h5file_expt['es/energies_h'] = h5file_sim['es/energies_h'][:]
-        h5file_expt['es/states_e'] = h5file_sim['es/states_e'][:]
-        h5file_expt['es/states_h'] = h5file_sim['es/states_h'][:]
+        h5file_expt['es/energies_e'] = h5file_exact['es/energies_e'][:]
+        h5file_expt['es/energies_h'] = h5file_exact['es/energies_h'][:]
+        h5file_expt['es/states_e'] = h5file_exact['es/states_e'][:]
+        h5file_expt['es/states_h'] = h5file_exact['es/states_h'][:]
     else:
-        h5file_expt['es/energies'] = h5file_sim['es/energies'][:]
-        h5file_expt['es/states'] = h5file_sim['es/states'][:]
+        h5file_expt['es/energies'] = h5file_exact['es/energies'][:]
+        h5file_expt['es/states'] = h5file_exact['es/states'][:]
 
     h5file_expt.close()
-    h5file_sim.close()
+    h5file_exact.close()
 
 def process_bitstring_counts(
     histogram: dict,
@@ -189,6 +216,114 @@ def process_bitstring_counts(
             h5file[dset_name].attrs[counts_name] = array
     else:
         return array
+
+def process_all_bitstring_counts(
+    h5fname_expt: str,
+    h5fname_exact: str,
+    pklfname: str,
+    npyfname: Optional[str] = None,
+    counts_name: str = 'counts',
+    counts_name_miti: str = 'counts_miti',
+    pad_zero: str = 'end', 
+    mitigation_first: bool = True,
+    normalize_counts: bool = True
+) -> None:
+    """Processes all bitstring counts.
+    
+    Args:
+        h5fname_expt: The experimental HDF5 file name.
+        h5fname_exact: The exact HDF5 file name.
+        pklfname: The pickle file name.
+        npyfname: The confusion matrix file name.
+        counts_name: Name of the bitstring counts.
+        counts_name: Name of the bitstring counts after error mitigation.
+        pad_zero: Whether to pad zeros when not all qubits are used.
+        mitigation_first: Whether to perform error mitigation first.
+        normalize_counts: Whether to normalize bitstring counts.
+    """
+    print("Start processing results.")
+
+    # Load circuit labels and bitstring counts from files.
+    pkl_data = pickle.load(open(pklfname + '.pkl', 'rb'))
+    circuits = pkl_data['full']['circs']
+    labels = pkl_data['full']['labels']
+    results = pkl_data['full']['results']
+
+    if npyfname is not None:
+        confusion_matrix = np.load(npyfname + '.npy')
+    else:
+        confusion_matrix = None
+
+    # Initialize HDF5 files to store processed bitstring counts.
+    # initialize_hdf5(h5fname_expt, spin='ud', create_datasets=True)
+    copy_simulation_data(h5fname_expt, h5fname_exact)
+    h5file = h5py.File(h5fname_expt + '.h5', 'r+')
+
+    for qtrl_strings, dset_name, histogram in zip(circuits, labels, results):
+        print(f"Processing circuit {dset_name}.")
+
+        # Save circuit to HDF5 file.
+        if dset_name in h5file:
+            del h5file[dset_name]
+        dset = h5file.create_dataset(dset_name, data=json.dumps(qtrl_strings))
+
+        n_qubits = len(list(histogram.keys())[0])
+        counts_array = histogram_to_array(histogram, n_qubits=n_qubits, base=3)
+
+        # Obtain the subspace indices.
+        subspace_indices = []
+        for x in product('01', repeat=n_qubits - 1):
+            if len(dset_name) == 9:
+                if pad_zero == 'front':
+                    index = int('0' + ''.join(x), 3)
+                elif pad_zero == 'end':
+                    index = int(''.join(x) + '0', 3)
+            else:
+                index = int(''.join(x), 3)
+            subspace_indices.append(index)
+
+        # If confusion_matrix is given, calculate counts_array_miti first. 
+        # Otherwise counts_array will be modified into the subspace.
+        if confusion_matrix is not None:
+            if mitigation_first:
+                counts_array_miti = np.linalg.lstsq(confusion_matrix, counts_array)[0]
+                counts_array_miti = counts_array_miti[subspace_indices]
+            else:
+                counts_array_miti = counts_array[subspace_indices]
+                confusion_matrix = confusion_matrix[subspace_indices][:, subspace_indices]
+                counts_array_miti = np.linalg.lstsq(confusion_matrix, counts_array)[0]
+            
+            if normalize_counts:
+                counts_array_miti /= np.sum(counts_array_miti)
+        
+        counts_array = counts_array[subspace_indices]
+        if normalize_counts:
+            counts_array /= np.sum(counts_array)
+        
+        dset.attrs[counts_name] = counts_array
+        dset.attrs[counts_name_miti] = counts_array_miti
+        
+        '''
+        process_bitstring_counts(
+            histogram,
+            pad_zero=pad_zero,
+            fname=h5fname_expt,
+            dset_name=label,
+            counts_name='counts'
+        )
+
+        if confusion_matrix is not None:
+            process_bitstring_counts(
+                histogram, 
+                pad_zero=pad_zero,
+                confusion_matrix=confusion_matrix,
+                fname=h5fname_expt, 
+                dset_name=label,
+                counts_name='counts_miti'
+            )
+        '''
+
+    print("Finished processing results.")
 
 def print_circuit(circuit: cirq.Circuit) -> None:
     """Prints out a circuit 10 elements at a time.
