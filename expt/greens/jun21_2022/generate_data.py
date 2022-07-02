@@ -17,7 +17,6 @@ def main():
                 greens = GreensFunction(hamiltonian, fname=fname, method='exact', spin=spin)
             else:
                 greens = GreensFunction(hamiltonian, fname=fname, method='tomo', spin=spin)
-                # greens = GreensFunction(hamiltonian, fname=fname, method='tomo', spin=spin, suffix='_miti')
             greens.process()
             greens.spectral_function(omegas, eta)
             greens.self_energy(omegas, eta)
