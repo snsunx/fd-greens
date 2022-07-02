@@ -147,9 +147,12 @@ def copy_simulation_data(fname_expt: str, fname_exact: str, mode: str = 'greens'
     h5file_exact = h5py.File(fname_exact + '.h5', 'r')
     h5file_expt = h5py.File(fname_expt + '.h5', 'r+')
 
-    del h5file_expt['gs']
-    del h5file_expt['es']
+    if 'gs' in h5file_expt:
+        del h5file_expt['gs']
     h5file_expt['gs/energy'] = h5file_exact['gs/energy'][()]
+    
+    if 'es' in h5file_expt:
+        del h5file_expt['es']    
     if mode == 'greens':
         h5file_expt['es/energies_e'] = h5file_exact['es/energies_e'][:]
         h5file_expt['es/energies_h'] = h5file_exact['es/energies_h'][:]
@@ -222,11 +225,12 @@ def process_all_bitstring_counts(
     h5fname_exact: str,
     pklfname: str,
     npyfname: Optional[str] = None,
+    mode: str = 'greens',
     counts_name: str = 'counts',
     counts_name_miti: str = 'counts_miti',
     pad_zero: str = 'end', 
     mitigation_first: bool = True,
-    normalize_counts: bool = True
+    normalize_counts: bool = True, 
 ) -> None:
     """Processes all bitstring counts.
     
@@ -241,7 +245,16 @@ def process_all_bitstring_counts(
         mitigation_first: Whether to perform error mitigation first.
         normalize_counts: Whether to normalize bitstring counts.
     """
+    assert pad_zero in ['front', 'end']
+    assert mode in ['greens', 'resp']
+
     print("Start processing results.")
+
+    if not os.path.exists(h5fname_expt + '.h5'):
+        if mode == 'greens':
+            initialize_hdf5(h5fname_expt, spin='ud', mode=mode)
+        else:
+            initialize_hdf5(h5fname_expt, mode=mode)
 
     # Load circuit labels and bitstring counts from files.
     pkl_data = pickle.load(open(pklfname + '.pkl', 'rb'))
@@ -256,7 +269,7 @@ def process_all_bitstring_counts(
 
     # Initialize HDF5 files to store processed bitstring counts.
     # initialize_hdf5(h5fname_expt, spin='ud', create_datasets=True)
-    copy_simulation_data(h5fname_expt, h5fname_exact)
+    copy_simulation_data(h5fname_expt, h5fname_exact, mode=mode)
     h5file = h5py.File(h5fname_expt + '.h5', 'r+')
 
     for qtrl_strings, dset_name, histogram in zip(circuits, labels, results):
@@ -271,16 +284,13 @@ def process_all_bitstring_counts(
         counts_array = histogram_to_array(histogram, n_qubits=n_qubits, base=3)
 
         # Obtain the subspace indices.
-        subspace_indices = []
-        for x in product('01', repeat=n_qubits - 1):
-            if len(dset_name) == 9:
-                if pad_zero == 'front':
-                    index = int('0' + ''.join(x), 3)
-                elif pad_zero == 'end':
-                    index = int(''.join(x) + '0', 3)
-            else:
-                index = int(''.join(x), 3)
-            subspace_indices.append(index)
+        if len(dset_name) == 9:
+            if pad_zero == 'front':
+                subspace_indices = [int('0' + ''.join(x), 3) for x in product('01', repeat=n_qubits - 1)]
+            elif pad_zero == 'end':
+                subspace_indices = [int(''.join(x) + '0', 3) for x in product('01', repeat=n_qubits - 1)]
+        else:
+            subspace_indices = [int(''.join(x), 3) for x in product('01', repeat=n_qubits)]
 
         # If confusion_matrix is given, calculate counts_array_miti first. 
         # Otherwise counts_array will be modified into the subspace.

@@ -388,6 +388,8 @@ def state_tomography(result_array: np.ndarray) -> np.ndarray:
         density_matrix: The density matrix obtained from quantum state tomography.
     """
     # Create the basis and bistring labels.
+    print("result_array =", result_array)
+    
     n_qubits = int(np.log(len(result_array)) / np.log(6))
     basis_labels = list(product('xyz', repeat=n_qubits))
     bitstring_labels = list(product('01', repeat=n_qubits))

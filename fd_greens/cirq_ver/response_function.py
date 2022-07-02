@@ -156,15 +156,24 @@ class ResponseFunction:
 
                         array_all = []
                         for tomography_label in tomography_labels:
+                            # print("tomography_label =", tomography_label)
                             array_raw = h5file[f"{circuit_label}/{tomography_label}"].attrs[f"counts{self.suffix}"]
+                            # print(f"{array_raw = }")
                             repetitions = np.sum(array_raw)
+                            # print(f"{repetitions = }")
                             ancilla_index = int(qubit_indices.ancilla.str[0], 2)
                             if REVERSE_QUBIT_ORDER:
                                 array_raw = reverse_qubit_order(array_raw)
                                 array_label = array_raw[ancilla_index :: 4]  / repetitions
                             else:
+                                # print("NOT REVERSING QUBIT ORDER!")
+                                # print(f"{ancilla_index = }")
+                                # print(array_raw[ancilla_index * 4 : (ancilla_index + 1) * 4])
                                 array_label = array_raw[ancilla_index * 4 : (ancilla_index + 1) * 4] / repetitions
+                            # print(f"{array_label = }")
                             array_all += list(array_label)
+
+
 
                         # Obtain the density matrix through tomography and optionally modify it.
                         density_matrix = two_qubit_state_tomography(array_all)
