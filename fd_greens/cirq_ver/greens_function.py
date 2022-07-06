@@ -121,9 +121,8 @@ class GreensFunction:
                             array_label = array_raw[ancilla_index * 4 : (ancilla_index + 1) * 4] / repetitions
                         array_all += list(array_label)
 
+                    # Tomograph, and optionally project or purify the density matrix.
                     density_matrix = two_qubit_state_tomography(array_all)
-                    density_matrix = qubit_indices.system(density_matrix)
-
                     trace = np.trace(density_matrix)
                     density_matrix /= trace
                     if self.parameters.PROJECT_DENSITY_MATRICES:
@@ -131,6 +130,8 @@ class GreensFunction:
                     if self.parameters.PURIFY_DENSITY_MATRICES:
                         density_matrix = purify_density_matrix(density_matrix)
 
+                    # Slice the density matrix and save to HDF5 file.
+                    density_matrix = qubit_indices.system(density_matrix)
                     dset_name = f'rho{self.suffix}/{subscript}{m}{self.spin}'
                     if dset_name in h5file:
                         del h5file[dset_name]
@@ -186,9 +187,8 @@ class GreensFunction:
                                 array_label  = array_raw[ancilla_index * 4:(ancilla_index + 1) * 4] / repetitions
                             array_all += list(array_label)
 
+                        # Tomograph, and optionally project or purify the density matrix.
                         density_matrix = two_qubit_state_tomography(array_all)
-                        density_matrix = qubit_indices.system(density_matrix)
-
                         trace = np.trace(density_matrix)
                         density_matrix /= trace
                         if self.parameters.PROJECT_DENSITY_MATRICES:
@@ -196,7 +196,9 @@ class GreensFunction:
                         if self.parameters.PURIFY_DENSITY_MATRICES:
                             density_matrix = purify_density_matrix(density_matrix)
 
+                        # Save the modified density matrix to HDF5 file.
                         dset_name = f'rho{self.suffix}/{subscript}{m}{n}{self.spin}'
+                        density_matrix = qubit_indices.system(density_matrix)
                         if dset_name in h5file:
                             del h5file[dset_name]
                         h5file[dset_name] = density_matrix

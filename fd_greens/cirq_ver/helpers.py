@@ -224,12 +224,13 @@ def process_all_bitstring_counts(
     h5fname_expt: str,
     h5fname_exact: str,
     pklfname: str,
+    pkldsetname: str = 'full',
     npyfname: Optional[str] = None,
     mode: str = 'greens',
     counts_name: str = 'counts',
     counts_name_miti: str = 'counts_miti',
     pad_zero: str = 'end', 
-    mitigation_first: bool = True,
+    mitigation_first: bool = False,
     normalize_counts: bool = True, 
 ) -> None:
     """Processes all bitstring counts.
@@ -258,9 +259,9 @@ def process_all_bitstring_counts(
 
     # Load circuit labels and bitstring counts from files.
     pkl_data = pickle.load(open(pklfname + '.pkl', 'rb'))
-    circuits = pkl_data['full']['circs']
-    labels = pkl_data['full']['labels']
-    results = pkl_data['full']['results']
+    circuits = pkl_data[pkldsetname]['circs']
+    labels = pkl_data[pkldsetname]['labels']
+    results = pkl_data[pkldsetname]['results']
 
     if npyfname is not None:
         confusion_matrix = np.load(npyfname + '.npy')
@@ -268,12 +269,11 @@ def process_all_bitstring_counts(
         confusion_matrix = None
 
     # Initialize HDF5 files to store processed bitstring counts.
-    # initialize_hdf5(h5fname_expt, spin='ud', create_datasets=True)
     copy_simulation_data(h5fname_expt, h5fname_exact, mode=mode)
     h5file = h5py.File(h5fname_expt + '.h5', 'r+')
 
     for qtrl_strings, dset_name, histogram in zip(circuits, labels, results):
-        print(f"Processing circuit {dset_name}.")
+        print(f"> Processing circuit {dset_name}.")
 
         # Save circuit to HDF5 file.
         if dset_name in h5file:
@@ -282,26 +282,37 @@ def process_all_bitstring_counts(
 
         n_qubits = len(list(histogram.keys())[0])
         counts_array = histogram_to_array(histogram, n_qubits=n_qubits, base=3)
-
+        
         # Obtain the subspace indices.
         if len(dset_name) == 9:
             if pad_zero == 'front':
                 subspace_indices = [int('0' + ''.join(x), 3) for x in product('01', repeat=n_qubits - 1)]
+                subspace_indices_base2 = [int('0' + ''.join(x), 2) for x in product('01', repeat=n_qubits - 1)]
             elif pad_zero == 'end':
                 subspace_indices = [int(''.join(x) + '0', 3) for x in product('01', repeat=n_qubits - 1)]
+                subspace_indices_base2 = [int(''.join(x) + '0', 2) for x in product('01', repeat=n_qubits - 1)]
         else:
             subspace_indices = [int(''.join(x), 3) for x in product('01', repeat=n_qubits)]
+            subspace_indices_base2 = [int(''.join(x), 2) for x in product('01', repeat=n_qubits)]
+
 
         # If confusion_matrix is given, calculate counts_array_miti first. 
         # Otherwise counts_array will be modified into the subspace.
         if confusion_matrix is not None:
+            print("Confusion matrix dimension", confusion_matrix.shape)
             if mitigation_first:
                 counts_array_miti = np.linalg.lstsq(confusion_matrix, counts_array)[0]
                 counts_array_miti = counts_array_miti[subspace_indices]
             else:
                 counts_array_miti = counts_array[subspace_indices]
-                confusion_matrix = confusion_matrix[subspace_indices][:, subspace_indices]
-                counts_array_miti = np.linalg.lstsq(confusion_matrix, counts_array)[0]
+                if confusion_matrix.shape[0] == 16:
+                    confusion_matrix1 = confusion_matrix[subspace_indices_base2][:, subspace_indices_base2]
+                else: # 81 by 81
+                    confusion_matrix1 = confusion_matrix[subspace_indices][:, subspace_indices]
+
+                print(f"{confusion_matrix1.shape = }")
+                print(f"{counts_array_miti.shape = }")
+                counts_array_miti = np.linalg.lstsq(confusion_matrix1, counts_array_miti)[0]
             
             if normalize_counts:
                 counts_array_miti /= np.sum(counts_array_miti)
@@ -311,27 +322,9 @@ def process_all_bitstring_counts(
             counts_array /= np.sum(counts_array)
         
         dset.attrs[counts_name] = counts_array
-        dset.attrs[counts_name_miti] = counts_array_miti
-        
-        '''
-        process_bitstring_counts(
-            histogram,
-            pad_zero=pad_zero,
-            fname=h5fname_expt,
-            dset_name=label,
-            counts_name='counts'
-        )
 
         if confusion_matrix is not None:
-            process_bitstring_counts(
-                histogram, 
-                pad_zero=pad_zero,
-                confusion_matrix=confusion_matrix,
-                fname=h5fname_expt, 
-                dset_name=label,
-                counts_name='counts_miti'
-            )
-        '''
+            dset.attrs[counts_name_miti] = counts_array_miti
 
     print("Finished processing results.")
 

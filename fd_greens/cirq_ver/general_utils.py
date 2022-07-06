@@ -92,10 +92,14 @@ def histogram_to_array(
     
     array = np.zeros((base ** n_qubits,))
     for key, value in histogram.items():
+        # print(f"{key =}, {value =}")
         if isinstance(key, str):
             index = int(key, base)
         else:
             index = int(''.join([str(i) for i in key]), base)
+
+        if isinstance(value, list):
+            value = sum(value)
         array[index] = value
 
     if normalize:

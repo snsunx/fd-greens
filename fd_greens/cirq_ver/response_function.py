@@ -104,11 +104,9 @@ class ResponseFunction:
                             array_label =  array_raw[ancilla_index * 4 : (ancilla_index + 1) * 4] / repetitions
                         array_all += list(array_label)
                     
-                    # Slice the density matrix and save to HDF5 file.
+                    # Tomograph, and optionally project or purify the density matrix.
                     density_matrix = two_qubit_state_tomography(array_all)
-                    density_matrix = qubit_indices.system(density_matrix)
 
-                    # Normalize and optionally project or purify the density matrix.
                     trace = np.trace(density_matrix)
                     density_matrix /= trace
                     if self.parameters.PROJECT_DENSITY_MATRICES:
@@ -116,6 +114,7 @@ class ResponseFunction:
                     if self.parameters.PURIFY_DENSITY_MATRICES:
                         density_matrix = purify_density_matrix(density_matrix)
 
+                    density_matrix = qubit_indices.system(density_matrix)
                     h5file[f'rho{self.suffix}/{subscript}{i}'] = density_matrix
 
                     self.N[subscript][i, i] = [
@@ -174,16 +173,17 @@ class ResponseFunction:
                             array_all += list(array_label)
 
 
-
-                        # Obtain the density matrix through tomography and optionally modify it.
+                        # Tomograph, and optionally project or purify the density matrix.
                         density_matrix = two_qubit_state_tomography(array_all)
-                        density_matrix = qubit_indices.system(density_matrix)
+
                         trace = np.trace(density_matrix)
                         density_matrix /= trace
                         if self.parameters.PROJECT_DENSITY_MATRICES:
                             density_matrix = project_density_matrix(density_matrix)
                         if self.parameters.PURIFY_DENSITY_MATRICES:
                             density_matrix = purify_density_matrix(density_matrix)
+                        
+                        density_matrix = qubit_indices.system(density_matrix)
                         h5file[f'rho{self.suffix}/{subscript}{i}{j}'] = density_matrix
 
                         self.T[subscript][i, j] = self.T[subscript][j, i] = [

@@ -171,7 +171,8 @@ def plot_response_function(
     linestyles: Sequence[dict] = LINESTYLES_CHI,
     text: Optional[str] = None,
     n_curves: Optional[int] = None,
-    separate_real_imag: bool = True
+    separate_real_imag: bool = True,
+    scaling_factor: float = 1.0
 ) -> None:
     """Plots the charge-charge response function.
 
@@ -201,6 +202,10 @@ def plot_response_function(
 
             for i in range(n_curves // 2):
                 omegas, real, imag = np.loadtxt(f"data/{fnames[i]}{suffixes[i]}_chi{circ_label}.dat").T
+                print("Scaling factor", scaling_factor)
+                if 'exact' not in fnames[i]:
+                    real *= scaling_factor
+                    imag *= scaling_factor
 
                 axes[0].plot(omegas, real, label=labels[i], **linestyles[2 * i])
                 axes[0].set_xlabel("$\omega$ (eV)")
@@ -383,6 +388,7 @@ def display_fidelities(
     fname_exact: str,
     fname_expt: str,
     subscript: str,
+    suffix: str = '',
     spin: str = '',
     dirname: str = 'figs/amp',
     figname: str = 'fid'
@@ -414,17 +420,18 @@ def display_fidelities(
 
     for i in range(dim):
         state_exact = h5file_exact[f'psi/{subscript}{i}{spin}'][:]
-        state_expt = h5file_expt[f'rho/{subscript}{i}{spin}'][:]
+        state_expt = h5file_expt[f'rho{suffix}/{subscript}{i}{spin}'][:]
         fidelities[i, i] = get_fidelity(state_exact, state_expt)
+
         for j in range(i + 1, dim):
             # p is filled on the upper half triangle.
             state_exact = h5file_exact[f'psi/{subscript}p{i}{j}{spin}'][:]
-            state_expt = h5file_expt[f'rho/{subscript}p{i}{j}{spin}'][:]
+            state_expt = h5file_expt[f'rho{suffix}/{subscript}p{i}{j}{spin}'][:]
             fidelities[i, j] = get_fidelity(state_exact, state_expt)
 
             # m is filled on the lower half triangle.
             state_exact = h5file_exact[f'psi/{subscript}m{i}{j}{spin}'][:]
-            state_expt = h5file_expt[f'rho/{subscript}m{i}{j}{spin}'][:]
+            state_expt = h5file_expt[f'rho{suffix}/{subscript}m{i}{j}{spin}'][:]
             fidelities[j, i] = get_fidelity(state_exact, state_expt)
 
     fig, ax = plt.subplots()
