@@ -15,6 +15,7 @@ from .molecular_hamiltonian import MolecularHamiltonian
 from .qubit_indices import QubitIndices
 from .parameters import REVERSE_QUBIT_ORDER, ErrorMitigationParameters, get_method_indices_pairs
 from .general_utils import project_density_matrix, purify_density_matrix, reverse_qubit_order, two_qubit_state_tomography
+from .helpers import save_to_hdf5
 
 np.set_printoptions(precision=6)
 
@@ -29,6 +30,7 @@ class GreensFunction:
         spin: str = "d",
         method: str = "exact",
         verbose: bool = True,
+        fname_exact: Optional[str] = None,
     ) -> None:
         """Initializes a ``GreensFunction`` object.
         
@@ -51,13 +53,16 @@ class GreensFunction:
         self.spin = spin
         self.method = method
         self.verbose = verbose
+        self.fname_exact = fname_exact
 
-        print("Parameters write")
+        # Load error mitigation parameters.
         self.parameters = ErrorMitigationParameters()
         self.parameters.write(fname)
+        if method == 'tomo' and self.parameters.USE_EXACT_TRACES:
+            assert fname_exact is not None
 
         # Load energies and state vectors from HDF5 file.
-        with h5py.File(self.h5fname, "r") as h5file:
+        with h5py.File(self.fname + '.h5', "r") as h5file:
             self.energies = {"gs": h5file["gs/energy"][()], 
                              "e": h5file["es/energies_e"][:],
                              "h": h5file["es/energies_h"][:]}
@@ -84,7 +89,7 @@ class GreensFunction:
 
     def _process_diagonal_results(self) -> None:
         """Processes diagonal transition amplitude results."""
-        h5file = h5py.File(self.h5fname, "r+")
+        h5file = h5py.File(self.fname + '.h5', "r+")
 
         for m in range(self.n_orbitals):
             circuit_label = f"circ{m}{self.spin}"
@@ -99,10 +104,10 @@ class GreensFunction:
                         state_vector = reverse_qubit_order(state_vector)
                     state_vector = qubit_indices(state_vector)
 
-                    dset_name = f'psi{self.suffix}/{subscript}{m}{self.spin}'
-                    if dset_name in h5file:
-                        del h5file[dset_name]
-                    h5file[dset_name] = state_vector
+                    save_to_hdf5(
+                        h5file, f"trace{self.suffix}/{subscript}{m}{self.spin}", 
+                        np.linalg.norm(state_vector) ** 2)
+                    save_to_hdf5(h5file, f"psi{self.suffix}/{subscript}{m}{self.spin}", state_vector)
 
                     self.B[subscript][m, m] = np.abs(state_vectors_exact.conj().T @ state_vector) ** 2
 
@@ -123,19 +128,20 @@ class GreensFunction:
 
                     # Tomograph, and optionally project or purify the density matrix.
                     density_matrix = two_qubit_state_tomography(array_all)
-                    trace = np.trace(density_matrix)
+                    trace = np.trace(density_matrix).real
                     density_matrix /= trace
                     if self.parameters.PROJECT_DENSITY_MATRICES:
                         density_matrix = project_density_matrix(density_matrix)
                     if self.parameters.PURIFY_DENSITY_MATRICES:
                         density_matrix = purify_density_matrix(density_matrix)
-
-                    # Slice the density matrix and save to HDF5 file.
                     density_matrix = qubit_indices.system(density_matrix)
-                    dset_name = f'rho{self.suffix}/{subscript}{m}{self.spin}'
-                    if dset_name in h5file:
-                        del h5file[dset_name]
-                    h5file[dset_name] = density_matrix
+
+                    save_to_hdf5(h5file, f"trace{self.suffix}/{subscript}{m}{self.spin}", trace)
+                    save_to_hdf5(h5file, f"rho{self.suffix}/{subscript}{m}{self.spin}", density_matrix)
+
+                    if self.parameters.USE_EXACT_TRACES:
+                        with h5py.File(self.fname_exact + '.h5', 'r') as h5file_exact:
+                            trace = h5file_exact[f"trace{self.suffix}/{subscript}{m}{self.spin}"][()]
 
                     self.B[subscript][m, m] = [
                         trace * (state_vectors_exact[:, i].conj() @ density_matrix @ state_vectors_exact[:, i]).real
@@ -148,7 +154,7 @@ class GreensFunction:
 
     def _process_off_diagonal_results(self) -> None:
         """Processes off-diagonal transition amplitude results."""
-        h5file = h5py.File(self.h5fname, "r+")
+        h5file = h5py.File(self.fname + '.h5', "r+")
 
         for m in range(self.n_orbitals):
             for n in range(m + 1, self.n_orbitals):
@@ -163,11 +169,11 @@ class GreensFunction:
                         if REVERSE_QUBIT_ORDER:
                             state_vector = reverse_qubit_order(state_vector)
                         state_vector = qubit_indices(state_vector)
-
-                        dset_name = f'psi{self.suffix}/{subscript}{m}{n}{self.spin}'
-                        if dset_name in h5file:
-                            del h5file[dset_name]
-                        h5file[dset_name] = state_vector
+                    
+                        save_to_hdf5(
+                            h5file, f"trace{self.suffix}/{subscript}{m}{n}{self.spin}",
+                            np.linalg.norm(state_vector) ** 2)
+                        save_to_hdf5(h5file, f"psi{self.suffix}/{subscript}{m}{n}{self.spin}", state_vector)
 
                         self.D[subscript][m, n] = self.D[subscript][n, m] = \
                             np.abs(state_vectors_exact.conj().T @ state_vector) ** 2
@@ -175,6 +181,7 @@ class GreensFunction:
                     elif self.method == 'tomo':
                         tomography_labels = [''.join(x) for x in product('xyz', repeat=2)]
 
+                        # Stack normalized arrays of single tomography labels to array_all.
                         array_all = []
                         for tomography_label in tomography_labels:
                             array_raw = h5file[f"{circuit_label}/{tomography_label}"].attrs[f"counts{self.suffix}"]
@@ -187,6 +194,7 @@ class GreensFunction:
                                 array_label  = array_raw[ancilla_index * 4:(ancilla_index + 1) * 4] / repetitions
                             array_all += list(array_label)
 
+
                         # Tomograph, and optionally project or purify the density matrix.
                         density_matrix = two_qubit_state_tomography(array_all)
                         trace = np.trace(density_matrix)
@@ -195,14 +203,15 @@ class GreensFunction:
                             density_matrix = project_density_matrix(density_matrix)
                         if self.parameters.PURIFY_DENSITY_MATRICES:
                             density_matrix = purify_density_matrix(density_matrix)
-
-                        # Save the modified density matrix to HDF5 file.
-                        dset_name = f'rho{self.suffix}/{subscript}{m}{n}{self.spin}'
                         density_matrix = qubit_indices.system(density_matrix)
-                        if dset_name in h5file:
-                            del h5file[dset_name]
-                        h5file[dset_name] = density_matrix
 
+                        save_to_hdf5(h5file, f"trace{self.suffix}/{subscript}{m}{n}{self.spin}", trace)
+                        save_to_hdf5(h5file, f"rho{self.suffix}/{subscript}{m}{n}{self.spin}", density_matrix)
+
+                        if self.parameters.USE_EXACT_TRACES:
+                            with h5py.File(self.fname_exact + '.h5', 'r') as h5file_exact:
+                                trace = h5file_exact[f"trace{self.suffix}/{subscript}{m}{n}{self.spin}"][()]
+                        
                         self.D[subscript][m, n] = self.D[subscript][n, m] = [
                             trace * (state_vectors_exact[:, i].conj() @ density_matrix @ state_vectors_exact[:, i]).real
                             for i in range(self.n_states[subscript[0]])]
@@ -229,17 +238,11 @@ class GreensFunction:
         self._process_off_diagonal_results()
 
         # Save B and D to HDF5 file.
-        with h5py.File(self.h5fname, 'r+') as h5file:
+        with h5py.File(self.fname + '.h5', 'r+') as h5file:
             for subscript, array in self.B.items():
-                dset_name = f'amp{self.suffix}/B_{subscript}'
-                if dset_name in h5file:
-                    del h5file[dset_name]
-                h5file[dset_name] = array
+                save_to_hdf5(h5file, f"amp{self.suffix}/B_{subscript}", array)
             for subscript, array in self.D.items():
-                dset_name = f'amp{self.suffix}/D_{subscript}'
-                if dset_name in h5file:
-                    del h5file[dset_name]
-                h5file[dset_name] = array
+                save_to_hdf5(h5file, f"amp{self.suffix}/D_{subscript}", array)
 
     def mean_field_greens_function(self, omega: float, eta: float = 0.0) -> np.ndarray:
         """Returns the mean-field Green's function.

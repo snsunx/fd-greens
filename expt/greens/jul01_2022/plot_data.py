@@ -8,7 +8,7 @@ def main():
 
     fnames = ['lih_greens_exact', 'lih_greens_pur', 'lih_greens_pur2q']
     suffixes = ['', '', '']
-    labels = ['Exact', 'Base Pur', '2Q Pur']
+    labels = ['Exact', 'Base', '2Q']
 
     plot_spectral_function(fnames, suffixes, labels=labels, text="legend", dirname="figs/data")
     plot_trace_self_energy(fnames, suffixes, labels=labels, text="legend", dirname="figs/data")

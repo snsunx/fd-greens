@@ -404,6 +404,7 @@ def display_fidelities(
         figname: The figure name.
     """
     assert spin in ['u', 'd', '']
+    
     if not os.path.exists(dirname):
         os.makedirs(dirname)
 
@@ -439,7 +440,7 @@ def display_fidelities(
     for i in range(dim):
         for j in range(dim):
             # Here x is the column index and y is the row index.
-            if fidelities[i, j] > 0.2:
+            if fidelities[i, j] > 0.4:
                 ax.text(j, i, f"{fidelities[i, j]:.2f}", color='black', ha='center', va='center')
             else:
                 ax.text(j, i, f"{fidelities[i, j]:.2f}", color='white', ha='center', va='center')
@@ -448,4 +449,57 @@ def display_fidelities(
 
     h5file_exact.close()
     h5file_expt.close()
+
+def display_traces(
+    fname: str,
+    subscript: str,
+    suffix: str = '',
+    spin: str = '',
+    dirname: str = 'figs/amp',
+    figname: str = 'trace'
+) -> None:
+    """Displays fidelities between exact and experimental results.
+    
+    Args:
+        fname_exact: The file name of the exact calculation.
+        fname_expt: The file name of the experimental calculation.
+        subscript: The subscript of the quantities. ``'e'``, ``'h'`` or ``'n'``.
+        spin: The spin of the states.
+        dirname: The directory name.
+        figname: The figure name.
+    """
+    assert spin in ['u', 'd', '']
+
+    if not os.path.exists(dirname):
+        os.makedirs(dirname)
+
+    h5file = h5py.File(fname+ '.h5', 'r')
+
+    # XXX: 2 and 4 are hardcoded.
+    if spin in ['u', 'd']:
+        dim = 2
+    else:
+        dim = 4
+    
+    traces = np.zeros((dim, dim))
+    for i in range(dim):
+        traces[i, i] = h5file[f"trace{suffix}/{subscript}{i}{spin}"][()]
+        for j in range(i + 1, dim):
+            # p (m) is filled on the upper (lower) half triangle.
+            traces[i, j] = h5file[f"trace{suffix}/{subscript}p{i}{j}{spin}"][()]
+            traces[j, i] = h5file[f"trace{suffix}/{subscript}m{i}{j}{spin}"][()]
+
+    fig, ax = plt.subplots()
+    im = ax.imshow(traces, vmin=0.0, vmax=1.0)
+    for i in range(dim):
+        for j in range(dim):
+            # Here x is the column index and y is the row index.
+            if traces[i, j] > 0.5:
+                ax.text(j, i, f"{traces[i, j]:.2f}", color='black', ha='center', va='center')
+            else:
+                ax.text(j, i, f"{traces[i, j]:.2f}", color='white', ha='center', va='center')
+    fig.colorbar(im, ticks=np.arange(0.0, 1.0 + 1e-8, 0.2))
+    fig.savefig(f'{dirname}/{figname}.png', dpi=FIGURE_DPI, bbox_inches='tight')
+
+    h5file.close()
     

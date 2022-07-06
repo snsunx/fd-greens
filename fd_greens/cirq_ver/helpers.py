@@ -135,6 +135,13 @@ def initialize_hdf5(
     
     h5file.close()
 
+def save_to_hdf5(h5file: h5py.File, dsetname: str, dset: np.ndarray, overwrite: bool = True) -> None:
+    """Saves a dataset to an HDF5 file."""
+    if overwrite:
+        if dsetname in h5file:
+            del h5file[dsetname]
+    h5file[dsetname] = dset
+
 def copy_simulation_data(fname_expt: str, fname_exact: str, mode: str = 'greens') -> None:
     """Copy ground- and excited-states simulation data to experimental HDF5 file.
     

@@ -18,7 +18,7 @@ def main():
             resp.process()
             resp.response_function(omegas, eta)
         else:
-            resp = ResponseFunction(hamiltonian, fname=fname, method='tomo')
+            resp = ResponseFunction(hamiltonian, fname=fname, method='tomo', fname_exact='lih_resp_exact')
             resp.process()
             resp.response_function(omegas, eta)
 

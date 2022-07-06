@@ -47,9 +47,11 @@ class ErrorMitigationParameters:
     Args:
         PROJECT_DENSITY_MATRICES: Whether to project density matrices to being positive semidefinite.
         PURIFY_DENSITY_MATRICES: Whether to purify density matrices.
+        USE_EXACT_TRACES: Use exact traces (probabilities) of the ancilla bitstrings.
     """
     PROJECT_DENSITY_MATRICES: bool = True
     PURIFY_DENSITY_MATRICES: bool = True
+    USE_EXACT_TRACES: bool = True
 
     def write(self, fname: str) -> None:
         with h5py.File(fname + '.h5', 'r+') as h5file:
