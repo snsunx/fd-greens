@@ -28,7 +28,6 @@ class CircuitConstructionParameters:
     ITOFFOLI_Z_ANGLE: float = 20.67
     CONSTRAIN_CS_CSD: bool = False
     CONVERT_CCZ_TO_ITOFFOLI: bool = False
-    TOMOGRAPH_ALL_QUBITS: bool = False
     
     ADJUST_CS_CSD: bool = True
     SPLIT_SIMULTANEOUS_CZS: bool = True

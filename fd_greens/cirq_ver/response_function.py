@@ -41,7 +41,7 @@ class ResponseFunction:
             verbose: Whether to print out observable values.
             fname_exact: The exact HDF5 file name, if USE_EXACT_TRACES Is set to True.
         """
-        assert method in ['exact', 'tomo', 'alltomo']
+        assert method in ["exact", "tomo", "alltomo"]
 
         # Input attributes.
         self.hamiltonian = hamiltonian
@@ -65,26 +65,29 @@ class ResponseFunction:
         # Derived attributes.
         method_indices_pairs = get_method_indices_pairs('')
         self.n_states = {'n': self.state_vectors['n'].shape[1]}
-        self.n_orbitals = len(hamiltonian.active_indices)
-        self.orbital_labels = list(product(range(self.n_orbitals), ['u', 'd']))
-        self.n_system_qubits = 2 * self.n_orbitals - method_indices_pairs.n_tapered
+        self.n_spatial_orbitals = len(hamiltonian.active_indices)
+        self.n_spin_orbitals = 2 * self.n_spatial_orbitals
+        self.orbital_labels = list(product(range(self.n_spatial_orbitals), ['u', 'd']))
+        self.n_system_qubits = self.n_spin_orbitals - method_indices_pairs.n_tapered
         self.qubit_indices_dict = QubitIndices.get_excited_qubit_indices_dict(
-            2 * self.n_orbitals, method_indices_pairs)
+            self.n_spin_orbitals, method_indices_pairs)
 
         # Initialize array quantities N and T.
-        self.N = {subscript: np.zeros((2 * self.n_orbitals, 2 * self.n_orbitals, self.n_states[subscript]),
-                    dtype=complex) for subscript in ['n']}
-        self.T = {subscript: np.zeros((2 * self.n_orbitals, 2 * self.n_orbitals, self.n_states[subscript[0]]), 
-                    dtype=complex) for subscript in ['np', 'nm']}
+        self.subscripts_diagonal = ['n']
+        self.subscripts_off_diagonal = ['np', 'nm']
+        self.N = {subscript: np.zeros((self.n_spin_orbitals, self.n_spin_orbitals, self.n_states[subscript]),
+                    dtype=complex) for subscript in self.subscripts_diagonal}
+        self.T = {subscript: np.zeros((self.n_spin_orbitals, self.n_spin_orbitals, self.n_states[subscript[0]]), 
+                    dtype=complex) for subscript in self.subscripts_off_diagonal}
 
     def _process_diagonal(self) -> None:
         """Processes diagonal transition amplitudes results."""
         h5file = h5py.File(self.fname + '.h5', 'r+')
-        for i in range(2 * self.n_orbitals):
+        for i in range(self.n_spin_orbitals):
             m, s = self.orbital_labels[i]
             circuit_label = f'circ{m}{s}'
 
-            for subscript in ['n']:
+            for subscript in self.subscripts_diagonal:
                 qubit_indices = self.qubit_indices_dict[subscript]
                 state_vectors_exact = self.state_vectors[subscript]
 
@@ -129,11 +132,27 @@ class ResponseFunction:
                 elif self.method == 'alltomo':
                     # Tomography to get the density matrix.
                     density_matrix = quantum_state_tomography(
-                        h5file, n_qubits=3, circuit_label=circuit_label, suffix=self.suffix)
+                        h5file, n_qubits=self.n_system_qubits + 1, circuit_label=circuit_label, suffix=self.suffix)
+                    print(f"{np.trace(density_matrix).real = }")
                     
-                    # Optionally project or purify the density matrix.
+                    if self.parameters.PROJECT_DENSITY_MATRICES:
+                        density_matrix = project_density_matrix(density_matrix)
+                    if self.parameters.PURIFY_DENSITY_MATRICES:
+                        density_matrix = purify_density_matrix(density_matrix)
+                    density_matrix = qubit_indices(density_matrix)
+                    trace = np.trace(density_matrix).real
 
+                    # Save the density matrix and its trace to HDF5 file.
+                    save_to_hdf5(h5file, f"trace{self.suffix}/{subscript}{i}", trace)
+                    save_to_hdf5(h5file, f"rho{self.suffix}/{subscript}{i}", density_matrix)
 
+                    if self.parameters.USE_EXACT_TRACES:
+                        with h5py.File(self.fname_exact + '.h5', 'r') as h5file_exact:
+                            trace = h5file_exact[f"trace{self.suffix}/{subscript}{i}"][()]
+
+                    self.N[subscript][i, i] = [
+                        (state_vectors_exact[:, j].conj() @ density_matrix @ state_vectors_exact[:, j]).real
+                        for j in range(self.n_states[subscript])]
                 
                 if self.verbose:
                     print(f'N[{subscript}][{i}, {i}] = {self.N[subscript][i, i]}')
@@ -144,13 +163,13 @@ class ResponseFunction:
         """Processes off-diagonal transition amplitude results."""
         h5file = h5py.File(self.fname + '.h5', "r+")
 
-        for i in range(2 * self.n_orbitals):
+        for i in range(self.n_spin_orbitals):
             m, s = self.orbital_labels[i]
-            for j in range(i + 1, 2 * self.n_orbitals):
+            for j in range(i + 1, self.n_spin_orbitals):
                 m_, s_ = self.orbital_labels[j]
                 circuit_label = f'circ{m}{s}{m_}{s_}'
 
-                for subscript in ['np', 'nm']:
+                for subscript in self.subscripts_off_diagonal:
                     qubit_indices = self.qubit_indices_dict[subscript]
                     state_vectors_exact = self.state_vectors[subscript[0]]
 
@@ -198,20 +217,35 @@ class ResponseFunction:
                     elif self.method == 'alltomo':
                         # Tomography to get the density matrix.
                         density_matrix = quantum_state_tomography(
-                            h5file, 4, circuit_label, suffix=self.suffix,
-                            ancilla_index=0)
+                            h5file, n_qubits=self.n_system_qubits + 2, circuit_label=circuit_label, suffix=self.suffix)
+                        print(f"{np.trace(density_matrix).real = }")
 
+                        if self.parameters.PROJECT_DENSITY_MATRICES:
+                            density_matrix = project_density_matrix(density_matrix)
+                        if self.parameters.PURIFY_DENSITY_MATRICES:
+                            density_matrix = purify_density_matrix(density_matrix)
                         density_matrix = qubit_indices(density_matrix)
+                        trace = np.trace(density_matrix).real
 
+                        # Save the density matrix and its trace to HDF5 file.
+                        save_to_hdf5(h5file, f"trace{self.suffix}/{subscript}{i}{j}", trace)
+                        save_to_hdf5(h5file, f"rho{self.suffix}/{subscript}{i}{j}", density_matrix)
+
+                        if self.parameters.USE_EXACT_TRACES:
+                            with h5py.File(self.fname_exact + '.h5', 'r') as h5file_exact:
+                                trace = h5file_exact[f"trace{self.suffix}/{subscript}{i}{j}"][()]
                         
+                        self.T[subscript][i, j] = self.T[subscript][j, i] = [
+                            (state_vectors_exact[:, k].conj() @ density_matrix @ state_vectors_exact[:, k]).real
+                            for k in range(self.n_states[subscript[0]])]
 
                     if self.verbose:
                         print(f'T[{subscript}][{i}, {j}] = {self.T[subscript][i, j]}')
 
         # Unpack T values to N values according to Eq. (18) of Kosugi and Matsushita 2021.
         for subscript in ['n']:
-            for i in range(2 * self.n_orbitals):
-                for j in range(i + 1, 2 * self.n_orbitals):
+            for i in range(self.n_spin_orbitals):
+                for j in range(i + 1, self.n_spin_orbitals):
                     self.N[subscript][i, j] = self.N[subscript][j, i] = \
                         np.exp(-1j * np.pi / 4) * (self.T[subscript + 'p'][i, j] - self.T[subscript + 'm'][i, j]) \
                         + np.exp(1j * np.pi / 4) * (self.T[subscript + 'p'][j, i] - self.T[subscript + 'm'][j, i])
@@ -235,7 +269,7 @@ class ResponseFunction:
 
         # Sum N over spins.
         self.N_summed = {subscript: self.N[subscript].reshape(
-            (self.n_orbitals, 2, self.n_orbitals, 2, self.n_states[subscript])).sum((1, 3)) 
+            (self.n_spatial_orbitals, 2, self.n_spatial_orbitals, 2, self.n_states[subscript])).sum((1, 3)) 
             for subscript in ['n']}
 
         # Save N, N_summed and T to file.
@@ -261,17 +295,16 @@ class ResponseFunction:
         Returns:
             chis_all (Optional): A dictionary from orbital strings to the corresponding charge-charge response functions.
         """
-        # Sum over spins in N.
-        N_summed = self.N['n'].reshape((self.n_orbitals, 2, self.n_orbitals, 2, self.n_states['n'])).sum((1, 3))
-
         chis_all = dict()
-        for i in range(self.n_orbitals):
-            for j in range(self.n_orbitals):  
+        for i in range(self.n_spatial_orbitals):
+            for j in range(self.n_spatial_orbitals):  
                 chis = []
 
                 for omega in omegas:
-                    chi = np.sum(N_summed[i, j] / (omega + 1j * eta - self.energies['n'] + self.energies['gs']))
-                    chi += np.sum(N_summed[i, j].conj() / (-omega - 1j * eta - self.energies['n'] + self.energies['gs']))
+                    chi = np.sum(self.N_summed[i, j] 
+                        / (omega + 1j * eta - self.energies['n'] + self.energies['gs'])) \
+                        + np.sum(self.N_summed[i, j].conj()
+                        / (-omega - 1j * eta - self.energies['n'] + self.energies['gs']))
                     chis.append(chi)
                 chis = np.array(chis)
 

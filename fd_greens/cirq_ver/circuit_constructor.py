@@ -206,6 +206,8 @@ class CircuitConstructor:
         """
         if measured_qubits is None:
             measured_qubits = tomographed_qubits
+
+        print(f"{len(tomographed_qubits) = }")
         
         tomography_labels = ["".join(x) for x in product("xyz", repeat=len(tomographed_qubits))]
         tomography_circuits = dict()

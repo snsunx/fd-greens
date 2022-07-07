@@ -6,8 +6,6 @@ Green's Function (:mod:`fd_greens.greens_function`)
 
 import os
 from typing import Sequence, Optional
-from itertools import product
-from cirq import quantum_state
 
 import h5py
 import numpy as np
@@ -45,7 +43,7 @@ class GreensFunction:
             fname_exact: The exact HDF5 file name, if USE_EXACT_TRACES is set tuo True.
         """
         assert spin in ['u', 'd']
-        assert method in ['exact', 'tomo']
+        assert method in ["exact", "tomo", "alltomo"]
         
         # Input attributes.
         self.hamiltonian = hamiltonian
@@ -74,29 +72,44 @@ class GreensFunction:
         # Derived attributes.
         method_indices_pairs = get_method_indices_pairs(spin)
         self.n_states = {subscript: self.state_vectors[subscript].shape[1] for subscript in ['e', 'h']}
-        self.n_orbitals = len(self.hamiltonian.active_indices)
-        self.n_system_qubits = 2 * self.n_orbitals - method_indices_pairs.n_tapered
+        self.n_spatial_orbitals = len(self.hamiltonian.active_indices)
+        self.n_system_qubits = 2 * self.n_spatial_orbitals - method_indices_pairs.n_tapered
 
         self.qubit_indices_dict = QubitIndices.get_eh_qubit_indices_dict(
-            2 * self.n_orbitals, spin, method_indices_pairs)
+            2 * self.n_spatial_orbitals, spin, method_indices_pairs)
 
         # Initialize array quantities B, D and G.
-        self.B = {subscript: np.zeros((self.n_orbitals, self.n_orbitals, self.n_states[subscript]), dtype=complex)
-                  for subscript in ["e", "h"]}
-        self.D = {subscript: np.zeros((self.n_orbitals, self.n_orbitals, self.n_states[subscript[0]]), dtype=complex)
-                  for subscript in ["ep", "em", "hp", "hm"]}
-        self.G = {subscript: np.zeros((self.n_orbitals, self.n_orbitals), dtype=complex)
-                  for subscript in ["e", "h"]}
+        self.subscripts_diagonal = ["e", "h"]
+        self.subscripts_off_diagonal = ["ep", "em", "hp", "hm"]
+        self.B = dict()
+        self.D = dict()
+        self.G = dict()
+        for subscript in self.subscripts_diagonal:
+            self.B[subscript] = np.zeros(
+                (self.n_spatial_orbitals, self.n_spatial_orbitals, self.n_states[subscript]), dtype=complex)
+            self.G[subscript] = np.zeros((self.n_spatial_orbitals, self.n_spatial_orbitals), dtype=complex)
+        for subscript in self.subscripts_off_diagonal:
+            self.D[subscript] = np.zeros(
+                (self.n_spatial_orbitals, self.n_spatial_orbitals, self.n_states[subscript[0]]), dtype=complex)
+        
+        self.B = {subscript: np.zeros(
+            (self.n_spatial_orbitals, self.n_spatial_orbitals, self.n_states[subscript]), 
+            dtype=complex
+            ) for subscript in self.subscripts_diagonal}
+        self.D = {subscript: np.zeros((self.n_spatial_orbitals, self.n_spatial_orbitals, self.n_states[subscript[0]]), 
+            dtype=complex) for subscript in self.subscripts_off_diagonal}
+        self.G = {subscript: np.zeros((self.n_spatial_orbitals, self.n_spatial_orbitals), dtype=complex)
+                  for subscript in self.subscripts_diagonal}
 
 
     def _process_diagonal_results(self) -> None:
         """Processes diagonal transition amplitude results."""
         h5file = h5py.File(self.fname + '.h5', "r+")
 
-        for m in range(self.n_orbitals):
+        for m in range(self.n_spatial_orbitals):
             circuit_label = f"circ{m}{self.spin}"
 
-            for subscript in ['e', 'h']:
+            for subscript in self.subscripts_diagonal:
                 qubit_indices = self.qubit_indices_dict[subscript]
                 state_vectors_exact = self.state_vectors[subscript]
 
@@ -136,10 +149,32 @@ class GreensFunction:
                             trace = h5file_exact[f"trace{self.suffix}/{subscript}{m}{self.spin}"][()]
 
                     self.B[subscript][m, m] = [
-                        trace * (state_vectors_exact[:, i].conj() @ density_matrix @ state_vectors_exact[:, i]).real
+                        (state_vectors_exact[:, i].conj() @ density_matrix @ state_vectors_exact[:, i]).real * trace
                         for i in range(self.n_states[subscript])]
+                
                 elif self.method == 'alltomo':
-                    pass
+                    density_matrix = quantum_state_tomography(
+                        h5file, n_qubits=self.n_system_qubits + 1, circuit_label=circuit_label, suffix=self.suffix)
+
+                    if self.parameters.PROJECT_DENSITY_MATRICES:
+                        density_matrix = project_density_matrix(density_matrix)
+                    if self.parameters.PURIFY_DENSITY_MATRICES:
+                        density_matrix = purify_density_matrix(density_matrix)
+                    density_matrix = qubit_indices(density_matrix)
+                    trace = np.trace(density_matrix).real
+
+                    save_to_hdf5(h5file, f"trace{self.suffix}/{subscript}{m}{self.spin}", trace)
+                    save_to_hdf5(h5file, f"rho{self.suffix}/{subscript}{m}{self.spin}", density_matrix)
+
+                    if self.parameters.USE_EXACT_TRACES:
+                        with h5py.File(self.fname_exact + '.h5', 'r') as h5file_exact:
+                            trace_exact = h5file_exact[f"trace{self.suffix}/{subscript}{m}{self.spin}"][()]
+
+                            density_matrix = density_matrix / trace * trace_exact
+
+                    
+
+
 
                 if self.verbose:
                     print(f"B[{subscript}][{m}, {m}] = {self.B[subscript][m, m]}")
@@ -150,11 +185,11 @@ class GreensFunction:
         """Processes off-diagonal transition amplitude results."""
         h5file = h5py.File(self.fname + '.h5', "r+")
 
-        for m in range(self.n_orbitals):
-            for n in range(m + 1, self.n_orbitals):
+        for m in range(self.n_spatial_orbitals):
+            for n in range(m + 1, self.n_spatial_orbitals):
                 circuit_label = f"circ{m}{n}{self.spin}"
 
-                for subscript in ['ep', 'em', 'hp', 'hm']:
+                for subscript in self.subscripts_off_diagonal:
                     qubit_indices = self.qubit_indices_dict[subscript]
                     state_vectors_exact = self.state_vectors[subscript[0]]
 
@@ -195,19 +230,20 @@ class GreensFunction:
                                 trace = h5file_exact[f"trace{self.suffix}/{subscript}{m}{n}{self.spin}"][()]
                         
                         self.D[subscript][m, n] = self.D[subscript][n, m] = [
-                            trace * (state_vectors_exact[:, i].conj() @ density_matrix @ state_vectors_exact[:, i]).real
-                            for i in range(self.n_states[subscript[0]])]
+                            (state_vectors_exact[:, i].conj() @ density_matrix @ state_vectors_exact[:, i]).real
+                            * trace for i in range(self.n_states[subscript[0]])]
 
                     elif self.method == 'alltomo':
-                        pass
+                        density_matrix = quantum_state_tomography(
+                            h5file, n_qubits=self.n_system_qubits + 2, circuit_label=circuit_label, suffix=self.suffix)
 
                     if self.verbose:
                         print(f"D[{subscript}][{m}, {n}] =", self.D[subscript][m, n])
 
         # Unpack D values to B values according to Eq. (18) of Kosugi and Matsushita 2020.
-        for m in range(self.n_orbitals):
-            for n in range(m + 1, self.n_orbitals):
-                for subscript in ["e", "h"]:
+        for m in range(self.n_spatial_orbitals):
+            for n in range(m + 1, self.n_spatial_orbitals):
+                for subscript in self.subscripts_diagonal:
                     self.B[subscript][m, n] = self.B[subscript][n, m] = \
                         np.exp(-1j * np.pi / 4) * (self.D[subscript + "p"][m, n] - self.D[subscript + "m"][m, n]) \
                         + np.exp(1j * np.pi / 4) * (self.D[subscript + "p"][n, m] - self.D[subscript + "m"][n, m])
@@ -242,8 +278,8 @@ class GreensFunction:
         """
         orbital_energies = self.hamiltonian.orbital_energies[self.hamiltonian.active_indices]
 
-        G0 = np.zeros((self.n_orbitals, self.n_orbitals), dtype=complex)
-        for i in range(self.n_orbitals):
+        G0 = np.zeros((self.n_spatial_orbitals, self.n_spatial_orbitals), dtype=complex)
+        for i in range(self.n_spatial_orbitals):
             G0[i, i] = 1 / (omega + 1j * eta - orbital_energies[i])
         return G0
 
@@ -257,8 +293,8 @@ class GreensFunction:
         Returns:
             G: The Green's function.
         """
-        for m in range(self.n_orbitals):
-            for n in range(self.n_orbitals):
+        for m in range(self.n_spatial_orbitals):
+            for n in range(self.n_spatial_orbitals):
                 # 2 is for both up and down spins.
                 self.G["e"][m, n] = 2 * np.sum(self.B["e"][m, n]
                     / (omega + 1j * eta + self.energies["gs"] - self.energies["e"]))

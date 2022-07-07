@@ -5,7 +5,6 @@ N-Electron Transition Amplitudes Solver (:mod:`fd_greens.excited_amplitudes_solv
 """
 
 from itertools import product
-from readline import get_completer
 from typing import Sequence
 
 import h5py
@@ -31,7 +30,7 @@ class ExcitedAmplitudesSolver:
         hamiltonian: MolecularHamiltonian,
         qubits: Sequence[cirq.Qid],
         method: str = "exact",
-        repetitions: int = 1000,
+        repetitions: int = 10000,
         fname: str = "lih",
         suffix: str = "",
     ) -> None:
@@ -45,7 +44,7 @@ class ExcitedAmplitudesSolver:
             fname: The HDF5 file name.
             suffix: The suffix for a specific experimental run.
         """
-        assert method in ["exact", "tomo"]
+        assert method in ["exact", "tomo", "alltomo"]
 
         # Input attributes.
         self.hamiltonian = hamiltonian
@@ -59,8 +58,9 @@ class ExcitedAmplitudesSolver:
         self.parameters.write(fname)
 
         # Derived attributes.
-        self.n_orbitals = len(self.hamiltonian.active_indices)
-        self.orbital_labels = list(product(range(self.n_orbitals), ['u', 'd']))
+        self.n_spatial_orbitals = len(self.hamiltonian.active_indices)
+        self.n_spin_orbitals = 2 * self.n_spatial_orbitals
+        self.orbital_labels = list(product(range(self.n_spatial_orbitals), ['u', 'd']))
 
         self.circuits = dict()
         self.circuit_string_converter = CircuitStringConverter(self.qubits)
@@ -73,12 +73,12 @@ class ExcitedAmplitudesSolver:
         self.charge_operators = ChargeOperators(self.qubits)
         self.charge_operators.transform(method_indices_pairs)
 
-        self.n_system_qubits = 2 * self.n_orbitals - method_indices_pairs.n_tapered
+        self.n_system_qubits = self.n_spin_orbitals - method_indices_pairs.n_tapered
 
     def _run_diagonal_circuits(self) -> None:
         """Runs diagonal transition amplitude circuits."""
         h5file = h5py.File(self.h5fname, "r+")
-        for i in range(2 * self.n_orbitals):
+        for i in range(self.n_spin_orbitals):
             m, s = self.orbital_labels[i]
             circuit_label = f'circ{m}{s}'
 
@@ -90,7 +90,6 @@ class ExcitedAmplitudesSolver:
             circuit = transpile_into_berkeley_gates(circuit)
             self.circuits[circuit_label] = circuit
             qtrl_strings = self.circuit_string_converter.convert_circuit_to_strings(circuit)
-            # dset_transpiled = h5file.create_dataset(f'{circuit_label}/transpiled', data=json.dumps(qtrl_strings))
             dset_transpiled = save_to_hdf5(
                 h5file, f"{circuit_label}/transpiled",
                 data=json.dumps(qtrl_strings), return_dataset=True)
@@ -100,11 +99,11 @@ class ExcitedAmplitudesSolver:
             state_vector[abs(state_vector) < 1e-8] = 0.0
             dset_transpiled.attrs[f'psi{self.suffix}'] = state_vector
 
-            if self.method == "tomo":                
-                if CircuitConstructionParameters.TOMOGRAPH_ALL_QUBITS:
-                    tomographed_qubits = self.qubits[:self.n_system_qubits + 1]
-                else:
+            if self.method in ["tomo", "alltomo"]:                
+                if self.method == "tomo":
                     tomographed_qubits = self.qubits[1:self.n_system_qubits + 1]
+                else:
+                    tomographed_qubits = self.qubits[:self.n_system_qubits + 1]
                 measured_qubits = self.qubits[:self.n_system_qubits + 1]
                 tomography_circuits = self.circuit_constructor.build_tomography_circuits(
                     circuit, tomographed_qubits=tomographed_qubits, measured_qubits=measured_qubits)
@@ -112,21 +111,24 @@ class ExcitedAmplitudesSolver:
                 for tomography_label, tomography_circuit in tomography_circuits.items():                    
                     self.circuits[f'{circuit_label}{tomography_label}'] = tomography_circuit
                     qtrl_strings = self.circuit_string_converter.convert_circuit_to_strings(tomography_circuit)
-                    dset_tomography = h5file.create_dataset(
-                        f'{circuit_label}/{tomography_label}', data=json.dumps(qtrl_strings))
+                    dset_tomography = save_to_hdf5(
+                        h5file, f"{circuit_label}/{tomography_label}", 
+                        json.dumps(qtrl_strings), return_dataset=True)
                     
                     result = cirq.Simulator().run(tomography_circuit, repetitions=self.repetitions)
-                    histogram = result.multi_measurement_histogram(keys=[str(q) for q in self.qubits[:3]])
-                    dset_tomography.attrs[f'counts{self.suffix}'] = histogram_to_array(histogram, n_qubits=3)
+                    histogram = result.multi_measurement_histogram(
+                        keys=[str(q) for q in self.qubits[:self.n_system_qubits + 1]])
+                    dset_tomography.attrs[f'counts{self.suffix}'] = histogram_to_array(
+                        histogram, n_qubits=self.n_system_qubits + 1)
 
         h5file.close()
 
     def _run_off_diagonal_circuits(self) -> None:
         """Runs off-diagonal transition amplitude circuits."""
         h5file = h5py.File(self.h5fname, "r+")
-        for i in range(2 * self.n_orbitals):
+        for i in range(self.n_spin_orbitals):
             m, s = self.orbital_labels[i]
-            for j in range(i + 1, 2 * self.n_orbitals):
+            for j in range(i + 1, self.n_spin_orbitals):
                 m_, s_ = self.orbital_labels[j]
                 circuit_label = f'circ{m}{s}{m_}{s_}'
 
@@ -139,7 +141,6 @@ class ExcitedAmplitudesSolver:
                 circuit = transpile_into_berkeley_gates(circuit)
                 self.circuits[circuit_label] = circuit
                 qtrl_strings = self.circuit_string_converter.convert_circuit_to_strings(circuit)
-                # dset_transpiled = h5file.create_dataset(f'{circuit_label}/transpiled', data=json.dumps(qtrl_strings))
                 dset_transpiled = save_to_hdf5(
                     h5file, f"{circuit_label}/transpiled",
                     data=json.dumps(qtrl_strings), return_dataset=True)
@@ -148,11 +149,11 @@ class ExcitedAmplitudesSolver:
                 state_vector[abs(state_vector) < 1e-8] = 0.0
                 dset_transpiled.attrs[f'psi{self.suffix}'] = state_vector
 
-                if self.method == "tomo":
-                    if CircuitConstructionParameters.TOMOGRAPH_ALL_QUBITS:
-                        tomographed_qubits = self.qubits[:self.n_system_qubits + 2]
-                    else:
+                if self.method in ["tomo", "alltomo"]:
+                    if self.method == "tomo":
                         tomographed_qubits = self.qubits[2:self.n_system_qubits + 2]
+                    else:
+                        tomographed_qubits = self.qubits[:self.n_system_qubits + 2]
                     measured_qubits = self.qubits[:self.n_system_qubits + 2]
                     tomography_circuits = self.circuit_constructor.build_tomography_circuits(
                         circuit, tomographed_qubits=tomographed_qubits, measured_qubits=measured_qubits)
@@ -160,12 +161,15 @@ class ExcitedAmplitudesSolver:
                     for tomography_label, tomography_circuit in tomography_circuits.items():
                         self.circuits[f'{circuit_label}{tomography_label}'] = tomography_circuit
                         qtrl_strings = self.circuit_string_converter.convert_circuit_to_strings(tomography_circuit)
-                        dset_tomography = h5file.create_dataset(
-                            f'{circuit_label}/{tomography_label}', data=json.dumps(qtrl_strings))
+                        dset_tomography = save_to_hdf5(
+                            h5file, f"{circuit_label}/{tomography_label}",
+                            data=json.dumps(qtrl_strings), return_dataset=True)
 
                         result = cirq.Simulator().run(tomography_circuit, repetitions=self.repetitions)
-                        histogram = result.multi_measurement_histogram(keys=[str(q) for q in self.qubits[:4]])
-                        dset_tomography.attrs[f'counts{self.suffix}'] = histogram_to_array(histogram, n_qubits=4)
+                        histogram = result.multi_measurement_histogram(
+                            keys=[str(q) for q in self.qubits[:self.n_system_qubits + 2]])
+                        dset_tomography.attrs[f'counts{self.suffix}'] = histogram_to_array(
+                            histogram, n_qubits=self.n_system_qubits + 2)
 
         h5file.close()
 

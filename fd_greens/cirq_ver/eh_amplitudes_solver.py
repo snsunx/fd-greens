@@ -44,7 +44,7 @@ class EHAmplitudesSolver:
             spin: The spin of the second-quantized operators. Either ``'u'`` or ``'d'``.
             suffix: The suffix for a specific experimental run.
         """
-        assert method in ["exact", "tomo"]
+        assert method in ["exact", "tomo", "alltomo"]
         assert spin in ["u", "d"]
 
         # Basic variables.
@@ -59,7 +59,8 @@ class EHAmplitudesSolver:
         self.parameters = CircuitConstructionParameters()
         self.parameters.write(fname)
 
-        self.n_orbitals = len(self.hamiltonian.active_indices)
+        self.n_spatial_orbitals = len(self.hamiltonian.active_indices)
+        self.n_spin_orbitals = 2 * self.n_spatial_orbitals
 
         self.circuits = dict()
         self.circuit_string_converter = CircuitStringConverter(self.qubits)
@@ -74,13 +75,13 @@ class EHAmplitudesSolver:
             self.qubits, self.spin, factor=(-1) ** (self.spin == 'd'))
         self.second_quantized_operators.transform(method_indices_pairs)
 
-        self.n_system_qubits = 2 * self.n_orbitals - method_indices_pairs.n_tapered
+        self.n_system_qubits = self.n_spin_orbitals - method_indices_pairs.n_tapered
 
     def _run_diagonal_circuits(self) -> None:
         """Runs diagonal transition amplitude circuits."""
         h5file = h5py.File(self.h5fname, "r+")
 
-        for m in range(self.n_orbitals):
+        for m in range(self.n_spatial_orbitals):
             circuit_label = f"circ{m}{self.spin}"
 
             # Build the diagonal circuit based on the second quantized operator.
@@ -101,11 +102,11 @@ class EHAmplitudesSolver:
             state_vector[abs(state_vector) < 1e-8] = 0.0
             dset_transpiled.attrs[f"psi{self.suffix}"] = state_vector
 
-            if self.method == "tomo":
-                if self.parameters.TOMOGRAPH_ALL_QUBITS:
-                    tomography_qubits = self.qubits[:self.n_system_qubits + 1]
-                else:
+            if self.method in ["tomo", "alltomo"]:
+                if self.method == "tomo":
                     tomography_qubits = self.qubits[1:self.n_system_qubits + 1]
+                else:
+                    tomography_qubits = self.qubits[:self.n_system_qubits + 1]
                 measured_qubits = self.qubits[:self.n_system_qubits + 1]
                 tomography_circuits = self.circuit_constructor.build_tomography_circuits(
                     circuit, tomographed_qubits=tomography_qubits, measured_qubits=measured_qubits)
@@ -131,8 +132,8 @@ class EHAmplitudesSolver:
         """Runs off-diagonal transition amplitude circuits."""
         h5file = h5py.File(self.h5fname, "r+")
 
-        for m in range(self.n_orbitals):
-            for n in range(m + 1, self.n_orbitals):
+        for m in range(self.n_spatial_orbitals):
+            for n in range(m + 1, self.n_spatial_orbitals):
                 circuit_label = f"circ{m}{n}{self.spin}"
 
                 # Build the off-diagonal circuit based on the creation/annihilation operators.
@@ -155,11 +156,11 @@ class EHAmplitudesSolver:
                 dset_transpiled.attrs[f"psi{self.suffix}"] = state_vector
 
                 # Apply tomography and measurement gates and save to HDF5 file.
-                if self.method == "tomo":
-                    if self.parameters.TOMOGRAPH_ALL_QUBITS:
-                        tomographed_qubits = self.qubits[:self.n_system_qubits + 2]
-                    else:
+                if self.method in ["tomo", "alltomo"]:
+                    if self.method == "tomo":
                         tomographed_qubits = self.qubits[2:self.n_system_qubits + 2]
+                    else:
+                        tomographed_qubits = self.qubits[:self.n_system_qubits + 2]
                     measured_qubits = self.qubits[:self.n_system_qubits + 2]
                     tomography_circuits = self.circuit_constructor.build_tomography_circuits(
                         circuit, tomographed_qubits=tomographed_qubits, measured_qubits=measured_qubits)
