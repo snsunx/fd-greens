@@ -428,25 +428,45 @@ def state_tomography(result_array: np.ndarray) -> np.ndarray:
 two_qubit_state_tomography = state_tomography
     
 def quantum_state_tomography(
-    h5file: h5py.File,
+    h5file: Union[h5py.File, dict],
     n_qubits: int,
-    circuit_label: str,
-    suffix: str = '',
+    circuit_label: Optional[str] = None,
+    suffix: Optional[str] = None,
     ancilla_index: int = 0
 ) -> np.ndarray:
-    """Quantum state tomography."""
+    """Quantum state tomography.
+    
+    Args:
+        h5file: The HDF5 file or dictionary that contains the bitstring counts.
+        n_qubits: Number of tomographed qubits.
+        circuit_label: The circuit label.
+        suffix: The suffix associated with the circuit.
+        ancilla_index: The ancilla index used to slice the density matrix.
+    """
+    # h5file can either be an HDF5 file or a dictionary. If it is an HDF5 file,
+    # circuit_label and suffix must be given.
+    if isinstance(h5file, h5py.File):
+        assert circuit_label is not None
+        assert suffix is not None
+    
     print("Calling quantum state tomography.")
     tomography_labels = [''.join(x) for x in product('xyz', repeat=n_qubits)]
 
     bitstring_array_all = []
     for tomography_label in tomography_labels:
-        bitstring_array_raw = h5file[f"{circuit_label}/{tomography_label}"].attrs[f"counts{suffix}"]
-        repetitions = np.sum(bitstring_array_raw)
+        if isinstance(h5file, h5py.File):
+            bitstring_array_raw = h5file[f"{circuit_label}/{tomography_label}"].attrs[f"counts{suffix}"]
+        else:
+            bitstring_array_raw = h5file[tomography_label]
+        
+        # repetitions = np.sum(bitstring_array_raw)
         if REVERSE_QUBIT_ORDER:
             bitstring_array_raw = reverse_qubit_order(bitstring_array_raw)
-            bitstring_array_single = bitstring_array_raw[ancilla_index :: 4]  / repetitions
+            bitstring_array_single = bitstring_array_raw[ancilla_index :: 2 ** n_qubits]
         else:
-            bitstring_array_single = bitstring_array_raw[ancilla_index * 4 : (ancilla_index + 1) * 4] / repetitions
+            bitstring_array_single = bitstring_array_raw[
+                ancilla_index * 2 ** n_qubits : (ancilla_index + 1) * 2 ** n_qubits]
+        bitstring_array_single /= np.sum(bitstring_array_raw)
         bitstring_array_all += list(bitstring_array_single)
 
     # Create the basis labels, bitstring labels and basis states.

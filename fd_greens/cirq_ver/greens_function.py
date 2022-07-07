@@ -15,7 +15,7 @@ import numpy as np
 from .molecular_hamiltonian import MolecularHamiltonian
 from .qubit_indices import QubitIndices
 from .parameters import REVERSE_QUBIT_ORDER, ErrorMitigationParameters, get_method_indices_pairs
-from .general_utils import project_density_matrix, purify_density_matrix, quantum_state_tomography, reverse_qubit_order, two_qubit_state_tomography
+from .general_utils import project_density_matrix, purify_density_matrix, quantum_state_tomography, reverse_qubit_order
 from .helpers import save_to_hdf5
 
 np.set_printoptions(precision=6)
@@ -116,8 +116,8 @@ class GreensFunction:
                 elif self.method == 'tomo':
                     # Tomograph the density matrix.
                     density_matrix = quantum_state_tomography(
-                        h5file, 2, circuit_label, suffix=self.suffix,
-                        ancilla_index = int(qubit_indices.ancilla.str[0], 2))
+                        h5file, n_qubits=self.n_system_qubits, circuit_label=circuit_label,
+                        suffix=self.suffix, ancilla_index = int(qubit_indices.ancilla.str[0], 2))
 
                     # Optionally project or purify the density matrix.
                     trace = np.trace(density_matrix).real
@@ -138,6 +138,8 @@ class GreensFunction:
                     self.B[subscript][m, m] = [
                         trace * (state_vectors_exact[:, i].conj() @ density_matrix @ state_vectors_exact[:, i]).real
                         for i in range(self.n_states[subscript])]
+                elif self.method == 'alltomo':
+                    pass
 
                 if self.verbose:
                     print(f"B[{subscript}][{m}, {m}] = {self.B[subscript][m, m]}")
@@ -173,8 +175,8 @@ class GreensFunction:
                     elif self.method == 'tomo':
                         # Tomograph the density matrix.
                         density_matrix = quantum_state_tomography(
-                            h5file, 2, circuit_label, suffix=self.suffix, 
-                            ancilla_index=int(qubit_indices.ancilla.str[0], 2))
+                            h5file, n_qubits=self.n_system_qubits, circuit_label=circuit_label,
+                            suffix=self.suffix, ancilla_index=int(qubit_indices.ancilla.str[0], 2))
 
                         # Optionally project or purify the density matrix
                         trace = np.trace(density_matrix)
@@ -195,6 +197,9 @@ class GreensFunction:
                         self.D[subscript][m, n] = self.D[subscript][n, m] = [
                             trace * (state_vectors_exact[:, i].conj() @ density_matrix @ state_vectors_exact[:, i]).real
                             for i in range(self.n_states[subscript[0]])]
+
+                    elif self.method == 'alltomo':
+                        pass
 
                     if self.verbose:
                         print(f"D[{subscript}][{m}, {n}] =", self.D[subscript][m, n])

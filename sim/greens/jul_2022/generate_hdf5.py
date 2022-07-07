@@ -13,7 +13,7 @@ from fd_greens import (
 def main():
     qubits = cirq.LineQubit.range(4)
     hamiltonian = get_lih_hamiltonian(3.0)
-    fname = 'lih_greens_sim'
+    fname = 'lih_greens_sim_trial'
     method = 'tomo'
     spin = 'd'
     

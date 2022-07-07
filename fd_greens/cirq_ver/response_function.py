@@ -14,7 +14,7 @@ import numpy as np
 from .molecular_hamiltonian import MolecularHamiltonian
 from .qubit_indices import QubitIndices
 from .parameters import ErrorMitigationParameters, get_method_indices_pairs, REVERSE_QUBIT_ORDER
-from .general_utils import project_density_matrix, purify_density_matrix, quantum_state_tomography, reverse_qubit_order, two_qubit_state_tomography
+from .general_utils import project_density_matrix, purify_density_matrix, quantum_state_tomography, reverse_qubit_order
 from .helpers import save_to_hdf5
 
 np.set_printoptions(precision=6, suppress=True)
@@ -41,7 +41,7 @@ class ResponseFunction:
             verbose: Whether to print out observable values.
             fname_exact: The exact HDF5 file name, if USE_EXACT_TRACES Is set to True.
         """
-        assert method in ['exact', 'tomo']
+        assert method in ['exact', 'tomo', 'alltomo']
 
         # Input attributes.
         self.hamiltonian = hamiltonian
@@ -99,11 +99,11 @@ class ResponseFunction:
 
                     self.N[subscript][i, i] = np.abs(state_vectors_exact.conj().T @ state_vector) ** 2
 
-                elif self.method == 'tomo':                    
+                elif self.method == 'tomo':
                     # Tomograph the density matrix.
                     density_matrix = quantum_state_tomography(
-                        h5file, 2, circuit_label, suffix=self.suffix, 
-                        ancilla_index=int(qubit_indices.ancilla.str[0], 2))
+                        h5file, n_qubits=self.n_system_qubits, circuit_label=circuit_label, 
+                        suffix=self.suffix, ancilla_index=int(qubit_indices.ancilla.str[0], 2))
                     
                     # Optionally project or purify the density matrix.
                     trace = np.trace(density_matrix).real
@@ -125,6 +125,15 @@ class ResponseFunction:
                     self.N[subscript][i, i] = [
                         trace * (state_vectors_exact[:, j].conj() @ density_matrix @ state_vectors_exact[:, j]).real
                         for j in range(self.n_states[subscript])]
+
+                elif self.method == 'alltomo':
+                    # Tomography to get the density matrix.
+                    density_matrix = quantum_state_tomography(
+                        h5file, n_qubits=3, circuit_label=circuit_label, suffix=self.suffix)
+                    
+                    # Optionally project or purify the density matrix.
+
+
                 
                 if self.verbose:
                     print(f'N[{subscript}][{i}, {i}] = {self.N[subscript][i, i]}')
@@ -162,8 +171,8 @@ class ResponseFunction:
                     elif self.method == 'tomo':
                         # Tomograph the density matrix.
                         density_matrix = quantum_state_tomography(
-                            h5file, 2, circuit_label, suffix=self.suffix,
-                            ancilla_index=int(qubit_indices.ancilla.str[0], 2))
+                            h5file, n_qubits=self.n_system_qubits, circuit_label=circuit_label,
+                            suffix=self.suffix, ancilla_index=int(qubit_indices.ancilla.str[0], 2))
                         
                         # Optionally project or purify the density matrix.
                         trace = np.trace(density_matrix).real
@@ -185,6 +194,16 @@ class ResponseFunction:
                         self.T[subscript][i, j] = self.T[subscript][j, i] = [
                             trace * (state_vectors_exact[:, k].conj() @ density_matrix @ state_vectors_exact[:, k]).real
                             for k in range(self.n_states[subscript[0]])]
+
+                    elif self.method == 'alltomo':
+                        # Tomography to get the density matrix.
+                        density_matrix = quantum_state_tomography(
+                            h5file, 4, circuit_label, suffix=self.suffix,
+                            ancilla_index=0)
+
+                        density_matrix = qubit_indices(density_matrix)
+
+                        
 
                     if self.verbose:
                         print(f'T[{subscript}][{i}, {j}] = {self.T[subscript][i, j]}')

@@ -5,7 +5,6 @@ Circuit Constructor (:mod:`fd_greens.circuit_constructor`)
 """
 
 from itertools import product
-from turtle import position
 from typing import Mapping, Sequence, Optional, List
 from cmath import polar
 

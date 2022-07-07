@@ -5,11 +5,14 @@ N-Electron Transition Amplitudes Solver (:mod:`fd_greens.excited_amplitudes_solv
 """
 
 from itertools import product
+from readline import get_completer
 from typing import Sequence
 
 import h5py
 import json
 import cirq
+
+from fd_greens.cirq_ver.helpers import save_to_hdf5
 
 from .molecular_hamiltonian import MolecularHamiltonian
 from .operators import ChargeOperators
@@ -66,8 +69,11 @@ class ExcitedAmplitudesSolver:
             ansatz = self.circuit_string_converter.convert_strings_to_circuit(qtrl_strings)
         self.circuit_constructor = CircuitConstructor(ansatz, self.qubits)
 
+        method_indices_pairs = get_method_indices_pairs('')
         self.charge_operators = ChargeOperators(self.qubits)
-        self.charge_operators.transform(get_method_indices_pairs(''))
+        self.charge_operators.transform(method_indices_pairs)
+
+        self.n_system_qubits = 2 * self.n_orbitals - method_indices_pairs.n_tapered
 
     def _run_diagonal_circuits(self) -> None:
         """Runs diagonal transition amplitude circuits."""
@@ -84,21 +90,24 @@ class ExcitedAmplitudesSolver:
             circuit = transpile_into_berkeley_gates(circuit)
             self.circuits[circuit_label] = circuit
             qtrl_strings = self.circuit_string_converter.convert_circuit_to_strings(circuit)
-            dset_transpiled = h5file.create_dataset(f'{circuit_label}/transpiled', data=json.dumps(qtrl_strings))
+            # dset_transpiled = h5file.create_dataset(f'{circuit_label}/transpiled', data=json.dumps(qtrl_strings))
+            dset_transpiled = save_to_hdf5(
+                h5file, f"{circuit_label}/transpiled",
+                data=json.dumps(qtrl_strings), return_dataset=True)
 
             # Execute the circuit and store the statevector in the HDF5 file.
             state_vector = cirq.sim.final_state_vector(circuit)
             state_vector[abs(state_vector) < 1e-8] = 0.0
             dset_transpiled.attrs[f'psi{self.suffix}'] = state_vector
 
-            if self.method == "tomo":
-                # TODO: There should be a better way than writing [1:3].
+            if self.method == "tomo":                
                 if CircuitConstructionParameters.TOMOGRAPH_ALL_QUBITS:
-                    tomography_circuits = self.circuit_constructor.build_tomography_circuits(
-                        circuit, self.qubits[:3], self.qubits[:3])
+                    tomographed_qubits = self.qubits[:self.n_system_qubits + 1]
                 else:
-                    tomography_circuits = self.circuit_constructor.build_tomography_circuits(
-                        circuit, self.qubits[1:3], self.qubits[:3])
+                    tomographed_qubits = self.qubits[1:self.n_system_qubits + 1]
+                measured_qubits = self.qubits[:self.n_system_qubits + 1]
+                tomography_circuits = self.circuit_constructor.build_tomography_circuits(
+                    circuit, tomographed_qubits=tomographed_qubits, measured_qubits=measured_qubits)
                 
                 for tomography_label, tomography_circuit in tomography_circuits.items():                    
                     self.circuits[f'{circuit_label}{tomography_label}'] = tomography_circuit
@@ -130,20 +139,23 @@ class ExcitedAmplitudesSolver:
                 circuit = transpile_into_berkeley_gates(circuit)
                 self.circuits[circuit_label] = circuit
                 qtrl_strings = self.circuit_string_converter.convert_circuit_to_strings(circuit)
-                dset_transpiled = h5file.create_dataset(f'{circuit_label}/transpiled', data=json.dumps(qtrl_strings))
+                # dset_transpiled = h5file.create_dataset(f'{circuit_label}/transpiled', data=json.dumps(qtrl_strings))
+                dset_transpiled = save_to_hdf5(
+                    h5file, f"{circuit_label}/transpiled",
+                    data=json.dumps(qtrl_strings), return_dataset=True)
 
                 state_vector = cirq.sim.final_state_vector(circuit)
                 state_vector[abs(state_vector) < 1e-8] = 0.0
                 dset_transpiled.attrs[f'psi{self.suffix}'] = state_vector
 
                 if self.method == "tomo":
-                    # TODO: There should be a better way than writing [2:4].
                     if CircuitConstructionParameters.TOMOGRAPH_ALL_QUBITS:
-                        tomography_circuits = self.circuit_constructor.build_tomography_circuits(
-                            circuit, self.qubits[:4], self.qubits[:4])
+                        tomographed_qubits = self.qubits[:self.n_system_qubits + 2]
                     else:
-                        tomography_circuits = self.circuit_constructor.build_tomography_circuits(
-                            circuit, self.qubits[2:4], self.qubits[:4])
+                        tomographed_qubits = self.qubits[2:self.n_system_qubits + 2]
+                    measured_qubits = self.qubits[:self.n_system_qubits + 2]
+                    tomography_circuits = self.circuit_constructor.build_tomography_circuits(
+                        circuit, tomographed_qubits=tomographed_qubits, measured_qubits=measured_qubits)
 
                     for tomography_label, tomography_circuit in tomography_circuits.items():
                         self.circuits[f'{circuit_label}{tomography_label}'] = tomography_circuit

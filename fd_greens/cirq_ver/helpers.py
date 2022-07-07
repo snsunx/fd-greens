@@ -7,8 +7,9 @@ Helpers (:mod:`fd_greens.helpers`)
 import pickle
 import os
 import json
-from typing import List, Optional
+from typing import List, Optional, Any
 from itertools import product
+from deprecated import deprecated
 
 import cirq
 import h5py
@@ -54,18 +55,6 @@ def get_circuit_labels(n_orbitals: int, mode: str = 'greens', spin: str = '') ->
             circuit_labels.append(f'circ{orbital_labels[i]}{orbital_labels[j]}{spin}')
     
     return circuit_labels
-
-def get_tomography_labels(n_qubits: int) -> List[str]:
-    """Returns the tomography labels on a given number of qubits.
-    
-    Args:
-        n_qubits: Number of qubits to be tomographed.
-        
-    Returns:
-        tomography_labels: The tomography labels.
-    """
-    tomography_labels = [''.join(x) for x in product('xyz', repeat=n_qubits)]
-    return tomography_labels
 
 def initialize_hdf5(
     fname: str = 'lih',
@@ -135,12 +124,31 @@ def initialize_hdf5(
     
     h5file.close()
 
-def save_to_hdf5(h5file: h5py.File, dsetname: str, dset: np.ndarray, overwrite: bool = True) -> None:
-    """Saves a dataset to an HDF5 file."""
+def save_to_hdf5(
+    h5file: h5py.File,
+    dsetname: str,
+    data: Any,
+    overwrite: bool = True,
+    return_dataset: bool = False
+) -> None:
+    """Saves a dataset to an HDF5 file.
+    
+    Args:
+        h5file: The HDF5 file.
+        dsetname: The dataset name.
+        data: The data to be saved.
+        overwrite: Whether to overwrite the dataset.
+        return_dataset: Whether to return the dataset.
+    """
     if overwrite:
         if dsetname in h5file:
             del h5file[dsetname]
-    h5file[dsetname] = dset
+
+    if return_dataset:
+        dset = h5file.create_dataset(dsetname, data=data)
+        return dset
+    else:
+        h5file[dsetname] = data
 
 def copy_simulation_data(fname_expt: str, fname_exact: str, mode: str = 'greens') -> None:
     """Copy ground- and excited-states simulation data to experimental HDF5 file.
@@ -151,6 +159,7 @@ def copy_simulation_data(fname_expt: str, fname_exact: str, mode: str = 'greens'
         mode: The calculation mode. Either ``'greens'`` or ``'resp'``.
     """
     assert mode in ['greens', 'resp']
+
     h5file_exact = h5py.File(fname_exact + '.h5', 'r')
     h5file_expt = h5py.File(fname_expt + '.h5', 'r+')
 
@@ -172,6 +181,7 @@ def copy_simulation_data(fname_expt: str, fname_exact: str, mode: str = 'greens'
     h5file_expt.close()
     h5file_exact.close()
 
+@deprecated
 def process_bitstring_counts(
     histogram: dict,
     confusion_matrix: Optional[np.ndarray] = None,
@@ -245,10 +255,10 @@ def process_all_bitstring_counts(
     Args:
         h5fname_expt: The experimental HDF5 file name.
         h5fname_exact: The exact HDF5 file name.
-        pklfname: The pickle file name.
-        npyfname: The confusion matrix file name.
+        pklfname: Name of the pkl file that contains the experimental data.
+        npyfname: Name of the npy file that contains the confusion matrix.
         counts_name: Name of the bitstring counts.
-        counts_name: Name of the bitstring counts after error mitigation.
+        counts_name_miti: Name of the bitstring counts after error mitigation.
         pad_zero: Whether to pad zeros when not all qubits are used.
         mitigation_first: Whether to perform error mitigation first.
         normalize_counts: Whether to normalize bitstring counts.
@@ -264,12 +274,13 @@ def process_all_bitstring_counts(
         else:
             initialize_hdf5(h5fname_expt, mode=mode)
 
-    # Load circuit labels and bitstring counts from files.
+    # Load circuits, circuit labels and bitstring counts from files.
     pkl_data = pickle.load(open(pklfname + '.pkl', 'rb'))
     circuits = pkl_data[pkldsetname]['circs']
     labels = pkl_data[pkldsetname]['labels']
     results = pkl_data[pkldsetname]['results']
 
+    # Load the confusion matrix if npyfname is given.
     if npyfname is not None:
         confusion_matrix = np.load(npyfname + '.npy')
     else:
@@ -291,6 +302,7 @@ def process_all_bitstring_counts(
         counts_array = histogram_to_array(histogram, n_qubits=n_qubits, base=3)
         
         # Obtain the subspace indices.
+        # TODO: Handle base 2 correctly.
         if len(dset_name) == 9:
             if pad_zero == 'front':
                 subspace_indices = [int('0' + ''.join(x), 3) for x in product('01', repeat=n_qubits - 1)]
@@ -306,7 +318,7 @@ def process_all_bitstring_counts(
         # If confusion_matrix is given, calculate counts_array_miti first. 
         # Otherwise counts_array will be modified into the subspace.
         if confusion_matrix is not None:
-            print("Confusion matrix dimension", confusion_matrix.shape)
+            # print("Confusion matrix dimension", confusion_matrix.shape)
             if mitigation_first:
                 counts_array_miti = np.linalg.lstsq(confusion_matrix, counts_array)[0]
                 counts_array_miti = counts_array_miti[subspace_indices]
@@ -317,8 +329,8 @@ def process_all_bitstring_counts(
                 else: # 81 by 81
                     confusion_matrix1 = confusion_matrix[subspace_indices][:, subspace_indices]
 
-                print(f"{confusion_matrix1.shape = }")
-                print(f"{counts_array_miti.shape = }")
+                # print(f"{confusion_matrix1.shape = }")
+                # print(f"{counts_array_miti.shape = }")
                 counts_array_miti = np.linalg.lstsq(confusion_matrix1, counts_array_miti)[0]
             
             if normalize_counts:
@@ -328,8 +340,8 @@ def process_all_bitstring_counts(
         if normalize_counts:
             counts_array /= np.sum(counts_array)
         
+        # Save the processed bitstring counts to HDF5 file.
         dset.attrs[counts_name] = counts_array
-
         if confusion_matrix is not None:
             dset.attrs[counts_name_miti] = counts_array_miti
 

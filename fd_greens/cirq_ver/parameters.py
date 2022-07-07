@@ -51,7 +51,7 @@ class ErrorMitigationParameters:
     """
     PROJECT_DENSITY_MATRICES: bool = True
     PURIFY_DENSITY_MATRICES: bool = True
-    USE_EXACT_TRACES: bool = True
+    USE_EXACT_TRACES: bool = False
 
     def write(self, fname: str) -> None:
         with h5py.File(fname + '.h5', 'r+') as h5file:
