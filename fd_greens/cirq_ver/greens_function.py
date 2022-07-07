@@ -7,6 +7,7 @@ Green's Function (:mod:`fd_greens.greens_function`)
 import os
 from typing import Sequence, Optional
 from itertools import product
+from cirq import quantum_state
 
 import h5py
 import numpy as np
@@ -14,7 +15,7 @@ import numpy as np
 from .molecular_hamiltonian import MolecularHamiltonian
 from .qubit_indices import QubitIndices
 from .parameters import REVERSE_QUBIT_ORDER, ErrorMitigationParameters, get_method_indices_pairs
-from .general_utils import project_density_matrix, purify_density_matrix, reverse_qubit_order, two_qubit_state_tomography
+from .general_utils import project_density_matrix, purify_density_matrix, quantum_state_tomography, reverse_qubit_order, two_qubit_state_tomography
 from .helpers import save_to_hdf5
 
 np.set_printoptions(precision=6)
@@ -41,6 +42,7 @@ class GreensFunction:
             spin: Spin of the second quantized operators. Either ``'u'`` or ``'d'``.
             method: The method used for calculating the transition amplitudes. Either ``'exact'`` or ``'tomo'``.
             verbose: Whether to print out transition amplitude values.
+            fname_exact: The exact HDF5 file name, if USE_EXACT_TRACES is set tuo True.
         """
         assert spin in ['u', 'd']
         assert method in ['exact', 'tomo']
@@ -112,22 +114,12 @@ class GreensFunction:
                     self.B[subscript][m, m] = np.abs(state_vectors_exact.conj().T @ state_vector) ** 2
 
                 elif self.method == 'tomo':
-                    tomography_labels = [''.join(x) for x in product('xyz', repeat=2)]
+                    # Tomograph the density matrix.
+                    density_matrix = quantum_state_tomography(
+                        h5file, 2, circuit_label, suffix=self.suffix,
+                        ancilla_index = int(qubit_indices.ancilla.str[0], 2))
 
-                    array_all = []
-                    for tomography_label in tomography_labels:
-                        array_raw = h5file[f"{circuit_label}/{tomography_label}"].attrs[f"counts{self.suffix}"]
-                        repetitions = np.sum(array_raw)
-                        ancilla_index = int(qubit_indices.ancilla.str[0], 2)
-                        if REVERSE_QUBIT_ORDER:
-                            array_raw = reverse_qubit_order(array_raw)
-                            array_label = array_raw[ancilla_index :: 2] / repetitions
-                        else:
-                            array_label = array_raw[ancilla_index * 4 : (ancilla_index + 1) * 4] / repetitions
-                        array_all += list(array_label)
-
-                    # Tomograph, and optionally project or purify the density matrix.
-                    density_matrix = two_qubit_state_tomography(array_all)
+                    # Optionally project or purify the density matrix.
                     trace = np.trace(density_matrix).real
                     density_matrix /= trace
                     if self.parameters.PROJECT_DENSITY_MATRICES:
@@ -179,24 +171,12 @@ class GreensFunction:
                             np.abs(state_vectors_exact.conj().T @ state_vector) ** 2
 
                     elif self.method == 'tomo':
-                        tomography_labels = [''.join(x) for x in product('xyz', repeat=2)]
+                        # Tomograph the density matrix.
+                        density_matrix = quantum_state_tomography(
+                            h5file, 2, circuit_label, suffix=self.suffix, 
+                            ancilla_index=int(qubit_indices.ancilla.str[0], 2))
 
-                        # Stack normalized arrays of single tomography labels to array_all.
-                        array_all = []
-                        for tomography_label in tomography_labels:
-                            array_raw = h5file[f"{circuit_label}/{tomography_label}"].attrs[f"counts{self.suffix}"]
-                            repetitions = np.sum(array_raw)
-                            ancilla_index = int(qubit_indices.ancilla.str[0], 2)
-                            if REVERSE_QUBIT_ORDER:
-                                array_raw = reverse_qubit_order(array_raw)
-                                array_label = array_raw[ancilla_index :: 4]  / repetitions
-                            else:
-                                array_label  = array_raw[ancilla_index * 4:(ancilla_index + 1) * 4] / repetitions
-                            array_all += list(array_label)
-
-
-                        # Tomograph, and optionally project or purify the density matrix.
-                        density_matrix = two_qubit_state_tomography(array_all)
+                        # Optionally project or purify the density matrix
                         trace = np.trace(density_matrix)
                         density_matrix /= trace
                         if self.parameters.PROJECT_DENSITY_MATRICES:
@@ -226,6 +206,7 @@ class GreensFunction:
                     self.B[subscript][m, n] = self.B[subscript][n, m] = \
                         np.exp(-1j * np.pi / 4) * (self.D[subscript + "p"][m, n] - self.D[subscript + "m"][m, n]) \
                         + np.exp(1j * np.pi / 4) * (self.D[subscript + "p"][n, m] - self.D[subscript + "m"][n, m])
+                    
                     if self.verbose:
                         print(f"B[{subscript}][{m}, {n}] =", self.B[subscript][m, n])
 

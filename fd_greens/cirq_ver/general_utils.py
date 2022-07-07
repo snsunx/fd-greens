@@ -11,6 +11,7 @@ from typing import Optional, Callable, Union, List
 
 import numpy as np
 import cirq
+import h5py
 
 from .parameters import REVERSE_QUBIT_ORDER
 
@@ -425,3 +426,56 @@ def state_tomography(result_array: np.ndarray) -> np.ndarray:
     return density_matrix
 
 two_qubit_state_tomography = state_tomography
+    
+def quantum_state_tomography(
+    h5file: h5py.File,
+    n_qubits: int,
+    circuit_label: str,
+    suffix: str = '',
+    ancilla_index: int = 0
+) -> np.ndarray:
+    """Quantum state tomography."""
+    print("Calling quantum state tomography.")
+    tomography_labels = [''.join(x) for x in product('xyz', repeat=n_qubits)]
+
+    bitstring_array_all = []
+    for tomography_label in tomography_labels:
+        bitstring_array_raw = h5file[f"{circuit_label}/{tomography_label}"].attrs[f"counts{suffix}"]
+        repetitions = np.sum(bitstring_array_raw)
+        if REVERSE_QUBIT_ORDER:
+            bitstring_array_raw = reverse_qubit_order(bitstring_array_raw)
+            bitstring_array_single = bitstring_array_raw[ancilla_index :: 4]  / repetitions
+        else:
+            bitstring_array_single = bitstring_array_raw[ancilla_index * 4 : (ancilla_index + 1) * 4] / repetitions
+        bitstring_array_all += list(bitstring_array_single)
+
+    # Create the basis labels, bitstring labels and basis states.
+    if REVERSE_QUBIT_ORDER:
+        basis_labels = [x[::-1] for x in tomography_labels]
+    else:
+        basis_labels = tomography_labels
+    bitstring_labels = list(product('01', repeat=n_qubits))
+    basis_states_single = {
+        ('x', '0'): np.array([1.0, 1.0]) / np.sqrt(2),
+        ('x', '1'): np.array([1.0, -1.0]) / np.sqrt(2),
+        ('y', '0'): np.array([1.0, 1.0j]) / np.sqrt(2),
+        ('y', '1'): np.array([1.0, -1.0j]) / np.sqrt(2),
+        ('z', '0'): np.array([1.0, 0.0]),
+        ('z', '1'): np.array([0.0, 1.0]),
+    }
+
+    # Construct the basis matrix.
+    basis_matrix = []
+    for basis_label in basis_labels:
+        for bitstring_label in bitstring_labels:
+            basis_state = reduce(
+                np.kron, 
+                [basis_states_single[(basis_label[i], bitstring_label[i])] for i in range(n_qubits)])
+            basis_vectorized = np.outer(basis_state, basis_state.conj()).reshape(-1)
+            basis_matrix.append(basis_vectorized)
+    basis_matrix = np.array(basis_matrix)
+
+    density_matrix = np.linalg.lstsq(basis_matrix, bitstring_array_all)[0]
+    dim = int(np.sqrt(density_matrix.shape[0]))
+    density_matrix = density_matrix.reshape(dim, dim, order='F')
+    return density_matrix
