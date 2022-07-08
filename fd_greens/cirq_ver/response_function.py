@@ -75,10 +75,14 @@ class ResponseFunction:
         # Initialize array quantities N and T.
         self.subscripts_diagonal = ['n']
         self.subscripts_off_diagonal = ['np', 'nm']
-        self.N = {subscript: np.zeros((self.n_spin_orbitals, self.n_spin_orbitals, self.n_states[subscript]),
-                    dtype=complex) for subscript in self.subscripts_diagonal}
-        self.T = {subscript: np.zeros((self.n_spin_orbitals, self.n_spin_orbitals, self.n_states[subscript[0]]), 
-                    dtype=complex) for subscript in self.subscripts_off_diagonal}
+        self.N = dict()
+        self.T = dict()
+        for subscript in self.subscripts_diagonal:
+            self.N[subscript] = np.zeros(
+                (self.n_spin_orbitals, self.n_spin_orbitals, self.n_states[subscript]), dtype=complex)
+        for subscript in self.subscripts_off_diagonal:
+            self.T[subscript] = np.zeros(
+                (self.n_spin_orbitals, self.n_spin_orbitals, self.n_states[subscript[0]]), dtype=complex)
 
     def _process_diagonal(self) -> None:
         """Processes diagonal transition amplitudes results."""
@@ -91,68 +95,69 @@ class ResponseFunction:
                 qubit_indices = self.qubit_indices_dict[subscript]
                 state_vectors_exact = self.state_vectors[subscript]
 
+                # Define dataset names for convenience.
+                trace_dsetname = f"trace{self.suffix}/{subscript}{i}"
+                psi_dsetname = f"psi{self.suffix}/{subscript}{i}"
+                rho_dsetname = f"rho{self.suffix}/{subscript}{i}"
+
                 if self.method == 'exact':
                     state_vector = h5file[f'{circuit_label}/transpiled'].attrs[f'psi{self.suffix}']
                     if REVERSE_QUBIT_ORDER:
                         state_vector = reverse_qubit_order(state_vector)
                     state_vector = qubit_indices(state_vector)
 
-                    save_to_hdf5(h5file, f'trace{self.suffix}/{subscript}{i}', np.linalg.norm(state_vector) ** 2)
-                    save_to_hdf5(h5file, f'psi{self.suffix}/{subscript}{i}', state_vector)
+                    save_to_hdf5(h5file, trace_dsetname, np.linalg.norm(state_vector) ** 2)
+                    save_to_hdf5(h5file, psi_dsetname, state_vector)
 
                     self.N[subscript][i, i] = np.abs(state_vectors_exact.conj().T @ state_vector) ** 2
 
-                elif self.method == 'tomo':
-                    # Tomograph the density matrix.
-                    density_matrix = quantum_state_tomography(
-                        h5file, n_qubits=self.n_system_qubits, circuit_label=circuit_label, 
-                        suffix=self.suffix, ancilla_index=int(qubit_indices.ancilla.str[0], 2))
-                    
-                    # Optionally project or purify the density matrix.
-                    trace = np.trace(density_matrix).real
-                    density_matrix /= trace
-                    if self.parameters.PROJECT_DENSITY_MATRICES:
-                        density_matrix = project_density_matrix(density_matrix)
-                    if self.parameters.PURIFY_DENSITY_MATRICES:
-                        density_matrix = purify_density_matrix(density_matrix)
-                    density_matrix = qubit_indices.system(density_matrix)
+                else:
+                    if self.method == 'tomo':
+                        # Tomograph to obtain the density matrix.
+                        density_matrix = quantum_state_tomography(
+                            h5file, n_qubits=self.n_system_qubits, circuit_label=circuit_label, 
+                            suffix=self.suffix, ancilla_index=int(qubit_indices.ancilla.str[0], 2))
+                        
+                        # Modify the density matrix due to physical constraints.
+                        trace = np.trace(density_matrix).real
+                        density_matrix /= trace
+                        if self.parameters.PROJECT_DENSITY_MATRICES:
+                            density_matrix = project_density_matrix(density_matrix)
+                        if self.parameters.PURIFY_DENSITY_MATRICES:
+                            density_matrix = purify_density_matrix(density_matrix)
+                        density_matrix = qubit_indices.system(density_matrix)
+
+                    elif self.method == 'alltomo':
+                        # Tomography to obtain the density matrix.
+                        density_matrix = quantum_state_tomography(
+                            h5file, n_qubits=self.n_system_qubits + 1, 
+                            circuit_label=circuit_label, suffix=self.suffix)
+                        
+                        # Modify the density matrix due to physical constraints.
+                        if self.parameters.PROJECT_DENSITY_MATRICES:
+                            density_matrix = project_density_matrix(density_matrix)
+                        if self.parameters.PURIFY_DENSITY_MATRICES:
+                            density_matrix = purify_density_matrix(density_matrix)
+                        density_matrix = qubit_indices(density_matrix)
+                        trace = np.trace(density_matrix).real
+                        density_matrix /= trace
 
                     # Save the density matrix and its trace to HDF5 file.
-                    save_to_hdf5(h5file, f"trace{self.suffix}/{subscript}{i}", trace)
-                    save_to_hdf5(h5file, f"rho{self.suffix}/{subscript}{i}", density_matrix)
+                    save_to_hdf5(h5file, trace_dsetname, trace)
+                    save_to_hdf5(h5file, rho_dsetname, density_matrix)
 
                     if self.parameters.USE_EXACT_TRACES:
                         with h5py.File(self.fname_exact + '.h5', 'r') as h5file_exact:
-                            trace = h5file_exact[f"trace{self.suffix}/{subscript}{i}"][()]
+                            trace = h5file_exact[trace_dsetname][()]
 
-                    self.N[subscript][i, i] = [
-                        trace * (state_vectors_exact[:, j].conj() @ density_matrix @ state_vectors_exact[:, j]).real
-                        for j in range(self.n_states[subscript])]
-
-                elif self.method == 'alltomo':
-                    # Tomography to get the density matrix.
-                    density_matrix = quantum_state_tomography(
-                        h5file, n_qubits=self.n_system_qubits + 1, circuit_label=circuit_label, suffix=self.suffix)
-                    print(f"{np.trace(density_matrix).real = }")
-                    
-                    if self.parameters.PROJECT_DENSITY_MATRICES:
-                        density_matrix = project_density_matrix(density_matrix)
-                    if self.parameters.PURIFY_DENSITY_MATRICES:
-                        density_matrix = purify_density_matrix(density_matrix)
-                    density_matrix = qubit_indices(density_matrix)
-                    trace = np.trace(density_matrix).real
-
-                    # Save the density matrix and its trace to HDF5 file.
-                    save_to_hdf5(h5file, f"trace{self.suffix}/{subscript}{i}", trace)
-                    save_to_hdf5(h5file, f"rho{self.suffix}/{subscript}{i}", density_matrix)
-
-                    if self.parameters.USE_EXACT_TRACES:
-                        with h5py.File(self.fname_exact + '.h5', 'r') as h5file_exact:
-                            trace = h5file_exact[f"trace{self.suffix}/{subscript}{i}"][()]
-
-                    self.N[subscript][i, i] = [
-                        (state_vectors_exact[:, j].conj() @ density_matrix @ state_vectors_exact[:, j]).real
-                        for j in range(self.n_states[subscript])]
+                    N_element = []
+                    for j in range(self.n_states[subscript]):
+                        N_element.append(trace * (
+                            state_vectors_exact[:, j].conj()
+                            @ density_matrix
+                            @ state_vectors_exact[:, j]
+                        ).real)
+                    self.N[subscript][i, i] = N_element
                 
                 if self.verbose:
                     print(f'N[{subscript}][{i}, {i}] = {self.N[subscript][i, i]}')
@@ -173,71 +178,70 @@ class ResponseFunction:
                     qubit_indices = self.qubit_indices_dict[subscript]
                     state_vectors_exact = self.state_vectors[subscript[0]]
 
+                    # Define dataset names for convenience.
+                    trace_dsetname = f"trace{self.suffix}/{subscript}{i}{j}"
+                    psi_dsetname = f"psi{self.suffix}/{subscript}{i}{j}"
+                    rho_dsetname = f"rho{self.suffix}/{subscript}{i}{j}"
+
                     if self.method == 'exact':
                         state_vector = h5file[f'{circuit_label}/transpiled'].attrs[f'psi{self.suffix}']
                         if REVERSE_QUBIT_ORDER:
                             state_vector = reverse_qubit_order(state_vector)
                         state_vector = qubit_indices(state_vector)
 
-                        save_to_hdf5(
-                            h5file, f'trace{self.suffix}/{subscript}{i}{j}', 
-                            np.linalg.norm(state_vector) ** 2)
-                        save_to_hdf5(h5file, f'psi{self.suffix}/{subscript}{i}{j}', state_vector)
+                        save_to_hdf5(h5file, trace_dsetname, np.linalg.norm(state_vector) ** 2)
+                        save_to_hdf5(h5file, psi_dsetname, state_vector)
 
                         self.T[subscript][i, j] = self.T[subscript][j, i] = np.abs(
                             state_vectors_exact.conj().T @ state_vector) ** 2
 
-                    elif self.method == 'tomo':
-                        # Tomograph the density matrix.
-                        density_matrix = quantum_state_tomography(
-                            h5file, n_qubits=self.n_system_qubits, circuit_label=circuit_label,
-                            suffix=self.suffix, ancilla_index=int(qubit_indices.ancilla.str[0], 2))
-                        
-                        # Optionally project or purify the density matrix.
-                        trace = np.trace(density_matrix).real
-                        density_matrix /= trace
-                        if self.parameters.PROJECT_DENSITY_MATRICES:
-                            density_matrix = project_density_matrix(density_matrix)
-                        if self.parameters.PURIFY_DENSITY_MATRICES:
-                            density_matrix = purify_density_matrix(density_matrix)
-                        density_matrix = qubit_indices.system(density_matrix)
+                    else:
+                        if self.method == 'tomo':
+                            # Tomograph the density matrix.
+                            density_matrix = quantum_state_tomography(
+                                h5file, n_qubits=self.n_system_qubits, circuit_label=circuit_label,
+                                suffix=self.suffix, ancilla_index=int(qubit_indices.ancilla.str[0], 2))
+                            
+                            # Normalize then optionally modify the density matrix.
+                            trace = np.trace(density_matrix).real
+                            density_matrix /= trace
+                            if self.parameters.PROJECT_DENSITY_MATRICES:
+                                density_matrix = project_density_matrix(density_matrix)
+                            if self.parameters.PURIFY_DENSITY_MATRICES:
+                                density_matrix = purify_density_matrix(density_matrix)
+                            density_matrix = qubit_indices.system(density_matrix)
+
+                        elif self.method == 'alltomo':
+                            # Tomography to get the density matrix.
+                            density_matrix = quantum_state_tomography(
+                                h5file, n_qubits=self.n_system_qubits + 2, 
+                                circuit_label=circuit_label, suffix=self.suffix)
+
+                            # Optionally modify then normalize the density matrix.
+                            if self.parameters.PROJECT_DENSITY_MATRICES:
+                                density_matrix = project_density_matrix(density_matrix)
+                            if self.parameters.PURIFY_DENSITY_MATRICES:
+                                density_matrix = purify_density_matrix(density_matrix)
+                            density_matrix = qubit_indices(density_matrix)
+                            trace = np.trace(density_matrix).real
+                            density_matrix /= trace
 
                         # Save the density matrix and its trace to HDF5 file.
-                        save_to_hdf5(h5file, f"trace{self.suffix}/{subscript}{i}{j}", trace)
-                        save_to_hdf5(h5file, f"rho{self.suffix}/{subscript}{i}{j}", density_matrix)
+                        save_to_hdf5(h5file, trace_dsetname, trace)
+                        save_to_hdf5(h5file, rho_dsetname, density_matrix)
 
                         if self.parameters.USE_EXACT_TRACES:
                             with h5py.File(self.fname_exact + '.h5', 'r') as h5file_exact:
-                                trace = h5file_exact[f"trace{self.suffix}/{subscript}{i}{j}"][()]
-
-                        self.T[subscript][i, j] = self.T[subscript][j, i] = [
-                            trace * (state_vectors_exact[:, k].conj() @ density_matrix @ state_vectors_exact[:, k]).real
-                            for k in range(self.n_states[subscript[0]])]
-
-                    elif self.method == 'alltomo':
-                        # Tomography to get the density matrix.
-                        density_matrix = quantum_state_tomography(
-                            h5file, n_qubits=self.n_system_qubits + 2, circuit_label=circuit_label, suffix=self.suffix)
-                        print(f"{np.trace(density_matrix).real = }")
-
-                        if self.parameters.PROJECT_DENSITY_MATRICES:
-                            density_matrix = project_density_matrix(density_matrix)
-                        if self.parameters.PURIFY_DENSITY_MATRICES:
-                            density_matrix = purify_density_matrix(density_matrix)
-                        density_matrix = qubit_indices(density_matrix)
-                        trace = np.trace(density_matrix).real
-
-                        # Save the density matrix and its trace to HDF5 file.
-                        save_to_hdf5(h5file, f"trace{self.suffix}/{subscript}{i}{j}", trace)
-                        save_to_hdf5(h5file, f"rho{self.suffix}/{subscript}{i}{j}", density_matrix)
-
-                        if self.parameters.USE_EXACT_TRACES:
-                            with h5py.File(self.fname_exact + '.h5', 'r') as h5file_exact:
-                                trace = h5file_exact[f"trace{self.suffix}/{subscript}{i}{j}"][()]
+                                trace = h5file_exact[trace_dsetname][()]
                         
-                        self.T[subscript][i, j] = self.T[subscript][j, i] = [
-                            (state_vectors_exact[:, k].conj() @ density_matrix @ state_vectors_exact[:, k]).real
-                            for k in range(self.n_states[subscript[0]])]
+                        T_element = []
+                        for k in range(self.n_states[subscript[0]]):
+                            T_element.append(trace * (
+                                state_vectors_exact[:, k].conj() 
+                                @ density_matrix 
+                                @ state_vectors_exact[:, k]
+                            ).real)
+                        self.T[subscript][i, j] = self.T[subscript][j, i] = T_element
 
                     if self.verbose:
                         print(f'T[{subscript}][{i}, {j}] = {self.T[subscript][i, j]}')
@@ -257,30 +261,24 @@ class ResponseFunction:
 
     def process(self) -> None:
         """Processes both diagonal and off-diagonal results and saves data to file."""
-        # Delete the group names if they already exist.
-        with h5py.File(self.fname + '.h5', 'r+') as h5file:
-            for group_name in [f'psi{self.suffix}', f'rho{self.suffix}', f'amp{self.suffix}']:
-                if group_name in h5file:
-                    del h5file[group_name]
-
         # Call the private functions to process results.
         self._process_diagonal()
         self._process_off_diagonal()
 
         # Sum N over spins.
-        self.N_summed = {subscript: self.N[subscript].reshape(
-            (self.n_spatial_orbitals, 2, self.n_spatial_orbitals, 2, self.n_states[subscript])).sum((1, 3)) 
-            for subscript in ['n']}
+        self.N_summed = dict()
+        for subscript in self.subscripts_diagonal:
+            self.N_summed[subscript] = self.N[subscript].reshape(
+                (self.n_spatial_orbitals, 2, self.n_spatial_orbitals, 2, self.n_states[subscript])
+            ).sum((1, 3))
 
-        # Save N, N_summed and T to file.
+        # Save N, N_summed and T to HDF5 file.
         with h5py.File(self.fname + '.h5', 'r+') as h5file:
-            for subscript, array in self.N.items():
-                h5file[f'amp{self.suffix}/N_{subscript}'] = array
-            for subscript, array in self.N_summed.items():
-                h5file[f'amp{self.suffix}/N_summed_{subscript}'] = array
-            for subscript, array in self.T.items():
-                h5file[f'amp{self.suffix}/T_{subscript}'] = array
-
+            for subscript in self.subscripts_diagonal:
+                save_to_hdf5(h5file, f"amp{self.suffix}/N_{subscript}", self.N[subscript])
+                save_to_hdf5(h5file, f"amp{self.suffix}/N_summed_{subscript}", self.N_summed[subscript])
+            for subscript in self.subscripts_off_diagonal:
+                save_to_hdf5(h5file, f"amp{self.suffix}/T_{subscript}", self.T[subscript])
 
     def response_function(
         self, omegas: Sequence[float], eta: float = 0.0, save_data: bool = True
@@ -301,9 +299,9 @@ class ResponseFunction:
                 chis = []
 
                 for omega in omegas:
-                    chi = np.sum(self.N_summed[i, j] 
+                    chi = np.sum(self.N_summed['n'][i, j]
                         / (omega + 1j * eta - self.energies['n'] + self.energies['gs'])) \
-                        + np.sum(self.N_summed[i, j].conj()
+                        + np.sum(self.N_summed['n'][i, j].conj()
                         / (-omega - 1j * eta - self.energies['n'] + self.energies['gs']))
                     chis.append(chi)
                 chis = np.array(chis)
