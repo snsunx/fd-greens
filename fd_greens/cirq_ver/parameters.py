@@ -10,7 +10,7 @@ import h5py
 
 HARTREE_TO_EV = 27.211386245988 # Hartree to electron volts conversion.
 REVERSE_QUBIT_ORDER = False     # Whether to reverse qubit order for Qiskit qubit-order postprocessing.
-CHECK_CIRCUITS: bool = True
+CHECK_CIRCUITS: bool = True     # Whether to check circuits in each transpilation step.
 
 @dataclass
 class CircuitConstructionParameters:
@@ -27,7 +27,7 @@ class CircuitConstructionParameters:
     WRAP_Z_AROUND_ITOFFOLI: bool = True
     ITOFFOLI_Z_ANGLE: float = 20.67
     CONSTRAIN_CS_CSD: bool = False
-    CONVERT_CCZ_TO_ITOFFOLI: bool = False
+    CONVERT_CCZ_TO_ITOFFOLI: bool = True
     
     ADJUST_CS_CSD: bool = True
     SPLIT_SIMULTANEOUS_CZS: bool = True

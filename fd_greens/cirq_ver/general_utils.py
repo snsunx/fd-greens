@@ -4,8 +4,10 @@ Utilities (:mod:`fd_greens.general_utils`)
 ==========================================
 """
 
-from functools import reduce
+from deprecated import deprecated
+
 import re
+from functools import reduce
 from itertools import product
 from typing import Optional, Callable, Union, List
 
@@ -383,6 +385,7 @@ def purify_density_matrix(density_matrix: np.ndarray, niter: int = 10) -> np.nda
         # print("Purity =", np.trace(density_matrix @ density_matrix))
     return density_matrix
 
+@deprecated
 def state_tomography(result_array: np.ndarray) -> np.ndarray:
     """Quantum state tomography.
     
@@ -432,7 +435,8 @@ def quantum_state_tomography(
     n_qubits: int,
     circuit_label: Optional[str] = None,
     suffix: Optional[str] = None,
-    ancilla_index: int = 0
+    ancilla_index: int = 0,
+    reverse: bool = False
 ) -> np.ndarray:
     """Quantum state tomography.
     
@@ -449,7 +453,6 @@ def quantum_state_tomography(
         assert circuit_label is not None
         assert suffix is not None
     
-    print("Calling quantum state tomography.")
     tomography_labels = [''.join(x) for x in product('xyz', repeat=n_qubits)]
 
     bitstring_array_all = []
@@ -460,7 +463,7 @@ def quantum_state_tomography(
             bitstring_array_raw = h5file[tomography_label]
         
         # repetitions = np.sum(bitstring_array_raw)
-        if REVERSE_QUBIT_ORDER:
+        if reverse:
             bitstring_array_raw = reverse_qubit_order(bitstring_array_raw)
             bitstring_array_single = bitstring_array_raw[ancilla_index :: 2 ** n_qubits]
         else:
@@ -470,7 +473,7 @@ def quantum_state_tomography(
         bitstring_array_all += list(bitstring_array_single)
 
     # Create the basis labels, bitstring labels and basis states.
-    if REVERSE_QUBIT_ORDER:
+    if reverse:
         basis_labels = [x[::-1] for x in tomography_labels]
     else:
         basis_labels = tomography_labels

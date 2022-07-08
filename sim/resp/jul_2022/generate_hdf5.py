@@ -26,7 +26,7 @@ def main():
     es_solver = ExcitedStatesSolver(hamiltonian, fname=fname)
     es_solver.run()
 
-    amp_solver = ExcitedAmplitudesSolver(hamiltonian, qubits, method=method, fname=fname, repetitions=10000)
+    amp_solver = ExcitedAmplitudesSolver(hamiltonian, qubits, method=method, fname=fname, repetitions=100000)
     amp_solver.run()
 
     resp = ResponseFunction(hamiltonian, fname=fname, method=method)

@@ -12,7 +12,12 @@ import numpy as np
 from .molecular_hamiltonian import MolecularHamiltonian
 from .qubit_indices import QubitIndices
 from .parameters import REVERSE_QUBIT_ORDER, ErrorMitigationParameters, get_method_indices_pairs
-from .general_utils import project_density_matrix, purify_density_matrix, quantum_state_tomography, reverse_qubit_order
+from .general_utils import (
+    project_density_matrix,
+    purify_density_matrix,
+    quantum_state_tomography,
+    reverse_qubit_order
+)
 from .helpers import save_data_to_file, save_to_hdf5
 
 np.set_printoptions(precision=6)
@@ -122,8 +127,12 @@ class GreensFunction:
                     if self.method == 'tomo':
                         # Tomograph the density matrix.
                         density_matrix = quantum_state_tomography(
-                            h5file, n_qubits=self.n_system_qubits, circuit_label=circuit_label,
-                            suffix=self.suffix, ancilla_index = int(qubit_indices.ancilla.str[0], 2))
+                            h5file, 
+                            n_qubits=self.n_system_qubits,
+                            circuit_label=circuit_label,
+                            suffix=self.suffix, 
+                            ancilla_index = int(qubit_indices.ancilla.str[0], 2),
+                            reverse=REVERSE_QUBIT_ORDER)
 
                         # Optionally project or purify the density matrix.
                         trace = np.trace(density_matrix).real
@@ -136,7 +145,11 @@ class GreensFunction:
                 
                     elif self.method == 'alltomo':
                         density_matrix = quantum_state_tomography(
-                            h5file, n_qubits=self.n_system_qubits + 1, circuit_label=circuit_label, suffix=self.suffix)
+                            h5file, 
+                            n_qubits=self.n_system_qubits + 1,
+                            circuit_label=circuit_label,
+                            suffix=self.suffix, 
+                            reverse=REVERSE_QUBIT_ORDER)
 
                         if self.parameters.PROJECT_DENSITY_MATRICES:
                             density_matrix = project_density_matrix(density_matrix)
@@ -199,8 +212,12 @@ class GreensFunction:
                         if self.method == "tomo":
                             # Tomograph the density matrix.
                             density_matrix = quantum_state_tomography(
-                                h5file, n_qubits=self.n_system_qubits, circuit_label=circuit_label,
-                                suffix=self.suffix, ancilla_index=int(qubit_indices.ancilla.str[0], 2))
+                                h5file,
+                                n_qubits=self.n_system_qubits,
+                                circuit_label=circuit_label,
+                                suffix=self.suffix,
+                                ancilla_index=int(qubit_indices.ancilla.str[0], 2),
+                                reverse=REVERSE_QUBIT_ORDER)
 
                             # Optionally project or purify the density matrix
                             trace = np.trace(density_matrix)
@@ -213,8 +230,11 @@ class GreensFunction:
 
                         elif self.method == "alltomo":
                             density_matrix = quantum_state_tomography(
-                                h5file, n_qubits=self.n_system_qubits + 2,
-                                circuit_label=circuit_label, suffix=self.suffix)
+                                h5file,
+                                n_qubits=self.n_system_qubits + 2,
+                                circuit_label=circuit_label,
+                                suffix=self.suffix,
+                                reverse=REVERSE_QUBIT_ORDER)
 
                             if self.parameters.PROJECT_DENSITY_MATRICES:
                                 density_matrix = project_density_matrix(density_matrix)
