@@ -4,7 +4,6 @@ Green's Function (:mod:`fd_greens.greens_function`)
 ===================================================
 """
 
-import os
 from typing import Sequence, Optional
 
 import h5py
@@ -14,7 +13,7 @@ from .molecular_hamiltonian import MolecularHamiltonian
 from .qubit_indices import QubitIndices
 from .parameters import REVERSE_QUBIT_ORDER, ErrorMitigationParameters, get_method_indices_pairs
 from .general_utils import project_density_matrix, purify_density_matrix, quantum_state_tomography, reverse_qubit_order
-from .helpers import save_to_hdf5
+from .helpers import save_data_to_file, save_to_hdf5
 
 np.set_printoptions(precision=6)
 
@@ -307,9 +306,7 @@ class GreensFunction:
         G = self.G["e"] + self.G["h"]
         return G
 
-    def spectral_function(
-        self, omegas: Sequence[float], eta: float = 0.0, save_data: bool = True
-    ) -> Optional[np.ndarray]:
+    def spectral_function(self, omegas: Sequence[float], eta: float = 0.0) -> None:
         """Returns the spectral function at given frequencies.
 
         Args:
@@ -327,16 +324,9 @@ class GreensFunction:
             As.append(A)
         As = np.array(As)
 
-        if save_data:
-            if not os.path.exists("data"):
-                os.makedirs("data")
-            np.savetxt(f"data/{self.fname}{self.suffix}_A.dat", np.vstack((omegas, As)).T)
-        else:
-            return As
+        save_data_to_file("data", f"{self.fname}{self.suffix}_A", np.vstack(omegas, As).T)
 
-    def self_energy(
-        self, omegas: Sequence[float], eta: float = 0.0, save_data: bool = True
-    ) -> Optional[np.ndarray]:
+    def self_energy(self, omegas: Sequence[float], eta: float = 0.0) -> None:
         """Returns the trace of self-energy at given frequencies.
 
         Args:
@@ -356,11 +346,6 @@ class GreensFunction:
             TrSigmas.append(np.trace(Sigma))
         TrSigmas = np.array(TrSigmas)
 
-        if save_data:
-            if not os.path.exists("data"):
-                os.makedirs("data")
-            np.savetxt(
-                f"data/{self.fname}{self.suffix}_TrSigma.dat", 
-                np.vstack((omegas, TrSigmas.real, TrSigmas.imag)).T)
-        else:
-            return TrSigmas
+        save_data_to_file(
+            "data", f"{self.fname}{self.suffix}_TrSigma",
+            np.vstack((omegas, TrSigmas.real, TrSigmas.imag)).T)

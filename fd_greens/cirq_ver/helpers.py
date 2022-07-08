@@ -150,6 +150,18 @@ def save_to_hdf5(
     else:
         h5file[dsetname] = data
 
+def save_data_to_file(dirname: str, fname: str, data: np.ndarray) -> None:
+    """Saves a numpy array to a text file.
+    
+    Args:
+        dirname: THe directory name.
+        fname: The file name.
+        data: The data array.
+    """
+    if not os.path.exists(dirname):
+        os.makedirs(dirname)
+    np.savetxt(f"{dirname}/{fname}.dat", data)
+
 def copy_simulation_data(fname_expt: str, fname_exact: str, mode: str = 'greens') -> None:
     """Copy ground- and excited-states simulation data to experimental HDF5 file.
     

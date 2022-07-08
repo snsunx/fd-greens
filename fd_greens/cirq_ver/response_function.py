@@ -4,9 +4,8 @@ Response Function (:mod:`fd_greens.response_function`)
 ======================================================
 """
 
-import os
 from itertools import product
-from typing import Sequence, Optional, Mapping
+from typing import Sequence, Optional
 
 import h5py
 import numpy as np
@@ -15,7 +14,7 @@ from .molecular_hamiltonian import MolecularHamiltonian
 from .qubit_indices import QubitIndices
 from .parameters import ErrorMitigationParameters, get_method_indices_pairs, REVERSE_QUBIT_ORDER
 from .general_utils import project_density_matrix, purify_density_matrix, quantum_state_tomography, reverse_qubit_order
-from .helpers import save_to_hdf5
+from .helpers import save_to_hdf5, save_data_to_file
 
 np.set_printoptions(precision=6, suppress=True)
 
@@ -280,9 +279,7 @@ class ResponseFunction:
             for subscript in self.subscripts_off_diagonal:
                 save_to_hdf5(h5file, f"amp{self.suffix}/T_{subscript}", self.T[subscript])
 
-    def response_function(
-        self, omegas: Sequence[float], eta: float = 0.0, save_data: bool = True
-    ) -> Optional[Mapping[str, np.ndarray]]:
+    def response_function(self, omegas: Sequence[float], eta: float = 0.0) -> None:
         """Returns the charge-charge response function at given frequencies.
 
         Args:
@@ -293,7 +290,6 @@ class ResponseFunction:
         Returns:
             chis_all (Optional): A dictionary from orbital strings to the corresponding charge-charge response functions.
         """
-        chis_all = dict()
         for i in range(self.n_spatial_orbitals):
             for j in range(self.n_spatial_orbitals):  
                 chis = []
@@ -306,14 +302,6 @@ class ResponseFunction:
                     chis.append(chi)
                 chis = np.array(chis)
 
-                if save_data:
-                    if not os.path.exists("data"):
-                        os.makedirs("data")
-                    np.savetxt(
-                        f"data/{self.fname}{self.suffix}_chi{i}{j}.dat",
-                        np.vstack((omegas, chis.real, chis.imag)).T)
-                else:
-                    chis_all[f'{i}{j}'] = chis
-
-        if not save_data:
-            return chis_all
+                save_data_to_file(
+                    "data", f"{self.fname}{self.suffix}_chi{i}{j}",
+                    np.vstack((omegas, chis.real, chis.imag)).T)
