@@ -180,7 +180,6 @@ class EHAmplitudesSolver:
                         dset_tomography.attrs[f"counts{self.suffix}"] = histogram_to_array(
                             histogram, n_qubits=self.n_system_qubits + 2)
 
-
         h5file.close()
 
     def run(self) -> None:
