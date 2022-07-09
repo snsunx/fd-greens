@@ -12,7 +12,7 @@ import numpy as np
 
 from .molecular_hamiltonian import MolecularHamiltonian
 from .qubit_indices import QubitIndices
-from .parameters import ErrorMitigationParameters, get_method_indices_pairs, REVERSE_QUBIT_ORDER
+from .parameters import ErrorMitigationParameters, MethodIndicesPairs, REVERSE_QUBIT_ORDER
 from .general_utils import project_density_matrix, purify_density_matrix, quantum_state_tomography, reverse_qubit_order
 from .helpers import save_to_hdf5, save_data_to_file
 
@@ -53,7 +53,7 @@ class ResponseFunction:
         # Load error mitigation parameters.
         self.parameters = ErrorMitigationParameters()
         self.parameters.write(fname)
-        if method == 'tomo' and self.parameters.USE_EXACT_TRACES:
+        if "tomo" in method and self.parameters.USE_EXACT_TRACES:
             assert fname_exact is not None
 
         # Load energies and state vectors from HDF5 file.
@@ -62,7 +62,7 @@ class ResponseFunction:
             self.state_vectors = {'n': h5file['es/states'][:]}
 
         # Derived attributes.
-        method_indices_pairs = get_method_indices_pairs('')
+        method_indices_pairs = MethodIndicesPairs.get_pairs('')
         self.n_states = {'n': self.state_vectors['n'].shape[1]}
         self.n_spatial_orbitals = len(hamiltonian.active_indices)
         self.n_spin_orbitals = 2 * self.n_spatial_orbitals

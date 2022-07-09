@@ -11,7 +11,7 @@ import numpy as np
 
 from .molecular_hamiltonian import MolecularHamiltonian
 from .qubit_indices import QubitIndices
-from .parameters import REVERSE_QUBIT_ORDER, ErrorMitigationParameters, get_method_indices_pairs
+from .parameters import REVERSE_QUBIT_ORDER, ErrorMitigationParameters, MethodIndicesPairs
 from .general_utils import (
     project_density_matrix,
     purify_density_matrix,
@@ -62,7 +62,7 @@ class GreensFunction:
         # Load error mitigation parameters.
         self.parameters = ErrorMitigationParameters()
         self.parameters.write(fname)
-        if method == 'tomo' and self.parameters.USE_EXACT_TRACES:
+        if "tomo" in method and self.parameters.USE_EXACT_TRACES:
             assert fname_exact is not None
 
         # Load energies and state vectors from HDF5 file.
@@ -74,7 +74,7 @@ class GreensFunction:
                                   "h": h5file["es/states_h"][:]}
 
         # Derived attributes.
-        method_indices_pairs = get_method_indices_pairs(spin)
+        method_indices_pairs = MethodIndicesPairs.get_pairs(spin)
         self.n_states = {subscript: self.state_vectors[subscript].shape[1] for subscript in ['e', 'h']}
         self.n_spatial_orbitals = len(self.hamiltonian.active_indices)
         self.n_system_qubits = 2 * self.n_spatial_orbitals - method_indices_pairs.n_tapered

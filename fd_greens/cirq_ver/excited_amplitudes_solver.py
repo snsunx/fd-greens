@@ -18,7 +18,7 @@ from .operators import ChargeOperators
 from .circuit_constructor import CircuitConstructor
 from .circuit_string_converter import CircuitStringConverter
 from .transpilation import transpile_into_berkeley_gates
-from .parameters import CircuitConstructionParameters, get_method_indices_pairs
+from .parameters import CircuitConstructionParameters, MethodIndicesPairs
 from .general_utils import histogram_to_array
 
 
@@ -69,7 +69,7 @@ class ExcitedAmplitudesSolver:
             ansatz = self.circuit_string_converter.convert_strings_to_circuit(qtrl_strings)
         self.circuit_constructor = CircuitConstructor(ansatz, self.qubits)
 
-        method_indices_pairs = get_method_indices_pairs('')
+        method_indices_pairs = MethodIndicesPairs.get_pairs('')
         self.charge_operators = ChargeOperators(self.qubits)
         self.charge_operators.transform(method_indices_pairs)
 

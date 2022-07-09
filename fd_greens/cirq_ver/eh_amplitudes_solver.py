@@ -15,7 +15,7 @@ from .operators import SecondQuantizedOperators
 from .circuit_constructor import CircuitConstructor
 from .circuit_string_converter import CircuitStringConverter
 from .transpilation import transpile_into_berkeley_gates
-from .parameters import CircuitConstructionParameters, get_method_indices_pairs
+from .parameters import CircuitConstructionParameters, MethodIndicesPairs
 from .general_utils import histogram_to_array
 from .helpers import save_to_hdf5
 
@@ -70,7 +70,7 @@ class EHAmplitudesSolver:
         self.circuit_constructor = CircuitConstructor(ansatz, self.qubits)
 
         # Create dictionary of the second quantized operators.
-        method_indices_pairs = get_method_indices_pairs(spin)
+        method_indices_pairs = MethodIndicesPairs.get_pairs(spin)
         self.second_quantized_operators = SecondQuantizedOperators(
             self.qubits, self.spin, factor=(-1) ** (self.spin == 'd'))
         self.second_quantized_operators.transform(method_indices_pairs)

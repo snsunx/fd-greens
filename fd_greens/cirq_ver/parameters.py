@@ -76,29 +76,29 @@ class MethodIndicesPairs:
     def __iter__(self):
         return zip(self.methods, self.indices)
 
-# TODO: Write this as a method of MethodIndicesPairs.
-def get_method_indices_pairs(spin: str) -> MethodIndicesPairs:
-    """Returns the method indices pairs corresponding to a given spin label.
-    
-    Args:
-        spin: The spin label. Either ``'u'`` or ``'d'``.
-    
-    Returns:
-        method_indices_pairs: The method indices pairs.
-    """
-    assert spin in ['u', 'd', '']
+    @classmethod
+    def get_pairs(cls, spin: str) -> "MethodIndicesPairs":
+        """Returns the method indices pairs corresponding to a given spin label.
+        
+        Args:
+            spin: The spin label. Either ``'u'`` or ``'d'``.
+        
+        Returns:
+            method_indices_pairs: The method indices pairs.
+        """
+        assert spin in ['u', 'd', '']
 
-    if spin == 'u':
-        methods = ['cnot', 'cnot', 'taper']
-        indices = [(2, 0), (3, 1), (0, 1)]
+        if spin == 'u':
+            methods = ['cnot', 'cnot', 'taper']
+            indices = [(2, 0), (3, 1), (0, 1)]
 
-    elif spin == 'd':
-        methods = ['cnot', 'cnot', 'swap', 'taper']
-        indices = [(2, 0), (3, 1), (2, 3), (0, 1)]
+        elif spin == 'd':
+            methods = ['cnot', 'cnot', 'swap', 'taper']
+            indices = [(2, 0), (3, 1), (2, 3), (0, 1)]
 
-    elif spin == '':
-        methods = ['cnot', 'cnot', 'swap', 'taper']
-        indices = [(2, 0), (3, 1), (2, 3), (0, 1)]
+        elif spin == '':
+            methods = ['cnot', 'cnot', 'swap', 'taper']
+            indices = [(2, 0), (3, 1), (2, 3), (0, 1)]
 
-    method_indices_pairs = MethodIndicesPairs(methods, indices)
-    return method_indices_pairs
+        method_indices_pairs = cls(methods, indices)
+        return method_indices_pairs

@@ -9,7 +9,8 @@ import numpy as np
 
 from .molecular_hamiltonian import MolecularHamiltonian
 from .qubit_indices import QubitIndices
-from .parameters import REVERSE_QUBIT_ORDER, get_method_indices_pairs
+from .parameters import REVERSE_QUBIT_ORDER, MethodIndicesPairs
+from .helpers import save_to_hdf5
 
 
 class EHStatesSolver:
@@ -27,7 +28,7 @@ class EHStatesSolver:
 
         self.hamiltonian = hamiltonian.copy()
         
-        method_indices_pairs = get_method_indices_pairs(spin)
+        method_indices_pairs = MethodIndicesPairs.get_pairs(spin)
         tapered_state = [0, 1] if spin == 'u' else [1, 0]
         if REVERSE_QUBIT_ORDER:
             tapered_state.reverse()
@@ -61,13 +62,10 @@ class EHStatesSolver:
     def _save_data(self) -> None:
         """Saves (N±1)-electron energies and state vectors to HDF5 file."""        
         with h5py.File(self.h5fname, 'r+') as h5file:
-            if 'es' in h5file:
-                del h5file['es']
-
-            h5file['es/energies_e'] = self.energies['e']
-            h5file['es/energies_h'] = self.energies['h']
-            h5file['es/states_e'] = self.state_vectors['e']
-            h5file['es/states_h'] = self.state_vectors['h']
+            save_to_hdf5(h5file, "es/energies_e", self.energies['e'])
+            save_to_hdf5(h5file, "es/energies_h", self.energies['h'])
+            save_to_hdf5(h5file, "es/states_e", self.state_vectors['e'])
+            save_to_hdf5(h5file, "es/states_h", self.state_vectors['h'])
 
     def run(self) -> None:
         """Runs the (N±1)-electron states calculation."""

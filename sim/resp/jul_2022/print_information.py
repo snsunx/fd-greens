@@ -4,7 +4,6 @@ sys.path.append('../../..')
 import cirq
 import h5py
 import json
-import numpy as np
 
 from fd_greens import CircuitStringConverter, print_circuit_statistics
 

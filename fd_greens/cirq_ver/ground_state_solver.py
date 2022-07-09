@@ -14,7 +14,7 @@ import json
 from .molecular_hamiltonian import MolecularHamiltonian
 from .circuit_string_converter import CircuitStringConverter
 from .transpilation import convert_phxz_to_xpi2, transpile_into_berkeley_gates
-from .parameters import get_method_indices_pairs
+from .parameters import MethodIndicesPairs
 from .general_utils import unitary_equal
 from .helpers import save_to_hdf5
 
@@ -33,7 +33,7 @@ class GroundStateSolver:
             fname: The HDF5 file name.
         """
         self.hamiltonian = hamiltonian.copy()
-        self.hamiltonian.transform(get_method_indices_pairs(spin))
+        self.hamiltonian.transform(MethodIndicesPairs.get_pairs(spin))
         self.qubits = qubits
         self.h5fname = fname + ".h5"
         
@@ -156,7 +156,6 @@ class GroundStateSolver:
             # h5file['gs/energy'] = self.energy
             save_to_hdf5(h5file, "gs/energy", self.energy)
             qtrl_strings = self.circuit_string_converter.convert_circuit_to_strings(self.ansatz)
-            # h5file['gs/ansatz'] = json.dumps(qtrl_strings)
             save_to_hdf5(h5file, "gs/ansatz", json.dumps(qtrl_strings))
 
     def run(self) -> None:

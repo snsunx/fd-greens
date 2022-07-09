@@ -12,7 +12,7 @@ def main():
     hamiltonian = get_lih_hamiltonian(3.0)
     omegas = np.arange(-20, 20, 0.01)
     eta = 0.02 * HARTREE_TO_EV
-    for fname in ['lih_resp_exact', 'lih_resp_pur', 'lih_resp_pur2q']:
+    for fname in ['lih_resp_exact', 'lih_resp_trace', 'lih_resp_trace2q']:
         if 'exact' in fname:
             resp = ResponseFunction(hamiltonian, fname=fname, method='exact')
             resp.process()

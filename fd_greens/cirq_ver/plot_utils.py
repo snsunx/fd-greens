@@ -28,7 +28,10 @@ LINESTYLES_TRSIGMA = [
     {"ls": "--", "marker": "x", "markevery": 100, "color": "xkcd:orange"},
     {"ls": "--", "marker": "x", "markevery": 100, "color": "xkcd:teal"},
     {"ls": "--", "marker": "x", "markevery": 100, "color": "xkcd:purple"},
-    {"ls": "--", "marker": "x", "markevery": 100, "color": "xkcd:indigo"},
+    {"ls": "--", "marker": "x", "markevery": 100, "color": "xkcd:navy"},
+    {"ls": "--", "marker": "x", "markevery": 100, "color": "xkcd:grass green"},
+    {"ls": "--", "marker": "x", "markevery": 100, "color": "xkcd:magenta"}
+
 ]
 LINESTYLES_CHI = LINESTYLES_TRSIGMA
 FIGURE_DPI = 250
@@ -181,8 +184,9 @@ def plot_response_function(
         suffixes: Suffixes of the curves.
         labels: Legend labels of the curves.
         annotations: Annotation options to be passed into ax.text.
+        dirname: Directory name.
+        figname: Figure name.
         linestyles: The linestyles of the curves to be passed into ax.plot.
-        figname: The name of the figure to be saved.
         circ_label: The circuit label.
         text: Whether to add labels by legend, annotation or none.
         n_curves: Number of curves.
@@ -193,6 +197,8 @@ def plot_response_function(
         labels = [s[1:] for s in suffixes]
     if linestyles is None:
         linestyles = [{}] * n_curves
+    if scaling_factor != 1.0:
+        warnings.warn(f"Using a scaling factor of {scaling_factor} when plotting response function.")
 
     # for h5fname, suffix, label, linestyle in zip(fnames, suffixes, labels, linestyles):
     for circ_label in ['00', '01', '10', '11']:
@@ -202,7 +208,6 @@ def plot_response_function(
 
             for i in range(n_curves // 2):
                 omegas, real, imag = np.loadtxt(f"data/{fnames[i]}{suffixes[i]}_chi{circ_label}.dat").T
-                print("Scaling factor", scaling_factor)
                 if 'exact' not in fnames[i]:
                     real *= scaling_factor
                     imag *= scaling_factor

@@ -281,7 +281,7 @@ def print_circuit_statistics(circuit: cirq.Circuit) -> None:
 
     # Only print out multi-qubit gate counts on 4-qubit circuits.
     qubits = sorted(circuit.all_qubits())
-    if len(qubits) == 4:
+    if len(qubits) == 4 or len(qubits) == 3:
         for i in range(len(qubits) - 1):
             qubit_pair = (qubits[i], qubits[i + 1])
             n_cs = get_gate_counts(

@@ -8,7 +8,7 @@ def main():
     h5fname_exact = 'lih_resp_exact'
     pklfname = 'resp_0701_run0'
     npyfname = 'response_greens_0701_0'
-    for h5fname_expt in ['lih_resp_expt', 'lih_resp_pur']:
+    for h5fname_expt in ['lih_resp_pur']:
         process_all_bitstring_counts(
             h5fname_expt, 
             h5fname_exact,
@@ -18,7 +18,7 @@ def main():
             npyfname=npyfname
         )
 
-    for h5fname_expt in ['lih_resp_expt2q', 'lih_resp_pur2q']:
+    for h5fname_expt in ['lih_resp_pur2q']:
         process_all_bitstring_counts(
             h5fname_expt,
             h5fname_exact,
