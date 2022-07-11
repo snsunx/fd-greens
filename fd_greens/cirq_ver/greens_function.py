@@ -41,8 +41,8 @@ class GreensFunction:
             hamiltonian: The molecular Hamiltonian.
             fname: The HDF5 file name.
             suffix: The suffix for a specific experimental run.
-            spin: Spin of the second quantized operators. Either ``'u'`` or ``'d'``.
-            method: The method used for calculating the transition amplitudes. Either ``'exact'`` or ``'tomo'``.
+            spin: Spin of the second quantized operators.
+            method: The method used for calculating the transition amplitudes.
             verbose: Whether to print out transition amplitude values.
             fname_exact: The exact HDF5 file name, if USE_EXACT_TRACES is set tuo True.
         """
@@ -244,21 +244,21 @@ class GreensFunction:
                             trace = np.trace(density_matrix).real
                             density_matrix /= trace
 
-                    save_to_hdf5(h5file, trace_dsetname, trace)
-                    save_to_hdf5(h5file, rho_dsetname, density_matrix)
+                        save_to_hdf5(h5file, trace_dsetname, trace)
+                        save_to_hdf5(h5file, rho_dsetname, density_matrix)
 
-                    if self.parameters.USE_EXACT_TRACES:
-                        with h5py.File(self.fname_exact + '.h5', 'r') as h5file_exact:
-                            trace = h5file_exact[trace_dsetname][()]
+                        if self.parameters.USE_EXACT_TRACES:
+                            with h5py.File(self.fname_exact + '.h5', 'r') as h5file_exact:
+                                trace = h5file_exact[trace_dsetname][()]
                     
-                    D_element = []
-                    for k in range(self.n_states[subscript[0]]):
-                        D_element.append(trace * (
-                            state_vectors_exact[:, k].conj()
-                            @ density_matrix
-                            @ state_vectors_exact[:, k]
-                        ).real)
-                    self.D[subscript][m, n] = self.D[subscript][n, m] = D_element
+                        D_element = []
+                        for k in range(self.n_states[subscript[0]]):
+                            D_element.append(trace * (
+                                state_vectors_exact[:, k].conj()
+                                @ density_matrix
+                                @ state_vectors_exact[:, k]
+                            ).real)
+                        self.D[subscript][m, n] = self.D[subscript][n, m] = D_element
 
                     if self.verbose:
                         print(f"D[{subscript}][{m}, {n}] =", self.D[subscript][m, n])
@@ -344,7 +344,7 @@ class GreensFunction:
             As.append(A)
         As = np.array(As)
 
-        save_data_to_file("data", f"{self.fname}{self.suffix}_A", np.vstack(omegas, As).T)
+        save_data_to_file("data", f"{self.fname}{self.suffix}_A", np.vstack((omegas, As)).T)
 
     def self_energy(self, omegas: Sequence[float], eta: float = 0.0) -> None:
         """Returns the trace of self-energy at given frequencies.

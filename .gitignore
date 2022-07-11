@@ -5,3 +5,4 @@ myapp.log
 *.png
 *pynb*
 *archive*
+*vscode
