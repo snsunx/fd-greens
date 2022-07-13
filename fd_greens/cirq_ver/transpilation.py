@@ -46,6 +46,9 @@ class C0C0iXGate(cirq.Gate):
 
 C0C0iX = C0C0iXGate()
 
+iToffoli = C0C0iX
+iToffoliGate = C0C0iXGate
+
 
 def permute_qubits(circuit: cirq.Circuit) -> cirq.Circuit:
     """Permutes qubits of long-range CZs and CCZs by adding SWAP gates.

@@ -14,8 +14,8 @@ from fd_greens import (
 def main():
     qubits = cirq.LineQubit.range(4)
     hamiltonian = get_lih_hamiltonian(3.0)
-    fname = 'lih_greens_alltomo2q_trial'
-    method = 'alltomo'
+    fname = 'lih_greens_trial'
+    method = 'exact'
     spin = 'u'
     
     initialize_hdf5(fname, mode='greens', spin=spin)

@@ -11,6 +11,7 @@ import h5py
 HARTREE_TO_EV = 27.211386245988 # Hartree to electron volts conversion.
 REVERSE_QUBIT_ORDER = False     # Whether to reverse qubit order for Qiskit qubit-order postprocessing.
 CHECK_CIRCUITS: bool = True     # Whether to check circuits in each transpilation step.
+QUBIT_OFFSET = 4
 
 @dataclass
 class CircuitConstructionParameters:

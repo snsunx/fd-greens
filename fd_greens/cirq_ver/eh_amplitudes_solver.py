@@ -4,7 +4,7 @@
 ===================================================================================
 """
 
-from typing import Sequence
+from typing import Sequence, Optional
 
 import h5py
 import json
@@ -17,7 +17,8 @@ from .circuit_string_converter import CircuitStringConverter
 from .transpilation import transpile_into_berkeley_gates
 from .parameters import CircuitConstructionParameters, MethodIndicesPairs
 from .general_utils import histogram_to_array
-from .helpers import save_to_hdf5
+from .helpers import save_to_hdf5, print_circuit
+from .noise_parameters import NoiseParameters
 
 
 class EHAmplitudesSolver:
@@ -28,6 +29,7 @@ class EHAmplitudesSolver:
         hamiltonian: MolecularHamiltonian,
         qubits: Sequence[cirq.Qid],
         method: str = "exact",
+        noise_fname: Optional[str] = None,
         repetitions: int = 10000,
         fname: str = "lih",
         spin: str = "d",
@@ -51,10 +53,18 @@ class EHAmplitudesSolver:
         self.hamiltonian = hamiltonian
         self.qubits = qubits
         self.method = method
+        self.noise_fname = noise_fname
         self.repetitions = repetitions
         self.h5fname = fname + ".h5"
         self.spin = spin
         self.suffix = suffix
+
+        if noise_fname is not None:
+            self.simulator = cirq.DensityMatrixSimulator()
+            self.noise_params = NoiseParameters.from_file(self.noise_fname)
+        else:
+            self.simulator = cirq.Simulator()
+            self.noise_params = None
 
         self.parameters = CircuitConstructionParameters()
         self.parameters.write(fname)
@@ -91,6 +101,7 @@ class EHAmplitudesSolver:
 
             # Transpile the circuit and save to HDF5 file.
             circuit = transpile_into_berkeley_gates(circuit, self.spin)
+            circuit = self.circuit_string_converter.adapt_to_hardware(circuit)
             self.circuits[circuit_label] = circuit
             qtrl_strings = self.circuit_string_converter.convert_circuit_to_strings(circuit)
             dset_transpiled = save_to_hdf5(
@@ -98,8 +109,9 @@ class EHAmplitudesSolver:
                 data=json.dumps(qtrl_strings), return_dataset=True)
 
             # Execute the circuit and store the statevector in the HDF5 file.
+            # print_circuit(circuit)
             state_vector = cirq.sim.final_state_vector(circuit)
-            state_vector[abs(state_vector) < 1e-8] = 0.0
+            print(f"In run_diagonal_circuits, {state_vector.shape = }")
             dset_transpiled.attrs[f"psi{self.suffix}"] = state_vector
 
             if self.method in ["tomo", "alltomo"]:
@@ -120,7 +132,7 @@ class EHAmplitudesSolver:
                         data=json.dumps(qtrl_strings), return_dataset=True)
                     
                     # Run tomography circuit and store results to HDF5 file.
-                    result = cirq.Simulator().run(tomography_circuit, repetitions=self.repetitions)
+                    result = self.simulator.run(tomography_circuit, repetitions=self.repetitions)
                     histogram = result.multi_measurement_histogram(
                         keys=[str(q) for q in self.qubits[:self.n_system_qubits + 1]])
                     dset_tomography.attrs[f"counts{self.suffix}"] = histogram_to_array(
@@ -145,6 +157,7 @@ class EHAmplitudesSolver:
 
                 # Transpile the circuit and save to HDF5 file.
                 circuit = transpile_into_berkeley_gates(circuit, self.spin)
+                circuit = self.circuit_string_converter.adapt_to_hardware(circuit)
                 self.circuits[circuit_label] = circuit
                 qtrl_strings = self.circuit_string_converter.convert_circuit_to_strings(circuit)
                 dset_transpiled = save_to_hdf5(
@@ -154,6 +167,7 @@ class EHAmplitudesSolver:
                 # Run simulation and save results to HDF5 file.
                 state_vector = cirq.sim.final_state_vector(circuit)
                 dset_transpiled.attrs[f"psi{self.suffix}"] = state_vector
+                print(f"In run_off_diagonal_circuits, {state_vector.shape = }")
 
                 # Apply tomography and measurement gates and save to HDF5 file.
                 if self.method in ["tomo", "alltomo"]:
@@ -174,7 +188,7 @@ class EHAmplitudesSolver:
                             data=json.dumps(qtrl_strings), return_dataset=True)
 
                         # Run simulation and save result to HDF5 file.
-                        result = cirq.Simulator().run(tomography_circuit, repetitions=self.repetitions)
+                        result = self.simulator.run(tomography_circuit, repetitions=self.repetitions)
                         histogram = result.multi_measurement_histogram(
                             keys=[str(q) for q in self.qubits[:self.n_system_qubits + 2]])
                         dset_tomography.attrs[f"counts{self.suffix}"] = histogram_to_array(

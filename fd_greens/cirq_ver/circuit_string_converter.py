@@ -12,7 +12,7 @@ import numpy as np
 import cirq
 
 from .transpilation import C0C0iXGate
-from .general_utils import get_gate_counts
+from .general_utils import get_gate_counts, unitary_equal
 from .parameters import CHECK_CIRCUITS, CircuitConstructionParameters
 
 
@@ -232,3 +232,65 @@ class CircuitStringConverter:
             moment_offset += 1
         
         return qtrl_strings
+
+    def adapt_to_hardware(self, circuit: cirq.Circuit) -> cirq.Circuit:
+        """Adapts a circuit to hardware by converting to native gates.
+        
+        This function handles adjusting CS/CSD gates on specific qubit pairs, and splitting 
+        simultaneous CZ gates onto different moments.
+
+        Args:
+            circuit: The circuit on which gates are to be adapted.
+        
+        Returns:
+            circuit_new: The new circuit after gate adaptation.
+        """
+        # print("Before adapting to hardware")
+        # print_circuit(circuit)
+        circuit_new = cirq.Circuit()
+
+        i_moment = 0
+        adjustments = []
+        for moment in circuit:
+            moment_new = []
+            for operation in moment:
+                gate = operation.gate
+                qubits = operation.qubits
+
+                if self.parameters.ADJUST_CS_CSD:
+                    if isinstance(gate, cirq.CZPowGate) and (
+                        (abs(gate.exponent - 0.5) < 1e-8 and set(qubits) == {self.qubits[0], self.qubits[1]}) \
+                        or (abs(gate.exponent + 0.5) < 1e-8 and set(qubits) == {self.qubits[1], self.qubits[2]}) \
+                        or (abs(gate.exponent - 0.5) < 1e-8 and set(qubits) == {self.qubits[2], self.qubits[3]})):
+                        moment_new.append(cirq.CZ(*qubits))
+                        adjustments.append((i_moment, cirq.CZPowGate(exponent=-gate.exponent)(*qubits)))
+                    else:
+                        moment_new.append(operation)
+                else:
+                    moment_new.append(operation)
+
+            # print(f"{moment_new = }")
+            if self.parameters.SPLIT_SIMULTANEOUS_CZS:
+                is_cz_pow_gates = [isinstance(op.gate, cirq.CZPowGate) for op in moment_new]
+                if is_cz_pow_gates == [True, True]:
+                    i_moment += 2
+                    circuit_new.append(cirq.Moment(moment_new[0]))
+                    circuit_new.append(cirq.Moment(moment_new[1]))
+                else:
+                    i_moment += 1
+                    circuit_new.append(cirq.Moment(moment_new))
+            else:
+                i_moment += 1
+                circuit_new.append(cirq.Moment(moment_new))
+
+        moment_offset = 0
+        for i, gate in adjustments:
+            circuit_new.insert(i + moment_offset, gate)
+            moment_offset += 1
+
+        # print("After adapting to hardware")
+        # print_circuit(circuit_new)        
+        if CHECK_CIRCUITS:
+            assert unitary_equal(circuit, circuit_new)
+
+        return circuit_new
