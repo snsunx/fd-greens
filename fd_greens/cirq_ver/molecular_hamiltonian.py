@@ -98,6 +98,26 @@ class MolecularHamiltonian(OperatorsBase):
         """Returns the matrix form of the Hamiltonian."""
         return sum(self.pauli_strings).matrix()
 
+def get_h2_hamiltonian(bond_distance: float) -> MolecularHamiltonian:
+    """Returns the HOMO-LUMO LiH Hamiltonian with bond length r.
+    
+    Args:
+        bond_distance: The bond length of the molecule in Angstrom.
+    
+    Returns:
+        hamiltonian: The molecular Hamiltonian of LiH.
+    """
+
+    molecule = MolecularData(
+        [["H", (0, 0, 0)], ["H", (0, 0, bond_distance)]],
+        'sto3g',
+        multiplicity=1,
+        charge=0)
+    run_pyscf(molecule)
+
+    hamiltonian = MolecularHamiltonian(cirq.LineQubit.range(4), molecule)
+    return hamiltonian
+
 def get_lih_hamiltonian(bond_distance: float) -> MolecularHamiltonian:
     """Returns the HOMO-LUMO LiH Hamiltonian with bond length r.
     

@@ -5,7 +5,7 @@ N-Electron Transition Amplitudes Solver (:mod:`fd_greens.excited_amplitudes_solv
 """
 
 from itertools import product
-from typing import Sequence
+from typing import Sequence, Optional  
 
 import h5py
 import json
@@ -17,6 +17,7 @@ from .circuit_constructor import CircuitConstructor
 from .circuit_string_converter import CircuitStringConverter
 from .transpilation import transpile_into_berkeley_gates
 from .parameters import CircuitConstructionParameters, MethodIndicesPairs
+from .noise_parameters import NoiseParameters
 from .general_utils import histogram_to_array
 from .helpers import save_to_hdf5
 
@@ -29,6 +30,7 @@ class ExcitedAmplitudesSolver:
         hamiltonian: MolecularHamiltonian,
         qubits: Sequence[cirq.Qid],
         method: str = "exact",
+        noise_fname: Optional[str] = None,
         repetitions: int = 10000,
         fname: str = "lih",
         suffix: str = "",
@@ -49,12 +51,20 @@ class ExcitedAmplitudesSolver:
         self.hamiltonian = hamiltonian
         self.qubits = qubits
         self.method = method
+        self.noise_fname = noise_fname
         self.repetitions = repetitions
         self.h5fname = fname + '.h5'
         self.suffix = suffix
 
         self.parameters = CircuitConstructionParameters()
         self.parameters.write(fname)
+
+        if noise_fname is not None:
+            self.simulator = cirq.DensityMatrixSimulator()
+            self.noise_params = NoiseParameters.from_file(noise_fname)
+        else:
+            self.simulator = cirq.Simulator()
+            self.noise_params = None
 
         # Derived attributes.
         self.n_spatial_orbitals = len(self.hamiltonian.active_indices)
@@ -87,6 +97,7 @@ class ExcitedAmplitudesSolver:
 
             # Transpile the circuit and save to HDF5 file.
             circuit = transpile_into_berkeley_gates(circuit)
+            circuit = self.circuit_string_converter.adapt_to_hardware(circuit)
             self.circuits[circuit_label] = circuit
             qtrl_strings = self.circuit_string_converter.convert_circuit_to_strings(circuit)
             dset_transpiled = save_to_hdf5(
@@ -95,7 +106,6 @@ class ExcitedAmplitudesSolver:
 
             # Execute the circuit and store the statevector in the HDF5 file.
             state_vector = cirq.sim.final_state_vector(circuit)
-            state_vector[abs(state_vector) < 1e-8] = 0.0
             dset_transpiled.attrs[f'psi{self.suffix}'] = state_vector
 
             if self.method in ["tomo", "alltomo"]:                
@@ -114,7 +124,9 @@ class ExcitedAmplitudesSolver:
                         h5file, f"{circuit_label}/{tomography_label}", 
                         json.dumps(qtrl_strings), return_dataset=True)
                     
-                    result = cirq.Simulator().run(tomography_circuit, repetitions=self.repetitions)
+                    if self.noise_params is not None:
+                        tomography_circuit = self.noise_params.add_noise_to_circuit(tomography_circuit)
+                    result = self.simulator.run(tomography_circuit, repetitions=self.repetitions)
                     histogram = result.multi_measurement_histogram(
                         keys=[str(q) for q in self.qubits[:self.n_system_qubits + 1]])
                     dset_tomography.attrs[f'counts{self.suffix}'] = histogram_to_array(
@@ -138,6 +150,7 @@ class ExcitedAmplitudesSolver:
 
                 # Transpile the circuit and save to HDF5 file.
                 circuit = transpile_into_berkeley_gates(circuit)
+                circuit = self.circuit_string_converter.adapt_to_hardware(circuit)
                 self.circuits[circuit_label] = circuit
                 qtrl_strings = self.circuit_string_converter.convert_circuit_to_strings(circuit)
                 dset_transpiled = save_to_hdf5(
@@ -164,7 +177,9 @@ class ExcitedAmplitudesSolver:
                             h5file, f"{circuit_label}/{tomography_label}",
                             data=json.dumps(qtrl_strings), return_dataset=True)
 
-                        result = cirq.Simulator().run(tomography_circuit, repetitions=self.repetitions)
+                        if self.noise_params is not None:
+                            tomography_circuit = self.noise_params.add_noise_to_circuit(tomography_circuit)
+                        result = self.simulator.run(tomography_circuit, repetitions=self.repetitions)
                         histogram = result.multi_measurement_histogram(
                             keys=[str(q) for q in self.qubits[:self.n_system_qubits + 2]])
                         dset_tomography.attrs[f'counts{self.suffix}'] = histogram_to_array(

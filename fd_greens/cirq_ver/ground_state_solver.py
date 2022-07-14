@@ -49,7 +49,7 @@ class GroundStateSolver:
         e, v = np.linalg.eigh(self.hamiltonian.matrix)
         self.energy = e[0]
         # v0 = [ 0.6877791696238387+0j, 0.07105690514886635+0j, 0.07105690514886635+0j, -0.7189309050895454+0j]
-        v0 = v[:, 0][abs(v[:, 0]) > 1e-8]
+        v0 = v[:, 0] # [abs(v[:, 0]) > 1e-8]
         U = np.array([v0, [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]]).T
         U = np.linalg.qr(U)[0]
 

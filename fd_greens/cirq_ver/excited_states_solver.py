@@ -29,6 +29,7 @@ class ExcitedStatesSolver:
         self.hamiltonian = hamiltonian.copy()
         method_indices_pairs = MethodIndicesPairs.get_pairs('')
         self.hamiltonian.transform(method_indices_pairs, tapered_state=[1, 1])
+        self.fname = fname
         self.h5fname = fname + '.h5'
 
         n_qubits = 2 * len(self.hamiltonian.active_indices)
@@ -43,6 +44,8 @@ class ExcitedStatesSolver:
         def eigensolve(arr, inds):
             arr = arr[inds][:, inds]
             e, v = np.linalg.eigh(arr)
+            print("e\n", e)
+            print("v\n", v)
             return e[1:], v[:, 1:] # 1: for excluding ground state
 
         self.energies, self.state_vectors = eigensolve(self.hamiltonian.matrix, self.qubit_indices_dict['n'].int)
