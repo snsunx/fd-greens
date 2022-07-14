@@ -191,19 +191,6 @@ class CircuitStringConverter:
                     qtrl_string = qstring + "/" + gstring
                 else:
                     qtrl_string = gstring + "/" + qstring
-
-                if self.parameters.ADJUST_CS_CSD:
-                    if qtrl_string == 'CS/C5T4':
-                        qtrl_string = qtrl_string.replace('CS', 'CSD')
-                        adjustments.append((i_moment, ['CZ/C5T4']))
-
-                    if qtrl_string == 'CSD/C6T5':
-                        qtrl_string = qtrl_string.replace('CSD', 'CS')
-                        adjustments.append((i_moment, ['CZ/C6T5']))
-
-                    if qtrl_string == 'CS/C7T6':
-                        qtrl_string = qtrl_string.replace('CS', 'CSD')
-                        adjustments.append((i_moment, ['CZ/C7T6']))
                 
                 if self.parameters.WRAP_Z_AROUND_ITOFFOLI:
                     angle = self.parameters.ITOFFOLI_Z_ANGLE
@@ -213,18 +200,11 @@ class CircuitStringConverter:
                         adjustments.append((i_moment + 1, ['CP/C7T6']))
                 
                 strings_moment.append(qtrl_string)
-            
-            if self.parameters.SPLIT_SIMULTANEOUS_CZS and (
-                re.findall("C(?:Z|S|SD)/C5T4_C(?:Z|S|SD)/C7T6", '_'.join(strings_moment)) != [] or 
-                re.findall("C(?:Z|S|SD)/C7T6_C(?:Z|S|SD)/C5T4", '_'.join(strings_moment)) != []):
-                i_moment += 2
-                qtrl_strings.append([strings_moment[0]])
-                qtrl_strings.append([strings_moment[1]])
-            elif strings_moment != []: # [] when all identities or measurements
+
+            if strings_moment != []:
                 i_moment += 1
                 qtrl_strings.append(strings_moment)
 
-        
         # Insert adjustment gates to qtrl_strings.
         moment_offset = 0
         for i, strings_moment in adjustments:
@@ -258,12 +238,15 @@ class CircuitStringConverter:
                 qubits = operation.qubits
 
                 if self.parameters.ADJUST_CS_CSD:
-                    if isinstance(gate, cirq.CZPowGate) and (
-                        (abs(gate.exponent - 0.5) < 1e-8 and set(qubits) == {self.qubits[0], self.qubits[1]}) \
-                        or (abs(gate.exponent + 0.5) < 1e-8 and set(qubits) == {self.qubits[1], self.qubits[2]}) \
-                        or (abs(gate.exponent - 0.5) < 1e-8 and set(qubits) == {self.qubits[2], self.qubits[3]})):
-                        moment_new.append(cirq.CZ(*qubits))
-                        adjustments.append((i_moment, cirq.CZPowGate(exponent=-gate.exponent)(*qubits)))
+                    if isinstance(gate, cirq.CZPowGate):
+                        is_cs_on_45 = abs(gate.exponent - 0.5) < 1e-8 and set(qubits) == {self.qubits[0], self.qubits[1]}
+                        is_csd_on_56 = abs(gate.exponent + 0.5) < 1e-8 and set(qubits) == {self.qubits[1], self.qubits[2]}
+                        is_cs_on_67 = abs(gate.exponent - 0.5) < 1e-8 and set(qubits) == {self.qubits[2], self.qubits[3]}
+                        if is_cs_on_45 or is_csd_on_56 or is_cs_on_67:
+                            moment_new.append(cirq.CZ(*qubits))
+                            adjustments.append((i_moment, cirq.CZPowGate(exponent=-gate.exponent)(*qubits)))
+                        else:
+                            moment_new.append(operation)
                     else:
                         moment_new.append(operation)
                 else:

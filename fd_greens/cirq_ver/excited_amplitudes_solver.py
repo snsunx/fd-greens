@@ -11,8 +11,6 @@ import h5py
 import json
 import cirq
 
-from fd_greens.cirq_ver.helpers import save_to_hdf5
-
 from .molecular_hamiltonian import MolecularHamiltonian
 from .operators import ChargeOperators
 from .circuit_constructor import CircuitConstructor
@@ -20,6 +18,7 @@ from .circuit_string_converter import CircuitStringConverter
 from .transpilation import transpile_into_berkeley_gates
 from .parameters import CircuitConstructionParameters, MethodIndicesPairs
 from .general_utils import histogram_to_array
+from .helpers import save_to_hdf5
 
 
 class ExcitedAmplitudesSolver:

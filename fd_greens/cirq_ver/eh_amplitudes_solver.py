@@ -132,6 +132,8 @@ class EHAmplitudesSolver:
                         data=json.dumps(qtrl_strings), return_dataset=True)
                     
                     # Run tomography circuit and store results to HDF5 file.
+                    if self.noise_params is not None:
+                        tomography_circuit = self.noise_params.add_noise_to_circuit(tomography_circuit)
                     result = self.simulator.run(tomography_circuit, repetitions=self.repetitions)
                     histogram = result.multi_measurement_histogram(
                         keys=[str(q) for q in self.qubits[:self.n_system_qubits + 1]])
@@ -188,6 +190,8 @@ class EHAmplitudesSolver:
                             data=json.dumps(qtrl_strings), return_dataset=True)
 
                         # Run simulation and save result to HDF5 file.
+                        if self.noise_params is not None:
+                            tomography_circuit = self.noise_params.add_noise_to_circuit(tomography_circuit)
                         result = self.simulator.run(tomography_circuit, repetitions=self.repetitions)
                         histogram = result.multi_measurement_histogram(
                             keys=[str(q) for q in self.qubits[:self.n_system_qubits + 2]])

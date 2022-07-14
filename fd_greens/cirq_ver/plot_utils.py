@@ -21,17 +21,18 @@ from .general_utils import get_fidelity, get_non_z_locations, histogram_to_array
 from .helpers import process_bitstring_counts
 
 
-LINESTYLES_A = [{}, {"ls": "--", "marker": "x", "markevery": 30}, {"ls": "--", "marker": "x", "markevery": 30}]
+LINESTYLES_A = [{}, {"ls": "--", "marker": "", "markevery": 30}, {"ls": "--", "marker": "", "markevery": 30}, {"ls": "--", "marker": "", "markevery": 30}]
 LINESTYLES_TRSIGMA = [
     {"color": "xkcd:red"},
     {"color": "xkcd:blue"},
-    {"ls": "--", "marker": "x", "markevery": 100, "color": "xkcd:orange"},
-    {"ls": "--", "marker": "x", "markevery": 100, "color": "xkcd:teal"},
-    {"ls": "--", "marker": "x", "markevery": 100, "color": "xkcd:purple"},
-    {"ls": "--", "marker": "x", "markevery": 100, "color": "xkcd:navy"},
-    {"ls": "--", "marker": "x", "markevery": 100, "color": "xkcd:grass green"},
-    {"ls": "--", "marker": "x", "markevery": 100, "color": "xkcd:magenta"}
-
+    {"ls": "--", "marker": "", "markevery": 100, "color": "xkcd:orange"},
+    {"ls": "--", "marker": "", "markevery": 100, "color": "xkcd:teal"},
+    {"ls": "--", "marker": "", "markevery": 100, "color": "xkcd:purple"},
+    {"ls": "--", "marker": "", "markevery": 100, "color": "xkcd:navy"},
+    {"ls": "--", "marker": "", "markevery": 100, "color": "xkcd:grass green"},
+    {"ls": "--", "marker": "", "markevery": 100, "color": "xkcd:magenta"},
+    {"ls": "--", "marker": "", "markevery": 100, "color": "xkcd:teal"},
+    {"ls": "--", "marker": "", "markevery": 100, "color": "xkcd:orange"}
 ]
 LINESTYLES_CHI = LINESTYLES_TRSIGMA
 FIGURE_DPI = 250
@@ -43,6 +44,7 @@ def plot_spectral_function(
     labels: Sequence[str] = None,
     annotations: Optional[Sequence[dict]] = None,
     linestyles: Sequence[dict] = LINESTYLES_A,
+    datdirname: str = "data",
     dirname: str = "figs/data",
     figname: str = "A",
     text: Optional[str] = None,
@@ -73,7 +75,7 @@ def plot_spectral_function(
     fig, ax = plt.subplots()
     # for h5fname, suffix, label, linestyle in zip(fnames, suffixes, labels, linestyles):
     for i in range(n_curves):
-        omegas, As = np.loadtxt(f"data/{fnames[i]}{suffixes[i]}_A.dat").T
+        omegas, As = np.loadtxt(f"{datdirname}/{fnames[i]}{suffixes[i]}_A.dat").T
         ax.plot(omegas, As, label=labels[i], **linestyles[i])
     ax.set_xlabel("$\omega$ (eV)")
     ax.set_ylabel("$A$ (eV$^{-1}$)")
@@ -95,6 +97,7 @@ def plot_trace_self_energy(
     suffixes: Sequence[str],
     labels: Optional[Sequence[str]] = None,
     annotations: Optional[Sequence[str]] = None,
+    datdirname: str = "data",
     dirname: str = "figs/data",
     figname: str = "TrSigma",
     linestyles: Sequence[dict] = LINESTYLES_TRSIGMA,
@@ -127,7 +130,7 @@ def plot_trace_self_energy(
     if separate_real_imag:
         fig, axes = plt.subplots(1, 2, figsize=(12, 4))
         for i in range(n_curves // 2):
-            omegas, real, imag = np.loadtxt(f"data/{fnames[i]}{suffixes[i]}_TrSigma.dat").T
+            omegas, real, imag = np.loadtxt(f"{datdirname}/{fnames[i]}{suffixes[i]}_TrSigma.dat").T
 
             axes[0].plot(omegas, real, label=labels[i], **linestyles[2 * i])
             axes[0].set_xlabel("$\omega$ (eV)")
@@ -168,6 +171,7 @@ def plot_response_function(
     suffixes: Sequence[str],
     labels: Optional[Sequence[str]] = None,
     annotations: Optional[Sequence[str]] = None,
+    datdirname: str = "data",
     dirname: str = "figs/data",
     figname: str = "chi",
     circ_label: str = "00",
@@ -207,7 +211,7 @@ def plot_response_function(
             fig, axes = plt.subplots(1, 2, figsize=(12, 4))
 
             for i in range(n_curves // 2):
-                omegas, real, imag = np.loadtxt(f"data/{fnames[i]}{suffixes[i]}_chi{circ_label}.dat").T
+                omegas, real, imag = np.loadtxt(f"{datdirname}/{fnames[i]}{suffixes[i]}_chi{circ_label}.dat").T
                 if 'exact' not in fnames[i]:
                     real *= scaling_factor
                     imag *= scaling_factor
