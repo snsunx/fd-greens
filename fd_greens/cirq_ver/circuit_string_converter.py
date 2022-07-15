@@ -26,6 +26,7 @@ class CircuitStringConverter:
             qubits: The qubits in the circuit.
             offset: The index offset on the Berkeley device. Defaults to 4.
         """
+        # TODO: The offset attribute can be substituted with QUBIT_OFFSET.
         self.qubits = qubits
         self.offset = offset
 
@@ -160,6 +161,8 @@ class CircuitStringConverter:
 
     def convert_circuit_to_strings(self, circuit: cirq.Circuit) -> List[List[str]]:
         """Converts a Cirq circuit to Qtrl strings.
+
+        This function optionally wraps around iToffoli gates with Z and CPhase gates.
         
         Args:
             circuit: A Cirq circuit.
@@ -184,14 +187,15 @@ class CircuitStringConverter:
                 if isinstance(op.gate, (cirq.IdentityGate, cirq.MeasurementGate)):
                     continue
 
+                # Combine gate string and qubit string to a single qtrl string.
                 gstring = self._gate_to_gstring(op.gate)
                 qstring = self._qubits_to_qstring(op.qubits)
-
                 if len(op.qubits) == 1:
                     qtrl_string = qstring + "/" + gstring
                 else:
                     qtrl_string = gstring + "/" + qstring
                 
+                # Wrap Z and CPhase around iToffoli.
                 if self.parameters.WRAP_Z_AROUND_ITOFFOLI:
                     angle = self.parameters.ITOFFOLI_Z_ANGLE
                     if qtrl_string == 'TOF/C4C6T5':
@@ -239,9 +243,9 @@ class CircuitStringConverter:
 
                 if self.parameters.ADJUST_CS_CSD:
                     if isinstance(gate, cirq.CZPowGate):
-                        is_cs_on_45 = abs(gate.exponent - 0.5) < 1e-8 and set(qubits) == {self.qubits[0], self.qubits[1]}
-                        is_csd_on_56 = abs(gate.exponent + 0.5) < 1e-8 and set(qubits) == {self.qubits[1], self.qubits[2]}
-                        is_cs_on_67 = abs(gate.exponent - 0.5) < 1e-8 and set(qubits) == {self.qubits[2], self.qubits[3]}
+                        is_cs_on_45 = abs(gate.exponent - 0.5) < 1e-8 and set(qubits) == set(self.qubits[:2])
+                        is_csd_on_56 = abs(gate.exponent + 0.5) < 1e-8 and set(qubits) == set(self.qubits[1:3])
+                        is_cs_on_67 = abs(gate.exponent - 0.5) < 1e-8 and set(qubits) == set(self.qubits[2:4])
                         if is_cs_on_45 or is_csd_on_56 or is_cs_on_67:
                             moment_new.append(cirq.CZ(*qubits))
                             adjustments.append((i_moment, cirq.CZPowGate(exponent=-gate.exponent)(*qubits)))
@@ -266,13 +270,14 @@ class CircuitStringConverter:
                 i_moment += 1
                 circuit_new.append(cirq.Moment(moment_new))
 
+        # Insert adjustment gates.
         moment_offset = 0
         for i, gate in adjustments:
             circuit_new.insert(i + moment_offset, gate)
             moment_offset += 1
 
         # print("After adapting to hardware")
-        # print_circuit(circuit_new)        
+        # print_circuit(circuit_new)
         if CHECK_CIRCUITS:
             assert unitary_equal(circuit, circuit_new)
 

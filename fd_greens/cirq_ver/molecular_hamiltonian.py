@@ -141,3 +141,27 @@ def get_lih_hamiltonian(bond_distance: float) -> MolecularHamiltonian:
         occupied_indices=[0],
         active_indices=[1, 2])
     return hamiltonian
+
+def get_nah_hamiltonian(bond_distance: float) -> MolecularHamiltonian:
+    """Returns the HOMO-LUMO NaH Hamiltonian with bond length r.
+    
+    Args:
+        bond_distance: The bond length of the molecule in Angstrom.
+    
+    Returns:
+        hamiltonian: The molecular Hamiltonian of LiH.
+    """
+
+    molecule = MolecularData(
+        [["Na", (0, 0, 0)], ["H", (0, 0, bond_distance)]],
+        'sto3g',
+        multiplicity=1,
+        charge=0)
+    run_pyscf(molecule)
+
+    hamiltonian = MolecularHamiltonian(
+        cirq.LineQubit.range(4),
+        molecule,
+        occupied_indices=[0, 1, 2, 3, 4],
+        active_indices=[5, 6])
+    return hamiltonian

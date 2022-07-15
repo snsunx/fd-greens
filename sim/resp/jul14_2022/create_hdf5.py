@@ -17,9 +17,10 @@ from fd_greens import (
 def main():
     qubits = cirq.LineQubit.range(4)
     hamiltonian = get_nah_hamiltonian(3.7)
-    noise_fname = '../../../expt/params/gate_fidelities_0708'
-    fname = 'lih_resp_noisy'
+    noise_fname = None # '../../../expt/params/gate_fidelities_0708'
+    fname = 'lih_resp_tomo2q'
     method = 'tomo'
+    repetitions = 10000
 
     initialize_hdf5(fname, mode='resp', spin='')
 
@@ -29,7 +30,8 @@ def main():
     es_solver = ExcitedStatesSolver(hamiltonian, fname=fname)
     es_solver.run()
 
-    amp_solver = ExcitedAmplitudesSolver(hamiltonian, qubits, method=method, fname=fname, noise_fname=noise_fname, repetitions=10000)
+    amp_solver = ExcitedAmplitudesSolver(
+        hamiltonian, qubits, method=method, fname=fname, noise_fname=noise_fname, repetitions=repetitions)
     amp_solver.run()
 
     resp = ResponseFunction(hamiltonian, fname=fname, method=method)
