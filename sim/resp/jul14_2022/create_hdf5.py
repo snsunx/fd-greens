@@ -9,7 +9,7 @@ from fd_greens import (
     ExcitedAmplitudesSolver, 
     ResponseFunction, 
     get_h2_hamiltonian,
-    get_lih_hamiltonian, 
+    get_nah_hamiltonian, 
     get_nah_hamiltonian,
     initialize_hdf5,
     ClassicalAmplitudesSolver)
@@ -18,7 +18,7 @@ def main():
     qubits = cirq.LineQubit.range(4)
     hamiltonian = get_nah_hamiltonian(3.7)
     noise_fname = None # '../../../expt/params/gate_fidelities_0708'
-    fname = 'lih_resp_tomo2q'
+    fname = 'nah_resp_tomo2q'
     method = 'tomo'
     repetitions = 10000
 

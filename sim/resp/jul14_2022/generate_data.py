@@ -12,14 +12,14 @@ def main():
     hamiltonian = get_nah_hamiltonian(3.7)
     omegas = np.arange(-32, 32, 0.1)
     eta = 0.02 * HARTREE_TO_EV
-    for fname in ['lih_resp_exact', 'lih_resp_tomo2q']:
+    for fname in ['nah_resp_exact', 'nah_resp_tomo2q']:
         if 'exact' in fname:
             resp = ResponseFunction(hamiltonian, fname=fname, method='exact')
         else:
             if 'alltomo' in fname:
-                resp = ResponseFunction(hamiltonian, fname=fname, method='alltomo', fname_exact='lih_resp_exact')
+                resp = ResponseFunction(hamiltonian, fname=fname, method='alltomo', fname_exact='nah_resp_exact')
             else:
-                resp = ResponseFunction(hamiltonian, fname=fname, method='tomo', fname_exact='lih_resp_exact')
+                resp = ResponseFunction(hamiltonian, fname=fname, method='tomo', fname_exact='nah_resp_exact')
         resp.process()
         resp.response_function(omegas, eta)
 
