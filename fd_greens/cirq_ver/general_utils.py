@@ -298,6 +298,7 @@ def print_circuit_statistics(circuit: cirq.Circuit) -> None:
             # t_cz = 200
             print(f"Number of CS, CSD, CZ gates on qubits ({i}, {i + 1}) = {n_cs}, {n_csd}, {n_cz}")
 
+@deprecated
 def get_bloch_vector(state: np.ndarray) -> np.ndarray:
     """Returns the Bloch vector of a state."""
     if len(state.shape) == 1:

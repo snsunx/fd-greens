@@ -4,7 +4,7 @@ sys.path.append('../../..')
 import numpy as np
 import matplotlib.pyplot as plt
 
-from fd_greens import get_nah_hamiltonian, MethodIndicesPairs
+from fd_greens import MethodIndicesPairs, get_alkali_hydride_hamiltonian
 
 def main():
 
@@ -17,7 +17,7 @@ def main():
     gs_state_probs3 = []
 
     for r in bond_distances:
-        hamiltonian = get_nah_hamiltonian(r)
+        hamiltonian = get_alkali_hydride_hamiltonian("Rb", r)
         hamiltonian.transform(MethodIndicesPairs.get_pairs('d'))
         matrix = hamiltonian.matrix
         e, v = np.linalg.eigh(matrix)

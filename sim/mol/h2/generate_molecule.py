@@ -4,7 +4,7 @@ sys.path.append('../../..')
 import numpy as np
 import matplotlib.pyplot as plt
 
-from fd_greens import get_h2_hamiltonian, MethodIndicesPairs
+from fd_greens import MethodIndicesPairs, get_alkali_hydride_hamiltonian
 
 def main():
 
@@ -17,7 +17,7 @@ def main():
     gs_state_probs3 = []
 
     for r in bond_distances:
-        hamiltonian = get_h2_hamiltonian(r)
+        hamiltonian = get_alkali_hydride_hamiltonian("H", r)
         hamiltonian.transform(MethodIndicesPairs.get_pairs('d'))
         matrix = hamiltonian.matrix
         e, v = np.linalg.eigh(matrix)
@@ -35,7 +35,7 @@ def main():
     ax.plot(bond_distances, energies_gs, marker='o', label="Ground state")
     ax.plot(bond_distances, energies_es, marker='o', label="1st excited state")
     ax.legend()
-    fig.savefig('h2_energies.png', dpi=250, bbox_inches='tight')
+    fig.savefig('energies.png', dpi=250, bbox_inches='tight')
 
     fig, ax = plt.subplots()
     ax.plot(bond_distances, gs_state_probs0, marker='o', label="00")
@@ -43,7 +43,7 @@ def main():
     ax.plot(bond_distances, gs_state_probs2, marker='3', label="10")
     ax.plot(bond_distances, gs_state_probs3, marker='4', label="11")
     ax.legend()
-    fig.savefig('h2_states.png', dpi=250, bbox_inches='tight')
+    fig.savefig('states.png', dpi=250, bbox_inches='tight')
 
 
     

@@ -4,6 +4,8 @@ Molecular Hamiltonian (:mod:`fd_greens.molecular_hamiltonian`)
 ==============================================================
 """
 
+from deprecated import deprecated
+
 from typing import Sequence, Tuple, Optional, Iterable
 
 import numpy as np
@@ -15,6 +17,8 @@ from openfermionpyscf import run_pyscf
 from .operators import OperatorsBase
 from .parameters import HARTREE_TO_EV
 
+
+__all__ = ["MolecularHamiltonian", "get_h2_hamiltonian", "get_lih_hamiltonian", "get_nah_hamiltonian", "get_alkali_hydride_hamiltonian"]
 
 class MolecularHamiltonian(OperatorsBase):
     """Molecular Hamiltonian."""
@@ -98,6 +102,7 @@ class MolecularHamiltonian(OperatorsBase):
         """Returns the matrix form of the Hamiltonian."""
         return sum(self.pauli_strings).matrix()
 
+@deprecated
 def get_h2_hamiltonian(bond_distance: float) -> MolecularHamiltonian:
     """Returns the HOMO-LUMO LiH Hamiltonian with bond length r.
     
@@ -118,6 +123,7 @@ def get_h2_hamiltonian(bond_distance: float) -> MolecularHamiltonian:
     hamiltonian = MolecularHamiltonian(cirq.LineQubit.range(4), molecule)
     return hamiltonian
 
+@deprecated
 def get_lih_hamiltonian(bond_distance: float) -> MolecularHamiltonian:
     """Returns the HOMO-LUMO LiH Hamiltonian with bond length r.
     
@@ -142,6 +148,7 @@ def get_lih_hamiltonian(bond_distance: float) -> MolecularHamiltonian:
         active_indices=[1, 2])
     return hamiltonian
 
+@deprecated
 def get_nah_hamiltonian(bond_distance: float) -> MolecularHamiltonian:
     """Returns the HOMO-LUMO NaH Hamiltonian with bond length r.
     
@@ -164,4 +171,33 @@ def get_nah_hamiltonian(bond_distance: float) -> MolecularHamiltonian:
         molecule,
         occupied_indices=[0, 1, 2, 3, 4],
         active_indices=[5, 6])
+    return hamiltonian
+
+def get_alkali_hydride_hamiltonian(metal_atom: str, bond_length: float) -> MolecularHamiltonian:
+    """Returns an alkali hydride Hamiltonian.
+    
+    Args:
+        metal_atom: The alkali metal atom.
+        bond_length: Bond length of the alkali metal hydride molecule.
+    
+    Returns:
+        hamiltonian: The metal hydride Hamiltonian.
+    """
+    assert metal_atom in ["H", "Li", "Na", "K", "Rb"]
+
+    molecule = MolecularData(
+        [[metal_atom, (0, 0, 0)], ["H", (0, 0, bond_length)]],
+        "sto3g",
+        multiplicity=1,
+        charge=0
+    )
+    run_pyscf(molecule)
+    homo_index = molecule.n_electrons // 2
+
+    hamiltonian = MolecularHamiltonian(
+        cirq.LineQubit.range(4),
+        molecule,
+        occupied_indices=list(range(homo_index - 1)),
+        active_indices=[homo_index - 1, homo_index]
+    )
     return hamiltonian

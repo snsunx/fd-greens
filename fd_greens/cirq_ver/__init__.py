@@ -10,7 +10,7 @@ from .parameters import *
 
 from .qubit_indices import QubitIndices
 from .operators import SecondQuantizedOperators, ChargeOperators
-from .molecular_hamiltonian import MolecularHamiltonian, get_h2_hamiltonian, get_lih_hamiltonian, get_nah_hamiltonian
+from .molecular_hamiltonian import *
 from .circuit_constructor import CircuitConstructor
 from .circuit_string_converter import CircuitStringConverter
 

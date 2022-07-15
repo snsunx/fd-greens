@@ -13,40 +13,37 @@ import cirq
 
 from .transpilation import C0C0iXGate
 from .general_utils import get_gate_counts, unitary_equal
-from .parameters import CHECK_CIRCUITS, CircuitConstructionParameters
+from .parameters import CHECK_CIRCUITS, CircuitConstructionParameters, QUBIT_OFFSET
 
 
 class CircuitStringConverter:
     """Converter between Cirq circuits and Qtrl strings."""
 
-    def __init__(self, qubits: Sequence[cirq.Qid], offset: int = 4) -> None:
+    def __init__(self, qubits: Sequence[cirq.Qid]) -> None:
         """Initializes a ``CircuitStringConverter`` object.
         
         Args:
             qubits: The qubits in the circuit.
-            offset: The index offset on the Berkeley device. Defaults to 4.
         """
-        # TODO: The offset attribute can be substituted with QUBIT_OFFSET.
         self.qubits = qubits
-        self.offset = offset
 
         self.parameters = CircuitConstructionParameters()
 
     def _qstring_to_qubits(self, qstring: str) -> List[cirq.Qid]:
         """Converts Qtrl qubit string to Cirq qubits."""
         inds = re.findall("(\d)", qstring)
-        qubits = [self.qubits[int(x) - self.offset] for x in inds]
+        qubits = [self.qubits[int(x) - QUBIT_OFFSET] for x in inds]
         return qubits
 
     def _qubits_to_qstring(self, qubits: Sequence[cirq.Qid]) -> str:
         """Converts Cirq qubits to Qtrl qubit string."""
         if len(qubits) == 1:
-            qstring = "Q" + str(qubits[0].x + self.offset)
+            qstring = "Q" + str(qubits[0].x + QUBIT_OFFSET)
         elif len(qubits) == 2:
-            indices = sorted([q.x + self.offset for q in qubits], reverse=True)
+            indices = sorted([q.x + QUBIT_OFFSET for q in qubits], reverse=True)
             qstring = f"C{indices[0]}T{indices[1]}"
         elif len(qubits) == 3:
-            indices = [q.x + self.offset for q in qubits]
+            indices = [q.x + QUBIT_OFFSET for q in qubits]
             qstring = f"C{indices[0]}C{indices[1]}T{indices[2]}"
         else:
             raise ValueError(f"A gate acting on {len(qubits)} qubits cannot be converted to Qtrl string.")
@@ -61,7 +58,7 @@ class CircuitStringConverter:
                 gate = cirq.CZPowGate(exponent=0.5)
             elif gstring == "CSD":
                 gate = cirq.CZPowGate(exponent=-0.5)
-            elif gstring == "CP":
+            elif gstring == "CP": # CPhase gate after iToffoli
                 gate = cirq.I
             elif gstring == "TOF":
                 gate = C0C0iXGate()
@@ -76,7 +73,7 @@ class CircuitStringConverter:
                 gate = cirq.XPowGate(exponent=exponent)
             elif gate_name == "Z":
                 if abs(abs(exponent) - self.parameters.ITOFFOLI_Z_ANGLE / 180.0) < 1e-8:
-                    gate = cirq.I
+                    gate = cirq.I # Z gates around iToffoli
                 else:
                     gate = cirq.ZPowGate(exponent=exponent)
             else:
@@ -150,8 +147,7 @@ class CircuitStringConverter:
                 
                 qubits = self._qstring_to_qubits(qstring)
                 gate = self._gstring_to_gate(gstring)
-                # print(f"{gate = }")
-                if gate != cirq.I: # Z and CP around iToffoli
+                if gate != cirq.I: # Not Z and CP around iToffoli, which were set as cirq.I
                     ops_moment.append(gate(*qubits))
             
             if ops_moment != []:
