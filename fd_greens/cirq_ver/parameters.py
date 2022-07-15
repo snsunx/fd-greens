@@ -49,8 +49,8 @@ class ErrorMitigationParameters:
         PURIFY_DENSITY_MATRICES: Whether to purify density matrices.
         USE_EXACT_TRACES: Use exact traces (probabilities) of the ancilla bitstrings.
     """
-    PROJECT_DENSITY_MATRICES: bool = True
-    PURIFY_DENSITY_MATRICES: bool = True
+    PROJECT_DENSITY_MATRICES: bool = False
+    PURIFY_DENSITY_MATRICES: bool = False
     USE_EXACT_TRACES: bool = False
 
     def write(self, fname: str) -> None:
