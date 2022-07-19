@@ -26,7 +26,7 @@ class CircuitConstructionParameters:
         SPLIT_SIMULTANEOUS_CZS: Whether to split simultaneous CZ/CS/CSD onto different moments.
     """
     WRAP_Z_AROUND_ITOFFOLI: bool = True
-    ITOFFOLI_Z_ANGLE: float = 20.67
+    ITOFFOLI_Z_ANGLE: float = 21.9
     CONSTRAIN_CS_CSD: bool = False
     CONVERT_CCZ_TO_ITOFFOLI: bool = False
     

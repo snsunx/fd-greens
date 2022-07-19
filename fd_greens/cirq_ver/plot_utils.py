@@ -21,7 +21,12 @@ from .general_utils import get_fidelity, get_non_z_locations, histogram_to_array
 from .helpers import process_bitstring_counts
 
 
-LINESTYLES_A = [{}, {"ls": "--", "marker": "", "markevery": 30}, {"ls": "--", "marker": "", "markevery": 30}, {"ls": "--", "marker": "", "markevery": 30}]
+LINESTYLES_A = [
+    {},
+    {"ls": "--", "marker": "", "markevery": 30},
+    {"ls": "--", "marker": "", "markevery": 30},
+    {"ls": "--", "marker": "", "markevery": 30}
+]
 LINESTYLES_TRSIGMA = [
     {"color": "xkcd:red"},
     {"color": "xkcd:blue"},
