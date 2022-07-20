@@ -11,7 +11,8 @@ from fd_greens import ResponseFunction, HARTREE_TO_EV, get_alkali_hydride_hamilt
 def main():
     omegas = np.arange(-32, 32, 0.1)
     eta = 0.02 * HARTREE_TO_EV
-    for fname in ['nah_resp_exact', 'nah_resp_tomo', 'nah_resp_tomo2q', 'kh_resp_exact', 'kh_resp_tomo', 'kh_resp_tomo2q']:
+    # for fname in ['nah_resp_exact', 'nah_resp_tomo', 'nah_resp_tomo2q', 'kh_resp_exact', 'kh_resp_tomo', 'kh_resp_tomo2q']:
+    for fname in sys.argv[1:]:
         if fname[:2] == 'na':
             hamiltonian = get_alkali_hydride_hamiltonian("Na", 3.7)
         else:

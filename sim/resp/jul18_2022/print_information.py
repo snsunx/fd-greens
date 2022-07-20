@@ -1,3 +1,4 @@
+import os
 import sys
 sys.path.append('../../..')
 
@@ -12,7 +13,8 @@ converter = CircuitStringConverter(qubits)
 
 
 def print_parameters():
-    with h5py.File('nah_resp_pur2q.h5', 'r') as h5file:
+    fname = sys.argv[1]
+    with h5py.File(fname + '.h5', 'r') as h5file:
         print("Circuit Parameters:")
         for key, val in h5file['params/circ'].attrs.items():
             print(f'{key} = {val}')
@@ -23,7 +25,8 @@ def print_parameters():
             print(f'{key} = {val}')
 
 def print_circuit_information():
-    with h5py.File('nah_resp_tomo2q.h5', 'r') as h5file:
+    fname = sys.argv[1]
+    with h5py.File(fname + '.h5', 'r') as h5file:
         for key in h5file.keys():
             if key[:4] == 'circ':
                 print('=' * 25 + ' ' + key + ' ' + '=' * 25) 
@@ -32,7 +35,7 @@ def print_circuit_information():
                 print_circuit_statistics(circuit)
 
 def main():
-    # print_parameters()
+    print_parameters()
     print_circuit_information()
     
 if __name__ == '__main__':

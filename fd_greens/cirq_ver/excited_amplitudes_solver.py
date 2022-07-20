@@ -56,8 +56,8 @@ class ExcitedAmplitudesSolver:
         self.h5fname = fname + '.h5'
         self.suffix = suffix
 
-        self.parameters = CircuitConstructionParameters()
-        self.parameters.write(fname)
+        self.circuit_params = CircuitConstructionParameters()
+        self.circuit_params.write(fname)
 
         if noise_fname is not None:
             self.simulator = cirq.DensityMatrixSimulator()
@@ -96,7 +96,7 @@ class ExcitedAmplitudesSolver:
                 self.charge_operators[2 * i], self.charge_operators[2 * i + 1])
 
             # Transpile the circuit and save to HDF5 file.
-            circuit = transpile_into_berkeley_gates(circuit)
+            circuit = transpile_into_berkeley_gates(circuit, circuit_params=self.circuit_params)
             circuit = self.circuit_string_converter.adapt_to_hardware(circuit)
             self.circuits[circuit_label] = circuit
             qtrl_strings = self.circuit_string_converter.convert_circuit_to_strings(circuit)
@@ -149,7 +149,7 @@ class ExcitedAmplitudesSolver:
                     self.charge_operators[2 * j], self.charge_operators[2 * j + 1])
 
                 # Transpile the circuit and save to HDF5 file.
-                circuit = transpile_into_berkeley_gates(circuit)
+                circuit = transpile_into_berkeley_gates(circuit, circuit_params=self.circuit_params)
                 circuit = self.circuit_string_converter.adapt_to_hardware(circuit)
                 self.circuits[circuit_label] = circuit
                 qtrl_strings = self.circuit_string_converter.convert_circuit_to_strings(circuit)

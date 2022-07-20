@@ -4,7 +4,7 @@ Transpilation (:mod:`fd_greens.transpilation`)
 ==============================================
 """
 
-from typing import Tuple
+from typing import Optional, Tuple
 import warnings
 
 import numpy as np
@@ -42,7 +42,6 @@ class C0C0iXGate(cirq.Gate):
 
     def _circuit_diagram_info_(self, args) -> Tuple[str, str, str]:
         return "(0)", "(0)", "iX"
-
 
 C0C0iX = C0C0iXGate()
 
@@ -88,11 +87,13 @@ def permute_qubits(circuit: cirq.Circuit) -> cirq.Circuit:
         assert unitary_equal(circuit, circuit_new)
     return circuit_new
 
-def convert_ccz_to_c0c0ix(circuit: cirq.Circuit, spin: str) -> cirq.Circuit:
+def convert_ccz_to_c0c0ix(circuit: cirq.Circuit, spin: str, constrain_cs_csd: bool) -> cirq.Circuit:
     """Converts CCZs to C0C0iXs in a circuit.
     
     Args:
         circuit: The circuit to be converted.
+        spin: Spin states of the molecular system.
+        constrain_cs_csd: Whether to constrain CSD to be on Q4Q5 etc.
     
     Returns:
         circuit_new: The new circuit after conversion.
@@ -113,7 +114,7 @@ def convert_ccz_to_c0c0ix(circuit: cirq.Circuit, spin: str) -> cirq.Circuit:
                 ]
 
                 # qubits[0] is always Q4, qubits[1] is always Q5.
-                if CircuitConstructionParameters.CONSTRAIN_CS_CSD:
+                if constrain_cs_csd:
                     qubits_csd = [qubits[0], qubits[1]]
                     qubits_swap = [qubits[1], qubits[2]]
                 else:
@@ -152,6 +153,8 @@ def convert_ccz_to_c0c0ix(circuit: cirq.Circuit, spin: str) -> cirq.Circuit:
     if CHECK_CIRCUITS:
         assert unitary_equal(circuit, circuit_new)
     return circuit_new
+
+convert_ccz_to_itoffoli = convert_ccz_to_c0c0ix
 
 def convert_ccz_to_cz(circuit: cirq.Circuit) -> cirq.Circuit:
     """Decomposes CCZ gates to CZ gates in a circuit."""
@@ -206,9 +209,6 @@ def convert_swap_to_cz(circuit: cirq.Circuit) -> cirq.Circuit:
     """
     circuit1 = circuit.copy()
     circuit_new = cirq.Circuit()
-
-    # print('In convert_swap_to_cz!!!\n')
-    # print_circuit(circuit)
 
     convert_swap = False
     # for op in list(circuit1.all_operations())[::-1]:
@@ -294,15 +294,24 @@ def transpile_1q_gates(circuit: cirq.Circuit) -> cirq.Circuit:
     return circuit_new
 
 
-def transpile_into_berkeley_gates(circuit: cirq.Circuit, spin: str = 'd') -> cirq.Circuit:
+def transpile_into_berkeley_gates(
+    circuit: cirq.Circuit,
+    spin: str = 'd',
+    circuit_params: Optional[CircuitConstructionParameters] = None
+) -> cirq.Circuit:
     """Transpiles a circuit into native gates on the Berkeley device.
     
     Args:
         circuit: The circuit to be transpiled.
+        spin: Spin states of the molecular system.
+        circuit_params: Circuit construction parameters.
     
     Returns:
         circuit_new: The new circuit after transpilation.
     """
+    if circuit_params is None:
+        circuit_params = CircuitConstructionParameters()
+    
     circuit_new = circuit.copy()
 
     # Qubit permutation.
@@ -310,8 +319,9 @@ def transpile_into_berkeley_gates(circuit: cirq.Circuit, spin: str = 'd') -> cir
     cirq.MergeInteractions(allow_partial_czs=False).optimize_circuit(circuit_new)
     
     # Three-qubit gate transpilation.
-    if CircuitConstructionParameters.CONVERT_CCZ_TO_ITOFFOLI:
-        circuit_new = convert_ccz_to_c0c0ix(circuit_new, spin)
+    if circuit_params.CONVERT_CCZ_TO_ITOFFOLI:
+        circuit_new = convert_ccz_to_itoffoli(
+            circuit_new, spin, constrain_cs_csd=circuit_params.CONSTRAIN_CS_CSD)
     else:
         circuit_new = convert_ccz_to_cz(circuit_new)
     cirq.MergeInteractions(allow_partial_czs=True).optimize_circuit(circuit_new)

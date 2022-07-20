@@ -4,6 +4,7 @@ Parameters (:mod:`fd_greens.parameters`)
 ========================================
 """
 
+import os 
 from dataclasses import dataclass
 from typing import List, Sequence
 import h5py
@@ -11,7 +12,7 @@ import h5py
 HARTREE_TO_EV = 27.211386245988 # Hartree to electron volts conversion.
 REVERSE_QUBIT_ORDER = False     # Whether to reverse qubit order for Qiskit qubit-order postprocessing.
 CHECK_CIRCUITS: bool = True     # Whether to check circuits in each transpilation step.
-QUBIT_OFFSET = 4
+QUBIT_OFFSET = 4                # Qubit offset on the Berkeley device.
 
 @dataclass
 class CircuitConstructionParameters:
@@ -28,10 +29,15 @@ class CircuitConstructionParameters:
     WRAP_Z_AROUND_ITOFFOLI: bool = True
     ITOFFOLI_Z_ANGLE: float = 21.9
     CONSTRAIN_CS_CSD: bool = False
-    CONVERT_CCZ_TO_ITOFFOLI: bool = False
+    CONVERT_CCZ_TO_ITOFFOLI: bool = True
     
     ADJUST_CS_CSD: bool = True
     SPLIT_SIMULTANEOUS_CZS: bool = True
+
+    def __post_init__(self) -> None:
+        if "CONVERT_CCZ_TO_ITOFFOLI" in os.environ:
+            # print("CONVERT_CCZ_TO_ITOFFOLI", bool(int(os.environ["CONVERT_CCZ_TO_ITOFFOLI"])))
+            self.CONVERT_CCZ_TO_ITOFFOLI = bool(int(os.environ["CONVERT_CCZ_TO_ITOFFOLI"]))
 
     def write(self, fname: str) -> None:
         with h5py.File(fname + '.h5', 'r+') as h5file:
@@ -52,6 +58,15 @@ class ErrorMitigationParameters:
     PROJECT_DENSITY_MATRICES: bool = False
     PURIFY_DENSITY_MATRICES: bool = False
     USE_EXACT_TRACES: bool = False
+
+    def __post_init__(self) -> None:
+        if 'PROJECT_DENSITY_MATRICES' in os.environ:
+            self.PROJECT_DENSITY_MATRICES = bool(os.environ['PROJECT_DENSITY_MATRICES'])
+        if 'PURIFY_DENSITY_MATRICES' in os.environ:
+            self.PURIFY_DENSITY_MATRICES = bool(os.environ['PURIFY_DENSITY_MATRICES'])
+        if 'USE_EXACT_TRACES' in os.environ:
+            print("aaa")
+            self.USE_EXACT_TRACES = bool(os.environ['USE_EXACT_TRACES'])
 
     def write(self, fname: str) -> None:
         with h5py.File(fname + '.h5', 'r+') as h5file:
