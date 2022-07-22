@@ -60,9 +60,9 @@ class GreensFunction:
         self.fname_exact = fname_exact
 
         # Load error mitigation parameters.
-        self.parameters = ErrorMitigationParameters()
-        self.parameters.write(fname)
-        if "tomo" in method and self.parameters.USE_EXACT_TRACES:
+        self.mitigation_params = ErrorMitigationParameters()
+        self.mitigation_params.write(fname)
+        if "tomo" in method and self.mitigation_params.USE_EXACT_TRACES:
             assert fname_exact is not None
 
         # Load energies and state vectors from HDF5 file.
@@ -137,9 +137,9 @@ class GreensFunction:
                         # Optionally project or purify the density matrix.
                         trace = np.trace(density_matrix).real
                         density_matrix /= trace
-                        if self.parameters.PROJECT_DENSITY_MATRICES:
+                        if self.mitigation_params.PROJECT_DENSITY_MATRICES:
                             density_matrix = project_density_matrix(density_matrix)
-                        if self.parameters.PURIFY_DENSITY_MATRICES:
+                        if self.mitigation_params.PURIFY_DENSITY_MATRICES:
                             density_matrix = purify_density_matrix(density_matrix)
                         density_matrix = qubit_indices.system(density_matrix)
                 
@@ -151,9 +151,9 @@ class GreensFunction:
                             suffix=self.suffix, 
                             reverse=REVERSE_QUBIT_ORDER)
 
-                        if self.parameters.PROJECT_DENSITY_MATRICES:
+                        if self.mitigation_params.PROJECT_DENSITY_MATRICES:
                             density_matrix = project_density_matrix(density_matrix)
-                        if self.parameters.PURIFY_DENSITY_MATRICES:
+                        if self.mitigation_params.PURIFY_DENSITY_MATRICES:
                             density_matrix = purify_density_matrix(density_matrix)
                         density_matrix = qubit_indices(density_matrix)
                         trace = np.trace(density_matrix).real
@@ -162,7 +162,7 @@ class GreensFunction:
                     save_to_hdf5(h5file, trace_dsetname, trace)
                     save_to_hdf5(h5file, rho_dsetname, density_matrix)
 
-                    if self.parameters.USE_EXACT_TRACES:
+                    if self.mitigation_params.USE_EXACT_TRACES:
                         with h5py.File(self.fname_exact + '.h5', 'r') as h5file_exact:
                             trace = h5file_exact[trace_dsetname][()]
 
@@ -222,9 +222,9 @@ class GreensFunction:
                             # Optionally project or purify the density matrix
                             trace = np.trace(density_matrix)
                             density_matrix /= trace
-                            if self.parameters.PROJECT_DENSITY_MATRICES:
+                            if self.mitigation_params.PROJECT_DENSITY_MATRICES:
                                 density_matrix = project_density_matrix(density_matrix)
-                            if self.parameters.PURIFY_DENSITY_MATRICES:
+                            if self.mitigation_params.PURIFY_DENSITY_MATRICES:
                                 density_matrix = purify_density_matrix(density_matrix)
                             density_matrix = qubit_indices.system(density_matrix)
 
@@ -236,9 +236,9 @@ class GreensFunction:
                                 suffix=self.suffix,
                                 reverse=REVERSE_QUBIT_ORDER)
 
-                            if self.parameters.PROJECT_DENSITY_MATRICES:
+                            if self.mitigation_params.PROJECT_DENSITY_MATRICES:
                                 density_matrix = project_density_matrix(density_matrix)
-                            if self.parameters.PURIFY_DENSITY_MATRICES:
+                            if self.mitigation_params.PURIFY_DENSITY_MATRICES:
                                 density_matrix = purify_density_matrix(density_matrix)
                             density_matrix = qubit_indices(density_matrix)
                             trace = np.trace(density_matrix).real
@@ -247,7 +247,7 @@ class GreensFunction:
                         save_to_hdf5(h5file, trace_dsetname, trace)
                         save_to_hdf5(h5file, rho_dsetname, density_matrix)
 
-                        if self.parameters.USE_EXACT_TRACES:
+                        if self.mitigation_params.USE_EXACT_TRACES:
                             with h5py.File(self.fname_exact + '.h5', 'r') as h5file_exact:
                                 trace = h5file_exact[trace_dsetname][()]
                     

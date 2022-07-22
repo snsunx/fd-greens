@@ -15,7 +15,7 @@ from fd_greens import (
 
 def main():
     qubits = cirq.LineQubit.range(4)
-    noise_fname = None # '../../../expt/params/gate_fidelities_0708'
+    noise_fname = '../../../expt/params/gate_fidelities_0708'
     fname = sys.argv[1]
     method = sys.argv[2]
 
@@ -24,7 +24,7 @@ def main():
         hamiltonian = get_alkali_hydride_hamiltonian("Na", 3.7)
     else:
         hamiltonian = get_alkali_hydride_hamiltonian("K", 3.9)
-    repetitions = 10000
+    repetitions = 100000
 
     initialize_hdf5(fname, mode='resp', spin='')
 

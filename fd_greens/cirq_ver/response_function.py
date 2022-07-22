@@ -38,7 +38,7 @@ class ResponseFunction:
             suffix: The suffix for a specific experimental run.
             method: The method for extracting transition amplitudes.
             verbose: Whether to print out observable values.
-            fname_exact: The exact HDF5 file name, if USE_EXACT_TRACES Is set to True.
+            fname_exact: The exact HDF5 file name, if USE_EXACT_TRACES is set to True.
         """
         assert method in ["exact", "tomo", "alltomo"]
 
@@ -51,9 +51,9 @@ class ResponseFunction:
         self.fname_exact = fname_exact
 
         # Load error mitigation parameters.
-        self.parameters = ErrorMitigationParameters()
-        self.parameters.write(fname)
-        if "tomo" in method and self.parameters.USE_EXACT_TRACES:
+        self.mitigation_params = ErrorMitigationParameters()
+        self.mitigation_params.write(fname)
+        if "tomo" in method and self.mitigation_params.USE_EXACT_TRACES:
             assert fname_exact is not None
 
         # Load energies and state vectors from HDF5 file.
@@ -120,9 +120,9 @@ class ResponseFunction:
                         # Modify the density matrix due to physical constraints.
                         trace = np.trace(density_matrix).real
                         density_matrix /= trace
-                        if self.parameters.PROJECT_DENSITY_MATRICES:
+                        if self.mitigation_params.PROJECT_DENSITY_MATRICES:
                             density_matrix = project_density_matrix(density_matrix)
-                        if self.parameters.PURIFY_DENSITY_MATRICES:
+                        if self.mitigation_params.PURIFY_DENSITY_MATRICES:
                             density_matrix = purify_density_matrix(density_matrix)
                         density_matrix = qubit_indices.system(density_matrix)
 
@@ -133,9 +133,9 @@ class ResponseFunction:
                             circuit_label=circuit_label, suffix=self.suffix)
                         
                         # Modify the density matrix due to physical constraints.
-                        if self.parameters.PROJECT_DENSITY_MATRICES:
+                        if self.mitigation_params.PROJECT_DENSITY_MATRICES:
                             density_matrix = project_density_matrix(density_matrix)
-                        if self.parameters.PURIFY_DENSITY_MATRICES:
+                        if self.mitigation_params.PURIFY_DENSITY_MATRICES:
                             density_matrix = purify_density_matrix(density_matrix)
                         density_matrix = qubit_indices(density_matrix)
                         trace = np.trace(density_matrix).real
@@ -145,7 +145,7 @@ class ResponseFunction:
                     save_to_hdf5(h5file, trace_dsetname, trace)
                     save_to_hdf5(h5file, rho_dsetname, density_matrix)
 
-                    if self.parameters.USE_EXACT_TRACES:
+                    if self.mitigation_params.USE_EXACT_TRACES:
                         with h5py.File(self.fname_exact + '.h5', 'r') as h5file_exact:
                             trace = h5file_exact[trace_dsetname][()]
 
@@ -204,9 +204,9 @@ class ResponseFunction:
                             # Normalize then optionally modify the density matrix.
                             trace = np.trace(density_matrix).real
                             density_matrix /= trace
-                            if self.parameters.PROJECT_DENSITY_MATRICES:
+                            if self.mitigation_params.PROJECT_DENSITY_MATRICES:
                                 density_matrix = project_density_matrix(density_matrix)
-                            if self.parameters.PURIFY_DENSITY_MATRICES:
+                            if self.mitigation_params.PURIFY_DENSITY_MATRICES:
                                 density_matrix = purify_density_matrix(density_matrix)
                             density_matrix = qubit_indices.system(density_matrix)
 
@@ -217,9 +217,9 @@ class ResponseFunction:
                                 circuit_label=circuit_label, suffix=self.suffix)
 
                             # Optionally modify then normalize the density matrix.
-                            if self.parameters.PROJECT_DENSITY_MATRICES:
+                            if self.mitigation_params.PROJECT_DENSITY_MATRICES:
                                 density_matrix = project_density_matrix(density_matrix)
-                            if self.parameters.PURIFY_DENSITY_MATRICES:
+                            if self.mitigation_params.PURIFY_DENSITY_MATRICES:
                                 density_matrix = purify_density_matrix(density_matrix)
                             density_matrix = qubit_indices(density_matrix)
                             trace = np.trace(density_matrix).real
@@ -229,7 +229,7 @@ class ResponseFunction:
                         save_to_hdf5(h5file, trace_dsetname, trace)
                         save_to_hdf5(h5file, rho_dsetname, density_matrix)
 
-                        if self.parameters.USE_EXACT_TRACES:
+                        if self.mitigation_params.USE_EXACT_TRACES:
                             with h5py.File(self.fname_exact + '.h5', 'r') as h5file_exact:
                                 trace = h5file_exact[trace_dsetname][()]
                         

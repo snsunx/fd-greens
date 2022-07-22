@@ -13,7 +13,7 @@ from fd_greens import (
 
 def main():
     qubits = cirq.LineQubit.range(4)
-    noise_fname = None # '../../../expt/params/gate_fidelities_0708'
+    noise_fname = '../../../expt/params/gate_fidelities_0708'
     
     assert len(sys.argv) == 3
     fname = sys.argv[1] # 'nah_greens_exact'

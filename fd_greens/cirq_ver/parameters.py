@@ -55,18 +55,23 @@ class ErrorMitigationParameters:
         PURIFY_DENSITY_MATRICES: Whether to purify density matrices.
         USE_EXACT_TRACES: Use exact traces (probabilities) of the ancilla bitstrings.
     """
-    PROJECT_DENSITY_MATRICES: bool = False
-    PURIFY_DENSITY_MATRICES: bool = False
+    PROJECT_DENSITY_MATRICES: bool = True
+    PURIFY_DENSITY_MATRICES: bool = True
     USE_EXACT_TRACES: bool = False
 
     def __post_init__(self) -> None:
         if 'PROJECT_DENSITY_MATRICES' in os.environ:
-            self.PROJECT_DENSITY_MATRICES = bool(os.environ['PROJECT_DENSITY_MATRICES'])
+            print(f"PROJECT_DENSITY_MATRIX changed from {self.PROJECT_DENSITY_MATRICES}"
+                  f" to {bool(int(os.environ['PROJECT_DENSITY_MATRICES']))}")
+            self.PROJECT_DENSITY_MATRICES = bool(int(os.environ['PROJECT_DENSITY_MATRICES']))
         if 'PURIFY_DENSITY_MATRICES' in os.environ:
-            self.PURIFY_DENSITY_MATRICES = bool(os.environ['PURIFY_DENSITY_MATRICES'])
+            print(f"PURIFY_DENSITY_MATRIX changed from {self.PURIFY_DENSITY_MATRICES}"
+                  f" to {bool(int(os.environ['PURIFY_DENSITY_MATRICES']))}")
+            self.PURIFY_DENSITY_MATRICES = bool(int(os.environ['PURIFY_DENSITY_MATRICES']))
         if 'USE_EXACT_TRACES' in os.environ:
-            print("aaa")
-            self.USE_EXACT_TRACES = bool(os.environ['USE_EXACT_TRACES'])
+            print(f"USE_EXACT_TRACES changed from {self.USE_EXACT_TRACES}"
+                  f" to {bool(int(os.environ['USE_EXACT_TRACES']))}")
+            self.USE_EXACT_TRACES = bool(int(os.environ['USE_EXACT_TRACES']))
 
     def write(self, fname: str) -> None:
         with h5py.File(fname + '.h5', 'r+') as h5file:

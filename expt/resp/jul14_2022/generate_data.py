@@ -12,7 +12,7 @@ def main():
     hamiltonian = get_nah_hamiltonian(3.7)
     omegas = np.arange(-32, 32, 0.05)
     eta = 0.02 * HARTREE_TO_EV
-    for fname in ['nah_resp_exact', 'nah_resp_tomo_raw', 'nah_resp_tomo2q_raw']:
+    for fname in ['nah_resp_exact', 'nah_resp_tomo_trace', 'nah_resp_tomo2q_trace']:
         if 'exact' in fname:
             resp = ResponseFunction(hamiltonian, fname=fname, method='exact')
         elif 'tomo' in fname:

@@ -66,8 +66,8 @@ class EHAmplitudesSolver:
             self.simulator = cirq.Simulator()
             self.noise_params = None
 
-        self.parameters = CircuitConstructionParameters()
-        self.parameters.write(fname)
+        self.circuit_params = CircuitConstructionParameters()
+        self.circuit_params.write(fname)
 
         self.n_spatial_orbitals = len(self.hamiltonian.active_indices)
         self.n_spin_orbitals = 2 * self.n_spatial_orbitals
@@ -100,7 +100,8 @@ class EHAmplitudesSolver:
                 self.second_quantized_operators[2 * m + 1])
 
             # Transpile the circuit and save to HDF5 file.
-            circuit = transpile_into_berkeley_gates(circuit, self.spin)
+            circuit = transpile_into_berkeley_gates(
+                circuit, spin=self.spin, circuit_params=self.circuit_params)
             circuit = self.circuit_string_converter.adapt_to_hardware(circuit)
             self.circuits[circuit_label] = circuit
             qtrl_strings = self.circuit_string_converter.convert_circuit_to_strings(circuit)
@@ -109,9 +110,8 @@ class EHAmplitudesSolver:
                 data=json.dumps(qtrl_strings), return_dataset=True)
 
             # Execute the circuit and store the statevector in the HDF5 file.
-            # print_circuit(circuit)
             state_vector = cirq.sim.final_state_vector(circuit)
-            print(f"In run_diagonal_circuits, {state_vector.shape = }")
+            # print(f"In run_diagonal_circuits, {state_vector.shape = }")
             dset_transpiled.attrs[f"psi{self.suffix}"] = state_vector
 
             if self.method in ["tomo", "alltomo"]:
@@ -158,12 +158,13 @@ class EHAmplitudesSolver:
                     self.second_quantized_operators[2 * n + 1])
 
                 # Transpile the circuit and save to HDF5 file.
-                circuit = transpile_into_berkeley_gates(circuit, self.spin)
+                circuit = transpile_into_berkeley_gates(
+                    circuit, spin=self.spin, circuit_params=self.circuit_params)
                 circuit = self.circuit_string_converter.adapt_to_hardware(circuit)
                 self.circuits[circuit_label] = circuit
                 qtrl_strings = self.circuit_string_converter.convert_circuit_to_strings(circuit)
                 dset_transpiled = save_to_hdf5(
-                    h5file, f"{circuit_label}/transpiled", 
+                    h5file, f"{circuit_label}/transpiled",
                     data=json.dumps(qtrl_strings), return_dataset=True)
 
                 # Run simulation and save results to HDF5 file.
