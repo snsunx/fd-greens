@@ -431,23 +431,30 @@ def display_fidelities(
     else:
         dim = 4
     
+    purities = np.zeros((dim, dim))
     fidelities = np.zeros((dim, dim))
 
     for i in range(dim):
         state_exact = h5file_exact[f'psi/{subscript}{i}{spin}'][:]
         state_expt = h5file_expt[f'rho{suffix}/{subscript}{i}{spin}'][:]
+        purities[i, i] = np.trace(state_expt @ state_expt).real
         fidelities[i, i] = get_fidelity(state_exact, state_expt)
 
         for j in range(i + 1, dim):
             # p is filled on the upper half triangle.
             state_exact = h5file_exact[f'psi/{subscript}p{i}{j}{spin}'][:]
             state_expt = h5file_expt[f'rho{suffix}/{subscript}p{i}{j}{spin}'][:]
+            purities[i, j] = np.trace(state_expt @ state_expt).real
             fidelities[i, j] = get_fidelity(state_exact, state_expt)
 
             # m is filled on the lower half triangle.
             state_exact = h5file_exact[f'psi/{subscript}m{i}{j}{spin}'][:]
             state_expt = h5file_expt[f'rho{suffix}/{subscript}m{i}{j}{spin}'][:]
+            purities[j, i] = np.trace(state_expt @ state_expt).real
             fidelities[j, i] = get_fidelity(state_exact, state_expt)
+
+    np.savetxt(f"data/purity_{figname[4:]}.dat", purities)
+    np.savetxt(f"data/{figname}.dat", fidelities)
 
     fig, ax = plt.subplots()
     im = ax.imshow(fidelities, vmin=0.0, vmax=1.0)
@@ -502,6 +509,8 @@ def display_traces(
             # p (m) is filled on the upper (lower) half triangle.
             traces[i, j] = h5file[f"trace{suffix}/{subscript}p{i}{j}{spin}"][()]
             traces[j, i] = h5file[f"trace{suffix}/{subscript}m{i}{j}{spin}"][()]
+
+    np.savetxt(f"data/{figname}.dat", traces)
 
     fig, ax = plt.subplots()
     im = ax.imshow(traces, vmin=0.0, vmax=1.0)

@@ -2,6 +2,7 @@ import numpy as np
 from typing import Sequence
 
 import matplotlib.pyplot as plt
+from matplotlib.gridspec import GridSpec
 
 LINESTYLES_A = {}
 
@@ -18,90 +19,109 @@ plt.rcParams.update({
     'lines.linewidth': 2
 })
 
-def plot_nah_chi00(ax: plt.Axes) -> None:
+def plot_purity(ax: plt.Axes, mol_name: str, panel_name: str) -> None:
+    purities = np.loadtxt(f'../expt/resp/jul20_2022/data/purity_{mol_name}_resp_tomo_raw.dat')
+
+    dim = purities.shape[0]
+
+    ax.imshow(purities, vmin=0.0, vmax=1.0)
+    for i in range(dim):
+        for j in range(dim):
+            # Here x is the column index and y is the row index.
+            if purities[i, j] > 0.5:
+                color = 'black'
+            else:
+                color = 'white'
+            ax.text(j, i, f"{purities[i, j]:.2f}", color=color, ha='center', va='center')
+
+    ax.text(-0.9, -0.2, panel_name)
+
+def plot_fidelity(ax: plt.Axes, mol_name: str, panel_name: str):
+    fid_raw = np.loadtxt(f'../expt/resp/jul20_2022/data/fid_{mol_name}_resp_tomo_raw.dat')
+    fid_pur = np.loadtxt(f'../expt/resp/jul20_2022/data/fid_{mol_name}_resp_tomo_pur.dat')
+
+    dim = fid_raw.shape[0]
+
+    ax.imshow(fid_raw, vmin=0.0, vmax=1.0)
+    for i in range(dim):
+        for j in range(dim):
+            # Here x is the column index and y is the row index.
+            color = 'black' if fid_raw[i, j] > 0.5 else 'white'
+            ax.text(j, i, f"{fid_raw[i, j]:.2f}\n({fid_pur[i, j]:.2f})", color=color, ha='center', va='center')
+
+    ax.text(-0.9, -0.2, panel_name)
+
+def plot_trace(ax: plt.Axes, mol_name: str, panel_name: str) -> None:
+    traces_exact = np.loadtxt(f'../expt/resp/jul20_2022/data/trace_{mol_name}_resp_exact.dat')
+    traces_expt = np.loadtxt(f'../expt/resp/jul20_2022/data/trace_{mol_name}_resp_tomo_pur.dat')
+
+    dim = traces_exact.shape[0]
+
+    ax.imshow(traces_expt, vmin=0.0, vmax=1.0)
+    for i in range(dim):
+        for j in range(dim):
+            # Here x is the column index and y is the row index.
+            if traces_expt[i, j] > 0.5:
+                color = 'black'
+            else:
+                color = 'white'
+            ax.text(j, i, f"{traces_expt[i, j]:.2f}\n({traces_exact[i, j]:.2f})", color=color, ha='center', va='center')
+
+    ax.text(-0.9, -0.2, panel_name)
+
+
+def plot_chi(ax: plt.Axes, mol_name: str, panel_name: str, component: str, mode: str) -> None:
     global fig
 
-    omegas, reals, imags = np.loadtxt('../sim/resp/jul18_2022/data/nah_resp_exact_chi00.dat').T
-    ax.plot(omegas, imags, color='k', label="Exact")
+    omegas, reals, imags = np.loadtxt(f'../expt/resp/jul20_2022/data/{mol_name}_resp_exact_chi{component}.dat').T
+    obs = reals if mode == 'real' else imags
+    ax.plot(omegas, obs, color='k', label="Exact")
 
-    omegas, reals, imags = np.loadtxt('../sim/resp/jul18_2022/data/nah_resp_tomo_chi00.dat').T
-    ax.plot(omegas, imags, ls='--', lw=3, label="iToffoli")
+    omegas, reals, imags = np.loadtxt(f'../expt/resp/jul20_2022/data/{mol_name}_resp_tomo_raw_chi{component}.dat').T
+    obs = reals if mode == 'real' else imags
+    ax.plot(omegas, obs, ls='--', lw=3, label="Raw")
 
-    omegas, reals, imags = np.loadtxt('../sim/resp/jul18_2022/data/nah_resp_tomo2q_chi00.dat').T
-    ax.plot(omegas, imags, ls='--', lw=3, label="CZ")
+    omegas, reals, imags = np.loadtxt(f'../expt/resp/jul20_2022/data/{mol_name}_resp_tomo_pur_chi{component}.dat').T
+    obs = reals if mode == 'real' else imags
+    ax.plot(omegas, obs, ls='--', lw=3, label="Purified")
 
-    ax.text(0.03, 0.92, "(a)", transform=ax.transAxes)
+    omegas, reals, imags = np.loadtxt(f'../expt/resp/jul20_2022/data/{mol_name}_resp_tomo2q_trace_chi{component}.dat').T
+    obs = reals if mode == 'real' else imags
+    ax.plot(omegas, obs, ls='--', lw=3, label="Trace corrected")
 
-    ax.set_xlabel("$\omega$ (eV)")
-    ax.set_ylabel("Re $\chi_{00}$ (eV$^{-1}$)")
-    # ax.legend()
-
-    ax.legend(ncol=3, loc='center', bbox_to_anchor=(0.5, 0.965, 0.0, 0.0), bbox_transform=fig.transFigure)
-    # ax.add_artist(legend_exact)
-
-    # ax.legend()
-
-def plot_nah_chi01(ax: plt.axes) -> None:
-    omegas, reals, imags = np.loadtxt('../sim/resp/jul18_2022/data/nah_resp_exact_chi01.dat').T
-    ax.plot(omegas, imags, color='k', label="Exact")
-
-    omegas, reals, imags = np.loadtxt('../sim/resp/jul18_2022/data/nah_resp_tomo_chi01.dat').T
-    ax.plot(omegas, imags, ls='--', lw=3, label="iToffoli")
-
-    omegas, reals, imags = np.loadtxt('../sim/resp/jul18_2022/data/nah_resp_tomo2q_chi01.dat').T
-    ax.plot(omegas, imags, ls='--', lw=3, label="CZ")
-
-    ax.text(0.03, 0.92, "(c)", transform=ax.transAxes)
+    ax.text(0.03, 0.92, panel_name, transform=ax.transAxes)
 
     ax.set_xlabel("$\omega$ (eV)")
-    ax.set_ylabel("Re $\chi_{01}$ (eV)")
-    # ax.legend()
+    if mode == 'real':
+        ax.set_ylabel("Re $\chi_{00}$ (eV$^{-1}$)")
+    else:
+        ax.set_ylabel("Im $\chi_{00}$ (eV$^{-1}$)")
+    ax.legend()
 
-def plot_kh_chi00(ax: plt.Axes) -> None:
-    omegas, reals, imags = np.loadtxt('../sim/resp/jul18_2022/data/kh_resp_exact_chi00.dat').T
-    ax.plot(omegas, imags, color='k', label="Exact")
-
-    omegas, reals, imags = np.loadtxt('../sim/resp/jul18_2022/data/kh_resp_tomo_chi00.dat').T
-    ax.plot(omegas, imags, ls='--', lw=3, label="iToffoli")
-
-    omegas, reals, imags = np.loadtxt('../sim/resp/jul18_2022/data/kh_resp_tomo2q_chi00.dat').T
-    ax.plot(omegas, imags, ls='--', lw=3, label="CZ")
-
-    ax.text(0.03, 0.92, "(c)", transform=ax.transAxes)
-
-    ax.set_xlabel("$\omega$ (eV)")
-    ax.set_ylabel("Re $\chi_{00}$ (eV$^{-1}$)")
-    # ax.legend()
-
-def plot_kh_chi01(ax: plt.Axes) -> None:
-    omegas, reals, imags = np.loadtxt('../sim/resp/jul18_2022/data/kh_resp_exact_chi01.dat').T
-    ax.plot(omegas, imags, color='k', label="Exact")
-
-    omegas, reals, imags = np.loadtxt('../sim/resp/jul18_2022/data/kh_resp_tomo_chi01.dat').T
-    ax.plot(omegas, imags, ls='--', lw=3, label="iToffoli")
-
-    omegas, reals, imags = np.loadtxt('../sim/resp/jul18_2022/data/kh_resp_tomo2q_chi01.dat').T
-    ax.plot(omegas, imags, ls='--', lw=3, label="CZ")
-
-    ax.text(0.03, 0.92, "(d)", transform=ax.transAxes)
-
-    ax.set_xlabel("$\omega$ (eV)")
-    ax.set_ylabel("Re $\chi_{01}$ (eV$^{-1}$)")
-    # ax.legend()
 
 def main():
     print("Start plotting data.")
     global fig
 
-    fig, axes = plt.subplots(2, 2, figsize=(15, 11))
+    # fig, axes = plt.subplots(2, 2, figsize=(16, 12))
 
-    plot_nah_chi00(axes[0, 0])
-    plot_nah_chi01(axes[0, 1])
+    fig = plt.figure(figsize=(20, 11))
+    grid = GridSpec(2, 6, figure=fig)
 
-    plot_kh_chi00(axes[1, 0])
-    plot_kh_chi01(axes[1, 1])
+    ax_a = fig.add_subplot(grid[0, :2])
+    ax_b = fig.add_subplot(grid[0, 2:4])
+    ax_c = fig.add_subplot(grid[0, 4:])
 
-    fig.savefig(f"figs/fig3_resp.png", dpi=300)    
+    ax_d = fig.add_subplot(grid[1, :3])
+    ax_e = fig.add_subplot(grid[1, 3:])
+    
+    plot_purity(ax_a, 'nah', '(a)')
+    plot_fidelity(ax_b, 'nah', '(b)')
+    plot_trace(ax_c, 'nah', '(c)')
+    plot_chi(ax_d, 'kh', '(d)', '00', 'imag')
+    plot_chi(ax_e, 'kh', '(e)', '01', 'imag')
+
+    fig.savefig(f"figs/fig3_error_analysis.png", dpi=100)    
 
     print("Finished plotting data.")
 

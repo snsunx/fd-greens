@@ -18,19 +18,21 @@ plt.rcParams.update({
     'lines.linewidth': 2
 })
 
-def plot_nah_A(ax: plt.Axes) -> None:
+def plot_A(ax: plt.Axes, mol_name: str, panel_name: str) -> None:
+    assert mol_name in ['nah', 'kh']
+
     global fig
 
-    omegas, As = np.loadtxt('../sim/greens/jul18_2022/data/nah_greens_exact_A.dat').T
+    omegas, As = np.loadtxt(f'../expt/greens/jul20_2022/data/{mol_name}_greens_exact_A.dat').T
     ax.plot(omegas, As, color='k', label="Exact")
 
-    omegas, As = np.loadtxt('../sim/greens/jul18_2022/data/nah_greens_tomo_A.dat').T
+    omegas, As = np.loadtxt(f'../expt/greens/jul20_2022/data/{mol_name}_greens_tomo_pur_A.dat').T
     ax.plot(omegas, As, ls='--', lw=3, label="iToffoli")
 
-    omegas, As = np.loadtxt('../sim/greens/jul18_2022/data/nah_greens_tomo2q_A.dat').T
+    omegas, As = np.loadtxt(f'../expt/greens/jul20_2022/data/{mol_name}_greens_tomo2q_pur_A.dat').T
     ax.plot(omegas, As, ls='--', lw=3, label="CZ")
 
-    ax.text(0.03, 0.92, "(a)", transform=ax.transAxes)
+    ax.text(0.03, 0.92, panel_name, transform=ax.transAxes)
 
     ax.set_xlabel("$\omega$ (eV)")
     ax.set_ylabel("$A$ (eV$^{-1}$)")
@@ -38,172 +40,83 @@ def plot_nah_A(ax: plt.Axes) -> None:
     ax.legend(ncol=3, loc='center', bbox_to_anchor=(0.5, 0.965, 0.0, 0.0), bbox_transform=fig.transFigure)
 
 
-def plot_nah_TrSigma(ax: plt.axes, mode: str = 'real') -> None:
+def plot_TrSigma(ax: plt.axes, mol_name: str, panel_name: str, mode: str) -> None:
+    assert mol_name in ['nah', 'kh']
     assert mode in ['real', 'imag']
 
-    omegas, reals, imags = np.loadtxt('../sim/greens/jul18_2022/data/nah_greens_exact_TrSigma.dat').T
-    if mode == 'real':
-        ax.plot(omegas, reals, color='k', label="Exact")
-    else:
-        ax.plot(omegas, imags, color='k', label="Exact")
+    omegas, reals, imags = np.loadtxt('../expt/greens/jul20_2022/data/nah_greens_exact_TrSigma.dat').T
+    obs = reals if mode == 'real' else imags
+    ax.plot(omegas, obs, color='k', label="Exact")
 
-    omegas, reals, imags = np.loadtxt('../sim/greens/jul18_2022/data/nah_greens_tomo_TrSigma.dat').T
-    if mode == 'real':
-        ax.plot(omegas, reals, ls='--', lw=3, label="iToffoli")
-    else:
-        ax.plot(omegas, imags, ls='--', lw=3, label="iToffoli")
+    omegas, reals, imags = np.loadtxt('../expt/greens/jul20_2022/data/nah_greens_tomo_pur_TrSigma.dat').T
 
-    omegas, reals, imags = np.loadtxt('../sim/greens/jul18_2022/data/nah_greens_tomo2q_TrSigma.dat').T
-    if mode == 'real':
-        ax.plot(omegas, reals, ls='--', lw=3, label="CZ")
-    else:
-        ax.plot(omegas, imags, ls='--', lw=3, label="CZ")
-
-    ax.text(0.03, 0.92, "(c)", transform=ax.transAxes)
-
-    ax.set_xlabel("$\omega$ (eV)")
-    ax.set_ylabel("Tr$\Sigma$ (eV)")
-
-def plot_kh_A(ax: plt.Axes) -> None:
-    omegas, As = np.loadtxt('../sim/greens/jul18_2022/data/kh_greens_exact_A.dat').T
-    ax.plot(omegas, As, color='k', label="Exact")
-
-    omegas, As = np.loadtxt('../sim/greens/jul18_2022/data/kh_greens_tomo_A.dat').T
-    ax.plot(omegas, As, ls='--', lw=3, label="iToffoli")
-
-    omegas, As = np.loadtxt('../sim/greens/jul18_2022/data/kh_greens_tomo2q_A.dat').T
-    ax.plot(omegas, As, ls='--', lw=3, label="CZ")
-
-    ax.text(0.03, 0.92, "(b)", transform=ax.transAxes)
-
-    ax.set_xlabel("$\omega$ (eV)")
-    ax.set_ylabel("$A$ (eV$^{-1}$)")
-    # ax.legend()
-
-def plot_kh_TrSigma(ax: plt.axes, mode: str = 'real') -> None:
-    omegas, reals, imags = np.loadtxt('../sim/greens/jul18_2022/data/kh_greens_exact_TrSigma.dat').T
-    if mode == 'real':
-        ax.plot(omegas, reals, color='k', label="Exact")
-    else:
-        ax.plot(omegas, imags, color='k', label="Exact")
-
-    omegas, reals, imags = np.loadtxt('../sim/greens/jul18_2022/data/kh_greens_tomo_TrSigma.dat').T
     if mode == 'real':
         ax.plot(omegas, reals, ls='--', lw=3, label="iToffoli")
     else:
         ax.plot(omegas, imags, ls='--', lw=3, label="iToffoli")
 
-    omegas, reals, imags = np.loadtxt('../sim/greens/jul18_2022/data/kh_greens_tomo2q_TrSigma.dat').T
+    omegas, reals, imags = np.loadtxt('../expt/greens/jul20_2022/data/nah_greens_tomo2q_pur_TrSigma.dat').T
     if mode == 'real':
         ax.plot(omegas, reals, ls='--', lw=3, label="CZ")
     else:
         ax.plot(omegas, imags, ls='--', lw=3, label="CZ")
 
-    ax.text(0.03, 0.92, "(d)", transform=ax.transAxes)
+    ax.text(0.03, 0.92, panel_name, transform=ax.transAxes)
 
     ax.set_xlabel("$\omega$ (eV)")
     ax.set_ylabel("Tr$\Sigma$ (eV)")
 
-def plot_kh_imag_TrSigma(ax: plt.axes) -> None:
-    omegas, _, imag = np.loadtxt('../sim/greens/jul18_2022/data/kh_greens_exact_TrSigma.dat').T
-    ax.plot(omegas, imag, color='k', label="Exact")
+def plot_chi(ax: plt.Axes, mol_name: str, panel_name: str, component: str, mode: str) -> None:
+    assert mol_name in ['nah', 'kh']
+    assert component in ['00', '01']
+    assert mode in ['real', 'imag']
 
-    omegas, _, imag = np.loadtxt('../sim/greens/jul18_2022/data/kh_greens_tomo_TrSigma.dat').T
-    ax.plot(omegas, imag, ls='--', lw=3, label="iToffoli")
-
-    omegas, _, imag = np.loadtxt('../sim/greens/jul18_2022/data/kh_greens_tomo2q_TrSigma.dat').T
-    ax.plot(omegas, imag, ls='--', lw=3, label="CZ")
-
-    ax.text(0.03, 0.04, "(f)", transform=ax.transAxes)
-
-    ax.set_xlabel("$\omega$ (eV)")
-    ax.set_ylabel("Im Tr$\Sigma$ (eV)")
-    # ax.legend()
-
-def plot_nah_chi00(ax: plt.Axes) -> None:
     global fig
 
-    omegas, reals, imags = np.loadtxt('../sim/resp/jul18_2022/data/nah_resp_exact_chi00.dat').T
-    ax.plot(omegas, imags, color='k', label="Exact")
+    omegas, reals, imags = np.loadtxt(f'../expt/resp/jul20_2022/data/{mol_name}_resp_exact_chi{component}.dat').T
+    obs = reals if mode == 'real' else imags
+    ax.plot(omegas, obs, color='k', label="Exact")
 
-    omegas, reals, imags = np.loadtxt('../sim/resp/jul18_2022/data/nah_resp_tomo_chi00.dat').T
-    ax.plot(omegas, imags, ls='--', lw=3, label="iToffoli")
+    omegas, reals, imags = np.loadtxt(f'../expt/resp/jul20_2022/data/{mol_name}_resp_tomo_pur_chi{component}.dat').T
+    obs = reals if mode == 'real' else imags
+    ax.plot(omegas, obs, ls='--', lw=3, label="iToffoli")
 
-    omegas, reals, imags = np.loadtxt('../sim/resp/jul18_2022/data/nah_resp_tomo2q_chi00.dat').T
-    ax.plot(omegas, imags, ls='--', lw=3, label="CZ")
+    omegas, reals, imags = np.loadtxt(f'../expt/resp/jul20_2022/data/{mol_name}_resp_tomo2q_pur_chi{component}.dat').T
+    obs = reals if mode == 'real' else imags
+    ax.plot(omegas, obs, ls='--', lw=3, label="CZ")
 
-    ax.text(0.03, 0.92, "(a)", transform=ax.transAxes)
-
-    ax.set_xlabel("$\omega$ (eV)")
-    ax.set_ylabel("Re $\chi_{00}$ (eV$^{-1}$)")
-    # ax.legend()
-
-    ax.legend(ncol=3, loc='center', bbox_to_anchor=(0.5, 0.965, 0.0, 0.0), bbox_transform=fig.transFigure)
-    # ax.add_artist(legend_exact)
-
-    # ax.legend()
-
-def plot_nah_chi01(ax: plt.axes) -> None:
-    omegas, reals, imags = np.loadtxt('../sim/resp/jul18_2022/data/nah_resp_exact_chi01.dat').T
-    ax.plot(omegas, imags, color='k', label="Exact")
-
-    omegas, reals, imags = np.loadtxt('../sim/resp/jul18_2022/data/nah_resp_tomo_chi01.dat').T
-    ax.plot(omegas, imags, ls='--', lw=3, label="iToffoli")
-
-    omegas, reals, imags = np.loadtxt('../sim/resp/jul18_2022/data/nah_resp_tomo2q_chi01.dat').T
-    ax.plot(omegas, imags, ls='--', lw=3, label="CZ")
-
-    ax.text(0.03, 0.92, "(c)", transform=ax.transAxes)
+    ax.text(0.03, 0.92, panel_name, transform=ax.transAxes)
 
     ax.set_xlabel("$\omega$ (eV)")
-    ax.set_ylabel("Re $\chi_{01}$ (eV)")
-    # ax.legend()
-
-def plot_kh_chi00(ax: plt.Axes) -> None:
-    omegas, reals, imags = np.loadtxt('../sim/resp/jul18_2022/data/kh_resp_exact_chi00.dat').T
-    ax.plot(omegas, imags, color='k', label="Exact")
-
-    omegas, reals, imags = np.loadtxt('../sim/resp/jul18_2022/data/kh_resp_tomo_chi00.dat').T
-    ax.plot(omegas, imags, ls='--', lw=3, label="iToffoli")
-
-    omegas, reals, imags = np.loadtxt('../sim/resp/jul18_2022/data/kh_resp_tomo2q_chi00.dat').T
-    ax.plot(omegas, imags, ls='--', lw=3, label="CZ")
-
-    ax.text(0.03, 0.92, "(c)", transform=ax.transAxes)
-
-    ax.set_xlabel("$\omega$ (eV)")
-    ax.set_ylabel("Re $\chi_{00}$ (eV$^{-1}$)")
-    # ax.legend()
-
-def plot_kh_chi01(ax: plt.Axes) -> None:
-    omegas, reals, imags = np.loadtxt('../sim/resp/jul18_2022/data/kh_resp_exact_chi01.dat').T
-    ax.plot(omegas, imags, color='k', label="Exact")
-
-    omegas, reals, imags = np.loadtxt('../sim/resp/jul18_2022/data/kh_resp_tomo_chi01.dat').T
-    ax.plot(omegas, imags, ls='--', lw=3, label="iToffoli")
-
-    omegas, reals, imags = np.loadtxt('../sim/resp/jul18_2022/data/kh_resp_tomo2q_chi01.dat').T
-    ax.plot(omegas, imags, ls='--', lw=3, label="CZ")
-
-    ax.text(0.03, 0.92, "(d)", transform=ax.transAxes)
-
-    ax.set_xlabel("$\omega$ (eV)")
-    ax.set_ylabel("Re $\chi_{01}$ (eV$^{-1}$)")
-    # ax.legend()
-
+    if mode == 'real':
+        ax.set_ylabel("Re $\chi_{" + component + "}$ (eV$^{-1}$)")
+    else:
+        ax.set_ylabel("Im $\chi_{" + component + "}$ (eV$^{-1}$)")
+    
 def main():
     print("Start plotting data.")
     global fig
 
-    fig, ax = plt.subplots(2, 3, figsize=(20, 11))
+    fig, axes = plt.subplots(2, 3, figsize=(20, 11))
 
-    plot_nah_A(ax[0, 0])
-    plot_nah_TrSigma(ax[0, 1], 'imag')
-    plot_nah_chi00(ax[0, 2])
+    plot_A(axes[0, 0], 'nah', '(a)')
+    plot_A(axes[1, 0], 'kh', '(b)')
 
-    plot_kh_A(ax[1, 0])
-    plot_kh_TrSigma(ax[1, 1], 'imag')
-    plot_kh_chi00(ax[1, 2])
+    # plot_TrSigma(axes[0, 1], 'nah', '(c)', 'real')
+    # plot_TrSigma(axes[1, 1], 'kh', '(d)', 'real')
+
+    plot_chi(axes[0, 1], 'nah', '(c)', '00', 'imag')
+    plot_chi(axes[1, 1], 'kh', '(d)', '00', 'imag')
+
+    plot_chi(axes[0, 2], 'nah', '(e)', '01', 'imag')
+    plot_chi(axes[1, 2], 'kh', '(f)', '01', 'imag')
+
+    # plot_nah_TrSigma(ax[0, 1], 'imag')
+    # plot_nah_chi00(ax[0, 2])
+
+    # plot_kh_A(ax[1, 0])
+    # plot_kh_TrSigma(ax[1, 1], 'imag')
+    # plot_kh_chi00(ax[1, 2])
 
     fig.savefig(f"figs/fig2_itoffoli_vs_cz.png", dpi=300)    
 
