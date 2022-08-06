@@ -266,7 +266,7 @@ def combine_simultaneous_cz(circuit: Union[cirq.Circuit, List[List[str]]]) -> No
         circuit = [moment for moment in circuit if moment != None]
     return circuit
 
-def print_circuit_statistics(circuit: cirq.Circuit) -> None:
+def print_circuit_statistics(circuit: cirq.Circuit, latex_form: bool = True) -> None:
     """Prints out circuit statistics.
     
     Args:
@@ -275,6 +275,11 @@ def print_circuit_statistics(circuit: cirq.Circuit) -> None:
     depth = get_circuit_depth(circuit)
     n_2q = get_gate_counts(circuit, num_qubits=2)
     n_3q = get_gate_counts(circuit, num_qubits=3)
+    if latex_form:
+        print("Circuit depth | # 2q gates | # 3q gates")
+        print(f"{depth} & {n_2q} & {n_3q}")
+        return
+
     print(f"Circuit depth = {depth}")
     print(f"Number of two-qubit gates = {n_2q}")
     print(f"Number of three-qubit gates = {n_3q}")

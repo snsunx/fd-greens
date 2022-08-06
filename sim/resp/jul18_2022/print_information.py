@@ -32,7 +32,7 @@ def print_circuit_information():
                 print('=' * 25 + ' ' + key + ' ' + '=' * 25) 
                 qtrl_strings = json.loads(h5file[f'{key}/transpiled'][()])
                 circuit = converter.convert_strings_to_circuit(qtrl_strings)
-                print_circuit_statistics(circuit)
+                print_circuit_statistics(circuit, True)
 
 def main():
     print_parameters()

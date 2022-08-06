@@ -70,7 +70,7 @@ def plot_trace(ax: plt.Axes, mol_name: str, panel_name: str) -> None:
     ax.text(-0.9, -0.2, panel_name)
 
 
-def plot_chi(ax: plt.Axes, mol_name: str, panel_name: str, component: str, mode: str) -> None:
+def plot_chi(ax: plt.Axes, mol_name: str, panel_name: str, component: str, mode: str, include_ylabel: bool = True) -> None:
     global fig
 
     omegas, reals, imags = np.loadtxt(f'../expt/resp/jul20_2022/data/{mol_name}_resp_exact_chi{component}.dat').T
@@ -92,11 +92,10 @@ def plot_chi(ax: plt.Axes, mol_name: str, panel_name: str, component: str, mode:
     ax.text(0.03, 0.92, panel_name, transform=ax.transAxes)
 
     ax.set_xlabel("$\omega$ (eV)")
-    if mode == 'real':
-        ax.set_ylabel("Re $\chi_{00}$ (eV$^{-1}$)")
-    else:
-        ax.set_ylabel("Im $\chi_{00}$ (eV$^{-1}$)")
-    ax.legend()
+    if include_ylabel:
+        ylabel_string = mode[0].upper() + mode[1] + "Re $\chi_{" + component + "}$ (eV$^{-1}$)"
+        ax.set_ylabel(ylabel_string)
+    # ax.legend()
 
 
 def main():
@@ -118,8 +117,8 @@ def main():
     plot_purity(ax_a, 'nah', '(a)')
     plot_fidelity(ax_b, 'nah', '(b)')
     plot_trace(ax_c, 'nah', '(c)')
-    plot_chi(ax_d, 'kh', '(d)', '00', 'imag')
-    plot_chi(ax_e, 'kh', '(e)', '01', 'imag')
+    plot_chi(ax_d, 'nah', '(d)', '00', 'imag')
+    plot_chi(ax_e, 'nah', '(e)', '01', 'imag', include_ylabel=False)
 
     fig.savefig(f"figs/fig3_error_analysis.png", dpi=100)    
 

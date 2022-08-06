@@ -23,13 +23,13 @@ def print_parameters():
             print(f'{key} = {val}')
 
 def print_circuit_information():
-    with h5py.File('nah_greens_tomo2q.h5', 'r') as h5file:
+    with h5py.File('nah_greens_tomo.h5', 'r') as h5file:
         for key in h5file.keys():
             if key[:4] == 'circ':
                 print('=' * 25 + ' ' + key + ' ' + '=' * 25) 
                 qtrl_strings = json.loads(h5file[f'{key}/transpiled'][()])
                 circuit = converter.convert_strings_to_circuit(qtrl_strings)
-                print_circuit_statistics(circuit)
+                print_circuit_statistics(circuit, True)
 
 def main():
     # print_parameters()
