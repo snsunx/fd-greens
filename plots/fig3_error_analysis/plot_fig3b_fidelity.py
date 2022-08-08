@@ -2,8 +2,6 @@ import numpy as np
 
 import matplotlib.pyplot as plt
 
-LINESTYLES_A = {}
-
 plt.rcParams.update({
 	'text.usetex': True,
 	'text.latex.preamble': r'\usepackage{amsmath}',

@@ -463,10 +463,12 @@ def quantum_state_tomography(
 
     bitstring_array_all = []
     for tomography_label in tomography_labels:
+        print(f"{circuit_label}/{tomography_label}")
         if isinstance(h5file, h5py.File):
             bitstring_array_raw = h5file[f"{circuit_label}/{tomography_label}"].attrs[f"counts{suffix}"]
         else:
             bitstring_array_raw = h5file[tomography_label]
+        print(bitstring_array_raw)
         
         # repetitions = np.sum(bitstring_array_raw)
         if reverse:
@@ -504,6 +506,7 @@ def quantum_state_tomography(
             basis_matrix.append(basis_vectorized)
     basis_matrix = np.array(basis_matrix)
 
+    print(len(bitstring_array_all))
     density_matrix = np.linalg.lstsq(basis_matrix, bitstring_array_all)[0]
     dim = int(np.sqrt(density_matrix.shape[0]))
     density_matrix = density_matrix.reshape(dim, dim, order='F')

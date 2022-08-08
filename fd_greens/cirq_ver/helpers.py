@@ -275,7 +275,7 @@ def process_all_bitstring_counts(
         mitigation_first: Whether to perform error mitigation first.
         normalize_counts: Whether to normalize bitstring counts.
     """
-    assert pad_zero in ['front', 'end']
+    assert pad_zero in ['front', 'end', None]
     assert mode in ['greens', 'resp']
 
     print("Start processing results.")
@@ -312,10 +312,10 @@ def process_all_bitstring_counts(
 
         n_qubits = len(list(histogram.keys())[0])
         counts_array = histogram_to_array(histogram, n_qubits=n_qubits, base=3)
+        print(f"{n_qubits = }, {counts_array.shape = }")
         
         # Obtain the subspace indices.
-        # TODO: Handle base 2 correctly.
-        if len(dset_name) == 9:
+        if pad_zero and len(dset_name) == 9:
             if pad_zero == 'front':
                 subspace_indices = [int('0' + ''.join(x), 3) for x in product('01', repeat=n_qubits - 1)]
                 subspace_indices_base2 = [int('0' + ''.join(x), 2) for x in product('01', repeat=n_qubits - 1)]
@@ -351,6 +351,7 @@ def process_all_bitstring_counts(
         counts_array = counts_array[subspace_indices]
         if normalize_counts:
             counts_array /= np.sum(counts_array)
+        print(f"{counts_array.shape = }")
         
         # Save the processed bitstring counts to HDF5 file.
         dset.attrs[counts_name] = counts_array

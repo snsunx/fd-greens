@@ -166,17 +166,17 @@ def main():
 
     fig, axes = plt.subplots(3, 2, figsize=(10, 14), sharex='col', sharey='row')
 
-    plot_A(axes[0, 0], 'nah', '(a)', include_xlabel=False, include_ylabel=True)
-    plot_A(axes[0, 1], 'kh', '(b)', include_xlabel=False, include_ylabel=False)
+    plot_A(axes[0, 0], 'nah', '(a) NaH', include_xlabel=False, include_ylabel=True)
+    plot_A(axes[0, 1], 'kh', '(b) KH', include_xlabel=False, include_ylabel=False)
 
     # plot_TrSigma(axes[1, 0], 'nah', '(c)', 'real', include_xlabel=False, include_ylabel=True)
     # plot_TrSigma(axes[1, 1], 'kh', '(d)', 'real', include_xlabel=False, include_ylabel=False)
 
-    plot_chi(axes[1, 0], 'nah', '(c)', '00', 'imag', include_xlabel=False, include_ylabel=True)
-    plot_chi(axes[1, 1], 'kh', '(d)', '00', 'imag', include_xlabel=True, include_ylabel=False)
+    plot_chi(axes[1, 0], 'nah', '(c) NaH', '00', 'imag', include_xlabel=False, include_ylabel=True)
+    plot_chi(axes[1, 1], 'kh', '(d) KH', '00', 'imag', include_xlabel=True, include_ylabel=False)
 
-    plot_chi(axes[2, 0], 'nah', '(e)', '01', 'imag', include_xlabel=True, include_ylabel=True)
-    plot_chi(axes[2, 1], 'kh', '(f)', '01', 'imag', include_xlabel=True, include_ylabel=False)
+    plot_chi(axes[2, 0], 'nah', '(e) NaH', '01', 'imag', include_xlabel=True, include_ylabel=True)
+    plot_chi(axes[2, 1], 'kh', '(f) KH', '01', 'imag', include_xlabel=True, include_ylabel=False)
 
     # plot_nah_TrSigma(ax[0, 1], 'imag')
     # plot_nah_chi00(ax[0, 2])
