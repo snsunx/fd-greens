@@ -109,15 +109,16 @@ def histogram_to_array(
         array = array / np.sum(array)
     return array
 
-def get_gate_counts(circuit: cirq.Circuit, *,
+def get_gate_counts(circuit: Union[cirq.Circuit, cirq.Moment], *,
 					criterion: Callable[[cirq.OP_TREE], bool] = lambda op: True,
                     num_qubits: Optional[int] = None
 				   ) -> int:
     """Returns the count of gates satisfying a certain criterion.
 
-    Only one of ``num_qubits`` and ``criterion`` should be given. If ``num_qubits`` is given,
+    Only one of ``num_qubits`` and ``criterion`` should be passed in. If ``num_qubits`` is given,
     count the number of gates with ``num_qubits`` number of qubits. Otherwise counting is performed
-    with ``criterion``. Defaults to counting all non-Z-rotation gates.
+    with ``criterion``, for example ``criterion=op.num_qubits() == 2`` counts all two-qubit gates.
+    Defaults to counting all non-Z-rotation gates.
     
     Args:
         circuit: The circuit on which to return gate counts.
@@ -135,9 +136,14 @@ def get_gate_counts(circuit: cirq.Circuit, *,
         # Only counting non-Z-rotation gates.
         criterion = lambda op: not isinstance(op.gate, cirq.ZPowGate)
 
+    if isinstance(circuit, cirq.Circuit):
+        operations = circuit.all_operations()
+    elif isinstance(circuit, cirq.Moment):
+        operations = circuit.operations
+    
     count = 0
-    for op in circuit.all_operations():
-        if criterion(op):
+    for operation in operations:
+        if criterion(operation):
             count += 1
     return count
 

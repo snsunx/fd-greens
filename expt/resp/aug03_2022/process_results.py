@@ -12,9 +12,10 @@ def main():
     parser.add_argument('fnames', type=str, nargs='+')
     parser.add_argument('-d', type=str, dest='pkldsetname')
     args = parser.parse_args()
+    print(args)
 
-    for h5fname_expt in args.fnames:
-        process_all_bitstring_counts(h5fname_expt, h5fname_exact, pklfname, pad_zero=None, pkldsetname=args.pkldsetname, mode='resp')
+    # for h5fname_expt in args.fnames:
+    #     process_all_bitstring_counts(h5fname_expt, h5fname_exact, pklfname, pad_zero=None, pkldsetname=args.pkldsetname, mode='resp')
 
 if __name__ == '__main__':
     main()

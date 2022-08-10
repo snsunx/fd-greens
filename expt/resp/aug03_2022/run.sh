@@ -1,8 +1,8 @@
 #!/bin/bash
 
 process_results=true
-generate_data=true
-plot_data=true
+generate_data=false
+plot_data=false
 
 if [ $process_results = true ]
 then

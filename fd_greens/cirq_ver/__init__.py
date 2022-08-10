@@ -13,6 +13,7 @@ from .operators import SecondQuantizedOperators, ChargeOperators
 from .molecular_hamiltonian import *
 from .circuit_constructor import CircuitConstructor
 from .circuit_string_converter import CircuitStringConverter
+from .noise_parameters import NoiseParameters
 
 from .helpers import *
 from .plot_utils import *

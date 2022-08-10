@@ -5,11 +5,13 @@ Circuit String Converter (:mod:`fd_greens.circuit_string_converter`)
 """
 
 import re
-from typing import List, Sequence
+from typing import List, Sequence, Union
 import warnings
 
 import numpy as np
 import cirq
+import h5py
+import json
 
 from .transpilation import C0C0iXGate
 from .general_utils import get_gate_counts, unitary_equal
@@ -278,3 +280,30 @@ class CircuitStringConverter:
             assert unitary_equal(circuit, circuit_new)
 
         return circuit_new
+
+    def load_circuit(self, h5fname: Union[str, h5py.File], dsetname: str) -> cirq.Circuit:
+        """Loads a circuit from an HDF5 file."""
+        if isinstance(h5fname, str):
+            h5file = h5py.File(h5fname + '.h5', 'r')
+        else:
+            h5file = h5fname
+        
+        qtrl_strings = json.loads(h5file[dsetname][()])
+        circuit = self.convert_strings_to_circuit(qtrl_strings)
+
+        if isinstance(h5fname, str):
+            h5file.close()
+        return circuit
+    
+    def save_circuit(self, h5fname: Union[str, h5py.File], dsetname: str, circuit: cirq.Circuit) -> None:
+        """Saves a circuit to an HDF5 file."""
+        if isinstance(h5fname, str):
+            h5file = h5py.File(h5fname + '.h5', 'r+')
+        else:
+            h5file = h5fname
+        
+        qtrl_strings = self.convert_circuit_to_strings(circuit)
+        h5file[dsetname] = json.dumps(qtrl_strings)
+        
+        if isinstance(h5fname, str):
+            h5file.close()
