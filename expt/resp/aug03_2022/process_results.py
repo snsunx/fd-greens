@@ -10,7 +10,7 @@ def main():
 
     parser = argparse.ArgumentParser()
     parser.add_argument('fnames', type=str, nargs='+')
-    parser.add_argument('-d', type=str, dest='pkldsetname')
+    parser.add_argument('-d', '--dsetname', type=str, dest='pkldsetname')
     args = parser.parse_args()
     print(args)
 

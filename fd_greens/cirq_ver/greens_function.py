@@ -44,7 +44,7 @@ class GreensFunction:
             spin: Spin of the second quantized operators.
             method: The method used for calculating the transition amplitudes.
             verbose: Whether to print out transition amplitude values.
-            fname_exact: The exact HDF5 file name, if USE_EXACT_TRACES is set tuo True.
+            fname_exact: The exact HDF5 file name, if USE_EXACT_TRACES is set to True.
         """
         assert spin in ['u', 'd']
         assert method in ["exact", "tomo", "alltomo"]
