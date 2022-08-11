@@ -16,5 +16,6 @@ from .circuit_string_converter import CircuitStringConverter
 from .noise_parameters import NoiseParameters
 
 from .helpers import *
-from .plot_utils import *
 from .general_utils import *
+from .plot_utils import *
+from .processing_utils import *

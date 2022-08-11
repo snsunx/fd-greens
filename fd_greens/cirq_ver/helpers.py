@@ -7,7 +7,7 @@ Helpers (:mod:`fd_greens.helpers`)
 import pickle
 import os
 import json
-from typing import List, Optional, Any
+from typing import List, Optional, Any, Sequence
 from itertools import product
 from deprecated import deprecated
 
@@ -15,8 +15,20 @@ import cirq
 import h5py
 import numpy as np
 
-from .general_utils import histogram_to_array
+from .parameters import HARTREE_TO_EV
 
+from .molecular_hamiltonian import MolecularHamiltonian, get_nah_hamiltonian
+
+from .general_utils import get_fidelity, histogram_to_array
+
+__all__ = [
+    "get_circuit_labels",
+    "initialize_hdf5",
+    "save_to_hdf5",
+    "save_data_to_file",
+    "process_all_bitstring_counts",
+    "print_circuit"
+]
 
 def get_circuit_labels(n_orbitals: int, mode: str = 'greens', spin: str = '') -> List[str]:
     """Returns the circuit labels of a greens or resp calculation.
@@ -260,7 +272,7 @@ def process_all_bitstring_counts(
     counts_name_miti: str = 'counts_miti',
     pad_zero: str = 'end', 
     mitigation_first: bool = False,
-    normalize_counts: bool = True, 
+    normalize_counts: bool = True
 ) -> None:
     """Processes all bitstring counts.
     
@@ -268,6 +280,8 @@ def process_all_bitstring_counts(
         h5fname_expt: The experimental HDF5 file name.
         h5fname_exact: The exact HDF5 file name.
         pklfname: Name of the pkl file that contains the experimental data.
+        pkldsetname: Name of the dataset in the pkl file.
+        mode: The mode of computation, either ``'greens'`` or ``'resp'``.
         npyfname: Name of the npy file that contains the confusion matrix.
         counts_name: Name of the bitstring counts.
         counts_name_miti: Name of the bitstring counts after error mitigation.
@@ -287,16 +301,14 @@ def process_all_bitstring_counts(
             initialize_hdf5(h5fname_expt, mode=mode)
 
     # Load circuits, circuit labels and bitstring counts from files.
-    pkl_data = pickle.load(open(pklfname + '.pkl', 'rb'))
+    with open(pklfname + '.pkl', 'rb') as f:
+        pkl_data = pickle.load(f)
     circuits = pkl_data[pkldsetname]['circs']
     labels = pkl_data[pkldsetname]['labels']
     results = pkl_data[pkldsetname]['results']
 
     # Load the confusion matrix if npyfname is given.
-    if npyfname is not None:
-        confusion_matrix = np.load(npyfname + '.npy')
-    else:
-        confusion_matrix = None
+    confusion_matrix = np.load(npyfname + '.npy') if npyfname is None else None
 
     # Initialize HDF5 files to store processed bitstring counts.
     copy_simulation_data(h5fname_expt, h5fname_exact, mode=mode)
@@ -312,7 +324,7 @@ def process_all_bitstring_counts(
 
         n_qubits = len(list(histogram.keys())[0])
         counts_array = histogram_to_array(histogram, n_qubits=n_qubits, base=3)
-        print(f"{n_qubits = }, {counts_array.shape = }")
+        # print(f"{n_qubits = }, {counts_array.shape = }")
         
         # Obtain the subspace indices.
         if pad_zero and len(dset_name) == 9:
@@ -351,14 +363,16 @@ def process_all_bitstring_counts(
         counts_array = counts_array[subspace_indices]
         if normalize_counts:
             counts_array /= np.sum(counts_array)
-        print(f"{counts_array.shape = }")
+        # print(f"{counts_array.shape = }")
         
         # Save the processed bitstring counts to HDF5 file.
         dset.attrs[counts_name] = counts_array
         if confusion_matrix is not None:
             dset.attrs[counts_name_miti] = counts_array_miti
 
-    print("Finished processing results.")
+    h5file.close()
+
+    print("Finish processing results.")
 
 def print_circuit(circuit: cirq.Circuit) -> None:
     """Prints out a circuit 10 elements at a time.

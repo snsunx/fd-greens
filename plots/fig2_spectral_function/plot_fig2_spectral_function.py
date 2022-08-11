@@ -12,7 +12,7 @@ plt.rcParams.update({
     'figure.subplot.left': 0.1,
     'figure.subplot.right': 0.96,
     'figure.subplot.top': 0.87,
-    'figure.subplot.bottom': 0.14,
+    'figure.subplot.bottom': 0.15,
     'lines.linewidth': 1.5,
     'lines.markersize': 8
 })
@@ -103,7 +103,7 @@ def main():
     print("Start plotting data.")
     global fig
 
-    fig, axes = plt.subplots(1, 2, figsize=(11, 5), sharex='col', sharey='row')
+    fig, axes = plt.subplots(1, 2, figsize=(10, 5), sharex='col', sharey='row')
 
     plot_A(axes[0], 'nah', '(a) NaH', include_xlabel=True, include_ylabel=True)
     plot_A(axes[1], 'kh', '(b) KH', include_xlabel=True, include_ylabel=False)

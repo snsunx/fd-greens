@@ -1,8 +1,8 @@
 #!/bin/bash
 
-process_results=true
+process_results=false
 generate_data=false
-plot_data=false
+plot_data=true
 
 if [ $process_results = true ]
 then
@@ -34,7 +34,10 @@ fi
 
 if [ $plot_data = true ]
 then
-    python3 plot_data.py nah_resp_exact nah_resp_tomo_rc_raw       nah_resp_tomo_rc_pur       nah_resp_tomo_rc_trace       -n nah_rc
-    python3 plot_data.py nah_resp_exact nah_resp_tomo_rcnoxraw_raw nah_resp_tomo_rcnoxraw_pur nah_resp_tomo_rcnoxraw_trace -n nah_rcnoxraw
-    python3 plot_data.py nah_resp_exact nah_resp_tomo_rcnoxem_raw  nah_resp_tomo_rcnoxem_pur  nah_resp_tomo_rcnoxem_trace  -n nah_rcnoxem
+    python3 plot_data.py nah_resp_exact nah_resp_tomo_rc_raw nah_resp_tomo_rc_pur nah_resp_tomo_rc_trace \
+        -l Exact Raw Purified Trace -n nah_rc
+    python3 plot_data.py nah_resp_exact nah_resp_tomo_rcnoxraw_raw nah_resp_tomo_rcnoxraw_pur nah_resp_tomo_rcnoxraw_trace \
+        -l Exact Raw Purified Trace -n nah_rcnoxraw
+    python3 plot_data.py nah_resp_exact nah_resp_tomo_rcnoxem_raw nah_resp_tomo_rcnoxem_pur nah_resp_tomo_rcnoxem_trace \
+        -l Exact Raw Purified Trace -n nah_rcnoxem
 fi

@@ -23,15 +23,24 @@ plt.rcParams.update({
     'figure.subplot.right': 0.95,
     'figure.subplot.top': 0.93,
     'figure.subplot.bottom': 0.12,
-    'lines.linewidth': 2
+    'lines.linewidth': 2,
+    'lines.markersize': 8
 })
 
-def plot_fid_by_depth(ax: plt.Axes) -> None:
+def plot_fidelity_by_depth(ax: plt.Axes) -> None:
 
-    depths, fidelities = np.loadtxt('../../sim/resp/augxx_2022/fidtraj.dat').T
+    _, locations_nq, fidelities = np.loadtxt('../../sim/resp/augxx_2022/fidtraj.dat').T
+    depth = len(locations_nq)
 
-    
-    ax.plot(fidelities, marker='.')
+    depths = np.arange(depth)
+    locations_3q = [i for i in range(depth) if locations_nq[i] == 3]
+    fidelities_3q = [fidelities[n] for n in locations_3q]
+
+    x_depths = [i + 1 for i in depths]
+    x_locations_3q = [i + 1 for i in locations_3q]
+
+    ax.plot(x_depths, fidelities, marker='.')
+    ax.plot(x_locations_3q, fidelities_3q, ls='', color='r', marker='x', ms=10, mew=2.0)
     ax.set_xlabel("Circuit depth")
     ax.set_ylabel("Fidelity")
 
@@ -39,7 +48,7 @@ def plot_fid_by_depth(ax: plt.Axes) -> None:
 def main():
 
     fig, ax = plt.subplots(figsize=(8, 7))
-    plot_fid_by_depth(ax)
+    plot_fidelity_by_depth(ax)
 
     fig.savefig(f"{sys.argv[0][5:-3]}.png", dpi=200)
 

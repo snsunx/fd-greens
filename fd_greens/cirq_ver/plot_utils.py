@@ -173,7 +173,7 @@ plot_TrS = plot_trace_self_energy
 
 def plot_response_function(
     fnames: Sequence[str],
-    suffixes: Sequence[str],
+    suffixes: Optional[Sequence[str]] = None,
     labels: Optional[Sequence[str]] = None,
     annotations: Optional[Sequence[str]] = None,
     datdirname: str = "data",
@@ -200,6 +200,8 @@ def plot_response_function(
         text: Whether to add labels by legend, annotation or none.
         n_curves: Number of curves.
     """
+    if suffixes is None:
+        suffixes = [""] * len(fnames)
     if n_curves is None:
         n_curves = 2 * max(len(fnames), len(suffixes))
     if labels is None:
