@@ -4,6 +4,7 @@ Plot Utilities (:mod:`fd_greens.plot_utils`)
 ============================================
 """
 
+from inspect import trace
 import os
 from typing import Sequence, Optional
 from itertools import product
@@ -50,9 +51,9 @@ def plot_spectral_function(
     annotations: Optional[Sequence[dict]] = None,
     linestyles: Sequence[dict] = LINESTYLES_A,
     datdirname: str = "data",
-    dirname: str = "figs/data",
+    dirname: str = "figs/obs",
     figname: str = "A",
-    text: Optional[str] = None,
+    text: str = "legend",
     n_curves: Optional[int] = None
 ) -> None:
     """Plots the spectral function.
@@ -103,10 +104,10 @@ def plot_trace_self_energy(
     labels: Optional[Sequence[str]] = None,
     annotations: Optional[Sequence[str]] = None,
     datdirname: str = "data",
-    dirname: str = "figs/data",
+    dirname: str = "figs/obs",
     figname: str = "TrSigma",
     linestyles: Sequence[dict] = LINESTYLES_TRSIGMA,
-    text: str = None,
+    text: str = "legend",
     n_curves: Optional[int] = None,
     separate_real_imag: bool = True
 ) -> None:
@@ -177,11 +178,11 @@ def plot_response_function(
     labels: Optional[Sequence[str]] = None,
     annotations: Optional[Sequence[str]] = None,
     datdirname: str = "data",
-    dirname: str = "figs/data",
+    dirname: str = "figs/obs",
     figname: str = "chi",
     circ_label: str = "00",
     linestyles: Sequence[dict] = LINESTYLES_CHI,
-    text: Optional[str] = None,
+    text: str = "legend",
     n_curves: Optional[int] = None,
     separate_real_imag: bool = True,
     scaling_factor: float = 1.0
@@ -401,85 +402,48 @@ def plot_fidelity_by_depth(
     fig.savefig(f'{dirname}/{figname}.png', dpi=FIGURE_DPI, bbox_inches='tight')
 
 def display_fidelities(
-    fname_exact: str,
-    fname_expt: str,
-    subscript: str,
-    suffix: str = '',
-    spin: str = '',
-    dirname: str = 'figs/amp',
-    figname: str = 'fid'
+    datfname: str,
+    datdirname: str = "data/mat",
+    figdirname: str = "figs/mat",
+    figfname: Optional[str] = None
 ) -> None:
     """Displays fidelities between exact and experimental results.
     
     Args:
-        fname_exact: The file name of the exact calculation.
-        fname_expt: The file name of the experimental calculation.
+        h5fname_expt: The HDF5 file name of the experimental calculation.
         subscript: The subscript of the quantities. ``'e'``, ``'h'`` or ``'n'``.
         spin: The spin of the states.
-        dirname: The directory name.
-        figname: The figure name.
+
+        datfname: The data file name.
+        datdirname: The data directory name.
+        figdirname: The figure directory name.
+        figfname: The figure file name.
     """
-    assert spin in ['u', 'd', '']
+    if figfname is None:
+        figfname = datfname
     
-    if not os.path.exists(dirname):
-        os.makedirs(dirname)
-
-    h5file_exact = h5py.File(fname_exact + '.h5', 'r')
-    h5file_expt = h5py.File(fname_expt + '.h5', 'r')
-
-    # XXX: 2 and 4 are hardcoded.
-    if spin in ['u', 'd']:
-        dim = 2
-    else:
-        dim = 4
-    
-    purities = np.zeros((dim, dim))
-    fidelities = np.zeros((dim, dim))
-
-    for i in range(dim):
-        state_exact = h5file_exact[f'psi/{subscript}{i}{spin}'][:]
-        state_expt = h5file_expt[f'rho{suffix}/{subscript}{i}{spin}'][:]
-        purities[i, i] = np.trace(state_expt @ state_expt).real
-        fidelities[i, i] = get_fidelity(state_exact, state_expt)
-
-        for j in range(i + 1, dim):
-            # p is filled on the upper half triangle.
-            state_exact = h5file_exact[f'psi/{subscript}p{i}{j}{spin}'][:]
-            state_expt = h5file_expt[f'rho{suffix}/{subscript}p{i}{j}{spin}'][:]
-            purities[i, j] = np.trace(state_expt @ state_expt).real
-            fidelities[i, j] = get_fidelity(state_exact, state_expt)
-
-            # m is filled on the lower half triangle.
-            state_exact = h5file_exact[f'psi/{subscript}m{i}{j}{spin}'][:]
-            state_expt = h5file_expt[f'rho{suffix}/{subscript}m{i}{j}{spin}'][:]
-            purities[j, i] = np.trace(state_expt @ state_expt).real
-            fidelities[j, i] = get_fidelity(state_exact, state_expt)
-
-    np.savetxt(f"data/purity_{figname[4:]}.dat", purities)
-    np.savetxt(f"data/{figname}.dat", fidelities)
+    fidelity_matrix = np.loadtxt(f"{datdirname}/{datfname}.dat")
+    dim = fidelity_matrix.shape[0]
 
     fig, ax = plt.subplots()
-    im = ax.imshow(fidelities, vmin=0.0, vmax=1.0)
+    im = ax.imshow(fidelity_matrix, vmin=0.0, vmax=1.0)
     for i in range(dim):
         for j in range(dim):
             # Here x is the column index and y is the row index.
-            if fidelities[i, j] > 0.4:
-                ax.text(j, i, f"{fidelities[i, j]:.2f}", color='black', ha='center', va='center')
+            if fidelity_matrix[i, j] > 0.4:
+                ax.text(j, i, f"{fidelity_matrix[i, j]:.2f}", color='black', ha='center', va='center')
             else:
-                ax.text(j, i, f"{fidelities[i, j]:.2f}", color='white', ha='center', va='center')
-    fig.colorbar(im, ticks=np.arange(0.0, 1.0 + 1e-8, 0.2))
-    fig.savefig(f'{dirname}/{figname}.png', dpi=FIGURE_DPI, bbox_inches='tight')
+                ax.text(j, i, f"{fidelity_matrix[i, j]:.2f}", color='white', ha='center', va='center')
 
-    h5file_exact.close()
-    h5file_expt.close()
+    fig.colorbar(im, ticks=np.arange(0.0, 1.0 + 1e-8, 0.2))
+    fig.savefig(f'{figdirname}/{figfname}.png', dpi=FIGURE_DPI, bbox_inches='tight')
 
 def display_traces(
-    fname: str,
-    subscript: str,
-    suffix: str = '',
-    spin: str = '',
-    dirname: str = 'figs/amp',
-    figname: str = 'trace'
+    datfname_exact: str,
+    datfname_expt: str,
+    datdirname: str = "data/mat",
+    figdirname: str = 'figs/mat',
+    figfname: Optional[str] = None
 ) -> None:
     """Displays fidelities between exact and experimental results.
     
@@ -491,40 +455,28 @@ def display_traces(
         dirname: The directory name.
         figname: The figure name.
     """
-    assert spin in ['u', 'd', '']
-
-    if not os.path.exists(dirname):
-        os.makedirs(dirname)
-
-    h5file = h5py.File(fname+ '.h5', 'r')
-
-    # XXX: 2 and 4 are hardcoded.
-    if spin in ['u', 'd']:
-        dim = 2
-    else:
-        dim = 4
+    if figfname is None:
+        figfname = datfname_expt
     
-    traces = np.zeros((dim, dim))
-    for i in range(dim):
-        traces[i, i] = h5file[f"trace{suffix}/{subscript}{i}{spin}"][()]
-        for j in range(i + 1, dim):
-            # p (m) is filled on the upper (lower) half triangle.
-            traces[i, j] = h5file[f"trace{suffix}/{subscript}p{i}{j}{spin}"][()]
-            traces[j, i] = h5file[f"trace{suffix}/{subscript}m{i}{j}{spin}"][()]
-
-    np.savetxt(f"data/{figname}.dat", traces)
+    trace_matrix_exact = np.loadtxt(f"{datdirname}/{datfname_exact}.dat")
+    trace_matrix_expt = np.loadtxt(f"{datdirname}/{datfname_expt}.dat")
+    trace_matrix_diff = np.abs(trace_matrix_exact - trace_matrix_expt)
+    trace_diff_max = np.max(trace_matrix_diff)
+    trace_diff_min = np.min(trace_matrix_diff)
+    
+    dim = trace_matrix_exact.shape[0]
+    cmap = plt.get_cmap("BuPu")
 
     fig, ax = plt.subplots()
-    im = ax.imshow(traces, vmin=0.0, vmax=1.0)
+    im = ax.imshow(trace_matrix_diff, vmin=0.0, vmax=0.12, cmap=cmap)
     for i in range(dim):
         for j in range(dim):
             # Here x is the column index and y is the row index.
-            if traces[i, j] > 0.5:
-                ax.text(j, i, f"{traces[i, j]:.2f}", color='black', ha='center', va='center')
-            else:
-                ax.text(j, i, f"{traces[i, j]:.2f}", color='white', ha='center', va='center')
-    fig.colorbar(im, ticks=np.arange(0.0, 1.0 + 1e-8, 0.2))
-    fig.savefig(f'{dirname}/{figname}.png', dpi=FIGURE_DPI, bbox_inches='tight')
-
-    h5file.close()
+            color = 'black' if trace_matrix_diff[i, j] < 0.06 else 'white'
+            ax.text(
+                j, i, f"{trace_matrix_expt[i, j]:.2f}\n({trace_matrix_exact[i, j]:.2f})", 
+                color=color, ha='center', va='center')
+    
+    fig.colorbar(im)
+    fig.savefig(f'{figdirname}/{figfname}.png', dpi=FIGURE_DPI, bbox_inches='tight')
     

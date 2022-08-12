@@ -1,21 +1,29 @@
-"""Process Jun 2022 results and save to HDF5 files."""
-
 import sys
 sys.path.append('../../..')
 import argparse
 
-from fd_greens import plot_response_function
+from fd_greens import plot_response_function, display_fidelities, display_traces
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('h5fnames', type=str, nargs='+')
-    parser.add_argument('-n', type=str, dest='figname')
+    parser.add_argument("-o", "--observable", type=str, nargs="+", dest="observable_fnames", default=None)
+    parser.add_argument("-f", "--fidelity-matrix", type=str, dest="fidelity_matrix_fname", default=None)
+    parser.add_argument("-t", "--trace-matrix", type=str, nargs=2, dest="trace_matrix_fnames", default=None)
+    parser.add_argument("-n", "--figname", type=str)
+    parser.add_argument("-l", "--labels", nargs="+", default=None)
     args = parser.parse_args()
 
-    # h5fnames = ['nah_resp_exact', 'nah_resp_tomo_pur', 'nah_resp_tomo2q_pur']
-    suffixes = ['', '', '']
-    labels = ['Exact', 'iToffoli', 'CZ']
-    plot_response_function(args.h5fnames, suffixes, labels=labels, text="legend", dirname=f"figs/data", figname=args.figname)
+    print(args)
+
+    if args.observable_fnames is not None:
+        plot_response_function(args.observable_fnames, labels=args.labels, figname=args.figname)
+
+    if args.fidelity_matrix_fname is not None:
+        display_fidelities(args.fidelity_matrix_fname)
+
+    if args.trace_matrix_fnames is not None:
+        display_traces(*args.trace_matrix_fnames)
+
 
 if __name__ == '__main__':
     main()

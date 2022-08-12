@@ -326,17 +326,28 @@ class GreensFunction:
         G = self.G["e"] + self.G["h"]
         return G
 
-    def spectral_function(self, omegas: Sequence[float], eta: float = 0.0) -> None:
+    def spectral_function(
+        self,
+        omegas: Sequence[float],
+        eta: float = 0.0,
+        dirname: str = "data/obs",
+        datfname: Optional[str] = None
+    ) -> None:
         """Returns the spectral function at given frequencies.
 
         Args:
             omegas: The frequencies at which the spectral function is calculated.
             eta: The broadening factor.
             save_data: Whether to save the spectral function to file.
+            dirname: Name of the directory of the data file.
+            datfname: Name of the data file.
         
         Returns:
             As: The spectral function numpy array.
         """
+        if datfname is None:
+            datfname = f"{self.fname}{self.suffix}_A"
+        
         As = []
         for omega in omegas:
             G = self.greens_function(omega, eta)
@@ -344,28 +355,36 @@ class GreensFunction:
             As.append(A)
         As = np.array(As)
 
-        save_data_to_file("data", f"{self.fname}{self.suffix}_A", np.vstack((omegas, As)).T)
+        save_data_to_file(dirname, datfname, np.vstack((omegas, As)).T)
 
-    def self_energy(self, omegas: Sequence[float], eta: float = 0.0) -> None:
+    def self_energy(
+        self,
+        omegas: Sequence[float],
+        eta: float = 0.0,
+        dirname: str = "data/obs",
+        datfname: Optional[str] = None
+    ) -> None:
         """Returns the trace of self-energy at given frequencies.
 
         Args:
             omegas: The frequencies at which the self-energy is calculated.
             eta: The broadening factor.
             save_data: Whether to save the self-energy to file.
+            dirname: Name of the directory of the data file.
+            datfname: Name of the data file.
 
         Returns:
             TrSigmas: Trace of the self-energy.
         """
+        if datfname is None:
+            datfname = f"{self.fname}{self.suffix}_TrSigma"
+        
         TrSigmas = []
         for omega in omegas:
             G0 = self.mean_field_greens_function(omega, eta)
             G = self.greens_function(omega, eta)
-
             Sigma = np.linalg.pinv(G0) - np.linalg.pinv(G)
             TrSigmas.append(np.trace(Sigma))
         TrSigmas = np.array(TrSigmas)
 
-        save_data_to_file(
-            "data", f"{self.fname}{self.suffix}_TrSigma",
-            np.vstack((omegas, TrSigmas.real, TrSigmas.imag)).T)
+        save_data_to_file(dirname, datfname, np.vstack((omegas, TrSigmas.real, TrSigmas.imag)).T)

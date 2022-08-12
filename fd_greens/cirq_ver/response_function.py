@@ -279,17 +279,24 @@ class ResponseFunction:
             for subscript in self.subscripts_off_diagonal:
                 save_to_hdf5(h5file, f"amp{self.suffix}/T_{subscript}", self.T[subscript])
 
-    def response_function(self, omegas: Sequence[float], eta: float = 0.0) -> None:
+    def response_function(
+        self,
+        omegas: Sequence[float],
+        eta: float = 0.0,
+        dirname: str = "data/obs",
+        datfname: Optional[str] = None
+    ) -> None:
         """Returns the charge-charge response function at given frequencies.
 
         Args:
             omegas: The frequencies at which the response function is calculated.
             eta: The broadening factor.
             save_data: Whether to save the response function to file.
-
-        Returns:
-            chis_all (Optional): A dictionary from orbital strings to the corresponding charge-charge response functions.
+            dirname: Name of the directory of the data file.
+            datfname: Name of the data file.
         """
+        if datfname is None:
+            datfname = f"{self.fname}{self.suffix}_chi"
         for i in range(self.n_spatial_orbitals):
             for j in range(self.n_spatial_orbitals):  
                 chis = []
@@ -302,6 +309,4 @@ class ResponseFunction:
                     chis.append(chi)
                 chis = np.array(chis)
 
-                save_data_to_file(
-                    "data", f"{self.fname}{self.suffix}_chi{i}{j}",
-                    np.vstack((omegas, chis.real, chis.imag)).T)
+                save_data_to_file(dirname, f"{datfname}{i}{j}", np.vstack((omegas, chis.real, chis.imag)).T)

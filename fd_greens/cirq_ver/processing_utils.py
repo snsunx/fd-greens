@@ -23,6 +23,7 @@ def generate_greens_function(
     omegas: Optional[Sequence[float]] = None,
     eta: float = 0.02 * HARTREE_TO_EV
 ) -> None:
+    """Generates Green's function data files."""
     if hamiltonian is None:
         hamiltonian = get_nah_hamiltonian(3.7)
     if omegas is None:
@@ -36,6 +37,7 @@ def generate_greens_function(
         greens.process()
         greens.spectral_function(omegas, eta)
         greens.self_energy(omegas, eta)
+
 
 def generate_response_function(
     h5fnames: Sequence[str],
@@ -57,6 +59,7 @@ def generate_response_function(
         resp.process()
         resp.response_function(omegas, eta)
 
+
 def generate_fidelity_vs_depth(
     h5fname0: str,
     h5fname1: str,
@@ -64,6 +67,7 @@ def generate_fidelity_vs_depth(
     datfname: str = "fid_vs_depth"
 ) -> None:
     """Generates fidelity vs depth on a single circuit."""
+    print("> Generating fidelity vs depth")
     letter_to_int = {'s': 1, 'd': 2, 't': 3}
 
     h5file0 = h5py.File(h5fname0 + ".h5", "r")
@@ -91,15 +95,24 @@ def generate_fidelity_vs_depth(
     h5file0.close()
     h5file1.close()
 
+
 def generate_fidelity_matrix(
     h5fname_exact: str,
     h5fname_expt: str,
-    subscript: str,
-    spin: str = '',
-    dirname: str = "data",
-    datfname: str = "fid_mat"
+    subscript: Optional[str] = None,
+    spin: Optional[str] = None,
+    dirname: str = "data/mat",
+    datfname: Optional[str] = None
 ) -> None:
     """Generates the fidelity matrix."""
+    print(f"> Generating fidelity matrix of {h5fname_expt}")
+    if subscript is None:
+        subscript = "e" if "greens" in h5fname_expt else "n"
+    if spin is None:
+        spin = "u" if "greens" in h5fname_expt else ""
+    if datfname is None:
+        datfname = "fid_mat_" + '_'.join(h5fname_expt.split('_')[1:])
+    
     h5file_exact = h5py.File(h5fname_exact + ".h5", "r")
     h5file_expt = h5py.File(h5fname_expt + ".h5", "r")
 
@@ -128,14 +141,23 @@ def generate_fidelity_matrix(
     h5file_exact.close()
     h5file_expt.close()
 
+
 def generate_trace_matrix(
     h5fname: str,
-    subscript: str,
-    spin: str,
-    dirname: str = "data",
-    datfname: str = "trace_mat",
+    subscript: Optional[str] = None,
+    spin: Optional[str] = None,
+    dirname: str = "data/mat",
+    datfname: Optional[str] = None,
 ) -> None:
     """Genreates the ancilla bitstring probabilities."""
+    print(f"> Generating trace matrix of {h5fname}")
+    if subscript is None:
+        subscript = "e" if "greens" in h5fname else "n"
+    if spin is None:
+        spin = "u" if "greens" in h5fname else ""
+    if datfname is None:
+        datfname = "trace_mat_" + '_'.join(h5fname.split('_')[1:])
+
     h5file = h5py.File(h5fname + ".h5", "r")
 
     dim = 2 if spin in ['u', 'd'] else 4
@@ -143,11 +165,10 @@ def generate_trace_matrix(
     trace_matrix = np.zeros((dim, dim))
     for i in range(dim):
         trace_matrix[i, i] = h5file[f"trace/{subscript}{i}{spin}"][()]
-
         for j in range(i + 1, dim):
             trace_matrix[i, j] = h5file[f"trace/{subscript}p{i}{j}{spin}"][()]
             trace_matrix[j, i] = h5file[f"trace/{subscript}m{i}{j}{spin}"][()]
-
+    
     np.savetxt(f"{dirname}/{datfname}.dat", trace_matrix)
 
     h5file.close()
