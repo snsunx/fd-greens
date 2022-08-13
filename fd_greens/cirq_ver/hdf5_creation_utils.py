@@ -18,6 +18,7 @@ from .excited_amplitudes_solver import ExcitedAmplitudesSolver
 from .response_function import ResponseFunction
 from .classical_amplitudes_solver import ClassicalAmplitudesSolver
 from .circuit_string_converter import CircuitStringConverter
+from .circuit_constructor import CircuitConstructor
 from .general_utils import get_non_z_locations, get_gate_counts
 from .noise_parameters import NoiseParameters
 
@@ -71,7 +72,9 @@ def create_hdf5(
         classical_solver.compute_N()
         N_classical = classical_solver.N['n']
 
-        print(np.allclose(N, N_classical))
+        is_all_close = np.allclose(N, N_classical)
+        if not is_all_close:
+            print(np.linalg.norm(N - N_classical))
 
 def create_hdf5_by_depth(h5fname: str, circuit_name: str, noise_fname: Optional[str] = None) -> None:
     """Creates an HDF5 file by circuit depth.
@@ -83,40 +86,41 @@ def create_hdf5_by_depth(h5fname: str, circuit_name: str, noise_fname: Optional[
     """
     int_to_letter = {1: 's', 2: 'd', 3: 't'}
 
+    h5fname_new = '_'.join(h5fname.split('_')[:-1])
     if noise_fname is None:
-        h5fname_new = f"{h5fname}_{circuit_name}.h5"
+        h5fname_new = f"{h5fname_new}_{circuit_name}.h5"
     else:
-        h5fname_new = f"{h5fname}_{circuit_name}_{noise_fname[-4:]}.h5"
+        h5fname_new = f"{h5fname_new}_{circuit_name}_{noise_fname[-4:]}.h5"
     
     qubits = cirq.LineQubit.range(4)
     converter = CircuitStringConverter(qubits)
 
     circuit = converter.load_circuit(h5fname, circuit_name + '/transpiled')
     non_z_locations = get_non_z_locations(circuit)
+    print("non_z_locations =", non_z_locations)
     
     h5file = h5py.File(h5fname_new, 'w')
     for i in non_z_locations:
-        # converter.save_circuit(h5file, f"circuit/{i}", circuit[:i])
-        # n_1q_gates = get_gate_counts(circuit[i], num_qubits=1)
-        # n_2q_gates = get_gate_counts(circuit[i], num_qubits=2)
-        # n_3q_gates = get_gate_counts(circuit[i], num_qubits=3)
-        # if n_1q_gates > 0:
-        #     index_string = str(i) + 's'
-        # if n_2q_gates > 0:
-        #     index_string = str(i) + 'd'
-        # if n_3q_gates > 0:
-        #     index_string = str(i) + 't'
-
+        circuit_i = circuit[:i]
         for n in [1, 2, 3]:
             if get_gate_counts(circuit[i], num_qubits=n) > 0:
                 index_string = str(i) + int_to_letter[n]
         
         if noise_fname is None:
-            state_vector = cirq.final_state_vector(circuit[:i])
+            # Save transpiled and tomography circuits to file.
+            converter.save_circuit(h5file, f"circ{i}/transpiled", circuit_i)
+            tomography_circuits = CircuitConstructor.build_tomography_circuits(
+                circuit_i, tomographed_qubits=qubits)
+            for tomo_label, tomo_circuit in tomography_circuits.items():
+                converter.save_circuit(h5file, f"circ{i}/{tomo_label}", tomo_circuit)
+
+            # Obtain the state vector and save to file.
+            state_vector = cirq.final_state_vector(circuit_i)
             h5file[f'psi/{index_string}'] = state_vector
         else:
+            # Add noise to ith circuit, obtain density matrix and save to file.
             noise_params = NoiseParameters.from_file(noise_fname)
-            circuit_i = noise_params.add_noise_to_circuit(circuit[:i])
+            circuit_i = noise_params.add_noise_to_circuit(circuit_i)
             density_matrix = cirq.final_density_matrix(circuit_i)
             h5file[f'rho/{index_string}'] = density_matrix
     

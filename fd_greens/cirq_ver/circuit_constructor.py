@@ -191,7 +191,7 @@ class CircuitConstructor:
     @staticmethod
     def build_tomography_circuits(
         circuit: cirq.Circuit, 
-        tomographed_qubits: Sequence[cirq.Qid],
+        tomographed_qubits: Optional[Sequence[cirq.Qid]] = None,
         measured_qubits: Optional[Sequence[cirq.Qid]] = None
     ) -> Mapping[str, cirq.Circuit]:
         """Constructs tomography circuits on a given circuit.
@@ -204,6 +204,8 @@ class CircuitConstructor:
         Returns:
             tomography_circuits: A dictionary with tomography labels as keys and tomography circuits as values.
         """
+        if tomographed_qubits is None:
+            tomographed_qubits = circuit.all_qubits()
         if measured_qubits is None:
             measured_qubits = tomographed_qubits
 
@@ -215,13 +217,18 @@ class CircuitConstructor:
         # TODO: Take swap gates at the end of the circuit into account.
         for label in tomography_labels:
             # Look for the position where the first multi-qubit gate is encountered.
-            # This is general because in the last transpilation step the circuits have been converted into
-            # the form with alternating single- and multi-qubit gates.
+            # This is general because in the last transpilation step the circuits have
+            # been converted into the form with alternating single- and multi-qubit gates.
             position = 0
             gate_count = 0
             while gate_count == 0:
                 position -= 1
-                gate_count = get_gate_counts(cirq.Circuit(circuit[position]), criterion=lambda op: op.gate.num_qubits() > 1)
+                if abs(position) > len(circuit):
+                    break
+                gate_count = get_gate_counts(
+                    cirq.Circuit(circuit[position]), 
+                    criterion=lambda op: op.gate.num_qubits() > 1
+                )
             
             # Break the circuit at the position where the multi-qubit gate is encountered.
             if position != -1:
