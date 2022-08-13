@@ -6,7 +6,7 @@ from fd_greens import plot_response_function, display_fidelities, display_traces
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("-o", "--observable", type=str, nargs="+", dest="observable_fnames", default=None)
+    parser.add_argument("-obs", "--observable", type=str, nargs="+", dest="observable_fnames", default=None)
     parser.add_argument("-f", "--fidelity-matrix", type=str, dest="fidelity_matrix_fname", default=None)
     parser.add_argument("-t", "--trace-matrix", type=str, nargs=2, dest="trace_matrix_fnames", default=None)
     parser.add_argument("-n", "--figname", type=str)

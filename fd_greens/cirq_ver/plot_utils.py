@@ -19,7 +19,7 @@ import matplotlib.pyplot as plt
 
 from .circuit_string_converter import CircuitStringConverter
 from .general_utils import get_fidelity, get_non_z_locations, histogram_to_array
-from .helpers import process_bitstring_counts
+from .postprocessing_utils import process_bitstring_counts
 
 
 LINESTYLES_A = [

@@ -1,8 +1,8 @@
 #!/bin/bash
 
 process_results=false
-generate_data=false
-plot_data=true
+generate_data=true
+plot_data=false
 
 if [ $process_results = true ]
 then
@@ -16,7 +16,7 @@ fi
 
 if [ $generate_data = true ]
 then
-    python3 generate_data.py -o nah_resp_exact
+    python3 generate_data.py --obs nah_resp_exact
     python3 generate_data.py -t nah_resp_exact
 
     export PROJECT_DENSITY_MATRICES=0
@@ -24,7 +24,7 @@ then
     export USE_EXACT_TRACES=0
     for h5fname in nah_resp_tomo_rc_raw nah_resp_tomo_rcnoxraw_raw nah_resp_tomo_rcnoxem_raw
     do
-        python3 generate_data.py -o $h5fname
+        python3 generate_data.py --obs $h5fname
         python3 generate_data.py -f nah_resp_exact $h5fname
         python3 generate_data.py -t $h5fname
     done
@@ -34,7 +34,7 @@ then
     export USE_EXACT_TRACES=0
     for h5fname in nah_resp_tomo_rc_pur nah_resp_tomo_rcnoxraw_pur nah_resp_tomo_rcnoxem_pur
     do
-        python3 generate_data.py -o $h5fname
+        python3 generate_data.py -obs $h5fname
         python3 generate_data.py -f nah_resp_exact $h5fname
     done
 
@@ -43,22 +43,22 @@ then
     export USE_EXACT_TRACES=1
     for h5fname in nah_resp_tomo_rc_trace nah_resp_tomo_rcnoxraw_trace nah_resp_tomo_rcnoxem_trace
     do 
-        python3 generate_data.py -o $h5fname
+        python3 generate_data.py -obs $h5fname
     done
 fi
 
 if [ $plot_data = true ]
 then
     # python3 plot_data.py \
-    #     -o nah_resp_exact nah_resp_tomo_rc_raw nah_resp_tomo_rc_pur nah_resp_tomo_rc_trace \
+    #     -obs nah_resp_exact nah_resp_tomo_rc_raw nah_resp_tomo_rc_pur nah_resp_tomo_rc_trace \
     #     -l Exact Raw Purified Trace \
     #     -n nah_rc
     # python3 plot_data.py \
-    #     -o nah_resp_exact nah_resp_tomo_rcnoxraw_raw nah_resp_tomo_rcnoxraw_pur nah_resp_tomo_rcnoxraw_trace \
+    #     -obs nah_resp_exact nah_resp_tomo_rcnoxraw_raw nah_resp_tomo_rcnoxraw_pur nah_resp_tomo_rcnoxraw_trace \
     #     -l Exact Raw Purified Trace \
     #     -n nah_rcnoxraw
     # python3 plot_data.py \
-    #     -o nah_resp_exact nah_resp_tomo_rcnoxem_raw nah_resp_tomo_rcnoxem_pur nah_resp_tomo_rcnoxem_trace \
+    #     -obs nah_resp_exact nah_resp_tomo_rcnoxem_raw nah_resp_tomo_rcnoxem_pur nah_resp_tomo_rcnoxem_trace \
     #     -l Exact Raw Purified Trace \
     #     -n nah_rcnoxem
     

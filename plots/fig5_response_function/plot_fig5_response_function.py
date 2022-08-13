@@ -9,59 +9,94 @@ plt.rcParams.update({
 	'text.latex.preamble': r'\usepackage{amsmath}',
     'font.family': 'sans-serif',
     'font.sans-serif': 'Helvetica',
-    'font.size': 22,
+    'font.size': 20,
     'figure.subplot.left': 0.08,
     'figure.subplot.right': 0.98,
     'figure.subplot.top': 0.9,
     'figure.subplot.bottom': 0.05,
-    'lines.linewidth': 2
+    'lines.linewidth': 3
 })
 
 def plot_chi(
     ax: plt.Axes,
-    mol_name: str,
-    panel_name: str,
-    component: str,
-    mode: str, 
-    include_ylabel: bool = True,
-    include_legend: bool = False
+    datfnames: Sequence[str],
+    labels: Sequence[str],
+    use_real_part: bool = False,
+    include_legend: bool = False,
+    panel_name: str = '(a)',
 ) -> None:
-    omegas, reals, imags = np.loadtxt(f'../../expt/resp/jul20_2022/data/{mol_name}_resp_exact_chi{component}.dat').T
-    obs = reals if mode == 'real' else imags
-    ax.plot(omegas, obs, color='k', label="Exact")
 
-    omegas, reals, imags = np.loadtxt(f'../../expt/resp/jul20_2022/data/{mol_name}_resp_tomo_raw_chi{component}.dat').T
-    obs = reals if mode == 'real' else imags
-    ax.plot(omegas, obs, ls='--', lw=3, label="Raw")
+    for datfname, label in zip(datfnames, labels):
+        omegas, reals, imags = np.loadtxt(datfname).T
+        obs = reals if use_real_part else imags
+        ls = '-' if label == "Exact" else '--'
+        marker = 'x' if "RC" in label else ''
+        ax.plot(omegas, obs, ls=ls, marker=marker, markevery=30, label=label)
 
-    omegas, reals, imags = np.loadtxt(f'../../expt/resp/jul20_2022/data/{mol_name}_resp_tomo_pur_chi{component}.dat').T
-    obs = reals if mode == 'real' else imags
-    ax.plot(omegas, obs, ls='--', lw=3, label="Purified")
+    # omegas, reals, imags = np.loadtxt(f'../../expt/resp/jul20_2022/data/obs/nah_resp_tomo_raw_chi{component}.dat').T
+    # obs = reals if use_real_part else imags
+    # ax.plot(omegas, obs, ls='--', lw=3, label="Raw")
 
-    omegas, reals, imags = np.loadtxt(f'../../expt/resp/jul20_2022/data/{mol_name}_resp_tomo2q_trace_chi{component}.dat').T
-    obs = reals if mode == 'real' else imags
-    ax.plot(omegas, obs, ls='--', lw=3, label="Purified + \n trace corrected")
+    # omegas, reals, imags = np.loadtxt(f'../../expt/resp/jul20_2022/data/obs/nah_resp_tomo_pur_chi{component}.dat').T
+    # obs = reals if use_real_part else imags
+    # ax.plot(omegas, obs, ls='--', lw=3, label="Purified")
+
+    # omegas, reals, imags = np.loadtxt(f'../../expt/resp/jul20_2022/data/obs/nah_resp_tomo2q_trace_chi{component}.dat').T
+    # obs = reals if use_real_part == 'real' else imags
+    # ax.plot(omegas, obs, ls='--', lw=3, label="Purified + \n trace corrected")
 
     ax.text(0.03, 0.92, panel_name, transform=ax.transAxes)
 
     ax.set_xlabel("$\omega$ (eV)")
-    if include_ylabel:
-        ylabel_string = mode[0].upper() + mode[1] + " $\chi_{" + component + "}$ (eV$^{-1}$)"
-        ax.set_ylabel(ylabel_string)
+    component = "00"
+    prefix = "Re" if use_real_part else "Im"
+    ylabel_string = prefix + " $\chi_{" + component + "}$ (eV$^{-1}$)"
+    ax.set_ylabel(ylabel_string)
+    ax.legend()
 
-    if include_legend:
-        ax.legend(loc='center', bbox_to_anchor=(1.0, 0.0, 0.55, 1.0))
+    # if include_legend:
+    #     ax.legend(loc='center', bbox_to_anchor=(1.0, 0.0, 0.55, 1.0))
 
 
 def main():
     print("Start plotting data.")
 
-    fig = plt.figure(figsize=(19, 6))
-    ax0 = fig.add_axes([0.07, 0.13, 0.34, 0.8])
-    ax1 = fig.add_axes([0.48, 0.13, 0.34, 0.8])
+    # f'../../expt/resp/jul20_2022/data/obs/nah_resp_exact_chi00.dat')
 
-    plot_chi(ax0, 'nah', '(a) NaH', '00', 'imag', include_legend=False)
-    plot_chi(ax1, 'kh', '(b) KH', '00', 'imag', include_legend=True)
+    fig = plt.figure(figsize=(22, 6.5))
+    ax_a = fig.add_axes([0.055, 0.13, 0.27, 0.83])
+    ax_b = fig.add_axes([0.385, 0.13, 0.27, 0.83])
+    ax_c = fig.add_axes([0.715, 0.13, 0.27, 0.83])
+
+    plot_chi(
+        ax_a, 
+        [f'../../expt/resp/jul20_2022/data/obs/nah_resp_exact_chi00.dat',
+         f'../../expt/resp/jul20_2022/data/obs/nah_resp_tomo_pur_chi00.dat',
+         f'../../expt/resp/aug03_2022/data/obs/nah_resp_tomo_rc_pur_chi00.dat'],
+        ["Exact", "No RC", "RC"],
+        use_real_part=False,
+        panel_name="(a)"
+    )
+    plot_chi(
+        ax_b,
+        [f'../../expt/resp/jul20_2022/data/obs/nah_resp_exact_chi00.dat',
+         f'../../expt/resp/jul20_2022/data/obs/nah_resp_tomo_pur_chi00.dat',
+         f'../../expt/resp/jul20_2022/data/obs/nah_resp_tomo2q_pur_chi00.dat'],
+        ["Exact", "iToffoli", "CZ"],
+        use_real_part=False,
+        panel_name="(b)"
+    )
+    plot_chi(
+        ax_c, 
+        [f'../../expt/resp/jul20_2022/data/obs/nah_resp_exact_chi00.dat',
+         f'../../expt/resp/jul20_2022/data/obs/nah_resp_tomo_raw_chi00.dat',
+         f'../../expt/resp/jul20_2022/data/obs/nah_resp_tomo_pur_chi00.dat',
+         f'../../expt/resp/jul20_2022/data/obs/nah_resp_tomo_trace_chi00.dat'],
+        ["Exact", "Raw", "Purified", "Purified + \nTrace Corr."],
+        use_real_part=False,
+        panel_name="(c)"
+    )
+    
 
     fig.savefig(f"{sys.argv[0][5:-3]}.png", dpi=200)    
 

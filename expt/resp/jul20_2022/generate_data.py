@@ -12,7 +12,7 @@ from fd_greens import generate_response_function, generate_fidelity_matrix, gene
 
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("-o", "--observable", nargs="+", type=str, dest="observable_fnames", default=None)
+    parser.add_argument("-obs", "--observable", nargs="+", type=str, dest="observable_fnames", default=None)
     parser.add_argument("-f", "--fidelity-matrix", nargs=2, type=str, dest="fidelity_matrix_fnames", default=None)
     parser.add_argument("-t", "--trace-matrix", type=str, dest="trace_matrix_fname", default=None)
     args = parser.parse_args()

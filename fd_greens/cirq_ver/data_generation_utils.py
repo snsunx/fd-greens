@@ -49,11 +49,11 @@ def generate_response_function(
     h5fnames: Sequence[str],
     hamiltonian: Optional[MolecularHamiltonian] = None,
     omegas: Optional[Sequence[float]] = None,
-    eta: float = 0.02 * HARTREE_TO_EV
+    eta: float = 1.5 # 0.05 * HARTREE_TO_EV
 ) -> None:
     """Generates response function data files."""
     if hamiltonian is None:
-        hamiltonian = get_nah_hamiltonian(3.7)
+        hamiltonian = get_nah_hamiltonian(3.7) # XXX
     if omegas is None:
         omegas = np.arange(-32, 32, 0.1)
 

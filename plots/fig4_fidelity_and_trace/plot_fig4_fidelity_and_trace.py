@@ -19,21 +19,11 @@ plt.rcParams.update({
 
 def plot_fidelity_matrix(
     ax: plt.Axes,
-    # ax_sample: plt.Axes,
-    # ax_cbar: plt.Axes,
-    datfname_raw: str, 
+    datfname_raw: str,
     datfname_pur: str,
     panel_name: str = '(a)',
 ) -> None:
-    """Plots the fidelity of experimental states in Fig. 3.
-    
-    Args:
-        fig: The figure object.
-        ax: The axis object of the purity matrix.
-        ax_sample: The axis object for the sample tile.
-        ax_cbar: The axis object for the coloar bar.
-        mol_name: Name of the molecule, "nah" or "kh".
-    """
+    """Plots the fidelity matrix  in Fig. 3."""
     global fig
 
     bbox = ax.get_position()
@@ -75,21 +65,15 @@ def plot_fidelity_matrix(
     # Display the color bar.
     ax_cbar = fig.add_axes([bbox.xmax + 0.02, bbox.ymin, 0.025, 0.35], transform=ax.transAxes)
     fig.colorbar(im, cax=ax_cbar)
+    ax.text(1.05, 1.04, "Pur.", transform=ax.transAxes)
 
 def plot_trace_matrix(
     ax: plt.Axes, 
     datfname_exact: str,
     datfname_expt: str,
-    panel_name: str
+    panel_name: str = '(c)'
 ) -> None:
-    """Plots the trace in Fig. 3.
-
-    Args:
-        ax: The axis object of the purity matrix.
-        ax_sample: The axis object for the sample tile.
-        ax_cbar: The axis object for the coloar bar.
-        mol_name: Name of the molecule, "nah" or "kh".
-    """
+    """Plots the trace matrix in Fig. 4."""
     global fig
 
     bbox = ax.get_position()
@@ -141,6 +125,7 @@ def plot_trace_matrix(
     # Display the color bar.
     ax_cbar = fig.add_axes([bbox.xmax + 0.02, bbox.ymin, 0.025, 0.35], transform=ax.transAxes)
     fig.colorbar(im, cax=ax_cbar)
+    ax.text(0.945, 1.04, r"$|$Exact$-$Expt.$|$", transform=ax.transAxes, fontsize=17)
 
 def main():
     print("Start plotting data.")
