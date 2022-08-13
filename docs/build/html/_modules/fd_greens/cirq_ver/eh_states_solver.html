@@ -72,7 +72,8 @@
 
 <span class="kn">from</span> <span class="nn">.molecular_hamiltonian</span> <span class="kn">import</span> <span class="n">MolecularHamiltonian</span>
 <span class="kn">from</span> <span class="nn">.qubit_indices</span> <span class="kn">import</span> <span class="n">QubitIndices</span>
-<span class="kn">from</span> <span class="nn">.parameters</span> <span class="kn">import</span> <span class="n">REVERSE_QUBIT_ORDER</span><span class="p">,</span> <span class="n">get_method_indices_pairs</span>
+<span class="kn">from</span> <span class="nn">.parameters</span> <span class="kn">import</span> <span class="n">REVERSE_QUBIT_ORDER</span><span class="p">,</span> <span class="n">MethodIndicesPairs</span>
+<span class="kn">from</span> <span class="nn">.helpers</span> <span class="kn">import</span> <span class="n">save_to_hdf5</span>
 
 
 <div class="viewcode-block" id="EHStatesSolver"><a class="viewcode-back" href="../../../fd_greens.cirq_ver.eh_states_solver.html#fd_greens.cirq_ver.eh_states_solver.EHStatesSolver">[docs]</a><span class="k">class</span> <span class="nc">EHStatesSolver</span><span class="p">:</span>
@@ -90,7 +91,7 @@
 
         <span class="bp">self</span><span class="o">.</span><span class="n">hamiltonian</span> <span class="o">=</span> <span class="n">hamiltonian</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
         
-        <span class="n">method_indices_pairs</span> <span class="o">=</span> <span class="n">get_method_indices_pairs</span><span class="p">(</span><span class="n">spin</span><span class="p">)</span>
+        <span class="n">method_indices_pairs</span> <span class="o">=</span> <span class="n">MethodIndicesPairs</span><span class="o">.</span><span class="n">get_pairs</span><span class="p">(</span><span class="n">spin</span><span class="p">)</span>
         <span class="n">tapered_state</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span> <span class="k">if</span> <span class="n">spin</span> <span class="o">==</span> <span class="s1">&#39;u&#39;</span> <span class="k">else</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span>
         <span class="k">if</span> <span class="n">REVERSE_QUBIT_ORDER</span><span class="p">:</span>
             <span class="n">tapered_state</span><span class="o">.</span><span class="n">reverse</span><span class="p">()</span>
@@ -122,15 +123,12 @@
         <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;(N-1)-electron energies are </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">energies</span><span class="p">[</span><span class="s1">&#39;h&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2"> eV&quot;</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">_save_data</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Saves (N±1)-electron energies and state vectors to HDF5 file.&quot;&quot;&quot;</span>
-        <span class="n">h5file</span> <span class="o">=</span> <span class="n">h5py</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">h5fname</span><span class="p">,</span> <span class="s2">&quot;r+&quot;</span><span class="p">)</span>
-        
-        <span class="n">h5file</span><span class="p">[</span><span class="s1">&#39;es/energies_e&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">energies</span><span class="p">[</span><span class="s1">&#39;e&#39;</span><span class="p">]</span>
-        <span class="n">h5file</span><span class="p">[</span><span class="s1">&#39;es/energies_h&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">energies</span><span class="p">[</span><span class="s1">&#39;h&#39;</span><span class="p">]</span>
-        <span class="n">h5file</span><span class="p">[</span><span class="s1">&#39;es/states_e&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">state_vectors</span><span class="p">[</span><span class="s1">&#39;e&#39;</span><span class="p">]</span>
-        <span class="n">h5file</span><span class="p">[</span><span class="s1">&#39;es/states_h&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">state_vectors</span><span class="p">[</span><span class="s1">&#39;h&#39;</span><span class="p">]</span>
-
-        <span class="n">h5file</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+        <span class="sd">&quot;&quot;&quot;Saves (N±1)-electron energies and state vectors to HDF5 file.&quot;&quot;&quot;</span>        
+        <span class="k">with</span> <span class="n">h5py</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">h5fname</span><span class="p">,</span> <span class="s1">&#39;r+&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">h5file</span><span class="p">:</span>
+            <span class="n">save_to_hdf5</span><span class="p">(</span><span class="n">h5file</span><span class="p">,</span> <span class="s2">&quot;es/energies_e&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">energies</span><span class="p">[</span><span class="s1">&#39;e&#39;</span><span class="p">])</span>
+            <span class="n">save_to_hdf5</span><span class="p">(</span><span class="n">h5file</span><span class="p">,</span> <span class="s2">&quot;es/energies_h&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">energies</span><span class="p">[</span><span class="s1">&#39;h&#39;</span><span class="p">])</span>
+            <span class="n">save_to_hdf5</span><span class="p">(</span><span class="n">h5file</span><span class="p">,</span> <span class="s2">&quot;es/states_e&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">state_vectors</span><span class="p">[</span><span class="s1">&#39;e&#39;</span><span class="p">])</span>
+            <span class="n">save_to_hdf5</span><span class="p">(</span><span class="n">h5file</span><span class="p">,</span> <span class="s2">&quot;es/states_h&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">state_vectors</span><span class="p">[</span><span class="s1">&#39;h&#39;</span><span class="p">])</span>
 
 <div class="viewcode-block" id="EHStatesSolver.run"><a class="viewcode-back" href="../../../fd_greens.cirq_ver.eh_states_solver.html#fd_greens.cirq_ver.eh_states_solver.EHStatesSolver.run">[docs]</a>    <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;Runs the (N±1)-electron states calculation.&quot;&quot;&quot;</span>

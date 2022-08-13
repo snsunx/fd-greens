@@ -68,16 +68,13 @@
 <h1>Circuit String Converter (<code class="xref py py-mod docutils literal notranslate"><span class="pre">fd_greens.circuit_string_converter</span></code>)<a class="headerlink" href="#circuit-string-converter-fd-greens-circuit-string-converter" title="Permalink to this headline"></a></h1>
 <dl class="py class">
 <dt class="sig sig-object py" id="fd_greens.cirq_ver.circuit_string_converter.CircuitStringConverter">
-<em class="property"><span class="pre">class</span> </em><span class="sig-name descname"><span class="pre">CircuitStringConverter</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">qubits</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">cirq.ops.raw_types.Qid</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">offset</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">int</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">4</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/fd_greens/cirq_ver/circuit_string_converter.html#CircuitStringConverter"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#fd_greens.cirq_ver.circuit_string_converter.CircuitStringConverter" title="Permalink to this definition"></a></dt>
+<em class="property"><span class="pre">class</span> </em><span class="sig-name descname"><span class="pre">CircuitStringConverter</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">qubits</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">cirq.ops.raw_types.Qid</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/fd_greens/cirq_ver/circuit_string_converter.html#CircuitStringConverter"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#fd_greens.cirq_ver.circuit_string_converter.CircuitStringConverter" title="Permalink to this definition"></a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <p>Converter between Cirq circuits and Qtrl strings.</p>
 <p>Initializes a <code class="docutils literal notranslate"><span class="pre">CircuitStringConverter</span></code> object.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>qubits</strong> – The qubits in the circuit.</p></li>
-<li><p><strong>offset</strong> – The index offset on the Berkeley device. Defaults to 4.</p></li>
-</ul>
+<dd class="field-odd"><p><strong>qubits</strong> – The qubits in the circuit.</p>
 </dd>
 </dl>
 <dl class="py method">
@@ -117,6 +114,7 @@ a Cirq circuit, we need to</p>
 <dt class="sig sig-object py" id="fd_greens.cirq_ver.circuit_string_converter.CircuitStringConverter.convert_circuit_to_strings">
 <span class="sig-name descname"><span class="pre">convert_circuit_to_strings</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">circuit</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">cirq.circuits.circuit.Circuit</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/fd_greens/cirq_ver/circuit_string_converter.html#CircuitStringConverter.convert_circuit_to_strings"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#fd_greens.cirq_ver.circuit_string_converter.CircuitStringConverter.convert_circuit_to_strings" title="Permalink to this definition"></a></dt>
 <dd><p>Converts a Cirq circuit to Qtrl strings.</p>
+<p>This function optionally wraps around iToffoli gates with Z and CPhase gates.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><p><strong>circuit</strong> – A Cirq circuit.</p>
@@ -125,6 +123,34 @@ a Cirq circuit, we need to</p>
 <dd class="field-even"><p><strong>qtrl_strings</strong> – The Qtrl strings corresponding to the Cirq circuit.</p>
 </dd>
 </dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="fd_greens.cirq_ver.circuit_string_converter.CircuitStringConverter.adapt_to_hardware">
+<span class="sig-name descname"><span class="pre">adapt_to_hardware</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">circuit</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">cirq.circuits.circuit.Circuit</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">cirq.circuits.circuit.Circuit</span></span></span><a class="reference internal" href="_modules/fd_greens/cirq_ver/circuit_string_converter.html#CircuitStringConverter.adapt_to_hardware"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#fd_greens.cirq_ver.circuit_string_converter.CircuitStringConverter.adapt_to_hardware" title="Permalink to this definition"></a></dt>
+<dd><p>Adapts a circuit to hardware by converting to native gates.</p>
+<p>This function handles adjusting CS/CSD gates on specific qubit pairs, and splitting
+simultaneous CZ gates onto different moments.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>circuit</strong> – The circuit on which gates are to be adapted.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>circuit_new</strong> – The new circuit after gate adaptation.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="fd_greens.cirq_ver.circuit_string_converter.CircuitStringConverter.load_circuit">
+<span class="sig-name descname"><span class="pre">load_circuit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">h5fname</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span> </span><span class="pre">h5py._hl.files.File</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dsetname</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">cirq.circuits.circuit.Circuit</span></span></span><a class="reference internal" href="_modules/fd_greens/cirq_ver/circuit_string_converter.html#CircuitStringConverter.load_circuit"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#fd_greens.cirq_ver.circuit_string_converter.CircuitStringConverter.load_circuit" title="Permalink to this definition"></a></dt>
+<dd><p>Loads a circuit from an HDF5 file.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="fd_greens.cirq_ver.circuit_string_converter.CircuitStringConverter.save_circuit">
+<span class="sig-name descname"><span class="pre">save_circuit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">h5fname</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span> </span><span class="pre">h5py._hl.files.File</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dsetname</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">circuit</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">cirq.circuits.circuit.Circuit</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/fd_greens/cirq_ver/circuit_string_converter.html#CircuitStringConverter.save_circuit"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#fd_greens.cirq_ver.circuit_string_converter.CircuitStringConverter.save_circuit" title="Permalink to this definition"></a></dt>
+<dd><p>Saves a circuit to an HDF5 file.</p>
 </dd></dl>
 
 </dd></dl>

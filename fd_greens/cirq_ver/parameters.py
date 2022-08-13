@@ -36,7 +36,8 @@ class CircuitConstructionParameters:
 
     def __post_init__(self) -> None:
         if "CONVERT_CCZ_TO_ITOFFOLI" in os.environ:
-            # print("CONVERT_CCZ_TO_ITOFFOLI", bool(int(os.environ["CONVERT_CCZ_TO_ITOFFOLI"])))
+            print(f"CONVERT_CCZ_TO_ITOFFOLI changed from {self.CONVERT_CCZ_TO_ITOFFOLI}"
+                  f" to {bool(int(os.environ['CONVERT_CCZ_TO_ITOFFOLI']))}")
             self.CONVERT_CCZ_TO_ITOFFOLI = bool(int(os.environ["CONVERT_CCZ_TO_ITOFFOLI"]))
 
     def write(self, fname: str) -> None:

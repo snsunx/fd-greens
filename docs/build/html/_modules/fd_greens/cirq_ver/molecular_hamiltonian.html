@@ -67,6 +67,8 @@
 <span class="sd">==============================================================</span>
 <span class="sd">&quot;&quot;&quot;</span>
 
+<span class="kn">from</span> <span class="nn">deprecated</span> <span class="kn">import</span> <span class="n">deprecated</span>
+
 <span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Sequence</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Iterable</span>
 
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
@@ -78,6 +80,14 @@
 <span class="kn">from</span> <span class="nn">.operators</span> <span class="kn">import</span> <span class="n">OperatorsBase</span>
 <span class="kn">from</span> <span class="nn">.parameters</span> <span class="kn">import</span> <span class="n">HARTREE_TO_EV</span>
 
+
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="s2">&quot;MolecularHamiltonian&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;get_h2_hamiltonian&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;get_lih_hamiltonian&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;get_nah_hamiltonian&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;get_alkali_hydride_hamiltonian&quot;</span>
+<span class="p">]</span>
 
 <div class="viewcode-block" id="MolecularHamiltonian"><a class="viewcode-back" href="../../../fd_greens.cirq_ver.molecular_hamiltonian.html#fd_greens.cirq_ver.molecular_hamiltonian.MolecularHamiltonian">[docs]</a><span class="k">class</span> <span class="nc">MolecularHamiltonian</span><span class="p">(</span><span class="n">OperatorsBase</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Molecular Hamiltonian.&quot;&quot;&quot;</span>
@@ -161,7 +171,29 @@
         <span class="sd">&quot;&quot;&quot;Returns the matrix form of the Hamiltonian.&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="nb">sum</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pauli_strings</span><span class="p">)</span><span class="o">.</span><span class="n">matrix</span><span class="p">()</span></div>
 
-<div class="viewcode-block" id="get_lih_hamiltonian"><a class="viewcode-back" href="../../../fd_greens.cirq_ver.molecular_hamiltonian.html#fd_greens.cirq_ver.molecular_hamiltonian.get_lih_hamiltonian">[docs]</a><span class="k">def</span> <span class="nf">get_lih_hamiltonian</span><span class="p">(</span><span class="n">bond_distance</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MolecularHamiltonian</span><span class="p">:</span>
+<div class="viewcode-block" id="get_h2_hamiltonian"><a class="viewcode-back" href="../../../fd_greens.cirq_ver.molecular_hamiltonian.html#fd_greens.cirq_ver.molecular_hamiltonian.get_h2_hamiltonian">[docs]</a><span class="nd">@deprecated</span>
+<span class="k">def</span> <span class="nf">get_h2_hamiltonian</span><span class="p">(</span><span class="n">bond_distance</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MolecularHamiltonian</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Returns the HOMO-LUMO LiH Hamiltonian with bond length r.</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        bond_distance: The bond length of the molecule in Angstrom.</span>
+<span class="sd">    </span>
+<span class="sd">    Returns:</span>
+<span class="sd">        hamiltonian: The molecular Hamiltonian of LiH.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">molecule</span> <span class="o">=</span> <span class="n">MolecularData</span><span class="p">(</span>
+        <span class="p">[[</span><span class="s2">&quot;H&quot;</span><span class="p">,</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">)],</span> <span class="p">[</span><span class="s2">&quot;H&quot;</span><span class="p">,</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">bond_distance</span><span class="p">)]],</span>
+        <span class="s1">&#39;sto3g&#39;</span><span class="p">,</span>
+        <span class="n">multiplicity</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+        <span class="n">charge</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+    <span class="n">run_pyscf</span><span class="p">(</span><span class="n">molecule</span><span class="p">)</span>
+
+    <span class="n">hamiltonian</span> <span class="o">=</span> <span class="n">MolecularHamiltonian</span><span class="p">(</span><span class="n">cirq</span><span class="o">.</span><span class="n">LineQubit</span><span class="o">.</span><span class="n">range</span><span class="p">(</span><span class="mi">4</span><span class="p">),</span> <span class="n">molecule</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">hamiltonian</span></div>
+
+<div class="viewcode-block" id="get_lih_hamiltonian"><a class="viewcode-back" href="../../../fd_greens.cirq_ver.molecular_hamiltonian.html#fd_greens.cirq_ver.molecular_hamiltonian.get_lih_hamiltonian">[docs]</a><span class="nd">@deprecated</span>
+<span class="k">def</span> <span class="nf">get_lih_hamiltonian</span><span class="p">(</span><span class="n">bond_distance</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MolecularHamiltonian</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;Returns the HOMO-LUMO LiH Hamiltonian with bond length r.</span>
 <span class="sd">    </span>
 <span class="sd">    Args:</span>
@@ -183,6 +215,60 @@
         <span class="n">molecule</span><span class="p">,</span>
         <span class="n">occupied_indices</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
         <span class="n">active_indices</span><span class="o">=</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">])</span>
+    <span class="k">return</span> <span class="n">hamiltonian</span></div>
+
+<div class="viewcode-block" id="get_nah_hamiltonian"><a class="viewcode-back" href="../../../fd_greens.cirq_ver.molecular_hamiltonian.html#fd_greens.cirq_ver.molecular_hamiltonian.get_nah_hamiltonian">[docs]</a><span class="nd">@deprecated</span>
+<span class="k">def</span> <span class="nf">get_nah_hamiltonian</span><span class="p">(</span><span class="n">bond_distance</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MolecularHamiltonian</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Returns the HOMO-LUMO NaH Hamiltonian with bond length r.</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        bond_distance: The bond length of the molecule in Angstrom.</span>
+<span class="sd">    </span>
+<span class="sd">    Returns:</span>
+<span class="sd">        hamiltonian: The molecular Hamiltonian of LiH.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">molecule</span> <span class="o">=</span> <span class="n">MolecularData</span><span class="p">(</span>
+        <span class="p">[[</span><span class="s2">&quot;Na&quot;</span><span class="p">,</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">)],</span> <span class="p">[</span><span class="s2">&quot;H&quot;</span><span class="p">,</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">bond_distance</span><span class="p">)]],</span>
+        <span class="s1">&#39;sto3g&#39;</span><span class="p">,</span>
+        <span class="n">multiplicity</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+        <span class="n">charge</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+    <span class="n">run_pyscf</span><span class="p">(</span><span class="n">molecule</span><span class="p">)</span>
+
+    <span class="n">hamiltonian</span> <span class="o">=</span> <span class="n">MolecularHamiltonian</span><span class="p">(</span>
+        <span class="n">cirq</span><span class="o">.</span><span class="n">LineQubit</span><span class="o">.</span><span class="n">range</span><span class="p">(</span><span class="mi">4</span><span class="p">),</span>
+        <span class="n">molecule</span><span class="p">,</span>
+        <span class="n">occupied_indices</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">],</span>
+        <span class="n">active_indices</span><span class="o">=</span><span class="p">[</span><span class="mi">5</span><span class="p">,</span> <span class="mi">6</span><span class="p">])</span>
+    <span class="k">return</span> <span class="n">hamiltonian</span></div>
+
+<div class="viewcode-block" id="get_alkali_hydride_hamiltonian"><a class="viewcode-back" href="../../../fd_greens.cirq_ver.molecular_hamiltonian.html#fd_greens.cirq_ver.molecular_hamiltonian.get_alkali_hydride_hamiltonian">[docs]</a><span class="k">def</span> <span class="nf">get_alkali_hydride_hamiltonian</span><span class="p">(</span><span class="n">metal_atom</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">bond_length</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MolecularHamiltonian</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Returns an alkali hydride Hamiltonian.</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        metal_atom: The alkali metal atom.</span>
+<span class="sd">        bond_length: Bond length of the alkali metal hydride molecule.</span>
+<span class="sd">    </span>
+<span class="sd">    Returns:</span>
+<span class="sd">        hamiltonian: The metal hydride Hamiltonian.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">assert</span> <span class="n">metal_atom</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;H&quot;</span><span class="p">,</span> <span class="s2">&quot;Li&quot;</span><span class="p">,</span> <span class="s2">&quot;Na&quot;</span><span class="p">,</span> <span class="s2">&quot;K&quot;</span><span class="p">,</span> <span class="s2">&quot;Rb&quot;</span><span class="p">]</span>
+
+    <span class="n">molecule</span> <span class="o">=</span> <span class="n">MolecularData</span><span class="p">(</span>
+        <span class="p">[[</span><span class="n">metal_atom</span><span class="p">,</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">)],</span> <span class="p">[</span><span class="s2">&quot;H&quot;</span><span class="p">,</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">bond_length</span><span class="p">)]],</span>
+        <span class="s2">&quot;sto3g&quot;</span><span class="p">,</span>
+        <span class="n">multiplicity</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+        <span class="n">charge</span><span class="o">=</span><span class="mi">0</span>
+    <span class="p">)</span>
+    <span class="n">run_pyscf</span><span class="p">(</span><span class="n">molecule</span><span class="p">)</span>
+    <span class="n">homo_index</span> <span class="o">=</span> <span class="n">molecule</span><span class="o">.</span><span class="n">n_electrons</span> <span class="o">//</span> <span class="mi">2</span>
+
+    <span class="n">hamiltonian</span> <span class="o">=</span> <span class="n">MolecularHamiltonian</span><span class="p">(</span>
+        <span class="n">cirq</span><span class="o">.</span><span class="n">LineQubit</span><span class="o">.</span><span class="n">range</span><span class="p">(</span><span class="mi">4</span><span class="p">),</span>
+        <span class="n">molecule</span><span class="p">,</span>
+        <span class="n">occupied_indices</span><span class="o">=</span><span class="nb">list</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="n">homo_index</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)),</span>
+        <span class="n">active_indices</span><span class="o">=</span><span class="p">[</span><span class="n">homo_index</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span> <span class="n">homo_index</span><span class="p">]</span>
+    <span class="p">)</span>
     <span class="k">return</span> <span class="n">hamiltonian</span></div>
 </pre></div>
 

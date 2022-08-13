@@ -68,7 +68,6 @@
 <span class="sd">&quot;&quot;&quot;</span>
 
 <span class="kn">from</span> <span class="nn">itertools</span> <span class="kn">import</span> <span class="n">product</span>
-<span class="kn">from</span> <span class="nn">turtle</span> <span class="kn">import</span> <span class="n">position</span>
 <span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Mapping</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">List</span>
 <span class="kn">from</span> <span class="nn">cmath</span> <span class="kn">import</span> <span class="n">polar</span>
 
@@ -76,7 +75,7 @@
 <span class="kn">import</span> <span class="nn">cirq</span>
 
 <span class="kn">from</span> <span class="nn">.transpilation</span> <span class="kn">import</span> <span class="n">transpile_1q_gates</span>
-<span class="kn">from</span> <span class="nn">.utilities</span> <span class="kn">import</span> <span class="n">get_gate_counts</span>
+<span class="kn">from</span> <span class="nn">.general_utils</span> <span class="kn">import</span> <span class="n">get_gate_counts</span>
 
 
 <div class="viewcode-block" id="CircuitConstructor"><a class="viewcode-back" href="../../../fd_greens.cirq_ver.circuit_constructor.html#fd_greens.cirq_ver.circuit_constructor.CircuitConstructor">[docs]</a><span class="k">class</span> <span class="nc">CircuitConstructor</span><span class="p">:</span>
@@ -270,6 +269,8 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="n">measured_qubits</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">measured_qubits</span> <span class="o">=</span> <span class="n">tomographed_qubits</span>
+
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">tomographed_qubits</span><span class="p">)</span> <span class="si">= }</span><span class="s2">&quot;</span><span class="p">)</span>
         
         <span class="n">tomography_labels</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">product</span><span class="p">(</span><span class="s2">&quot;xyz&quot;</span><span class="p">,</span> <span class="n">repeat</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">tomographed_qubits</span><span class="p">))]</span>
         <span class="n">tomography_circuits</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>

@@ -68,45 +68,47 @@
 <span class="sd">&quot;&quot;&quot;</span>
 
 <span class="kn">import</span> <span class="nn">re</span>
-<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">List</span><span class="p">,</span> <span class="n">Sequence</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">List</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">,</span> <span class="n">Union</span>
 <span class="kn">import</span> <span class="nn">warnings</span>
 
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="kn">import</span> <span class="nn">cirq</span>
+<span class="kn">import</span> <span class="nn">h5py</span>
+<span class="kn">import</span> <span class="nn">json</span>
 
 <span class="kn">from</span> <span class="nn">.transpilation</span> <span class="kn">import</span> <span class="n">C0C0iXGate</span>
-<span class="kn">from</span> <span class="nn">.utilities</span> <span class="kn">import</span> <span class="n">get_gate_counts</span>
-<span class="kn">from</span> <span class="nn">.parameters</span> <span class="kn">import</span> <span class="n">CHECK_CIRCUITS</span><span class="p">,</span> <span class="n">ADJUST_CS_CSD_GATES</span><span class="p">,</span> <span class="n">WRAP_Z_AROUND_ITOFFOLI</span><span class="p">,</span> <span class="n">ITOFFOLI_Z_ANGLE</span><span class="p">,</span> <span class="n">SPLIT_SIMULTANEOUS_CZS</span>
+<span class="kn">from</span> <span class="nn">.general_utils</span> <span class="kn">import</span> <span class="n">get_gate_counts</span><span class="p">,</span> <span class="n">unitary_equal</span>
+<span class="kn">from</span> <span class="nn">.parameters</span> <span class="kn">import</span> <span class="n">CHECK_CIRCUITS</span><span class="p">,</span> <span class="n">CircuitConstructionParameters</span><span class="p">,</span> <span class="n">QUBIT_OFFSET</span>
 
 
 <div class="viewcode-block" id="CircuitStringConverter"><a class="viewcode-back" href="../../../fd_greens.cirq_ver.circuit_string_converter.html#fd_greens.cirq_ver.circuit_string_converter.CircuitStringConverter">[docs]</a><span class="k">class</span> <span class="nc">CircuitStringConverter</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;Converter between Cirq circuits and Qtrl strings.&quot;&quot;&quot;</span>
 
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">qubits</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">cirq</span><span class="o">.</span><span class="n">Qid</span><span class="p">],</span> <span class="n">offset</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">4</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">qubits</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">cirq</span><span class="o">.</span><span class="n">Qid</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;Initializes a ``CircuitStringConverter`` object.</span>
 <span class="sd">        </span>
 <span class="sd">        Args:</span>
 <span class="sd">            qubits: The qubits in the circuit.</span>
-<span class="sd">            offset: The index offset on the Berkeley device. Defaults to 4.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">qubits</span> <span class="o">=</span> <span class="n">qubits</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">offset</span> <span class="o">=</span> <span class="n">offset</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span> <span class="o">=</span> <span class="n">CircuitConstructionParameters</span><span class="p">()</span>
 
     <span class="k">def</span> <span class="nf">_qstring_to_qubits</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">qstring</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">cirq</span><span class="o">.</span><span class="n">Qid</span><span class="p">]:</span>
         <span class="sd">&quot;&quot;&quot;Converts Qtrl qubit string to Cirq qubits.&quot;&quot;&quot;</span>
         <span class="n">inds</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">findall</span><span class="p">(</span><span class="s2">&quot;(\d)&quot;</span><span class="p">,</span> <span class="n">qstring</span><span class="p">)</span>
-        <span class="n">qubits</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">qubits</span><span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">offset</span><span class="p">]</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">inds</span><span class="p">]</span>
+        <span class="n">qubits</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">qubits</span><span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">-</span> <span class="n">QUBIT_OFFSET</span><span class="p">]</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">inds</span><span class="p">]</span>
         <span class="k">return</span> <span class="n">qubits</span>
 
     <span class="k">def</span> <span class="nf">_qubits_to_qstring</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">qubits</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">cirq</span><span class="o">.</span><span class="n">Qid</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;Converts Cirq qubits to Qtrl qubit string.&quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">qubits</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
-            <span class="n">qstring</span> <span class="o">=</span> <span class="s2">&quot;Q&quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">qubits</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">x</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">offset</span><span class="p">)</span>
+            <span class="n">qstring</span> <span class="o">=</span> <span class="s2">&quot;Q&quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">qubits</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">x</span> <span class="o">+</span> <span class="n">QUBIT_OFFSET</span><span class="p">)</span>
         <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">qubits</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
-            <span class="n">indices</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">([</span><span class="n">q</span><span class="o">.</span><span class="n">x</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">offset</span> <span class="k">for</span> <span class="n">q</span> <span class="ow">in</span> <span class="n">qubits</span><span class="p">],</span> <span class="n">reverse</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+            <span class="n">indices</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">([</span><span class="n">q</span><span class="o">.</span><span class="n">x</span> <span class="o">+</span> <span class="n">QUBIT_OFFSET</span> <span class="k">for</span> <span class="n">q</span> <span class="ow">in</span> <span class="n">qubits</span><span class="p">],</span> <span class="n">reverse</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
             <span class="n">qstring</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;C</span><span class="si">{</span><span class="n">indices</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s2">T</span><span class="si">{</span><span class="n">indices</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span>
         <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">qubits</span><span class="p">)</span> <span class="o">==</span> <span class="mi">3</span><span class="p">:</span>
-            <span class="n">indices</span> <span class="o">=</span> <span class="p">[</span><span class="n">q</span><span class="o">.</span><span class="n">x</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">offset</span> <span class="k">for</span> <span class="n">q</span> <span class="ow">in</span> <span class="n">qubits</span><span class="p">]</span>
+            <span class="n">indices</span> <span class="o">=</span> <span class="p">[</span><span class="n">q</span><span class="o">.</span><span class="n">x</span> <span class="o">+</span> <span class="n">QUBIT_OFFSET</span> <span class="k">for</span> <span class="n">q</span> <span class="ow">in</span> <span class="n">qubits</span><span class="p">]</span>
             <span class="n">qstring</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;C</span><span class="si">{</span><span class="n">indices</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s2">C</span><span class="si">{</span><span class="n">indices</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="si">}</span><span class="s2">T</span><span class="si">{</span><span class="n">indices</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;A gate acting on </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">qubits</span><span class="p">)</span><span class="si">}</span><span class="s2"> qubits cannot be converted to Qtrl string.&quot;</span><span class="p">)</span>
@@ -121,7 +123,7 @@
                 <span class="n">gate</span> <span class="o">=</span> <span class="n">cirq</span><span class="o">.</span><span class="n">CZPowGate</span><span class="p">(</span><span class="n">exponent</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)</span>
             <span class="k">elif</span> <span class="n">gstring</span> <span class="o">==</span> <span class="s2">&quot;CSD&quot;</span><span class="p">:</span>
                 <span class="n">gate</span> <span class="o">=</span> <span class="n">cirq</span><span class="o">.</span><span class="n">CZPowGate</span><span class="p">(</span><span class="n">exponent</span><span class="o">=-</span><span class="mf">0.5</span><span class="p">)</span>
-            <span class="k">elif</span> <span class="n">gstring</span> <span class="o">==</span> <span class="s2">&quot;CP&quot;</span><span class="p">:</span>
+            <span class="k">elif</span> <span class="n">gstring</span> <span class="o">==</span> <span class="s2">&quot;CP&quot;</span><span class="p">:</span> <span class="c1"># CPhase gate after iToffoli</span>
                 <span class="n">gate</span> <span class="o">=</span> <span class="n">cirq</span><span class="o">.</span><span class="n">I</span>
             <span class="k">elif</span> <span class="n">gstring</span> <span class="o">==</span> <span class="s2">&quot;TOF&quot;</span><span class="p">:</span>
                 <span class="n">gate</span> <span class="o">=</span> <span class="n">C0C0iXGate</span><span class="p">()</span>
@@ -135,8 +137,8 @@
             <span class="k">if</span> <span class="n">gate_name</span> <span class="o">==</span> <span class="s2">&quot;X&quot;</span><span class="p">:</span>
                 <span class="n">gate</span> <span class="o">=</span> <span class="n">cirq</span><span class="o">.</span><span class="n">XPowGate</span><span class="p">(</span><span class="n">exponent</span><span class="o">=</span><span class="n">exponent</span><span class="p">)</span>
             <span class="k">elif</span> <span class="n">gate_name</span> <span class="o">==</span> <span class="s2">&quot;Z&quot;</span><span class="p">:</span>
-                <span class="k">if</span> <span class="nb">abs</span><span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">exponent</span><span class="p">)</span> <span class="o">-</span> <span class="n">ITOFFOLI_Z_ANGLE</span> <span class="o">/</span> <span class="mf">180.0</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mf">1e-8</span><span class="p">:</span>
-                    <span class="n">gate</span> <span class="o">=</span> <span class="n">cirq</span><span class="o">.</span><span class="n">I</span>
+                <span class="k">if</span> <span class="nb">abs</span><span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">exponent</span><span class="p">)</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="o">.</span><span class="n">ITOFFOLI_Z_ANGLE</span> <span class="o">/</span> <span class="mf">180.0</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mf">1e-8</span><span class="p">:</span>
+                    <span class="n">gate</span> <span class="o">=</span> <span class="n">cirq</span><span class="o">.</span><span class="n">I</span> <span class="c1"># Z gates around iToffoli</span>
                 <span class="k">else</span><span class="p">:</span>
                     <span class="n">gate</span> <span class="o">=</span> <span class="n">cirq</span><span class="o">.</span><span class="n">ZPowGate</span><span class="p">(</span><span class="n">exponent</span><span class="o">=</span><span class="n">exponent</span><span class="p">)</span>
             <span class="k">else</span><span class="p">:</span>
@@ -210,8 +212,7 @@
                 
                 <span class="n">qubits</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_qstring_to_qubits</span><span class="p">(</span><span class="n">qstring</span><span class="p">)</span>
                 <span class="n">gate</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_gstring_to_gate</span><span class="p">(</span><span class="n">gstring</span><span class="p">)</span>
-                <span class="c1"># print(f&quot;{gate = }&quot;)</span>
-                <span class="k">if</span> <span class="n">gate</span> <span class="o">!=</span> <span class="n">cirq</span><span class="o">.</span><span class="n">I</span><span class="p">:</span> <span class="c1"># Z and CP around iToffoli</span>
+                <span class="k">if</span> <span class="n">gate</span> <span class="o">!=</span> <span class="n">cirq</span><span class="o">.</span><span class="n">I</span><span class="p">:</span> <span class="c1"># Not Z and CP around iToffoli, which were set as cirq.I</span>
                     <span class="n">ops_moment</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">gate</span><span class="p">(</span><span class="o">*</span><span class="n">qubits</span><span class="p">))</span>
             
             <span class="k">if</span> <span class="n">ops_moment</span> <span class="o">!=</span> <span class="p">[]:</span>
@@ -221,6 +222,8 @@
 
 <div class="viewcode-block" id="CircuitStringConverter.convert_circuit_to_strings"><a class="viewcode-back" href="../../../fd_greens.cirq_ver.circuit_string_converter.html#fd_greens.cirq_ver.circuit_string_converter.CircuitStringConverter.convert_circuit_to_strings">[docs]</a>    <span class="k">def</span> <span class="nf">convert_circuit_to_strings</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">circuit</span><span class="p">:</span> <span class="n">cirq</span><span class="o">.</span><span class="n">Circuit</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]:</span>
         <span class="sd">&quot;&quot;&quot;Converts a Cirq circuit to Qtrl strings.</span>
+
+<span class="sd">        This function optionally wraps around iToffoli gates with Z and CPhase gates.</span>
 <span class="sd">        </span>
 <span class="sd">        Args:</span>
 <span class="sd">            circuit: A Cirq circuit.</span>
@@ -245,53 +248,128 @@
                 <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">op</span><span class="o">.</span><span class="n">gate</span><span class="p">,</span> <span class="p">(</span><span class="n">cirq</span><span class="o">.</span><span class="n">IdentityGate</span><span class="p">,</span> <span class="n">cirq</span><span class="o">.</span><span class="n">MeasurementGate</span><span class="p">)):</span>
                     <span class="k">continue</span>
 
+                <span class="c1"># Combine gate string and qubit string to a single qtrl string.</span>
                 <span class="n">gstring</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_gate_to_gstring</span><span class="p">(</span><span class="n">op</span><span class="o">.</span><span class="n">gate</span><span class="p">)</span>
                 <span class="n">qstring</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_qubits_to_qstring</span><span class="p">(</span><span class="n">op</span><span class="o">.</span><span class="n">qubits</span><span class="p">)</span>
-
                 <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">op</span><span class="o">.</span><span class="n">qubits</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
                     <span class="n">qtrl_string</span> <span class="o">=</span> <span class="n">qstring</span> <span class="o">+</span> <span class="s2">&quot;/&quot;</span> <span class="o">+</span> <span class="n">gstring</span>
                 <span class="k">else</span><span class="p">:</span>
                     <span class="n">qtrl_string</span> <span class="o">=</span> <span class="n">gstring</span> <span class="o">+</span> <span class="s2">&quot;/&quot;</span> <span class="o">+</span> <span class="n">qstring</span>
-
-                <span class="k">if</span> <span class="n">ADJUST_CS_CSD_GATES</span><span class="p">:</span>
-                    <span class="k">if</span> <span class="n">qtrl_string</span> <span class="o">==</span> <span class="s1">&#39;CS/C5T4&#39;</span><span class="p">:</span>
-                        <span class="n">qtrl_string</span> <span class="o">=</span> <span class="n">qtrl_string</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;CS&#39;</span><span class="p">,</span> <span class="s1">&#39;CSD&#39;</span><span class="p">)</span>
-                        <span class="n">adjustments</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">i_moment</span><span class="p">,</span> <span class="p">[</span><span class="s1">&#39;CZ/C5T4&#39;</span><span class="p">]))</span>
-
-                    <span class="k">if</span> <span class="n">qtrl_string</span> <span class="o">==</span> <span class="s1">&#39;CSD/C6T5&#39;</span><span class="p">:</span>
-                        <span class="n">qtrl_string</span> <span class="o">=</span> <span class="n">qtrl_string</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;CSD&#39;</span><span class="p">,</span> <span class="s1">&#39;CS&#39;</span><span class="p">)</span>
-                        <span class="n">adjustments</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">i_moment</span><span class="p">,</span> <span class="p">[</span><span class="s1">&#39;CZ/C6T5&#39;</span><span class="p">]))</span>
-
-                    <span class="k">if</span> <span class="n">qtrl_string</span> <span class="o">==</span> <span class="s1">&#39;CS/C7T6&#39;</span><span class="p">:</span>
-                        <span class="n">qtrl_string</span> <span class="o">=</span> <span class="n">qtrl_string</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;CS&#39;</span><span class="p">,</span> <span class="s1">&#39;CSD&#39;</span><span class="p">)</span>
-                        <span class="n">adjustments</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">i_moment</span><span class="p">,</span> <span class="p">[</span><span class="s1">&#39;CZ/C7T6&#39;</span><span class="p">]))</span>
                 
-                <span class="k">if</span> <span class="n">WRAP_Z_AROUND_ITOFFOLI</span><span class="p">:</span>
+                <span class="c1"># Wrap Z and CPhase around iToffoli.</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="o">.</span><span class="n">WRAP_Z_AROUND_ITOFFOLI</span><span class="p">:</span>
+                    <span class="n">angle</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="o">.</span><span class="n">ITOFFOLI_Z_ANGLE</span>
                     <span class="k">if</span> <span class="n">qtrl_string</span> <span class="o">==</span> <span class="s1">&#39;TOF/C4C6T5&#39;</span><span class="p">:</span>
-                        <span class="n">adjustments</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">i_moment</span><span class="p">,</span> <span class="p">[</span><span class="sa">f</span><span class="s1">&#39;Q5/Z-</span><span class="si">{</span><span class="n">ITOFFOLI_Z_ANGLE</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">]))</span>
-                        <span class="n">adjustments</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">i_moment</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="p">[</span><span class="sa">f</span><span class="s1">&#39;Q5/Z</span><span class="si">{</span><span class="n">ITOFFOLI_Z_ANGLE</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">]))</span>
+                        <span class="n">adjustments</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">i_moment</span><span class="p">,</span> <span class="p">[</span><span class="sa">f</span><span class="s1">&#39;Q5/Z-</span><span class="si">{</span><span class="n">angle</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">]))</span>
+                        <span class="n">adjustments</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">i_moment</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="p">[</span><span class="sa">f</span><span class="s1">&#39;Q5/Z</span><span class="si">{</span><span class="n">angle</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">]))</span>
                         <span class="n">adjustments</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">i_moment</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="p">[</span><span class="s1">&#39;CP/C7T6&#39;</span><span class="p">]))</span>
                 
                 <span class="n">strings_moment</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">qtrl_string</span><span class="p">)</span>
-            
-            <span class="k">if</span> <span class="n">SPLIT_SIMULTANEOUS_CZS</span> <span class="ow">and</span> <span class="p">(</span>
-                <span class="n">re</span><span class="o">.</span><span class="n">findall</span><span class="p">(</span><span class="s2">&quot;C(?:Z|S|SD)/C5T4_C(?:Z|S|SD)/C7T6&quot;</span><span class="p">,</span> <span class="s1">&#39;_&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">strings_moment</span><span class="p">))</span> <span class="o">!=</span> <span class="p">[]</span> <span class="ow">or</span> 
-                <span class="n">re</span><span class="o">.</span><span class="n">findall</span><span class="p">(</span><span class="s2">&quot;C(?:Z|S|SD)/C7T6_C(?:Z|S|SD)/C5T4&quot;</span><span class="p">,</span> <span class="s1">&#39;_&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">strings_moment</span><span class="p">))</span> <span class="o">!=</span> <span class="p">[]):</span>
-                <span class="n">i_moment</span> <span class="o">+=</span> <span class="mi">2</span>
-                <span class="n">qtrl_strings</span><span class="o">.</span><span class="n">append</span><span class="p">([</span><span class="n">strings_moment</span><span class="p">[</span><span class="mi">0</span><span class="p">]])</span>
-                <span class="n">qtrl_strings</span><span class="o">.</span><span class="n">append</span><span class="p">([</span><span class="n">strings_moment</span><span class="p">[</span><span class="mi">1</span><span class="p">]])</span>
-            <span class="k">elif</span> <span class="n">strings_moment</span> <span class="o">!=</span> <span class="p">[]:</span> <span class="c1"># [] when all identities or measurements</span>
+
+            <span class="k">if</span> <span class="n">strings_moment</span> <span class="o">!=</span> <span class="p">[]:</span>
                 <span class="n">i_moment</span> <span class="o">+=</span> <span class="mi">1</span>
                 <span class="n">qtrl_strings</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">strings_moment</span><span class="p">)</span>
 
-        
         <span class="c1"># Insert adjustment gates to qtrl_strings.</span>
         <span class="n">moment_offset</span> <span class="o">=</span> <span class="mi">0</span>
         <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">strings_moment</span> <span class="ow">in</span> <span class="n">adjustments</span><span class="p">:</span>
             <span class="n">qtrl_strings</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="n">i</span> <span class="o">+</span> <span class="n">moment_offset</span><span class="p">,</span> <span class="n">strings_moment</span><span class="p">)</span>
             <span class="n">moment_offset</span> <span class="o">+=</span> <span class="mi">1</span>
         
-        <span class="k">return</span> <span class="n">qtrl_strings</span></div></div>
+        <span class="k">return</span> <span class="n">qtrl_strings</span></div>
+
+<div class="viewcode-block" id="CircuitStringConverter.adapt_to_hardware"><a class="viewcode-back" href="../../../fd_greens.cirq_ver.circuit_string_converter.html#fd_greens.cirq_ver.circuit_string_converter.CircuitStringConverter.adapt_to_hardware">[docs]</a>    <span class="k">def</span> <span class="nf">adapt_to_hardware</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">circuit</span><span class="p">:</span> <span class="n">cirq</span><span class="o">.</span><span class="n">Circuit</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">cirq</span><span class="o">.</span><span class="n">Circuit</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Adapts a circuit to hardware by converting to native gates.</span>
+<span class="sd">        </span>
+<span class="sd">        This function handles adjusting CS/CSD gates on specific qubit pairs, and splitting </span>
+<span class="sd">        simultaneous CZ gates onto different moments.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            circuit: The circuit on which gates are to be adapted.</span>
+<span class="sd">        </span>
+<span class="sd">        Returns:</span>
+<span class="sd">            circuit_new: The new circuit after gate adaptation.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># print(&quot;Before adapting to hardware&quot;)</span>
+        <span class="c1"># print_circuit(circuit)</span>
+        <span class="n">circuit_new</span> <span class="o">=</span> <span class="n">cirq</span><span class="o">.</span><span class="n">Circuit</span><span class="p">()</span>
+
+        <span class="n">i_moment</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">adjustments</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">moment</span> <span class="ow">in</span> <span class="n">circuit</span><span class="p">:</span>
+            <span class="n">moment_new</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">operation</span> <span class="ow">in</span> <span class="n">moment</span><span class="p">:</span>
+                <span class="n">gate</span> <span class="o">=</span> <span class="n">operation</span><span class="o">.</span><span class="n">gate</span>
+                <span class="n">qubits</span> <span class="o">=</span> <span class="n">operation</span><span class="o">.</span><span class="n">qubits</span>
+
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="o">.</span><span class="n">ADJUST_CS_CSD</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">gate</span><span class="p">,</span> <span class="n">cirq</span><span class="o">.</span><span class="n">CZPowGate</span><span class="p">):</span>
+                        <span class="n">is_cs_on_45</span> <span class="o">=</span> <span class="nb">abs</span><span class="p">(</span><span class="n">gate</span><span class="o">.</span><span class="n">exponent</span> <span class="o">-</span> <span class="mf">0.5</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mf">1e-8</span> <span class="ow">and</span> <span class="nb">set</span><span class="p">(</span><span class="n">qubits</span><span class="p">)</span> <span class="o">==</span> <span class="nb">set</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">qubits</span><span class="p">[:</span><span class="mi">2</span><span class="p">])</span>
+                        <span class="n">is_csd_on_56</span> <span class="o">=</span> <span class="nb">abs</span><span class="p">(</span><span class="n">gate</span><span class="o">.</span><span class="n">exponent</span> <span class="o">+</span> <span class="mf">0.5</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mf">1e-8</span> <span class="ow">and</span> <span class="nb">set</span><span class="p">(</span><span class="n">qubits</span><span class="p">)</span> <span class="o">==</span> <span class="nb">set</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">qubits</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="mi">3</span><span class="p">])</span>
+                        <span class="n">is_cs_on_67</span> <span class="o">=</span> <span class="nb">abs</span><span class="p">(</span><span class="n">gate</span><span class="o">.</span><span class="n">exponent</span> <span class="o">-</span> <span class="mf">0.5</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mf">1e-8</span> <span class="ow">and</span> <span class="nb">set</span><span class="p">(</span><span class="n">qubits</span><span class="p">)</span> <span class="o">==</span> <span class="nb">set</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">qubits</span><span class="p">[</span><span class="mi">2</span><span class="p">:</span><span class="mi">4</span><span class="p">])</span>
+                        <span class="k">if</span> <span class="n">is_cs_on_45</span> <span class="ow">or</span> <span class="n">is_csd_on_56</span> <span class="ow">or</span> <span class="n">is_cs_on_67</span><span class="p">:</span>
+                            <span class="n">moment_new</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">cirq</span><span class="o">.</span><span class="n">CZ</span><span class="p">(</span><span class="o">*</span><span class="n">qubits</span><span class="p">))</span>
+                            <span class="n">adjustments</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">i_moment</span><span class="p">,</span> <span class="n">cirq</span><span class="o">.</span><span class="n">CZPowGate</span><span class="p">(</span><span class="n">exponent</span><span class="o">=-</span><span class="n">gate</span><span class="o">.</span><span class="n">exponent</span><span class="p">)(</span><span class="o">*</span><span class="n">qubits</span><span class="p">)))</span>
+                        <span class="k">else</span><span class="p">:</span>
+                            <span class="n">moment_new</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">operation</span><span class="p">)</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">moment_new</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">operation</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">moment_new</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">operation</span><span class="p">)</span>
+
+            <span class="c1"># print(f&quot;{moment_new = }&quot;)</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="o">.</span><span class="n">SPLIT_SIMULTANEOUS_CZS</span><span class="p">:</span>
+                <span class="n">is_cz_pow_gates</span> <span class="o">=</span> <span class="p">[</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">op</span><span class="o">.</span><span class="n">gate</span><span class="p">,</span> <span class="n">cirq</span><span class="o">.</span><span class="n">CZPowGate</span><span class="p">)</span> <span class="k">for</span> <span class="n">op</span> <span class="ow">in</span> <span class="n">moment_new</span><span class="p">]</span>
+                <span class="k">if</span> <span class="n">is_cz_pow_gates</span> <span class="o">==</span> <span class="p">[</span><span class="kc">True</span><span class="p">,</span> <span class="kc">True</span><span class="p">]:</span>
+                    <span class="n">i_moment</span> <span class="o">+=</span> <span class="mi">2</span>
+                    <span class="n">circuit_new</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">cirq</span><span class="o">.</span><span class="n">Moment</span><span class="p">(</span><span class="n">moment_new</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span>
+                    <span class="n">circuit_new</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">cirq</span><span class="o">.</span><span class="n">Moment</span><span class="p">(</span><span class="n">moment_new</span><span class="p">[</span><span class="mi">1</span><span class="p">]))</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">i_moment</span> <span class="o">+=</span> <span class="mi">1</span>
+                    <span class="n">circuit_new</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">cirq</span><span class="o">.</span><span class="n">Moment</span><span class="p">(</span><span class="n">moment_new</span><span class="p">))</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">i_moment</span> <span class="o">+=</span> <span class="mi">1</span>
+                <span class="n">circuit_new</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">cirq</span><span class="o">.</span><span class="n">Moment</span><span class="p">(</span><span class="n">moment_new</span><span class="p">))</span>
+
+        <span class="c1"># Insert adjustment gates.</span>
+        <span class="n">moment_offset</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">gate</span> <span class="ow">in</span> <span class="n">adjustments</span><span class="p">:</span>
+            <span class="n">circuit_new</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="n">i</span> <span class="o">+</span> <span class="n">moment_offset</span><span class="p">,</span> <span class="n">gate</span><span class="p">)</span>
+            <span class="n">moment_offset</span> <span class="o">+=</span> <span class="mi">1</span>
+
+        <span class="c1"># print(&quot;After adapting to hardware&quot;)</span>
+        <span class="c1"># print_circuit(circuit_new)</span>
+        <span class="k">if</span> <span class="n">CHECK_CIRCUITS</span><span class="p">:</span>
+            <span class="k">assert</span> <span class="n">unitary_equal</span><span class="p">(</span><span class="n">circuit</span><span class="p">,</span> <span class="n">circuit_new</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">circuit_new</span></div>
+
+<div class="viewcode-block" id="CircuitStringConverter.load_circuit"><a class="viewcode-back" href="../../../fd_greens.cirq_ver.circuit_string_converter.html#fd_greens.cirq_ver.circuit_string_converter.CircuitStringConverter.load_circuit">[docs]</a>    <span class="k">def</span> <span class="nf">load_circuit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">h5fname</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">h5py</span><span class="o">.</span><span class="n">File</span><span class="p">],</span> <span class="n">dsetname</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">cirq</span><span class="o">.</span><span class="n">Circuit</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Loads a circuit from an HDF5 file.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">h5fname</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="n">h5file</span> <span class="o">=</span> <span class="n">h5py</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="n">h5fname</span> <span class="o">+</span> <span class="s1">&#39;.h5&#39;</span><span class="p">,</span> <span class="s1">&#39;r&#39;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">h5file</span> <span class="o">=</span> <span class="n">h5fname</span>
+        
+        <span class="n">qtrl_strings</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">h5file</span><span class="p">[</span><span class="n">dsetname</span><span class="p">][()])</span>
+        <span class="n">circuit</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">convert_strings_to_circuit</span><span class="p">(</span><span class="n">qtrl_strings</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">h5fname</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="n">h5file</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">circuit</span></div>
+    
+<div class="viewcode-block" id="CircuitStringConverter.save_circuit"><a class="viewcode-back" href="../../../fd_greens.cirq_ver.circuit_string_converter.html#fd_greens.cirq_ver.circuit_string_converter.CircuitStringConverter.save_circuit">[docs]</a>    <span class="k">def</span> <span class="nf">save_circuit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">h5fname</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">h5py</span><span class="o">.</span><span class="n">File</span><span class="p">],</span> <span class="n">dsetname</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">circuit</span><span class="p">:</span> <span class="n">cirq</span><span class="o">.</span><span class="n">Circuit</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Saves a circuit to an HDF5 file.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">h5fname</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="n">h5file</span> <span class="o">=</span> <span class="n">h5py</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="n">h5fname</span> <span class="o">+</span> <span class="s1">&#39;.h5&#39;</span><span class="p">,</span> <span class="s1">&#39;r+&#39;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">h5file</span> <span class="o">=</span> <span class="n">h5fname</span>
+        
+        <span class="n">qtrl_strings</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">convert_circuit_to_strings</span><span class="p">(</span><span class="n">circuit</span><span class="p">)</span>
+        <span class="n">h5file</span><span class="p">[</span><span class="n">dsetname</span><span class="p">]</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">qtrl_strings</span><span class="p">)</span>
+        
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">h5fname</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="n">h5file</span><span class="o">.</span><span class="n">close</span><span class="p">()</span></div></div>
 </pre></div>
 
            </div>

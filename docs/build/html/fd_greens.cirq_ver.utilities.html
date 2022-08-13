@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Utilities (fd_greens.utilities) &mdash; fd-greens 0.0.1 documentation</title>
+  <title>&lt;no title&gt; &mdash; fd-greens 0.0.1 documentation</title>
       <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
   <!--[if lt IE 9]>
@@ -36,8 +36,7 @@
 </div>
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
               <!-- Local TOC -->
-              <div class="local-toc"><ul>
-<li><a class="reference internal" href="#">Utilities (<code class="xref py py-mod docutils literal notranslate"><span class="pre">fd_greens.utilities</span></code>)</a></li>
+              <div class="local-toc"><ul class="simple">
 </ul>
 </div>
         </div>
@@ -54,7 +53,7 @@
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
       <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
-      <li>Utilities (<code class="xref py py-mod docutils literal notranslate"><span class="pre">fd_greens.utilities</span></code>)</li>
+      <li>&lt;no title&gt;</li>
       <li class="wy-breadcrumbs-aside">
             <a href="_sources/fd_greens.cirq_ver.utilities.rst.txt" rel="nofollow"> View page source</a>
       </li>
@@ -64,181 +63,7 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <span class="target" id="module-fd_greens.cirq_ver.utilities"></span><section id="utilities-fd-greens-utilities">
-<h1>Utilities (<code class="xref py py-mod docutils literal notranslate"><span class="pre">fd_greens.utilities</span></code>)<a class="headerlink" href="#utilities-fd-greens-utilities" title="Permalink to this headline"></a></h1>
-<dl class="py function">
-<dt class="sig sig-object py" id="fd_greens.cirq_ver.utilities.reverse_qubit_order">
-<span class="sig-name descname"><span class="pre">reverse_qubit_order</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">array</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">numpy.ndarray</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">numpy.ndarray</span></span></span><a class="reference internal" href="_modules/fd_greens/cirq_ver/utilities.html#reverse_qubit_order"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#fd_greens.cirq_ver.utilities.reverse_qubit_order" title="Permalink to this definition"></a></dt>
-<dd><p>Reverses qubit order in a 1D or 2D array.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>array</strong> – The array on which qubit order is to be reversed.</p>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p><strong>array_new</strong> – The new array with qubit order reversed.</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="fd_greens.cirq_ver.utilities.unitary_equal">
-<span class="sig-name descname"><span class="pre">unitary_equal</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">unitary1</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">cirq.circuits.circuit.Circuit</span><span class="p"><span class="pre">,</span> </span><span class="pre">numpy.ndarray</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">unitary2</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">cirq.circuits.circuit.Circuit</span><span class="p"><span class="pre">,</span> </span><span class="pre">numpy.ndarray</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">initial_state_0</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">bool</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="reference internal" href="_modules/fd_greens/cirq_ver/utilities.html#unitary_equal"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#fd_greens.cirq_ver.utilities.unitary_equal" title="Permalink to this definition"></a></dt>
-<dd><p>Checks if two unitaries are equal up to a phase factor.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>unitary1</strong> – The first unitary in circuit or array form.</p></li>
-<li><p><strong>unitary2</strong> – The second unitary in circuit or array form.</p></li>
-<li><p><strong>initial_state_0</strong> – Whether to assume the initial state to be the all 0 state.</p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p><strong>is_equal</strong> – Whether the two unitaries are equal up to a phase.</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="fd_greens.cirq_ver.utilities.histogram_to_array">
-<span class="sig-name descname"><span class="pre">histogram_to_array</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">histogram</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">dict</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_qubits</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">base</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">int</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">normalize</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">bool</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">numpy.ndarray</span></span></span><a class="reference internal" href="_modules/fd_greens/cirq_ver/utilities.html#histogram_to_array"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#fd_greens.cirq_ver.utilities.histogram_to_array" title="Permalink to this definition"></a></dt>
-<dd><p>Converts a bitstring histogram to a numpy array.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>histogram</strong> – The histogram from simulators or experiments. Keys of the histogram
-can either be strings, such as <code class="docutils literal notranslate"><span class="pre">'01'</span></code>, or tuples of integers, such as <code class="docutils literal notranslate"><span class="pre">(0,</span> <span class="pre">1)</span></code>.</p></li>
-<li><p><strong>n_qubits</strong> – Number of qubits.</p></li>
-<li><p><strong>base</strong> – The base in integer conversion. Defaults to 2 for qubits.</p></li>
-<li><p><strong>normalize</strong> – Whether to normalize the sum of the bitstring counts to 1.</p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p><strong>array</strong> – The bitstring array from the histogram.</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="fd_greens.cirq_ver.utilities.get_gate_counts">
-<span class="sig-name descname"><span class="pre">get_gate_counts</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="pre">circuit:</span> <span class="pre">cirq.circuits.circuit.Circuit,</span> <span class="pre">*,</span> <span class="pre">criterion:</span> <span class="pre">Callable[[Union[cirq.ops.raw_types.Operation,</span> <span class="pre">cirq.ops.op_tree.OpTree]],</span> <span class="pre">bool]</span> <span class="pre">=</span> <span class="pre">&lt;function</span> <span class="pre">&lt;lambda&gt;&gt;,</span> <span class="pre">num_qubits:</span> <span class="pre">Optional[int]</span> <span class="pre">=</span> <span class="pre">None</span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">int</span></span></span><a class="reference internal" href="_modules/fd_greens/cirq_ver/utilities.html#get_gate_counts"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#fd_greens.cirq_ver.utilities.get_gate_counts" title="Permalink to this definition"></a></dt>
-<dd><p>Returns the count of gates satisfying a certain criterion.</p>
-<p>Only one of <code class="docutils literal notranslate"><span class="pre">num_qubits</span></code> and <code class="docutils literal notranslate"><span class="pre">criterion</span></code> should be given. If <code class="docutils literal notranslate"><span class="pre">num_qubits</span></code> is given,
-count the number of gates with <code class="docutils literal notranslate"><span class="pre">num_qubits</span></code> number of qubits. Otherwise counting is performed
-with <code class="docutils literal notranslate"><span class="pre">criterion</span></code>. Defaults to counting all non-Z-rotation gates.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>circuit</strong> – The circuit on which to return gate counts.</p></li>
-<li><p><strong>criterion</strong> – The criterion of gates to be counted.</p></li>
-<li><p><strong>num_qubits</strong> – Number of qubits in gates to be counted.</p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p><strong>count</strong> – Number of gates satisfying a certain criterion.</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="fd_greens.cirq_ver.utilities.split_circuit_across_moment">
-<span class="sig-name descname"><span class="pre">split_circuit_across_moment</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">circuit</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">cirq.circuits.circuit.Circuit</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">moment_split</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">cirq.ops.moment.Moment</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">cirq.circuits.circuit.Circuit</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/fd_greens/cirq_ver/utilities.html#split_circuit_across_moment"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#fd_greens.cirq_ver.utilities.split_circuit_across_moment" title="Permalink to this definition"></a></dt>
-<dd><p>Splits a circuit across a certain moment.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>circuit</strong> – The circuit to be split.</p></li>
-<li><p><strong>moment_split</strong> – A moment used to split the circuit.</p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p><strong>circuits</strong> – A list of circuits split at moments.</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="fd_greens.cirq_ver.utilities.get_non_z_locations">
-<span class="sig-name descname"><span class="pre">get_non_z_locations</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">circuit</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">cirq.circuits.circuit.Circuit</span><span class="p"><span class="pre">,</span> </span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/fd_greens/cirq_ver/utilities.html#get_non_z_locations"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#fd_greens.cirq_ver.utilities.get_non_z_locations" title="Permalink to this definition"></a></dt>
-<dd><p>Returns the non-Z locations of a circuit.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>circuit</strong> – A circuit in either Cirq circuit form or Qtrl strings form.</p>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p><strong>locations</strong> – A list of integers indicating the non-Z locations.</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="fd_greens.cirq_ver.utilities.get_circuit_depth">
-<span class="sig-name descname"><span class="pre">get_circuit_depth</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">circuit</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">cirq.circuits.circuit.Circuit</span><span class="p"><span class="pre">,</span> </span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">int</span></span></span><a class="reference internal" href="_modules/fd_greens/cirq_ver/utilities.html#get_circuit_depth"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#fd_greens.cirq_ver.utilities.get_circuit_depth" title="Permalink to this definition"></a></dt>
-<dd><p>Returns the circuit depth by excluding Z and CP gates.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>circuit</strong> – A circuit in either Cirq circuit form or Qtrl strings form.</p>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p><strong>depth</strong> – The depth of the circuit.</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="fd_greens.cirq_ver.utilities.get_n_simultaneous_cz">
-<span class="sig-name descname"><span class="pre">get_n_simultaneous_cz</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">qtrl_strings</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">int</span></span></span><a class="reference internal" href="_modules/fd_greens/cirq_ver/utilities.html#get_n_simultaneous_cz"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#fd_greens.cirq_ver.utilities.get_n_simultaneous_cz" title="Permalink to this definition"></a></dt>
-<dd><p>Returns the number of simultaneous CZ gates.</p>
-</dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="fd_greens.cirq_ver.utilities.split_simultaneous_cz">
-<span class="sig-name descname"><span class="pre">split_simultaneous_cz</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">circuit</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">cirq.circuits.circuit.Circuit</span><span class="p"><span class="pre">,</span> </span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/fd_greens/cirq_ver/utilities.html#split_simultaneous_cz"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#fd_greens.cirq_ver.utilities.split_simultaneous_cz" title="Permalink to this definition"></a></dt>
-<dd><p>Splits simultaneous CZ/CS/CSDs onto different moments.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>circuit</strong> – The circuit in either Cirq circuit form or Qtrl strings form.</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="fd_greens.cirq_ver.utilities.combine_simultaneous_cz">
-<span class="sig-name descname"><span class="pre">combine_simultaneous_cz</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">circuit</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">cirq.circuits.circuit.Circuit</span><span class="p"><span class="pre">,</span> </span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/fd_greens/cirq_ver/utilities.html#combine_simultaneous_cz"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#fd_greens.cirq_ver.utilities.combine_simultaneous_cz" title="Permalink to this definition"></a></dt>
-<dd><p>Combines simultaneous CZ/CS/CSDs into the same moment.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>circuit</strong> – The circuit in either Cirq circuit form or Qtrl strings form.</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="fd_greens.cirq_ver.utilities.print_circuit_statistics">
-<span class="sig-name descname"><span class="pre">print_circuit_statistics</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">circuit</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">cirq.circuits.circuit.Circuit</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/fd_greens/cirq_ver/utilities.html#print_circuit_statistics"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#fd_greens.cirq_ver.utilities.print_circuit_statistics" title="Permalink to this definition"></a></dt>
-<dd><p>Prints out circuit statistics.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>circuit</strong> – The circuit on which statistics are to be printed.</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="fd_greens.cirq_ver.utilities.two_qubit_state_tomography">
-<span class="sig-name descname"><span class="pre">two_qubit_state_tomography</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">result_array</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">numpy.ndarray</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">numpy.ndarray</span></span></span><a class="reference internal" href="_modules/fd_greens/cirq_ver/utilities.html#two_qubit_state_tomography"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#fd_greens.cirq_ver.utilities.two_qubit_state_tomography" title="Permalink to this definition"></a></dt>
-<dd><p>Two-qubit quantum state tomography.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>result_array</strong> – The array that contains normalized bitstring counts.</p>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p><strong>density_matrix</strong> – The density matrix obtained from state tomography.</p>
-</dd>
-</dl>
-</dd></dl>
-
-</section>
-
+  
 
            </div>
           </div>

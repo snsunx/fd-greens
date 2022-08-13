@@ -1,3 +1,9 @@
+"""
+====================================================
+Noise Parameters (:mod:`fd_greens.noise_parameters`)
+====================================================
+"""
+
 from typing import Mapping
 
 import re

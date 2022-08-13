@@ -71,6 +71,7 @@
  | <a href="#G"><strong>G</strong></a>
  | <a href="#H"><strong>H</strong></a>
  | <a href="#I"><strong>I</strong></a>
+ | <a href="#L"><strong>L</strong></a>
  | <a href="#M"><strong>M</strong></a>
  | <a href="#N"><strong>N</strong></a>
  | <a href="#O"><strong>O</strong></a>
@@ -80,11 +81,20 @@
  | <a href="#S"><strong>S</strong></a>
  | <a href="#T"><strong>T</strong></a>
  | <a href="#U"><strong>U</strong></a>
+ | <a href="#W"><strong>W</strong></a>
  
 </div>
 <h2 id="A">A</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="fd_greens.cirq_ver.circuit_string_converter.html#fd_greens.cirq_ver.circuit_string_converter.CircuitStringConverter.adapt_to_hardware">adapt_to_hardware() (CircuitStringConverter method)</a>
+</li>
+      <li><a href="fd_greens.cirq_ver.noise_parameters.html#fd_greens.cirq_ver.noise_parameters.NoiseParameters.add_noise_to_circuit">add_noise_to_circuit() (NoiseParameters method)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="fd_greens.cirq_ver.parameters.html#fd_greens.cirq_ver.parameters.CircuitConstructionParameters.ADJUST_CS_CSD">ADJUST_CS_CSD (CircuitConstructionParameters attribute)</a>
+</li>
       <li><a href="fd_greens.cirq_ver.qubit_indices.html#fd_greens.cirq_ver.qubit_indices.QubitIndices.ancilla">ancilla (QubitIndices property)</a>
 </li>
   </ul></td>
@@ -111,21 +121,31 @@
 </li>
       <li><a href="fd_greens.cirq_ver.operators.html#fd_greens.cirq_ver.operators.ChargeOperators">ChargeOperators (class in fd_greens.cirq_ver.operators)</a>
 </li>
+      <li><a href="fd_greens.cirq_ver.parameters.html#fd_greens.cirq_ver.parameters.CircuitConstructionParameters">CircuitConstructionParameters (class in fd_greens.cirq_ver.parameters)</a>
+</li>
       <li><a href="fd_greens.cirq_ver.circuit_constructor.html#fd_greens.cirq_ver.circuit_constructor.CircuitConstructor">CircuitConstructor (class in fd_greens.cirq_ver.circuit_constructor)</a>
 </li>
       <li><a href="fd_greens.cirq_ver.circuit_string_converter.html#fd_greens.cirq_ver.circuit_string_converter.CircuitStringConverter">CircuitStringConverter (class in fd_greens.cirq_ver.circuit_string_converter)</a>
 </li>
       <li><a href="fd_greens.cirq_ver.classical_amplitudes_solver.html#fd_greens.cirq_ver.classical_amplitudes_solver.ClassicalAmplitudesSolver">ClassicalAmplitudesSolver (class in fd_greens.cirq_ver.classical_amplitudes_solver)</a>
 </li>
-      <li><a href="fd_greens.cirq_ver.utilities.html#fd_greens.cirq_ver.utilities.combine_simultaneous_cz">combine_simultaneous_cz() (in module fd_greens.cirq_ver.utilities)</a>
+      <li><a href="fd_greens.cirq_ver.general_utils.html#fd_greens.cirq_ver.general_utils.combine_simultaneous_cz">combine_simultaneous_cz() (in module fd_greens.cirq_ver.general_utils)</a>
 </li>
       <li><a href="fd_greens.cirq_ver.classical_amplitudes_solver.html#fd_greens.cirq_ver.classical_amplitudes_solver.ClassicalAmplitudesSolver.compute_B">compute_B() (ClassicalAmplitudesSolver method)</a>
 </li>
       <li><a href="fd_greens.cirq_ver.classical_amplitudes_solver.html#fd_greens.cirq_ver.classical_amplitudes_solver.ClassicalAmplitudesSolver.compute_N">compute_N() (ClassicalAmplitudesSolver method)</a>
 </li>
+      <li><a href="fd_greens.cirq_ver.parameters.html#fd_greens.cirq_ver.parameters.CircuitConstructionParameters.CONSTRAIN_CS_CSD">CONSTRAIN_CS_CSD (CircuitConstructionParameters attribute)</a>
+</li>
+      <li><a href="fd_greens.cirq_ver.transpilation.html#fd_greens.cirq_ver.transpilation.convert_ccz_to_c0c0ix">convert_ccz_to_c0c0ix() (in module fd_greens.cirq_ver.transpilation)</a>
+</li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="fd_greens.cirq_ver.transpilation.html#fd_greens.cirq_ver.transpilation.convert_ccz_to_c0c0ix">convert_ccz_to_c0c0ix() (in module fd_greens.cirq_ver.transpilation)</a>
+      <li><a href="fd_greens.cirq_ver.transpilation.html#fd_greens.cirq_ver.transpilation.convert_ccz_to_cz">convert_ccz_to_cz() (in module fd_greens.cirq_ver.transpilation)</a>
+</li>
+      <li><a href="fd_greens.cirq_ver.parameters.html#fd_greens.cirq_ver.parameters.CircuitConstructionParameters.CONVERT_CCZ_TO_ITOFFOLI">CONVERT_CCZ_TO_ITOFFOLI (CircuitConstructionParameters attribute)</a>
+</li>
+      <li><a href="fd_greens.cirq_ver.transpilation.html#fd_greens.cirq_ver.transpilation.convert_ccz_to_itoffoli">convert_ccz_to_itoffoli() (in module fd_greens.cirq_ver.transpilation)</a>
 </li>
       <li><a href="fd_greens.cirq_ver.circuit_string_converter.html#fd_greens.cirq_ver.circuit_string_converter.CircuitStringConverter.convert_circuit_to_strings">convert_circuit_to_strings() (CircuitStringConverter method)</a>
 </li>
@@ -141,7 +161,9 @@
         <li><a href="fd_greens.cirq_ver.qubit_indices.html#fd_greens.cirq_ver.qubit_indices.QubitIndices.copy">(QubitIndices method)</a>
 </li>
       </ul></li>
-      <li><a href="fd_greens.cirq_ver.helpers.html#fd_greens.cirq_ver.helpers.copy_simulation_data">copy_simulation_data() (in module fd_greens.cirq_ver.helpers)</a>
+      <li><a href="fd_greens.cirq_ver.hdf5_creation_utils.html#fd_greens.cirq_ver.hdf5_creation_utils.create_hdf5">create_hdf5() (in module fd_greens.cirq_ver.hdf5_creation_utils)</a>
+</li>
+      <li><a href="fd_greens.cirq_ver.hdf5_creation_utils.html#fd_greens.cirq_ver.hdf5_creation_utils.create_hdf5_by_depth">create_hdf5_by_depth() (in module fd_greens.cirq_ver.hdf5_creation_utils)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -152,6 +174,8 @@
       <li><a href="fd_greens.cirq_ver.eh_amplitudes_solver.html#fd_greens.cirq_ver.eh_amplitudes_solver.EHAmplitudesSolver">EHAmplitudesSolver (class in fd_greens.cirq_ver.eh_amplitudes_solver)</a>
 </li>
       <li><a href="fd_greens.cirq_ver.eh_states_solver.html#fd_greens.cirq_ver.eh_states_solver.EHStatesSolver">EHStatesSolver (class in fd_greens.cirq_ver.eh_states_solver)</a>
+</li>
+      <li><a href="fd_greens.cirq_ver.parameters.html#fd_greens.cirq_ver.parameters.ErrorMitigationParameters">ErrorMitigationParameters (class in fd_greens.cirq_ver.parameters)</a>
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
@@ -167,20 +191,6 @@
 <h2 id="F">F</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li>
-    fd_greens
-
-      <ul>
-        <li><a href="fd_greens.html#module-fd_greens">module</a>
-</li>
-      </ul></li>
-      <li>
-    fd_greens.cirq_ver
-
-      <ul>
-        <li><a href="fd_greens.cirq_ver.html#module-fd_greens.cirq_ver">module</a>
-</li>
-      </ul></li>
       <li>
     fd_greens.cirq_ver.circuit_constructor
 
@@ -200,6 +210,13 @@
 
       <ul>
         <li><a href="fd_greens.cirq_ver.classical_amplitudes_solver.html#module-fd_greens.cirq_ver.classical_amplitudes_solver">module</a>
+</li>
+      </ul></li>
+      <li>
+    fd_greens.cirq_ver.data_generation_utils
+
+      <ul>
+        <li><a href="fd_greens.cirq_ver.data_generation_utils.html#module-fd_greens.cirq_ver.data_generation_utils">module</a>
 </li>
       </ul></li>
       <li>
@@ -231,6 +248,13 @@
 </li>
       </ul></li>
       <li>
+    fd_greens.cirq_ver.general_utils
+
+      <ul>
+        <li><a href="fd_greens.cirq_ver.general_utils.html#module-fd_greens.cirq_ver.general_utils">module</a>
+</li>
+      </ul></li>
+      <li>
     fd_greens.cirq_ver.greens_function
 
       <ul>
@@ -247,6 +271,13 @@
 </li>
       </ul></li>
       <li>
+    fd_greens.cirq_ver.hdf5_creation_utils
+
+      <ul>
+        <li><a href="fd_greens.cirq_ver.hdf5_creation_utils.html#module-fd_greens.cirq_ver.hdf5_creation_utils">module</a>
+</li>
+      </ul></li>
+      <li>
     fd_greens.cirq_ver.helpers
 
       <ul>
@@ -258,6 +289,13 @@
 
       <ul>
         <li><a href="fd_greens.cirq_ver.molecular_hamiltonian.html#module-fd_greens.cirq_ver.molecular_hamiltonian">module</a>
+</li>
+      </ul></li>
+      <li>
+    fd_greens.cirq_ver.noise_parameters
+
+      <ul>
+        <li><a href="fd_greens.cirq_ver.noise_parameters.html#module-fd_greens.cirq_ver.noise_parameters">module</a>
 </li>
       </ul></li>
       <li>
@@ -295,20 +333,29 @@
         <li><a href="fd_greens.cirq_ver.transpilation.html#module-fd_greens.cirq_ver.transpilation">module</a>
 </li>
       </ul></li>
-      <li>
-    fd_greens.cirq_ver.utilities
-
-      <ul>
-        <li><a href="fd_greens.cirq_ver.utilities.html#module-fd_greens.cirq_ver.utilities">module</a>
+      <li><a href="fd_greens.cirq_ver.noise_parameters.html#fd_greens.cirq_ver.noise_parameters.NoiseParameters.from_file">from_file() (NoiseParameters class method)</a>
 </li>
-      </ul></li>
   </ul></td>
 </tr></table>
 
 <h2 id="G">G</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="fd_greens.cirq_ver.utilities.html#fd_greens.cirq_ver.utilities.get_circuit_depth">get_circuit_depth() (in module fd_greens.cirq_ver.utilities)</a>
+      <li><a href="fd_greens.cirq_ver.data_generation_utils.html#fd_greens.cirq_ver.data_generation_utils.generate_fidelity_matrix">generate_fidelity_matrix() (in module fd_greens.cirq_ver.data_generation_utils)</a>
+</li>
+      <li><a href="fd_greens.cirq_ver.data_generation_utils.html#fd_greens.cirq_ver.data_generation_utils.generate_fidelity_vs_depth">generate_fidelity_vs_depth() (in module fd_greens.cirq_ver.data_generation_utils)</a>
+</li>
+      <li><a href="fd_greens.cirq_ver.data_generation_utils.html#fd_greens.cirq_ver.data_generation_utils.generate_greens_function">generate_greens_function() (in module fd_greens.cirq_ver.data_generation_utils)</a>
+</li>
+      <li><a href="fd_greens.cirq_ver.data_generation_utils.html#fd_greens.cirq_ver.data_generation_utils.generate_response_function">generate_response_function() (in module fd_greens.cirq_ver.data_generation_utils)</a>
+</li>
+      <li><a href="fd_greens.cirq_ver.data_generation_utils.html#fd_greens.cirq_ver.data_generation_utils.generate_trace_matrix">generate_trace_matrix() (in module fd_greens.cirq_ver.data_generation_utils)</a>
+</li>
+      <li><a href="fd_greens.cirq_ver.molecular_hamiltonian.html#fd_greens.cirq_ver.molecular_hamiltonian.get_alkali_hydride_hamiltonian">get_alkali_hydride_hamiltonian() (in module fd_greens.cirq_ver.molecular_hamiltonian)</a>
+</li>
+      <li><a href="fd_greens.cirq_ver.general_utils.html#fd_greens.cirq_ver.general_utils.get_bloch_vector">get_bloch_vector() (in module fd_greens.cirq_ver.general_utils)</a>
+</li>
+      <li><a href="fd_greens.cirq_ver.general_utils.html#fd_greens.cirq_ver.general_utils.get_circuit_depth">get_circuit_depth() (in module fd_greens.cirq_ver.general_utils)</a>
 </li>
       <li><a href="fd_greens.cirq_ver.helpers.html#fd_greens.cirq_ver.helpers.get_circuit_labels">get_circuit_labels() (in module fd_greens.cirq_ver.helpers)</a>
 </li>
@@ -316,19 +363,23 @@
 </li>
       <li><a href="fd_greens.cirq_ver.qubit_indices.html#fd_greens.cirq_ver.qubit_indices.QubitIndices.get_excited_qubit_indices_dict">get_excited_qubit_indices_dict() (QubitIndices static method)</a>
 </li>
-      <li><a href="fd_greens.cirq_ver.utilities.html#fd_greens.cirq_ver.utilities.get_gate_counts">get_gate_counts() (in module fd_greens.cirq_ver.utilities)</a>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="fd_greens.cirq_ver.general_utils.html#fd_greens.cirq_ver.general_utils.get_fidelity">get_fidelity() (in module fd_greens.cirq_ver.general_utils)</a>
+</li>
+      <li><a href="fd_greens.cirq_ver.general_utils.html#fd_greens.cirq_ver.general_utils.get_gate_counts">get_gate_counts() (in module fd_greens.cirq_ver.general_utils)</a>
+</li>
+      <li><a href="fd_greens.cirq_ver.molecular_hamiltonian.html#fd_greens.cirq_ver.molecular_hamiltonian.get_h2_hamiltonian">get_h2_hamiltonian() (in module fd_greens.cirq_ver.molecular_hamiltonian)</a>
 </li>
       <li><a href="fd_greens.cirq_ver.molecular_hamiltonian.html#fd_greens.cirq_ver.molecular_hamiltonian.get_lih_hamiltonian">get_lih_hamiltonian() (in module fd_greens.cirq_ver.molecular_hamiltonian)</a>
 </li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="fd_greens.cirq_ver.parameters.html#fd_greens.cirq_ver.parameters.get_method_indices_pairs">get_method_indices_pairs() (in module fd_greens.cirq_ver.parameters)</a>
+      <li><a href="fd_greens.cirq_ver.general_utils.html#fd_greens.cirq_ver.general_utils.get_n_simultaneous_cz">get_n_simultaneous_cz() (in module fd_greens.cirq_ver.general_utils)</a>
 </li>
-      <li><a href="fd_greens.cirq_ver.utilities.html#fd_greens.cirq_ver.utilities.get_n_simultaneous_cz">get_n_simultaneous_cz() (in module fd_greens.cirq_ver.utilities)</a>
+      <li><a href="fd_greens.cirq_ver.molecular_hamiltonian.html#fd_greens.cirq_ver.molecular_hamiltonian.get_nah_hamiltonian">get_nah_hamiltonian() (in module fd_greens.cirq_ver.molecular_hamiltonian)</a>
 </li>
-      <li><a href="fd_greens.cirq_ver.utilities.html#fd_greens.cirq_ver.utilities.get_non_z_locations">get_non_z_locations() (in module fd_greens.cirq_ver.utilities)</a>
+      <li><a href="fd_greens.cirq_ver.general_utils.html#fd_greens.cirq_ver.general_utils.get_non_z_locations">get_non_z_locations() (in module fd_greens.cirq_ver.general_utils)</a>
 </li>
-      <li><a href="fd_greens.cirq_ver.helpers.html#fd_greens.cirq_ver.helpers.get_tomography_labels">get_tomography_labels() (in module fd_greens.cirq_ver.helpers)</a>
+      <li><a href="fd_greens.cirq_ver.parameters.html#fd_greens.cirq_ver.parameters.MethodIndicesPairs.get_pairs">get_pairs() (MethodIndicesPairs class method)</a>
 </li>
       <li><a href="fd_greens.cirq_ver.greens_function.html#fd_greens.cirq_ver.greens_function.GreensFunction.greens_function">greens_function() (GreensFunction method)</a>
 </li>
@@ -342,7 +393,7 @@
 <h2 id="H">H</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="fd_greens.cirq_ver.utilities.html#fd_greens.cirq_ver.utilities.histogram_to_array">histogram_to_array() (in module fd_greens.cirq_ver.utilities)</a>
+      <li><a href="fd_greens.cirq_ver.general_utils.html#fd_greens.cirq_ver.general_utils.histogram_to_array">histogram_to_array() (in module fd_greens.cirq_ver.general_utils)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -352,9 +403,21 @@
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="fd_greens.cirq_ver.parameters.html#fd_greens.cirq_ver.parameters.MethodIndicesPairs.indices">indices (MethodIndicesPairs attribute)</a>
 </li>
+      <li><a href="fd_greens.cirq_ver.helpers.html#fd_greens.cirq_ver.helpers.initialize_hdf5">initialize_hdf5() (in module fd_greens.cirq_ver.helpers)</a>
+</li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="fd_greens.cirq_ver.helpers.html#fd_greens.cirq_ver.helpers.initialize_hdf5">initialize_hdf5() (in module fd_greens.cirq_ver.helpers)</a>
+      <li><a href="fd_greens.cirq_ver.parameters.html#fd_greens.cirq_ver.parameters.CircuitConstructionParameters.ITOFFOLI_Z_ANGLE">ITOFFOLI_Z_ANGLE (CircuitConstructionParameters attribute)</a>
+</li>
+      <li><a href="fd_greens.cirq_ver.transpilation.html#fd_greens.cirq_ver.transpilation.iToffoliGate">iToffoliGate (in module fd_greens.cirq_ver.transpilation)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="L">L</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="fd_greens.cirq_ver.circuit_string_converter.html#fd_greens.cirq_ver.circuit_string_converter.CircuitStringConverter.load_circuit">load_circuit() (CircuitStringConverter method)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -374,15 +437,13 @@
     module
 
       <ul>
-        <li><a href="fd_greens.html#module-fd_greens">fd_greens</a>
-</li>
-        <li><a href="fd_greens.cirq_ver.html#module-fd_greens.cirq_ver">fd_greens.cirq_ver</a>
-</li>
         <li><a href="fd_greens.cirq_ver.circuit_constructor.html#module-fd_greens.cirq_ver.circuit_constructor">fd_greens.cirq_ver.circuit_constructor</a>
 </li>
         <li><a href="fd_greens.cirq_ver.circuit_string_converter.html#module-fd_greens.cirq_ver.circuit_string_converter">fd_greens.cirq_ver.circuit_string_converter</a>
 </li>
         <li><a href="fd_greens.cirq_ver.classical_amplitudes_solver.html#module-fd_greens.cirq_ver.classical_amplitudes_solver">fd_greens.cirq_ver.classical_amplitudes_solver</a>
+</li>
+        <li><a href="fd_greens.cirq_ver.data_generation_utils.html#module-fd_greens.cirq_ver.data_generation_utils">fd_greens.cirq_ver.data_generation_utils</a>
 </li>
         <li><a href="fd_greens.cirq_ver.eh_amplitudes_solver.html#module-fd_greens.cirq_ver.eh_amplitudes_solver">fd_greens.cirq_ver.eh_amplitudes_solver</a>
 </li>
@@ -392,13 +453,19 @@
 </li>
         <li><a href="fd_greens.cirq_ver.excited_states_solver.html#module-fd_greens.cirq_ver.excited_states_solver">fd_greens.cirq_ver.excited_states_solver</a>
 </li>
+        <li><a href="fd_greens.cirq_ver.general_utils.html#module-fd_greens.cirq_ver.general_utils">fd_greens.cirq_ver.general_utils</a>
+</li>
         <li><a href="fd_greens.cirq_ver.greens_function.html#module-fd_greens.cirq_ver.greens_function">fd_greens.cirq_ver.greens_function</a>
 </li>
         <li><a href="fd_greens.cirq_ver.ground_state_solver.html#module-fd_greens.cirq_ver.ground_state_solver">fd_greens.cirq_ver.ground_state_solver</a>
 </li>
+        <li><a href="fd_greens.cirq_ver.hdf5_creation_utils.html#module-fd_greens.cirq_ver.hdf5_creation_utils">fd_greens.cirq_ver.hdf5_creation_utils</a>
+</li>
         <li><a href="fd_greens.cirq_ver.helpers.html#module-fd_greens.cirq_ver.helpers">fd_greens.cirq_ver.helpers</a>
 </li>
         <li><a href="fd_greens.cirq_ver.molecular_hamiltonian.html#module-fd_greens.cirq_ver.molecular_hamiltonian">fd_greens.cirq_ver.molecular_hamiltonian</a>
+</li>
+        <li><a href="fd_greens.cirq_ver.noise_parameters.html#module-fd_greens.cirq_ver.noise_parameters">fd_greens.cirq_ver.noise_parameters</a>
 </li>
         <li><a href="fd_greens.cirq_ver.operators.html#module-fd_greens.cirq_ver.operators">fd_greens.cirq_ver.operators</a>
 </li>
@@ -409,8 +476,6 @@
         <li><a href="fd_greens.cirq_ver.response_function.html#module-fd_greens.cirq_ver.response_function">fd_greens.cirq_ver.response_function</a>
 </li>
         <li><a href="fd_greens.cirq_ver.transpilation.html#module-fd_greens.cirq_ver.transpilation">fd_greens.cirq_ver.transpilation</a>
-</li>
-        <li><a href="fd_greens.cirq_ver.utilities.html#module-fd_greens.cirq_ver.utilities">fd_greens.cirq_ver.utilities</a>
 </li>
       </ul></li>
   </ul></td>
@@ -427,6 +492,8 @@
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="fd_greens.cirq_ver.noise_parameters.html#fd_greens.cirq_ver.noise_parameters.NoiseParameters">NoiseParameters (class in fd_greens.cirq_ver.noise_parameters)</a>
+</li>
       <li><a href="fd_greens.cirq_ver.transpilation.html#fd_greens.cirq_ver.transpilation.C0C0iXGate.num_qubits">num_qubits() (C0C0iXGate method)</a>
 </li>
   </ul></td>
@@ -445,37 +512,35 @@
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="fd_greens.cirq_ver.transpilation.html#fd_greens.cirq_ver.transpilation.permute_qubits">permute_qubits() (in module fd_greens.cirq_ver.transpilation)</a>
 </li>
-      <li><a href="fd_greens.cirq_ver.helpers.html#fd_greens.cirq_ver.helpers.plot_A">plot_A() (in module fd_greens.cirq_ver.helpers)</a>
-</li>
-      <li><a href="fd_greens.cirq_ver.helpers.html#fd_greens.cirq_ver.helpers.plot_bitstring_counts">plot_bitstring_counts() (in module fd_greens.cirq_ver.helpers)</a>
-</li>
-      <li><a href="fd_greens.cirq_ver.helpers.html#fd_greens.cirq_ver.helpers.plot_chi">plot_chi() (in module fd_greens.cirq_ver.helpers)</a>
-</li>
-      <li><a href="fd_greens.cirq_ver.helpers.html#fd_greens.cirq_ver.helpers.plot_counts">plot_counts() (in module fd_greens.cirq_ver.helpers)</a>
-</li>
-      <li><a href="fd_greens.cirq_ver.helpers.html#fd_greens.cirq_ver.helpers.plot_fidelity_by_depth">plot_fidelity_by_depth() (in module fd_greens.cirq_ver.helpers)</a>
-</li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="fd_greens.cirq_ver.helpers.html#fd_greens.cirq_ver.helpers.plot_response_function">plot_response_function() (in module fd_greens.cirq_ver.helpers)</a>
-</li>
-      <li><a href="fd_greens.cirq_ver.helpers.html#fd_greens.cirq_ver.helpers.plot_spectral_function">plot_spectral_function() (in module fd_greens.cirq_ver.helpers)</a>
-</li>
-      <li><a href="fd_greens.cirq_ver.helpers.html#fd_greens.cirq_ver.helpers.plot_trace_self_energy">plot_trace_self_energy() (in module fd_greens.cirq_ver.helpers)</a>
-</li>
-      <li><a href="fd_greens.cirq_ver.helpers.html#fd_greens.cirq_ver.helpers.plot_TrS">plot_TrS() (in module fd_greens.cirq_ver.helpers)</a>
-</li>
       <li><a href="fd_greens.cirq_ver.helpers.html#fd_greens.cirq_ver.helpers.print_circuit">print_circuit() (in module fd_greens.cirq_ver.helpers)</a>
 </li>
-      <li><a href="fd_greens.cirq_ver.utilities.html#fd_greens.cirq_ver.utilities.print_circuit_statistics">print_circuit_statistics() (in module fd_greens.cirq_ver.utilities)</a>
+      <li><a href="fd_greens.cirq_ver.general_utils.html#fd_greens.cirq_ver.general_utils.print_circuit_statistics">print_circuit_statistics() (in module fd_greens.cirq_ver.general_utils)</a>
 </li>
-      <li><a href="fd_greens.cirq_ver.helpers.html#fd_greens.cirq_ver.helpers.process_bitstring_counts">process_bitstring_counts() (in module fd_greens.cirq_ver.helpers)</a>
+      <li><a href="fd_greens.cirq_ver.greens_function.html#fd_greens.cirq_ver.greens_function.GreensFunction.process">process() (GreensFunction method)</a>
+
+      <ul>
+        <li><a href="fd_greens.cirq_ver.response_function.html#fd_greens.cirq_ver.response_function.ResponseFunction.process">(ResponseFunction method)</a>
+</li>
+      </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="fd_greens.cirq_ver.parameters.html#fd_greens.cirq_ver.parameters.ErrorMitigationParameters.PROJECT_DENSITY_MATRICES">PROJECT_DENSITY_MATRICES (ErrorMitigationParameters attribute)</a>
+</li>
+      <li><a href="fd_greens.cirq_ver.general_utils.html#fd_greens.cirq_ver.general_utils.project_density_matrix">project_density_matrix() (in module fd_greens.cirq_ver.general_utils)</a>
+</li>
+      <li><a href="fd_greens.cirq_ver.parameters.html#fd_greens.cirq_ver.parameters.ErrorMitigationParameters.PURIFY_DENSITY_MATRICES">PURIFY_DENSITY_MATRICES (ErrorMitigationParameters attribute)</a>
+</li>
+      <li><a href="fd_greens.cirq_ver.general_utils.html#fd_greens.cirq_ver.general_utils.purify_density_matrix">purify_density_matrix() (in module fd_greens.cirq_ver.general_utils)</a>
 </li>
   </ul></td>
 </tr></table>
 
 <h2 id="Q">Q</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="fd_greens.cirq_ver.general_utils.html#fd_greens.cirq_ver.general_utils.quantum_state_tomography">quantum_state_tomography() (in module fd_greens.cirq_ver.general_utils)</a>
+</li>
+  </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="fd_greens.cirq_ver.qubit_indices.html#fd_greens.cirq_ver.qubit_indices.QubitIndices">QubitIndices (class in fd_greens.cirq_ver.qubit_indices)</a>
 </li>
@@ -489,7 +554,7 @@
 </li>
       <li><a href="fd_greens.cirq_ver.response_function.html#fd_greens.cirq_ver.response_function.ResponseFunction">ResponseFunction (class in fd_greens.cirq_ver.response_function)</a>
 </li>
-      <li><a href="fd_greens.cirq_ver.utilities.html#fd_greens.cirq_ver.utilities.reverse_qubit_order">reverse_qubit_order() (in module fd_greens.cirq_ver.utilities)</a>
+      <li><a href="fd_greens.cirq_ver.general_utils.html#fd_greens.cirq_ver.general_utils.reverse_qubit_order">reverse_qubit_order() (in module fd_greens.cirq_ver.general_utils)</a>
 </li>
       <li><a href="fd_greens.cirq_ver.eh_amplitudes_solver.html#fd_greens.cirq_ver.eh_amplitudes_solver.EHAmplitudesSolver.run">run() (EHAmplitudesSolver method)</a>
 
@@ -509,17 +574,27 @@
 <h2 id="S">S</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="fd_greens.cirq_ver.circuit_string_converter.html#fd_greens.cirq_ver.circuit_string_converter.CircuitStringConverter.save_circuit">save_circuit() (CircuitStringConverter method)</a>
+</li>
+      <li><a href="fd_greens.cirq_ver.helpers.html#fd_greens.cirq_ver.helpers.save_data_to_file">save_data_to_file() (in module fd_greens.cirq_ver.helpers)</a>
+</li>
+      <li><a href="fd_greens.cirq_ver.helpers.html#fd_greens.cirq_ver.helpers.save_to_hdf5">save_to_hdf5() (in module fd_greens.cirq_ver.helpers)</a>
+</li>
       <li><a href="fd_greens.cirq_ver.operators.html#fd_greens.cirq_ver.operators.SecondQuantizedOperators">SecondQuantizedOperators (class in fd_greens.cirq_ver.operators)</a>
 </li>
       <li><a href="fd_greens.cirq_ver.greens_function.html#fd_greens.cirq_ver.greens_function.GreensFunction.self_energy">self_energy() (GreensFunction method)</a>
 </li>
-      <li><a href="fd_greens.cirq_ver.greens_function.html#fd_greens.cirq_ver.greens_function.GreensFunction.spectral_function">spectral_function() (GreensFunction method)</a>
-</li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="fd_greens.cirq_ver.utilities.html#fd_greens.cirq_ver.utilities.split_circuit_across_moment">split_circuit_across_moment() (in module fd_greens.cirq_ver.utilities)</a>
+      <li><a href="fd_greens.cirq_ver.greens_function.html#fd_greens.cirq_ver.greens_function.GreensFunction.spectral_function">spectral_function() (GreensFunction method)</a>
 </li>
-      <li><a href="fd_greens.cirq_ver.utilities.html#fd_greens.cirq_ver.utilities.split_simultaneous_cz">split_simultaneous_cz() (in module fd_greens.cirq_ver.utilities)</a>
+      <li><a href="fd_greens.cirq_ver.general_utils.html#fd_greens.cirq_ver.general_utils.split_circuit_across_moment">split_circuit_across_moment() (in module fd_greens.cirq_ver.general_utils)</a>
+</li>
+      <li><a href="fd_greens.cirq_ver.general_utils.html#fd_greens.cirq_ver.general_utils.split_simultaneous_cz">split_simultaneous_cz() (in module fd_greens.cirq_ver.general_utils)</a>
+</li>
+      <li><a href="fd_greens.cirq_ver.parameters.html#fd_greens.cirq_ver.parameters.CircuitConstructionParameters.SPLIT_SIMULTANEOUS_CZS">SPLIT_SIMULTANEOUS_CZS (CircuitConstructionParameters attribute)</a>
+</li>
+      <li><a href="fd_greens.cirq_ver.general_utils.html#fd_greens.cirq_ver.general_utils.state_tomography">state_tomography() (in module fd_greens.cirq_ver.general_utils)</a>
 </li>
       <li><a href="fd_greens.cirq_ver.qubit_indices.html#fd_greens.cirq_ver.qubit_indices.QubitIndices.system">system (QubitIndices property)</a>
 </li>
@@ -547,7 +622,7 @@
 </li>
       <li><a href="fd_greens.cirq_ver.transpilation.html#fd_greens.cirq_ver.transpilation.transpile_into_berkeley_gates">transpile_into_berkeley_gates() (in module fd_greens.cirq_ver.transpilation)</a>
 </li>
-      <li><a href="fd_greens.cirq_ver.utilities.html#fd_greens.cirq_ver.utilities.two_qubit_state_tomography">two_qubit_state_tomography() (in module fd_greens.cirq_ver.utilities)</a>
+      <li><a href="fd_greens.cirq_ver.general_utils.html#fd_greens.cirq_ver.general_utils.two_qubit_state_tomography">two_qubit_state_tomography() (in module fd_greens.cirq_ver.general_utils)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -555,8 +630,28 @@
 <h2 id="U">U</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="fd_greens.cirq_ver.utilities.html#fd_greens.cirq_ver.utilities.unitary_equal">unitary_equal() (in module fd_greens.cirq_ver.utilities)</a>
+      <li><a href="fd_greens.cirq_ver.general_utils.html#fd_greens.cirq_ver.general_utils.unitary_equal">unitary_equal() (in module fd_greens.cirq_ver.general_utils)</a>
 </li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="fd_greens.cirq_ver.parameters.html#fd_greens.cirq_ver.parameters.ErrorMitigationParameters.USE_EXACT_TRACES">USE_EXACT_TRACES (ErrorMitigationParameters attribute)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="W">W</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="fd_greens.cirq_ver.parameters.html#fd_greens.cirq_ver.parameters.CircuitConstructionParameters.WRAP_Z_AROUND_ITOFFOLI">WRAP_Z_AROUND_ITOFFOLI (CircuitConstructionParameters attribute)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="fd_greens.cirq_ver.parameters.html#fd_greens.cirq_ver.parameters.CircuitConstructionParameters.write">write() (CircuitConstructionParameters method)</a>
+
+      <ul>
+        <li><a href="fd_greens.cirq_ver.parameters.html#fd_greens.cirq_ver.parameters.ErrorMitigationParameters.write">(ErrorMitigationParameters method)</a>
+</li>
+      </ul></li>
   </ul></td>
 </tr></table>
 

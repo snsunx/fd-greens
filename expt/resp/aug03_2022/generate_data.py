@@ -1,5 +1,3 @@
-"""Process Jun 2022 results and save to HDF5 files."""
-
 import sys
 sys.path.append('../../..')
 import argparse

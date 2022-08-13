@@ -67,6 +67,96 @@
   <span class="target" id="module-fd_greens.cirq_ver.parameters"></span><section id="parameters-fd-greens-parameters">
 <h1>Parameters (<code class="xref py py-mod docutils literal notranslate"><span class="pre">fd_greens.parameters</span></code>)<a class="headerlink" href="#parameters-fd-greens-parameters" title="Permalink to this headline"></a></h1>
 <dl class="py class">
+<dt class="sig sig-object py" id="fd_greens.cirq_ver.parameters.CircuitConstructionParameters">
+<em class="property"><span class="pre">class</span> </em><span class="sig-name descname"><span class="pre">CircuitConstructionParameters</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">WRAP_Z_AROUND_ITOFFOLI</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">bool</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ITOFFOLI_Z_ANGLE</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">float</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">21.9</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">CONSTRAIN_CS_CSD</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">bool</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">CONVERT_CCZ_TO_ITOFFOLI</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">bool</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ADJUST_CS_CSD</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">bool</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">SPLIT_SIMULTANEOUS_CZS</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">bool</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/fd_greens/cirq_ver/parameters.html#CircuitConstructionParameters"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#fd_greens.cirq_ver.parameters.CircuitConstructionParameters" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Circuit construction parameters.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>WRAP_Z_AROUND_ITOFFOLI</strong> – Whether to wrap Z rotation gates around iToffoli for hardware runs.</p></li>
+<li><p><strong>ITOFFOLI_Z_ANGLE</strong> – Adjustment Z gate angles in degree.</p></li>
+<li><p><strong>CONSTRAIN_CS_CSD</strong> – Whether to force putting CS dagger gates on qubits 4 and 5 etc.</p></li>
+<li><p><strong>CONVERT_CCZ_TO_ITOFFOLI</strong> – Whether to convert CCZ gates to iToffoli gates.</p></li>
+<li><p><strong>ADJUST_CS_CSD</strong> – Whether to adjust CS/CSDs to the native CS/CSDs on corresponding qubit pairs.</p></li>
+<li><p><strong>SPLIT_SIMULTANEOUS_CZS</strong> – Whether to split simultaneous CZ/CS/CSD onto different moments.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="fd_greens.cirq_ver.parameters.CircuitConstructionParameters.WRAP_Z_AROUND_ITOFFOLI">
+<span class="sig-name descname"><span class="pre">WRAP_Z_AROUND_ITOFFOLI</span></span><em class="property"><span class="pre">:</span> <span class="pre">bool</span></em><em class="property"> <span class="pre">=</span> <span class="pre">True</span></em><a class="headerlink" href="#fd_greens.cirq_ver.parameters.CircuitConstructionParameters.WRAP_Z_AROUND_ITOFFOLI" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="fd_greens.cirq_ver.parameters.CircuitConstructionParameters.ITOFFOLI_Z_ANGLE">
+<span class="sig-name descname"><span class="pre">ITOFFOLI_Z_ANGLE</span></span><em class="property"><span class="pre">:</span> <span class="pre">float</span></em><em class="property"> <span class="pre">=</span> <span class="pre">21.9</span></em><a class="headerlink" href="#fd_greens.cirq_ver.parameters.CircuitConstructionParameters.ITOFFOLI_Z_ANGLE" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="fd_greens.cirq_ver.parameters.CircuitConstructionParameters.CONSTRAIN_CS_CSD">
+<span class="sig-name descname"><span class="pre">CONSTRAIN_CS_CSD</span></span><em class="property"><span class="pre">:</span> <span class="pre">bool</span></em><em class="property"> <span class="pre">=</span> <span class="pre">False</span></em><a class="headerlink" href="#fd_greens.cirq_ver.parameters.CircuitConstructionParameters.CONSTRAIN_CS_CSD" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="fd_greens.cirq_ver.parameters.CircuitConstructionParameters.CONVERT_CCZ_TO_ITOFFOLI">
+<span class="sig-name descname"><span class="pre">CONVERT_CCZ_TO_ITOFFOLI</span></span><em class="property"><span class="pre">:</span> <span class="pre">bool</span></em><em class="property"> <span class="pre">=</span> <span class="pre">True</span></em><a class="headerlink" href="#fd_greens.cirq_ver.parameters.CircuitConstructionParameters.CONVERT_CCZ_TO_ITOFFOLI" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="fd_greens.cirq_ver.parameters.CircuitConstructionParameters.ADJUST_CS_CSD">
+<span class="sig-name descname"><span class="pre">ADJUST_CS_CSD</span></span><em class="property"><span class="pre">:</span> <span class="pre">bool</span></em><em class="property"> <span class="pre">=</span> <span class="pre">True</span></em><a class="headerlink" href="#fd_greens.cirq_ver.parameters.CircuitConstructionParameters.ADJUST_CS_CSD" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="fd_greens.cirq_ver.parameters.CircuitConstructionParameters.SPLIT_SIMULTANEOUS_CZS">
+<span class="sig-name descname"><span class="pre">SPLIT_SIMULTANEOUS_CZS</span></span><em class="property"><span class="pre">:</span> <span class="pre">bool</span></em><em class="property"> <span class="pre">=</span> <span class="pre">True</span></em><a class="headerlink" href="#fd_greens.cirq_ver.parameters.CircuitConstructionParameters.SPLIT_SIMULTANEOUS_CZS" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="fd_greens.cirq_ver.parameters.CircuitConstructionParameters.write">
+<span class="sig-name descname"><span class="pre">write</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fname</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/fd_greens/cirq_ver/parameters.html#CircuitConstructionParameters.write"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#fd_greens.cirq_ver.parameters.CircuitConstructionParameters.write" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="fd_greens.cirq_ver.parameters.ErrorMitigationParameters">
+<em class="property"><span class="pre">class</span> </em><span class="sig-name descname"><span class="pre">ErrorMitigationParameters</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">PROJECT_DENSITY_MATRICES</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">bool</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">PURIFY_DENSITY_MATRICES</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">bool</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">USE_EXACT_TRACES</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">bool</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/fd_greens/cirq_ver/parameters.html#ErrorMitigationParameters"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#fd_greens.cirq_ver.parameters.ErrorMitigationParameters" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Error mitigation parameters.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>PROJECT_DENSITY_MATRICES</strong> – Whether to project density matrices to being positive semidefinite.</p></li>
+<li><p><strong>PURIFY_DENSITY_MATRICES</strong> – Whether to purify density matrices.</p></li>
+<li><p><strong>USE_EXACT_TRACES</strong> – Use exact traces (probabilities) of the ancilla bitstrings.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="fd_greens.cirq_ver.parameters.ErrorMitigationParameters.PROJECT_DENSITY_MATRICES">
+<span class="sig-name descname"><span class="pre">PROJECT_DENSITY_MATRICES</span></span><em class="property"><span class="pre">:</span> <span class="pre">bool</span></em><em class="property"> <span class="pre">=</span> <span class="pre">True</span></em><a class="headerlink" href="#fd_greens.cirq_ver.parameters.ErrorMitigationParameters.PROJECT_DENSITY_MATRICES" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="fd_greens.cirq_ver.parameters.ErrorMitigationParameters.PURIFY_DENSITY_MATRICES">
+<span class="sig-name descname"><span class="pre">PURIFY_DENSITY_MATRICES</span></span><em class="property"><span class="pre">:</span> <span class="pre">bool</span></em><em class="property"> <span class="pre">=</span> <span class="pre">True</span></em><a class="headerlink" href="#fd_greens.cirq_ver.parameters.ErrorMitigationParameters.PURIFY_DENSITY_MATRICES" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="fd_greens.cirq_ver.parameters.ErrorMitigationParameters.USE_EXACT_TRACES">
+<span class="sig-name descname"><span class="pre">USE_EXACT_TRACES</span></span><em class="property"><span class="pre">:</span> <span class="pre">bool</span></em><em class="property"> <span class="pre">=</span> <span class="pre">False</span></em><a class="headerlink" href="#fd_greens.cirq_ver.parameters.ErrorMitigationParameters.USE_EXACT_TRACES" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="fd_greens.cirq_ver.parameters.ErrorMitigationParameters.write">
+<span class="sig-name descname"><span class="pre">write</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fname</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/fd_greens/cirq_ver/parameters.html#ErrorMitigationParameters.write"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#fd_greens.cirq_ver.parameters.ErrorMitigationParameters.write" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
 <dt class="sig sig-object py" id="fd_greens.cirq_ver.parameters.MethodIndicesPairs">
 <em class="property"><span class="pre">class</span> </em><span class="sig-name descname"><span class="pre">MethodIndicesPairs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">methods</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">indices</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/fd_greens/cirq_ver/parameters.html#MethodIndicesPairs"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#fd_greens.cirq_ver.parameters.MethodIndicesPairs" title="Permalink to this definition"></a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
@@ -86,11 +176,9 @@
 <em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">n_tapered</span></span><a class="headerlink" href="#fd_greens.cirq_ver.parameters.MethodIndicesPairs.n_tapered" title="Permalink to this definition"></a></dt>
 <dd></dd></dl>
 
-</dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="fd_greens.cirq_ver.parameters.get_method_indices_pairs">
-<span class="sig-name descname"><span class="pre">get_method_indices_pairs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">spin</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#fd_greens.cirq_ver.parameters.MethodIndicesPairs" title="fd_greens.cirq_ver.parameters.MethodIndicesPairs"><span class="pre">fd_greens.cirq_ver.parameters.MethodIndicesPairs</span></a></span></span><a class="reference internal" href="_modules/fd_greens/cirq_ver/parameters.html#get_method_indices_pairs"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#fd_greens.cirq_ver.parameters.get_method_indices_pairs" title="Permalink to this definition"></a></dt>
+<dl class="py method">
+<dt class="sig sig-object py" id="fd_greens.cirq_ver.parameters.MethodIndicesPairs.get_pairs">
+<em class="property"><span class="pre">classmethod</span> </em><span class="sig-name descname"><span class="pre">get_pairs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">spin</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#fd_greens.cirq_ver.parameters.MethodIndicesPairs" title="fd_greens.cirq_ver.parameters.MethodIndicesPairs"><span class="pre">fd_greens.cirq_ver.parameters.MethodIndicesPairs</span></a></span></span><a class="reference internal" href="_modules/fd_greens/cirq_ver/parameters.html#MethodIndicesPairs.get_pairs"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#fd_greens.cirq_ver.parameters.MethodIndicesPairs.get_pairs" title="Permalink to this definition"></a></dt>
 <dd><p>Returns the method indices pairs corresponding to a given spin label.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -100,6 +188,8 @@
 <dd class="field-even"><p><strong>method_indices_pairs</strong> – The method indices pairs.</p>
 </dd>
 </dl>
+</dd></dl>
+
 </dd></dl>
 
 </section>

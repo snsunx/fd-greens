@@ -67,17 +67,14 @@
 <span class="sd">==============================================</span>
 <span class="sd">&quot;&quot;&quot;</span>
 
-<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Tuple</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Tuple</span>
 <span class="kn">import</span> <span class="nn">warnings</span>
 
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="kn">import</span> <span class="nn">cirq</span>
 
-<span class="kn">from</span> <span class="nn">fd_greens.cirq_ver.parameters</span> <span class="kn">import</span> <span class="n">CSD_IN_ITOFFOLI_ON_45</span>
-
-<span class="kn">from</span> <span class="nn">.utilities</span> <span class="kn">import</span> <span class="n">unitary_equal</span>
-<span class="kn">from</span> <span class="nn">.parameters</span> <span class="kn">import</span> <span class="n">CHECK_CIRCUITS</span>
-
+<span class="kn">from</span> <span class="nn">.general_utils</span> <span class="kn">import</span> <span class="n">unitary_equal</span>
+<span class="kn">from</span> <span class="nn">.parameters</span> <span class="kn">import</span> <span class="n">CircuitConstructionParameters</span><span class="p">,</span> <span class="n">CHECK_CIRCUITS</span>
 
 <div class="viewcode-block" id="C0C0iXGate"><a class="viewcode-back" href="../../../fd_greens.cirq_ver.transpilation.html#fd_greens.cirq_ver.transpilation.C0C0iXGate">[docs]</a><span class="k">class</span> <span class="nc">C0C0iXGate</span><span class="p">(</span><span class="n">cirq</span><span class="o">.</span><span class="n">Gate</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;The Berkeley iToffoli gate.&quot;&quot;&quot;</span>
@@ -109,12 +106,14 @@
     <span class="k">def</span> <span class="nf">_circuit_diagram_info_</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">args</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
         <span class="k">return</span> <span class="s2">&quot;(0)&quot;</span><span class="p">,</span> <span class="s2">&quot;(0)&quot;</span><span class="p">,</span> <span class="s2">&quot;iX&quot;</span></div>
 
-
 <span class="n">C0C0iX</span> <span class="o">=</span> <span class="n">C0C0iXGate</span><span class="p">()</span>
+
+<span class="n">iToffoli</span> <span class="o">=</span> <span class="n">C0C0iX</span>
+<span class="n">iToffoliGate</span> <span class="o">=</span> <span class="n">C0C0iXGate</span>
 
 
 <div class="viewcode-block" id="permute_qubits"><a class="viewcode-back" href="../../../fd_greens.cirq_ver.transpilation.html#fd_greens.cirq_ver.transpilation.permute_qubits">[docs]</a><span class="k">def</span> <span class="nf">permute_qubits</span><span class="p">(</span><span class="n">circuit</span><span class="p">:</span> <span class="n">cirq</span><span class="o">.</span><span class="n">Circuit</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">cirq</span><span class="o">.</span><span class="n">Circuit</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Permutes qubits by adding SWAP gates.</span>
+    <span class="sd">&quot;&quot;&quot;Permutes qubits of long-range CZs and CCZs by adding SWAP gates.</span>
 <span class="sd">    </span>
 <span class="sd">    Args:</span>
 <span class="sd">        circuit: The circuit to be converted.</span>
@@ -124,8 +123,6 @@
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">def</span> <span class="nf">is_adjacent</span><span class="p">(</span><span class="n">qubits</span><span class="p">):</span>
         <span class="n">indices</span> <span class="o">=</span> <span class="p">[</span><span class="n">q</span><span class="o">.</span><span class="n">x</span> <span class="k">for</span> <span class="n">q</span> <span class="ow">in</span> <span class="n">qubits</span><span class="p">]</span>
-        <span class="c1"># print(f&#39;{indices = }&#39;)</span>
-        <span class="c1"># print(f&#39;{sorted(indices) = }&#39;)</span>
         <span class="k">assert</span> <span class="n">indices</span> <span class="o">==</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">indices</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">indices</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">)</span>
 
@@ -135,17 +132,17 @@
             <span class="n">gate</span> <span class="o">=</span> <span class="n">op</span><span class="o">.</span><span class="n">gate</span>
             <span class="n">qubits</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">op</span><span class="o">.</span><span class="n">qubits</span><span class="p">))</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
             <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">qubits</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">is_adjacent</span><span class="p">(</span><span class="n">qubits</span><span class="p">):</span>
-                <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;Adding SWAP gates when permuting qubits.&quot;</span><span class="p">)</span>
+                <span class="c1"># The action is to insert a SWAP gate to permute the qubit after qubits[-2]</span>
+                <span class="c1"># with qubits[-1]. The additional SWAP gate inserted at the beginning is for</span>
+                <span class="c1"># easy simplification.</span>
                 <span class="k">assert</span> <span class="n">gate</span> <span class="ow">in</span> <span class="p">[</span><span class="n">cirq</span><span class="o">.</span><span class="n">CZ</span><span class="p">,</span> <span class="n">cirq</span><span class="o">.</span><span class="n">CCZ</span><span class="p">]</span>
-                <span class="c1"># print(&#39;old qubits =&#39;, qubits)</span>
+                <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;Adding SWAP gates to permute qubits.&quot;</span><span class="p">)</span>
                 <span class="n">qubits_swap</span> <span class="o">=</span> <span class="p">(</span><span class="n">qubits</span><span class="p">[</span><span class="o">-</span><span class="mi">2</span><span class="p">]</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">qubits</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
                 <span class="n">qubits_new</span> <span class="o">=</span> <span class="n">qubits</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="p">[</span><span class="n">qubits</span><span class="p">[</span><span class="o">-</span><span class="mi">2</span><span class="p">]</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]</span>
                 <span class="n">circuit_new</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">cirq</span><span class="o">.</span><span class="n">SWAP</span><span class="p">(</span><span class="o">*</span><span class="n">qubits_swap</span><span class="p">))</span>
                 <span class="n">circuit_new</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">cirq</span><span class="o">.</span><span class="n">SWAP</span><span class="p">(</span><span class="o">*</span><span class="n">qubits_swap</span><span class="p">))</span>
                 <span class="n">circuit_new</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">gate</span><span class="p">(</span><span class="o">*</span><span class="n">qubits_new</span><span class="p">))</span>
                 <span class="n">circuit_new</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">cirq</span><span class="o">.</span><span class="n">SWAP</span><span class="p">(</span><span class="o">*</span><span class="n">qubits_swap</span><span class="p">))</span>
-                <span class="c1"># print(&#39;new qubits =&#39;, qubits[:-1] + [qubits[-2] + 1])</span>
-                <span class="c1"># print(&#39;swap qubits =&#39;, [qubits[-2] + 1, qubits[-1]])</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="n">circuit_new</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">op</span><span class="p">)</span>
 
@@ -153,11 +150,13 @@
         <span class="k">assert</span> <span class="n">unitary_equal</span><span class="p">(</span><span class="n">circuit</span><span class="p">,</span> <span class="n">circuit_new</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">circuit_new</span></div>
 
-<div class="viewcode-block" id="convert_ccz_to_c0c0ix"><a class="viewcode-back" href="../../../fd_greens.cirq_ver.transpilation.html#fd_greens.cirq_ver.transpilation.convert_ccz_to_c0c0ix">[docs]</a><span class="k">def</span> <span class="nf">convert_ccz_to_c0c0ix</span><span class="p">(</span><span class="n">circuit</span><span class="p">:</span> <span class="n">cirq</span><span class="o">.</span><span class="n">Circuit</span><span class="p">,</span> <span class="n">spin</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">cirq</span><span class="o">.</span><span class="n">Circuit</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Converts CCZs to C0C0iXs in a Cirq circuit.</span>
+<div class="viewcode-block" id="convert_ccz_to_c0c0ix"><a class="viewcode-back" href="../../../fd_greens.cirq_ver.transpilation.html#fd_greens.cirq_ver.transpilation.convert_ccz_to_c0c0ix">[docs]</a><span class="k">def</span> <span class="nf">convert_ccz_to_c0c0ix</span><span class="p">(</span><span class="n">circuit</span><span class="p">:</span> <span class="n">cirq</span><span class="o">.</span><span class="n">Circuit</span><span class="p">,</span> <span class="n">spin</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">constrain_cs_csd</span><span class="p">:</span> <span class="nb">bool</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">cirq</span><span class="o">.</span><span class="n">Circuit</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Converts CCZs to C0C0iXs in a circuit.</span>
 <span class="sd">    </span>
 <span class="sd">    Args:</span>
 <span class="sd">        circuit: The circuit to be converted.</span>
+<span class="sd">        spin: Spin states of the molecular system.</span>
+<span class="sd">        constrain_cs_csd: Whether to constrain CSD to be on Q4Q5 etc.</span>
 <span class="sd">    </span>
 <span class="sd">    Returns:</span>
 <span class="sd">        circuit_new: The new circuit after conversion.</span>
@@ -177,13 +176,15 @@
                     <span class="n">cirq</span><span class="o">.</span><span class="n">X</span><span class="p">(</span><span class="n">qubits</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span> <span class="n">cirq</span><span class="o">.</span><span class="n">H</span><span class="p">(</span><span class="n">qubits</span><span class="p">[</span><span class="mi">1</span><span class="p">]),</span> <span class="n">cirq</span><span class="o">.</span><span class="n">X</span><span class="p">(</span><span class="n">qubits</span><span class="p">[</span><span class="mi">2</span><span class="p">]),</span>
                 <span class="p">]</span>
 
-                <span class="k">if</span> <span class="n">CSD_IN_ITOFFOLI_ON_45</span><span class="p">:</span>
+                <span class="c1"># qubits[0] is always Q4, qubits[1] is always Q5.</span>
+                <span class="k">if</span> <span class="n">constrain_cs_csd</span><span class="p">:</span>
                     <span class="n">qubits_csd</span> <span class="o">=</span> <span class="p">[</span><span class="n">qubits</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">qubits</span><span class="p">[</span><span class="mi">1</span><span class="p">]]</span>
                     <span class="n">qubits_swap</span> <span class="o">=</span> <span class="p">[</span><span class="n">qubits</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">qubits</span><span class="p">[</span><span class="mi">2</span><span class="p">]]</span>
                 <span class="k">else</span><span class="p">:</span>
                     <span class="n">qubits_csd</span> <span class="o">=</span> <span class="p">[</span><span class="n">qubits</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">qubits</span><span class="p">[</span><span class="mi">2</span><span class="p">]]</span>
                     <span class="n">qubits_swap</span> <span class="o">=</span> <span class="p">[</span><span class="n">qubits</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">qubits</span><span class="p">[</span><span class="mi">1</span><span class="p">]]</span>
-                    
+
+                <span class="c1"># TODO: This part can be explained in a better way.</span>
                 <span class="c1"># SWAP gate without a CZ, equivalent to an iSWAP gate.</span>
                 <span class="n">iswap_ops</span> <span class="o">=</span> <span class="p">[</span>
                     <span class="n">cirq</span><span class="o">.</span><span class="n">XPowGate</span><span class="p">(</span><span class="n">exponent</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)(</span><span class="n">qubits_swap</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span> <span class="n">cirq</span><span class="o">.</span><span class="n">XPowGate</span><span class="p">(</span><span class="n">exponent</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)(</span><span class="n">qubits_swap</span><span class="p">[</span><span class="mi">1</span><span class="p">]),</span>
@@ -198,6 +199,7 @@
                           <span class="n">cirq</span><span class="o">.</span><span class="n">CZ</span><span class="p">(</span><span class="o">*</span><span class="n">qubits_swap</span><span class="p">),</span>
                           <span class="n">cirq</span><span class="o">.</span><span class="n">SWAP</span><span class="p">(</span><span class="o">*</span><span class="n">qubits_swap</span><span class="p">)]</span>
 
+                <span class="c1"># For easy circuit optimization, the extra gates are placed alternately before or after CiZC.</span>
                 <span class="k">if</span> <span class="n">count</span> <span class="o">%</span> <span class="mi">2</span> <span class="o">==</span> <span class="p">(</span><span class="n">spin</span> <span class="o">==</span> <span class="s1">&#39;u&#39;</span><span class="p">):</span>
                     <span class="n">circuit_new</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">cizc_ops</span><span class="p">)</span>
                     <span class="n">circuit_new</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">iswap_ops</span><span class="p">)</span>
@@ -215,9 +217,52 @@
         <span class="k">assert</span> <span class="n">unitary_equal</span><span class="p">(</span><span class="n">circuit</span><span class="p">,</span> <span class="n">circuit_new</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">circuit_new</span></div>
 
+<span class="n">convert_ccz_to_itoffoli</span> <span class="o">=</span> <span class="n">convert_ccz_to_c0c0ix</span>
+
+<div class="viewcode-block" id="convert_ccz_to_cz"><a class="viewcode-back" href="../../../fd_greens.cirq_ver.transpilation.html#fd_greens.cirq_ver.transpilation.convert_ccz_to_cz">[docs]</a><span class="k">def</span> <span class="nf">convert_ccz_to_cz</span><span class="p">(</span><span class="n">circuit</span><span class="p">:</span> <span class="n">cirq</span><span class="o">.</span><span class="n">Circuit</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">cirq</span><span class="o">.</span><span class="n">Circuit</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Decomposes CCZ gates to CZ gates in a circuit.&quot;&quot;&quot;</span>
+    <span class="n">circuit_new</span> <span class="o">=</span> <span class="n">cirq</span><span class="o">.</span><span class="n">Circuit</span><span class="p">()</span>
+
+    <span class="n">HTGate</span> <span class="o">=</span> <span class="n">cirq</span><span class="o">.</span><span class="n">PhasedXZGate</span><span class="p">(</span><span class="n">axis_phase_exponent</span><span class="o">=-</span><span class="mf">0.75</span><span class="p">,</span> <span class="n">x_exponent</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">z_exponent</span><span class="o">=-</span><span class="mf">0.75</span><span class="p">)</span> <span class="c1"># First T then H</span>
+    <span class="n">THGate</span> <span class="o">=</span> <span class="n">cirq</span><span class="o">.</span><span class="n">PhasedXZGate</span><span class="p">(</span><span class="n">axis_phase_exponent</span><span class="o">=-</span><span class="mf">0.5</span><span class="p">,</span><span class="n">x_exponent</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">z_exponent</span><span class="o">=-</span><span class="mf">0.75</span><span class="p">)</span> <span class="c1"># First H then T</span>
+    <span class="n">HTHGate</span> <span class="o">=</span> <span class="n">cirq</span><span class="o">.</span><span class="n">PhasedXZGate</span><span class="p">(</span><span class="n">axis_phase_exponent</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">x_exponent</span><span class="o">=</span><span class="mf">0.25</span><span class="p">,</span> <span class="n">z_exponent</span><span class="o">=</span><span class="mf">0.0</span><span class="p">)</span>
+    <span class="n">HTdaggerHGate</span> <span class="o">=</span> <span class="n">cirq</span><span class="o">.</span><span class="n">PhasedXZGate</span><span class="p">(</span><span class="n">axis_phase_exponent</span><span class="o">=-</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">x_exponent</span><span class="o">=</span><span class="mf">0.25</span><span class="p">,</span> <span class="n">z_exponent</span><span class="o">=</span><span class="mf">0.0</span><span class="p">)</span>
+
+    <span class="k">for</span> <span class="n">moment</span> <span class="ow">in</span> <span class="n">circuit</span><span class="o">.</span><span class="n">moments</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">op</span> <span class="ow">in</span> <span class="n">moment</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">op</span><span class="o">.</span><span class="n">gate</span><span class="o">.</span><span class="fm">__str__</span><span class="p">()</span> <span class="o">==</span> <span class="s2">&quot;CCZ&quot;</span><span class="p">:</span>
+                <span class="n">qubits</span> <span class="o">=</span> <span class="n">op</span><span class="o">.</span><span class="n">qubits</span>
+
+                <span class="n">circuit_new</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">cirq</span><span class="o">.</span><span class="n">H</span><span class="p">(</span><span class="n">qubits</span><span class="p">[</span><span class="mi">2</span><span class="p">]))</span>
+                <span class="n">circuit_new</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">cirq</span><span class="o">.</span><span class="n">CZ</span><span class="p">(</span><span class="n">qubits</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">qubits</span><span class="p">[</span><span class="mi">2</span><span class="p">]))</span>
+                <span class="n">circuit_new</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">HTdaggerHGate</span><span class="p">(</span><span class="n">qubits</span><span class="p">[</span><span class="mi">2</span><span class="p">]))</span>
+                <span class="n">circuit_new</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">cirq</span><span class="o">.</span><span class="n">SWAP</span><span class="p">(</span><span class="n">qubits</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">qubits</span><span class="p">[</span><span class="mi">2</span><span class="p">]))</span>
+
+                <span class="n">circuit_new</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">cirq</span><span class="o">.</span><span class="n">CZ</span><span class="p">(</span><span class="n">qubits</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">qubits</span><span class="p">[</span><span class="mi">1</span><span class="p">]))</span>
+                <span class="n">circuit_new</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">HTHGate</span><span class="p">(</span><span class="n">qubits</span><span class="p">[</span><span class="mi">1</span><span class="p">]))</span>
+                <span class="n">circuit_new</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">cirq</span><span class="o">.</span><span class="n">CZ</span><span class="p">(</span><span class="n">qubits</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">qubits</span><span class="p">[</span><span class="mi">2</span><span class="p">]))</span>
+                <span class="n">circuit_new</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">HTdaggerHGate</span><span class="p">(</span><span class="n">qubits</span><span class="p">[</span><span class="mi">1</span><span class="p">]))</span>
+                <span class="n">circuit_new</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">cirq</span><span class="o">.</span><span class="n">CZ</span><span class="p">(</span><span class="n">qubits</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">qubits</span><span class="p">[</span><span class="mi">1</span><span class="p">]))</span>
+
+                <span class="n">circuit_new</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">cirq</span><span class="o">.</span><span class="n">SWAP</span><span class="p">(</span><span class="n">qubits</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">qubits</span><span class="p">[</span><span class="mi">2</span><span class="p">]))</span>
+                <span class="n">circuit_new</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">HTGate</span><span class="p">(</span><span class="n">qubits</span><span class="p">[</span><span class="mi">1</span><span class="p">]))</span>
+                <span class="n">circuit_new</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">THGate</span><span class="p">(</span><span class="n">qubits</span><span class="p">[</span><span class="mi">2</span><span class="p">]))</span>
+                <span class="n">circuit_new</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">cirq</span><span class="o">.</span><span class="n">CZ</span><span class="p">(</span><span class="n">qubits</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">qubits</span><span class="p">[</span><span class="mi">1</span><span class="p">]))</span>
+                <span class="n">circuit_new</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">cirq</span><span class="o">.</span><span class="n">T</span><span class="p">(</span><span class="n">qubits</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span>
+                <span class="n">circuit_new</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">HTdaggerHGate</span><span class="p">(</span><span class="n">qubits</span><span class="p">[</span><span class="mi">1</span><span class="p">]))</span>
+                <span class="n">circuit_new</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">cirq</span><span class="o">.</span><span class="n">CZ</span><span class="p">(</span><span class="n">qubits</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">qubits</span><span class="p">[</span><span class="mi">1</span><span class="p">]))</span>
+                <span class="n">circuit_new</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">cirq</span><span class="o">.</span><span class="n">H</span><span class="p">(</span><span class="n">qubits</span><span class="p">[</span><span class="mi">1</span><span class="p">]))</span>
+
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">circuit_new</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">op</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">CHECK_CIRCUITS</span><span class="p">:</span>
+        <span class="k">assert</span> <span class="n">unitary_equal</span><span class="p">(</span><span class="n">circuit</span><span class="p">,</span> <span class="n">circuit_new</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">circuit_new</span></div>
+
 
 <div class="viewcode-block" id="convert_swap_to_cz"><a class="viewcode-back" href="../../../fd_greens.cirq_ver.transpilation.html#fd_greens.cirq_ver.transpilation.convert_swap_to_cz">[docs]</a><span class="k">def</span> <span class="nf">convert_swap_to_cz</span><span class="p">(</span><span class="n">circuit</span><span class="p">:</span> <span class="n">cirq</span><span class="o">.</span><span class="n">Circuit</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">cirq</span><span class="o">.</span><span class="n">Circuit</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Converts SWAPs to CZs in a Cirq circuit.</span>
+    <span class="sd">&quot;&quot;&quot;Converts SWAPs to CZs in a circuit.</span>
 <span class="sd">    </span>
 <span class="sd">    Args:</span>
 <span class="sd">        circuit: The circuit to be converted.</span>
@@ -227,9 +272,6 @@
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">circuit1</span> <span class="o">=</span> <span class="n">circuit</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
     <span class="n">circuit_new</span> <span class="o">=</span> <span class="n">cirq</span><span class="o">.</span><span class="n">Circuit</span><span class="p">()</span>
-
-    <span class="c1"># print(&#39;In convert_swap_to_cz!!!\n&#39;)</span>
-    <span class="c1"># print_circuit(circuit)</span>
 
     <span class="n">convert_swap</span> <span class="o">=</span> <span class="kc">False</span>
     <span class="c1"># for op in list(circuit1.all_operations())[::-1]:</span>
@@ -315,15 +357,24 @@
     <span class="k">return</span> <span class="n">circuit_new</span></div>
 
 
-<div class="viewcode-block" id="transpile_into_berkeley_gates"><a class="viewcode-back" href="../../../fd_greens.cirq_ver.transpilation.html#fd_greens.cirq_ver.transpilation.transpile_into_berkeley_gates">[docs]</a><span class="k">def</span> <span class="nf">transpile_into_berkeley_gates</span><span class="p">(</span><span class="n">circuit</span><span class="p">:</span> <span class="n">cirq</span><span class="o">.</span><span class="n">Circuit</span><span class="p">,</span> <span class="n">spin</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;d&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">cirq</span><span class="o">.</span><span class="n">Circuit</span><span class="p">:</span>
+<div class="viewcode-block" id="transpile_into_berkeley_gates"><a class="viewcode-back" href="../../../fd_greens.cirq_ver.transpilation.html#fd_greens.cirq_ver.transpilation.transpile_into_berkeley_gates">[docs]</a><span class="k">def</span> <span class="nf">transpile_into_berkeley_gates</span><span class="p">(</span>
+    <span class="n">circuit</span><span class="p">:</span> <span class="n">cirq</span><span class="o">.</span><span class="n">Circuit</span><span class="p">,</span>
+    <span class="n">spin</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;d&#39;</span><span class="p">,</span>
+    <span class="n">circuit_params</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">CircuitConstructionParameters</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">cirq</span><span class="o">.</span><span class="n">Circuit</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;Transpiles a circuit into native gates on the Berkeley device.</span>
 <span class="sd">    </span>
 <span class="sd">    Args:</span>
 <span class="sd">        circuit: The circuit to be transpiled.</span>
+<span class="sd">        spin: Spin states of the molecular system.</span>
+<span class="sd">        circuit_params: Circuit construction parameters.</span>
 <span class="sd">    </span>
 <span class="sd">    Returns:</span>
 <span class="sd">        circuit_new: The new circuit after transpilation.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">circuit_params</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">circuit_params</span> <span class="o">=</span> <span class="n">CircuitConstructionParameters</span><span class="p">()</span>
+    
     <span class="n">circuit_new</span> <span class="o">=</span> <span class="n">circuit</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
 
     <span class="c1"># Qubit permutation.</span>
@@ -331,7 +382,11 @@
     <span class="n">cirq</span><span class="o">.</span><span class="n">MergeInteractions</span><span class="p">(</span><span class="n">allow_partial_czs</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span><span class="o">.</span><span class="n">optimize_circuit</span><span class="p">(</span><span class="n">circuit_new</span><span class="p">)</span>
     
     <span class="c1"># Three-qubit gate transpilation.</span>
-    <span class="n">circuit_new</span> <span class="o">=</span> <span class="n">convert_ccz_to_c0c0ix</span><span class="p">(</span><span class="n">circuit_new</span><span class="p">,</span> <span class="n">spin</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">circuit_params</span><span class="o">.</span><span class="n">CONVERT_CCZ_TO_ITOFFOLI</span><span class="p">:</span>
+        <span class="n">circuit_new</span> <span class="o">=</span> <span class="n">convert_ccz_to_itoffoli</span><span class="p">(</span>
+            <span class="n">circuit_new</span><span class="p">,</span> <span class="n">spin</span><span class="p">,</span> <span class="n">constrain_cs_csd</span><span class="o">=</span><span class="n">circuit_params</span><span class="o">.</span><span class="n">CONSTRAIN_CS_CSD</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">circuit_new</span> <span class="o">=</span> <span class="n">convert_ccz_to_cz</span><span class="p">(</span><span class="n">circuit_new</span><span class="p">)</span>
     <span class="n">cirq</span><span class="o">.</span><span class="n">MergeInteractions</span><span class="p">(</span><span class="n">allow_partial_czs</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span><span class="o">.</span><span class="n">optimize_circuit</span><span class="p">(</span><span class="n">circuit_new</span><span class="p">)</span>
 
     <span class="c1"># Two-qubit gate transpilation.</span>

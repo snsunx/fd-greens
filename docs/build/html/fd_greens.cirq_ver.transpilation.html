@@ -79,10 +79,16 @@
 
 </dd></dl>
 
+<dl class="py attribute">
+<dt class="sig sig-object py" id="fd_greens.cirq_ver.transpilation.iToffoliGate">
+<span class="sig-name descname"><span class="pre">iToffoliGate</span></span><a class="headerlink" href="#fd_greens.cirq_ver.transpilation.iToffoliGate" title="Permalink to this definition"></a></dt>
+<dd><p>alias of <a class="reference internal" href="#fd_greens.cirq_ver.transpilation.C0C0iXGate" title="fd_greens.cirq_ver.transpilation.C0C0iXGate"><code class="xref py py-class docutils literal notranslate"><span class="pre">fd_greens.cirq_ver.transpilation.C0C0iXGate</span></code></a></p>
+</dd></dl>
+
 <dl class="py function">
 <dt class="sig sig-object py" id="fd_greens.cirq_ver.transpilation.permute_qubits">
 <span class="sig-name descname"><span class="pre">permute_qubits</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">circuit</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">cirq.circuits.circuit.Circuit</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">cirq.circuits.circuit.Circuit</span></span></span><a class="reference internal" href="_modules/fd_greens/cirq_ver/transpilation.html#permute_qubits"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#fd_greens.cirq_ver.transpilation.permute_qubits" title="Permalink to this definition"></a></dt>
-<dd><p>Permutes qubits by adding SWAP gates.</p>
+<dd><p>Permutes qubits of long-range CZs and CCZs by adding SWAP gates.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><p><strong>circuit</strong> – The circuit to be converted.</p>
@@ -95,11 +101,15 @@
 
 <dl class="py function">
 <dt class="sig sig-object py" id="fd_greens.cirq_ver.transpilation.convert_ccz_to_c0c0ix">
-<span class="sig-name descname"><span class="pre">convert_ccz_to_c0c0ix</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">circuit</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">cirq.circuits.circuit.Circuit</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">spin</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">cirq.circuits.circuit.Circuit</span></span></span><a class="reference internal" href="_modules/fd_greens/cirq_ver/transpilation.html#convert_ccz_to_c0c0ix"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#fd_greens.cirq_ver.transpilation.convert_ccz_to_c0c0ix" title="Permalink to this definition"></a></dt>
-<dd><p>Converts CCZs to C0C0iXs in a Cirq circuit.</p>
+<span class="sig-name descname"><span class="pre">convert_ccz_to_c0c0ix</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">circuit</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">cirq.circuits.circuit.Circuit</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">spin</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">constrain_cs_csd</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">bool</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">cirq.circuits.circuit.Circuit</span></span></span><a class="reference internal" href="_modules/fd_greens/cirq_ver/transpilation.html#convert_ccz_to_c0c0ix"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#fd_greens.cirq_ver.transpilation.convert_ccz_to_c0c0ix" title="Permalink to this definition"></a></dt>
+<dd><p>Converts CCZs to C0C0iXs in a circuit.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>circuit</strong> – The circuit to be converted.</p>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>circuit</strong> – The circuit to be converted.</p></li>
+<li><p><strong>spin</strong> – Spin states of the molecular system.</p></li>
+<li><p><strong>constrain_cs_csd</strong> – Whether to constrain CSD to be on Q4Q5 etc.</p></li>
+</ul>
 </dd>
 <dt class="field-even">Returns</dt>
 <dd class="field-even"><p><strong>circuit_new</strong> – The new circuit after conversion.</p>
@@ -108,9 +118,33 @@
 </dd></dl>
 
 <dl class="py function">
+<dt class="sig sig-object py" id="fd_greens.cirq_ver.transpilation.convert_ccz_to_itoffoli">
+<span class="sig-name descname"><span class="pre">convert_ccz_to_itoffoli</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">circuit</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">cirq.circuits.circuit.Circuit</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">spin</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">constrain_cs_csd</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">bool</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">cirq.circuits.circuit.Circuit</span></span></span><a class="headerlink" href="#fd_greens.cirq_ver.transpilation.convert_ccz_to_itoffoli" title="Permalink to this definition"></a></dt>
+<dd><p>Converts CCZs to C0C0iXs in a circuit.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>circuit</strong> – The circuit to be converted.</p></li>
+<li><p><strong>spin</strong> – Spin states of the molecular system.</p></li>
+<li><p><strong>constrain_cs_csd</strong> – Whether to constrain CSD to be on Q4Q5 etc.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>circuit_new</strong> – The new circuit after conversion.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="fd_greens.cirq_ver.transpilation.convert_ccz_to_cz">
+<span class="sig-name descname"><span class="pre">convert_ccz_to_cz</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">circuit</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">cirq.circuits.circuit.Circuit</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">cirq.circuits.circuit.Circuit</span></span></span><a class="reference internal" href="_modules/fd_greens/cirq_ver/transpilation.html#convert_ccz_to_cz"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#fd_greens.cirq_ver.transpilation.convert_ccz_to_cz" title="Permalink to this definition"></a></dt>
+<dd><p>Decomposes CCZ gates to CZ gates in a circuit.</p>
+</dd></dl>
+
+<dl class="py function">
 <dt class="sig sig-object py" id="fd_greens.cirq_ver.transpilation.convert_swap_to_cz">
 <span class="sig-name descname"><span class="pre">convert_swap_to_cz</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">circuit</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">cirq.circuits.circuit.Circuit</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">cirq.circuits.circuit.Circuit</span></span></span><a class="reference internal" href="_modules/fd_greens/cirq_ver/transpilation.html#convert_swap_to_cz"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#fd_greens.cirq_ver.transpilation.convert_swap_to_cz" title="Permalink to this definition"></a></dt>
-<dd><p>Converts SWAPs to CZs in a Cirq circuit.</p>
+<dd><p>Converts SWAPs to CZs in a circuit.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><p><strong>circuit</strong> – The circuit to be converted.</p>
@@ -143,11 +177,15 @@
 
 <dl class="py function">
 <dt class="sig sig-object py" id="fd_greens.cirq_ver.transpilation.transpile_into_berkeley_gates">
-<span class="sig-name descname"><span class="pre">transpile_into_berkeley_gates</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">circuit</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">cirq.circuits.circuit.Circuit</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">spin</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">'d'</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">cirq.circuits.circuit.Circuit</span></span></span><a class="reference internal" href="_modules/fd_greens/cirq_ver/transpilation.html#transpile_into_berkeley_gates"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#fd_greens.cirq_ver.transpilation.transpile_into_berkeley_gates" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">transpile_into_berkeley_gates</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">circuit</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">cirq.circuits.circuit.Circuit</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">spin</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">'d'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">circuit_params</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="fd_greens.cirq_ver.parameters.html#fd_greens.cirq_ver.parameters.CircuitConstructionParameters" title="fd_greens.cirq_ver.parameters.CircuitConstructionParameters"><span class="pre">fd_greens.cirq_ver.parameters.CircuitConstructionParameters</span></a><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">cirq.circuits.circuit.Circuit</span></span></span><a class="reference internal" href="_modules/fd_greens/cirq_ver/transpilation.html#transpile_into_berkeley_gates"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#fd_greens.cirq_ver.transpilation.transpile_into_berkeley_gates" title="Permalink to this definition"></a></dt>
 <dd><p>Transpiles a circuit into native gates on the Berkeley device.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>circuit</strong> – The circuit to be transpiled.</p>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>circuit</strong> – The circuit to be transpiled.</p></li>
+<li><p><strong>spin</strong> – Spin states of the molecular system.</p></li>
+<li><p><strong>circuit_params</strong> – Circuit construction parameters.</p></li>
+</ul>
 </dd>
 <dt class="field-even">Returns</dt>
 <dd class="field-even"><p><strong>circuit_new</strong> – The new circuit after transpilation.</p>

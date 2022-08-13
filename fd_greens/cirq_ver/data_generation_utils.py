@@ -1,3 +1,9 @@
+"""
+==================================================================
+Data Generation Utilities (:mod:`fd_greens.data_generation_utils`)
+==================================================================
+"""
+
 from typing import Sequence, Optional
 
 import numpy as np
@@ -63,10 +69,13 @@ def generate_response_function(
 def generate_fidelity_vs_depth(
     h5fname0: str,
     h5fname1: str,
-    dirname: str = "data", 
-    datfname: str = "fid_vs_depth"
+    dirname: str = "data/traj", 
+    datfname: Optional[str] = None
 ) -> None:
     """Generates fidelity vs depth on a single circuit."""
+    if datfname is None:
+        datfname = f"fid_vs_depth_{h5fname1}"
+    
     print("> Generating fidelity vs depth")
     letter_to_int = {'s': 1, 'd': 2, 't': 3}
 
