@@ -37,12 +37,12 @@ def plot_fidelity_by_depth(ax: plt.Axes, datfname_3q: str, datfname_2q: str, is_
 
 def main() -> None:
     fig, ax = plt.subplots(figsize=(8, 6))
-    ax_inset = fig.add_axes([0.53, 0.53, 0.39, 0.37])
+    ax_inset = fig.add_axes([0.55, 0.55, 0.36, 0.34])
 
     plot_fidelity_by_depth(
         ax, 
-        "../../sim/resp/augxx_2022/data/traj/fid_vs_depth_nah_resp_exact_circ0u1dn.dat",
-        "../../sim/resp/augxx_2022/data/traj/fid_vs_depth_nah_resp_exact2q_circ0u1dn.dat"
+        "../../sim/resp/aug13_2022/data/traj/fid_vs_depth_nah_resp_circ0u1d_n0708.dat",
+        "../../sim/resp/aug13_2022/data/traj/fid_vs_depth_nah_resp_circ0u1d2q_n0708.dat"
     )
 
     plot_fidelity_by_depth(

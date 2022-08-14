@@ -23,6 +23,9 @@ class C0C0iXGate(cirq.Gate):
     def _num_qubits_(self) -> int:
         return 3
 
+    def _has_unitary_(self) -> bool:
+        return True
+
     def _unitary_(self) -> np.ndarray:
         return np.array(
             [

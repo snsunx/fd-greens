@@ -295,7 +295,13 @@ class CircuitStringConverter:
             h5file.close()
         return circuit
     
-    def save_circuit(self, h5fname: Union[str, h5py.File], dsetname: str, circuit: cirq.Circuit) -> None:
+    def save_circuit(
+        self,
+        h5fname: Union[str, h5py.File],
+        dsetname: str, 
+        circuit: cirq.Circuit,
+        return_dataset: bool = True
+    ) -> None:
         """Saves a circuit to an HDF5 file."""
         if isinstance(h5fname, str):
             h5file = h5py.File(h5fname + '.h5', 'r+')

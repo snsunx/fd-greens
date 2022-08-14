@@ -13,7 +13,7 @@ from .molecular_hamiltonian import MolecularHamiltonian, get_nah_hamiltonian
 from .parameters import HARTREE_TO_EV
 from .greens_function import GreensFunction
 from .response_function import ResponseFunction
-from .general_utils import get_fidelity
+from .general_utils import get_fidelity, quantum_state_tomography
 
 __all__ = [
     "generate_greens_function", 
@@ -66,43 +66,33 @@ def generate_response_function(
         resp.response_function(omegas, eta)
 
 
-def generate_fidelity_vs_depth(
-    h5fname0: str,
-    h5fname1: str,
-    dirname: str = "data/traj", 
-    datfname: Optional[str] = None
-) -> None:
+def generate_fidelity_vs_depth(h5fname: str, dirname: str = "data/traj", datfname: Optional[str] = None) -> None:
     """Generates fidelity vs depth on a single circuit."""
     if datfname is None:
-        datfname = f"fid_vs_depth_{h5fname1}"
+        datfname = f"fid_vs_depth_{h5fname}"
     
     print("> Generating fidelity vs depth")
     letter_to_int = {'s': 1, 'd': 2, 't': 3}
 
-    h5file0 = h5py.File(h5fname0 + ".h5", "r")
-    h5file1 = h5py.File(h5fname1 + ".h5", "r")
-
-    group0 = h5file0["psi"] if "psi" in h5file0 else h5file0["rho"]
-    group1 = h5file1["psi"] if "psi" in h5file1 else h5file1["rho"]
+    h5file = h5py.File(h5fname + ".h5", "r")
 
     nq_gates_dict = dict()
     fidelity_dict = dict()
-    for key in group0.keys():
-        state0 = group0[key]
-        state1 = group1[key]
+    for key in h5file["psi"].keys():
+        state_vector = h5file["psi"][key]
+        density_matrix = quantum_state_tomography(h5file, 4, circuit_label=f"circ{int(key[:-1])}", suffix='')
 
         nq_gates = letter_to_int[key[-1]]
         nq_gates_dict[int(key[:-1])] = nq_gates
 
-        fidelity = get_fidelity(state0, state1)
+        fidelity = get_fidelity(state_vector, density_matrix)
         fidelity_dict[int(key[:-1])] = fidelity
 
     with open(f"{dirname}/{datfname}.dat", "w") as f:
         for key in sorted(fidelity_dict.keys()):
-            f.write(f"{key:2d} {nq_gates_dict[key]:2d} {fidelity_dict[key]:.8f}\n")
+            f.write(f"{key:3d} {nq_gates_dict[key]:3d} {fidelity_dict[key]:.8f}\n")
 
-    h5file0.close()
-    h5file1.close()
+    h5file.close()
 
 
 def generate_fidelity_matrix(
