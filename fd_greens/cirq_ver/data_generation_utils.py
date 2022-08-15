@@ -9,8 +9,7 @@ from typing import Sequence, Optional
 import numpy as np
 import h5py
 
-from .molecular_hamiltonian import MolecularHamiltonian, get_nah_hamiltonian
-from .parameters import HARTREE_TO_EV
+from .molecular_hamiltonian import get_alkali_hydride_hamiltonian
 from .greens_function import GreensFunction
 from .response_function import ResponseFunction
 from .general_utils import get_fidelity, quantum_state_tomography
@@ -25,21 +24,30 @@ __all__ = [
 
 def generate_greens_function(
     h5fnames: Sequence[str],
-    hamiltonian: Optional[MolecularHamiltonian] = None,
     omegas: Optional[Sequence[float]] = None,
-    eta: float = 0.02 * HARTREE_TO_EV
+    eta: float = 1.5
 ) -> None:
-    """Generates Green's function data files."""
-    if hamiltonian is None:
-        hamiltonian = get_nah_hamiltonian(3.7)
+    """Generates Green's function data files.
+
+    Args:
+        h5fnames: The HDF5 file names to generate response function from.
+        omegas: The frequencies at which the response function is evaluated.
+        eta: The broadening factor.
+    """
+    if "nah" in h5fnames[0]:
+        hamiltonian = get_alkali_hydride_hamiltonian("Na", 3.0)
+    elif "kh" in h5fnames[0]:
+        hamiltonian = get_alkali_hydride_hamiltonian("K", 3.9)
+    else:
+        raise ValueError("The input HDF5 file name must contain \"nah\" or \"kh\"")
     if omegas is None:
-        omegas = np.arange(-32, 32, 0.1)
+        np.arange(-32, 32, 0.1)
     
     for h5fname in h5fnames:
-        if 'exact' in h5fname:
-            greens = GreensFunction(hamiltonian, fname=h5fname, method='exact', spin='u')
+        if "exact" in h5fname:
+            greens = GreensFunction(hamiltonian, fname=h5fname, method="exact", spin='u')
         else:
-            greens = GreensFunction(hamiltonian, fname=h5fname, method='tomo', spin='u')
+            greens = GreensFunction(hamiltonian, fname=h5fname, method="tomo", spin='u')
         greens.process()
         greens.spectral_function(omegas, eta)
         greens.self_energy(omegas, eta)
@@ -47,31 +55,47 @@ def generate_greens_function(
 
 def generate_response_function(
     h5fnames: Sequence[str],
-    hamiltonian: Optional[MolecularHamiltonian] = None,
     omegas: Optional[Sequence[float]] = None,
-    eta: float = 1.5 # 0.05 * HARTREE_TO_EV
+    eta: float = 1.5
 ) -> None:
-    """Generates response function data files."""
-    if hamiltonian is None:
-        hamiltonian = get_nah_hamiltonian(3.7) # XXX
+    """Generates response function data files.
+    
+    Args:
+        h5fnames: The HDF5 file names to generate response function from.
+        omegas: The frequencies at which the response function is evaluated.
+        eta: The broadening factor.
+    """
+    if "nah" in h5fnames[0]:
+        hamiltonian = get_alkali_hydride_hamiltonian("Na", 1.7)
+        fname_exact = "nah_resp_exact"
+    elif "kh" in h5fnames[0]:
+        hamiltonian = get_alkali_hydride_hamiltonian("K", 3.9)
+        fname_exact = "kh_resp_exact"
+    else:
+        raise ValueError("The input HDF5 file names must contain \"nah\" or \"kh\".")
     if omegas is None:
         omegas = np.arange(-32, 32, 0.1)
 
     for fname in h5fnames:
-        if 'exact' in fname:
+        if "exact" in fname:
             resp = ResponseFunction(hamiltonian, fname=fname, method="exact")
         else:
-            resp = ResponseFunction(hamiltonian, fname=fname, method="tomo", fname_exact='nah_resp_exact') # XXX
+            resp = ResponseFunction(hamiltonian, fname=fname, method="tomo", fname_exact=fname_exact)
         resp.process()
         resp.response_function(omegas, eta)
 
 
 def generate_fidelity_vs_depth(h5fname: str, dirname: str = "data/traj", datfname: Optional[str] = None) -> None:
-    """Generates fidelity vs depth on a single circuit."""
+    """Generates fidelity vs depth on a single circuit.
+    
+    Args:
+        h5fname: The HDF5 file name on which to generate the 
+        dirname: The directory to save the fidelity vs depth data.
+        datfname: The data file name.
+    """
+    print("> Generating fidelity vs depth")
     if datfname is None:
         datfname = f"fid_vs_depth_{h5fname}"
-    
-    print("> Generating fidelity vs depth")
     letter_to_int = {'s': 1, 'd': 2, 't': 3}
 
     h5file = h5py.File(h5fname + ".h5", "r")
@@ -103,7 +127,18 @@ def generate_fidelity_matrix(
     dirname: str = "data/mat",
     datfname: Optional[str] = None
 ) -> None:
-    """Generates the fidelity matrix."""
+    """Generates the fidelity matrix data file.
+    
+    Args:
+        h5fname_exact: HDF5 file name of the exact data.
+        h5fname_expt: HDF5 file name of the experimental data.
+        subscript: The subscript of the quantities, ``'e'``, ``'h'`` for Green's function
+            and ``'n'`` for response function.
+        spin: The spin state of the quantity, ``'u'`` or ``'d'`` for Green's function
+            and ``''`` for response function.
+        dirname: Directory name of the data file.
+        datfname: The data file name.
+    """
     print(f"> Generating fidelity matrix of {h5fname_expt}")
     if subscript is None:
         subscript = "e" if "greens" in h5fname_expt else "n"
@@ -148,7 +183,17 @@ def generate_trace_matrix(
     dirname: str = "data/mat",
     datfname: Optional[str] = None,
 ) -> None:
-    """Genreates the ancilla bitstring probabilities."""
+    """Genreates the ancilla bitstring probability matrix data file.
+    
+    Args:
+        h5fname: HDF5 file name of the data.
+        subscript: The subscript of the quantities, ``'e'``, ``'h'`` for Green's function
+            and ``'n'`` for response function.
+        spin: The spin state of the quantity, ``'u'`` or ``'d'`` for Green's function
+            and ``''`` for response function.
+        dirname: Directory name of the data file.
+        datfname: The data file name.
+    """
     print(f"> Generating trace matrix of {h5fname}")
     if subscript is None:
         subscript = "e" if "greens" in h5fname else "n"

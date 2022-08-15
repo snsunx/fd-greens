@@ -81,7 +81,8 @@
 <span class="kn">from</span> <span class="nn">.response_function</span> <span class="kn">import</span> <span class="n">ResponseFunction</span>
 <span class="kn">from</span> <span class="nn">.classical_amplitudes_solver</span> <span class="kn">import</span> <span class="n">ClassicalAmplitudesSolver</span>
 <span class="kn">from</span> <span class="nn">.circuit_string_converter</span> <span class="kn">import</span> <span class="n">CircuitStringConverter</span>
-<span class="kn">from</span> <span class="nn">.general_utils</span> <span class="kn">import</span> <span class="n">get_non_z_locations</span><span class="p">,</span> <span class="n">get_gate_counts</span>
+<span class="kn">from</span> <span class="nn">.circuit_constructor</span> <span class="kn">import</span> <span class="n">CircuitConstructor</span>
+<span class="kn">from</span> <span class="nn">.general_utils</span> <span class="kn">import</span> <span class="n">get_non_z_locations</span><span class="p">,</span> <span class="n">get_gate_counts</span><span class="p">,</span> <span class="n">histogram_to_array</span><span class="p">,</span> <span class="n">quantum_state_tomography</span>
 <span class="kn">from</span> <span class="nn">.noise_parameters</span> <span class="kn">import</span> <span class="n">NoiseParameters</span>
 
 <span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;create_hdf5&quot;</span><span class="p">,</span> <span class="s2">&quot;create_hdf5_by_depth&quot;</span><span class="p">]</span>
@@ -134,54 +135,71 @@
         <span class="n">classical_solver</span><span class="o">.</span><span class="n">compute_N</span><span class="p">()</span>
         <span class="n">N_classical</span> <span class="o">=</span> <span class="n">classical_solver</span><span class="o">.</span><span class="n">N</span><span class="p">[</span><span class="s1">&#39;n&#39;</span><span class="p">]</span>
 
-        <span class="nb">print</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">allclose</span><span class="p">(</span><span class="n">N</span><span class="p">,</span> <span class="n">N_classical</span><span class="p">))</span></div>
+        <span class="n">is_all_close</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">allclose</span><span class="p">(</span><span class="n">N</span><span class="p">,</span> <span class="n">N_classical</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">is_all_close</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">N</span> <span class="o">-</span> <span class="n">N_classical</span><span class="p">))</span></div>
 
-<div class="viewcode-block" id="create_hdf5_by_depth"><a class="viewcode-back" href="../../../fd_greens.cirq_ver.hdf5_creation_utils.html#fd_greens.cirq_ver.hdf5_creation_utils.create_hdf5_by_depth">[docs]</a><span class="k">def</span> <span class="nf">create_hdf5_by_depth</span><span class="p">(</span><span class="n">h5fname</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">circuit_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">noise_fname</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<div class="viewcode-block" id="create_hdf5_by_depth"><a class="viewcode-back" href="../../../fd_greens.cirq_ver.hdf5_creation_utils.html#fd_greens.cirq_ver.hdf5_creation_utils.create_hdf5_by_depth">[docs]</a><span class="k">def</span> <span class="nf">create_hdf5_by_depth</span><span class="p">(</span>
+    <span class="n">h5fname</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">circuit_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">noise_fname</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">repetitions</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1000</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;Creates an HDF5 file by circuit depth.</span>
 <span class="sd">    </span>
 <span class="sd">    Args:</span>
 <span class="sd">        h5fname: The HDF5 file name.</span>
 <span class="sd">        circuit_name: Name of the circuit to be run at each depth.</span>
 <span class="sd">        noise_fname: The noise parameter file name.</span>
+<span class="sd">        repetitions: The repetitions for noisy simulation.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">int_to_letter</span> <span class="o">=</span> <span class="p">{</span><span class="mi">1</span><span class="p">:</span> <span class="s1">&#39;s&#39;</span><span class="p">,</span> <span class="mi">2</span><span class="p">:</span> <span class="s1">&#39;d&#39;</span><span class="p">,</span> <span class="mi">3</span><span class="p">:</span> <span class="s1">&#39;t&#39;</span><span class="p">}</span>
 
+    <span class="n">h5fname_new</span> <span class="o">=</span> <span class="s1">&#39;_&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">h5fname</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;_&#39;</span><span class="p">)[:</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+    <span class="n">suffix_2q</span> <span class="o">=</span> <span class="s2">&quot;2q&quot;</span> <span class="k">if</span> <span class="s2">&quot;2q&quot;</span> <span class="ow">in</span> <span class="n">h5fname</span> <span class="k">else</span> <span class="s2">&quot;&quot;</span>
     <span class="k">if</span> <span class="n">noise_fname</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="n">h5fname_new</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">h5fname</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">circuit_name</span><span class="si">}</span><span class="s2">.h5&quot;</span>
+        <span class="n">h5fname_new</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">h5fname_new</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">circuit_name</span><span class="si">}{</span><span class="n">suffix_2q</span><span class="si">}</span><span class="s2">.h5&quot;</span>
+        <span class="n">noise_params</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="n">simulator</span> <span class="o">=</span> <span class="n">cirq</span><span class="o">.</span><span class="n">Simulator</span><span class="p">()</span>
     <span class="k">else</span><span class="p">:</span>
-        <span class="n">h5fname_new</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">h5fname</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">circuit_name</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">noise_fname</span><span class="p">[</span><span class="o">-</span><span class="mi">4</span><span class="p">:]</span><span class="si">}</span><span class="s2">.h5&quot;</span>
-    
+        <span class="n">h5fname_new</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">h5fname_new</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">circuit_name</span><span class="si">}{</span><span class="n">suffix_2q</span><span class="si">}</span><span class="s2">_n</span><span class="si">{</span><span class="n">noise_fname</span><span class="p">[</span><span class="o">-</span><span class="mi">4</span><span class="p">:]</span><span class="si">}</span><span class="s2">.h5&quot;</span>
+        <span class="n">noise_params</span> <span class="o">=</span> <span class="n">NoiseParameters</span><span class="o">.</span><span class="n">from_file</span><span class="p">(</span><span class="n">noise_fname</span><span class="p">)</span>
+        <span class="n">simulator</span> <span class="o">=</span> <span class="n">cirq</span><span class="o">.</span><span class="n">DensityMatrixSimulator</span><span class="p">()</span>
+
     <span class="n">qubits</span> <span class="o">=</span> <span class="n">cirq</span><span class="o">.</span><span class="n">LineQubit</span><span class="o">.</span><span class="n">range</span><span class="p">(</span><span class="mi">4</span><span class="p">)</span>
     <span class="n">converter</span> <span class="o">=</span> <span class="n">CircuitStringConverter</span><span class="p">(</span><span class="n">qubits</span><span class="p">)</span>
 
     <span class="n">circuit</span> <span class="o">=</span> <span class="n">converter</span><span class="o">.</span><span class="n">load_circuit</span><span class="p">(</span><span class="n">h5fname</span><span class="p">,</span> <span class="n">circuit_name</span> <span class="o">+</span> <span class="s1">&#39;/transpiled&#39;</span><span class="p">)</span>
     <span class="n">non_z_locations</span> <span class="o">=</span> <span class="n">get_non_z_locations</span><span class="p">(</span><span class="n">circuit</span><span class="p">)</span>
+    <span class="c1"># print(&quot;non_z_locations =&quot;, non_z_locations)</span>
     
     <span class="n">h5file</span> <span class="o">=</span> <span class="n">h5py</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="n">h5fname_new</span><span class="p">,</span> <span class="s1">&#39;w&#39;</span><span class="p">)</span>
     <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">non_z_locations</span><span class="p">:</span>
-        <span class="c1"># converter.save_circuit(h5file, f&quot;circuit/{i}&quot;, circuit[:i])</span>
-        <span class="c1"># n_1q_gates = get_gate_counts(circuit[i], num_qubits=1)</span>
-        <span class="c1"># n_2q_gates = get_gate_counts(circuit[i], num_qubits=2)</span>
-        <span class="c1"># n_3q_gates = get_gate_counts(circuit[i], num_qubits=3)</span>
-        <span class="c1"># if n_1q_gates &gt; 0:</span>
-        <span class="c1">#     index_string = str(i) + &#39;s&#39;</span>
-        <span class="c1"># if n_2q_gates &gt; 0:</span>
-        <span class="c1">#     index_string = str(i) + &#39;d&#39;</span>
-        <span class="c1"># if n_3q_gates &gt; 0:</span>
-        <span class="c1">#     index_string = str(i) + &#39;t&#39;</span>
-
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;i = </span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="c1"># Get the index string, which consists of the current depth and the nq_gates letter.</span>
         <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">]:</span>
             <span class="k">if</span> <span class="n">get_gate_counts</span><span class="p">(</span><span class="n">circuit</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">num_qubits</span><span class="o">=</span><span class="n">n</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
                 <span class="n">index_string</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="o">+</span> <span class="n">int_to_letter</span><span class="p">[</span><span class="n">n</span><span class="p">]</span>
         
-        <span class="k">if</span> <span class="n">noise_fname</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">state_vector</span> <span class="o">=</span> <span class="n">cirq</span><span class="o">.</span><span class="n">final_state_vector</span><span class="p">(</span><span class="n">circuit</span><span class="p">[:</span><span class="n">i</span><span class="p">])</span>
-            <span class="n">h5file</span><span class="p">[</span><span class="sa">f</span><span class="s1">&#39;psi/</span><span class="si">{</span><span class="n">index_string</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">state_vector</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="n">noise_params</span> <span class="o">=</span> <span class="n">NoiseParameters</span><span class="o">.</span><span class="n">from_file</span><span class="p">(</span><span class="n">noise_fname</span><span class="p">)</span>
-            <span class="n">circuit_i</span> <span class="o">=</span> <span class="n">noise_params</span><span class="o">.</span><span class="n">add_noise_to_circuit</span><span class="p">(</span><span class="n">circuit</span><span class="p">[:</span><span class="n">i</span><span class="p">])</span>
-            <span class="n">density_matrix</span> <span class="o">=</span> <span class="n">cirq</span><span class="o">.</span><span class="n">final_density_matrix</span><span class="p">(</span><span class="n">circuit_i</span><span class="p">)</span>
-            <span class="n">h5file</span><span class="p">[</span><span class="sa">f</span><span class="s1">&#39;rho/</span><span class="si">{</span><span class="n">index_string</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">density_matrix</span>
+        <span class="c1"># Save transpiled and tomography circuits to file.</span>
+        <span class="n">circuit_i</span> <span class="o">=</span> <span class="n">circuit</span><span class="p">[:</span><span class="n">i</span><span class="p">]</span>
+        <span class="n">converter</span><span class="o">.</span><span class="n">save_circuit</span><span class="p">(</span><span class="n">h5file</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;circ</span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2">/transpiled&quot;</span><span class="p">,</span> <span class="n">circuit_i</span><span class="p">)</span>
+        <span class="n">tomography_circuits</span> <span class="o">=</span> <span class="n">CircuitConstructor</span><span class="o">.</span><span class="n">build_tomography_circuits</span><span class="p">(</span>
+            <span class="n">circuit_i</span><span class="p">,</span> <span class="n">tomographed_qubits</span><span class="o">=</span><span class="n">qubits</span><span class="p">)</span>
+
+        <span class="c1"># Obtain the state vector and save to file.</span>
+        <span class="n">state_vector</span> <span class="o">=</span> <span class="n">cirq</span><span class="o">.</span><span class="n">final_state_vector</span><span class="p">(</span><span class="n">circuit_i</span><span class="p">)</span>
+        <span class="n">h5file</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;psi/</span><span class="si">{</span><span class="n">index_string</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">state_vector</span>
+        
+        <span class="k">for</span> <span class="n">tomo_label</span><span class="p">,</span> <span class="n">tomo_circuit</span> <span class="ow">in</span> <span class="n">tomography_circuits</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">converter</span><span class="o">.</span><span class="n">save_circuit</span><span class="p">(</span><span class="n">h5file</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;circ</span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">tomo_label</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">tomo_circuit</span><span class="p">,</span> <span class="n">return_dataset</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+            <span class="c1"># Save simulated counts to the dataset.</span>
+            <span class="k">if</span> <span class="n">noise_params</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">tomo_circuit</span> <span class="o">=</span> <span class="n">noise_params</span><span class="o">.</span><span class="n">add_noise_to_circuit</span><span class="p">(</span><span class="n">tomo_circuit</span><span class="p">)</span>
+            <span class="n">result</span> <span class="o">=</span> <span class="n">simulator</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">tomo_circuit</span><span class="p">,</span> <span class="n">repetitions</span><span class="o">=</span><span class="n">repetitions</span><span class="p">)</span>
+            <span class="n">histogram</span> <span class="o">=</span> <span class="n">result</span><span class="o">.</span><span class="n">multi_measurement_histogram</span><span class="p">(</span><span class="n">keys</span><span class="o">=</span><span class="p">[</span><span class="nb">str</span><span class="p">(</span><span class="n">q</span><span class="p">)</span> <span class="k">for</span> <span class="n">q</span> <span class="ow">in</span> <span class="n">qubits</span><span class="p">])</span>
+            <span class="n">h5file</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;circ</span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">tomo_label</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s2">&quot;counts&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">histogram_to_array</span><span class="p">(</span><span class="n">histogram</span><span class="p">,</span> <span class="n">n_qubits</span><span class="o">=</span><span class="mi">4</span><span class="p">)</span>
     
     <span class="n">h5file</span><span class="o">.</span><span class="n">close</span><span class="p">()</span></div>
 </pre></div>

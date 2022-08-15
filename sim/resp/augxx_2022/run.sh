@@ -7,11 +7,11 @@ if [ $create_hdf5 = true ]
 then
     export CONVERT_CCZ_TO_ITOFFOLI=1
     python3 create_hdf5.py nah_resp_exact    
-    python3 create_hdf5.py nah_resp_tomo --method tomo
+    # python3 create_hdf5.py nah_resp_tomo --method tomo
 
     export CONVERT_CCZ_TO_ITOFFOLI=0
-    python3 create_hdf5.py nah_resp_exact2q
-    python3 create_hdf5.py nah_resp_tomo2q --method tomo
+    # python3 create_hdf5.py nah_resp_exact2q
+    # python3 create_hdf5.py nah_resp_tomo2q --method tomo
 
     # python3 create_hdf5.py nah_resp_exact -c circ0u1d
     # python3 create_hdf5.py nah_resp_exact -c circ0u1d -n ../../../expt/params/gate_fidelities_0720

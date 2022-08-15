@@ -254,7 +254,7 @@
 <div class="viewcode-block" id="CircuitConstructor.build_tomography_circuits"><a class="viewcode-back" href="../../../fd_greens.cirq_ver.circuit_constructor.html#fd_greens.cirq_ver.circuit_constructor.CircuitConstructor.build_tomography_circuits">[docs]</a>    <span class="nd">@staticmethod</span>
     <span class="k">def</span> <span class="nf">build_tomography_circuits</span><span class="p">(</span>
         <span class="n">circuit</span><span class="p">:</span> <span class="n">cirq</span><span class="o">.</span><span class="n">Circuit</span><span class="p">,</span> 
-        <span class="n">tomographed_qubits</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">cirq</span><span class="o">.</span><span class="n">Qid</span><span class="p">],</span>
+        <span class="n">tomographed_qubits</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="n">cirq</span><span class="o">.</span><span class="n">Qid</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">measured_qubits</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="n">cirq</span><span class="o">.</span><span class="n">Qid</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">cirq</span><span class="o">.</span><span class="n">Circuit</span><span class="p">]:</span>
         <span class="sd">&quot;&quot;&quot;Constructs tomography circuits on a given circuit.</span>
@@ -267,6 +267,8 @@
 <span class="sd">        Returns:</span>
 <span class="sd">            tomography_circuits: A dictionary with tomography labels as keys and tomography circuits as values.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">tomographed_qubits</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">tomographed_qubits</span> <span class="o">=</span> <span class="n">circuit</span><span class="o">.</span><span class="n">all_qubits</span><span class="p">()</span>
         <span class="k">if</span> <span class="n">measured_qubits</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">measured_qubits</span> <span class="o">=</span> <span class="n">tomographed_qubits</span>
 
@@ -278,13 +280,18 @@
         <span class="c1"># TODO: Take swap gates at the end of the circuit into account.</span>
         <span class="k">for</span> <span class="n">label</span> <span class="ow">in</span> <span class="n">tomography_labels</span><span class="p">:</span>
             <span class="c1"># Look for the position where the first multi-qubit gate is encountered.</span>
-            <span class="c1"># This is general because in the last transpilation step the circuits have been converted into</span>
-            <span class="c1"># the form with alternating single- and multi-qubit gates.</span>
+            <span class="c1"># This is general because in the last transpilation step the circuits have</span>
+            <span class="c1"># been converted into the form with alternating single- and multi-qubit gates.</span>
             <span class="n">position</span> <span class="o">=</span> <span class="mi">0</span>
             <span class="n">gate_count</span> <span class="o">=</span> <span class="mi">0</span>
             <span class="k">while</span> <span class="n">gate_count</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
                 <span class="n">position</span> <span class="o">-=</span> <span class="mi">1</span>
-                <span class="n">gate_count</span> <span class="o">=</span> <span class="n">get_gate_counts</span><span class="p">(</span><span class="n">cirq</span><span class="o">.</span><span class="n">Circuit</span><span class="p">(</span><span class="n">circuit</span><span class="p">[</span><span class="n">position</span><span class="p">]),</span> <span class="n">criterion</span><span class="o">=</span><span class="k">lambda</span> <span class="n">op</span><span class="p">:</span> <span class="n">op</span><span class="o">.</span><span class="n">gate</span><span class="o">.</span><span class="n">num_qubits</span><span class="p">()</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">)</span>
+                <span class="k">if</span> <span class="nb">abs</span><span class="p">(</span><span class="n">position</span><span class="p">)</span> <span class="o">&gt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">circuit</span><span class="p">):</span>
+                    <span class="k">break</span>
+                <span class="n">gate_count</span> <span class="o">=</span> <span class="n">get_gate_counts</span><span class="p">(</span>
+                    <span class="n">cirq</span><span class="o">.</span><span class="n">Circuit</span><span class="p">(</span><span class="n">circuit</span><span class="p">[</span><span class="n">position</span><span class="p">]),</span> 
+                    <span class="n">criterion</span><span class="o">=</span><span class="k">lambda</span> <span class="n">op</span><span class="p">:</span> <span class="n">op</span><span class="o">.</span><span class="n">gate</span><span class="o">.</span><span class="n">num_qubits</span><span class="p">()</span> <span class="o">&gt;</span> <span class="mi">1</span>
+                <span class="p">)</span>
             
             <span class="c1"># Break the circuit at the position where the multi-qubit gate is encountered.</span>
             <span class="k">if</span> <span class="n">position</span> <span class="o">!=</span> <span class="o">-</span><span class="mi">1</span><span class="p">:</span>

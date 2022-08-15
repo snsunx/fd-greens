@@ -72,11 +72,10 @@
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="kn">import</span> <span class="nn">h5py</span>
 
-<span class="kn">from</span> <span class="nn">.molecular_hamiltonian</span> <span class="kn">import</span> <span class="n">MolecularHamiltonian</span><span class="p">,</span> <span class="n">get_nah_hamiltonian</span>
-<span class="kn">from</span> <span class="nn">.parameters</span> <span class="kn">import</span> <span class="n">HARTREE_TO_EV</span>
+<span class="kn">from</span> <span class="nn">.molecular_hamiltonian</span> <span class="kn">import</span> <span class="n">get_alkali_hydride_hamiltonian</span>
 <span class="kn">from</span> <span class="nn">.greens_function</span> <span class="kn">import</span> <span class="n">GreensFunction</span>
 <span class="kn">from</span> <span class="nn">.response_function</span> <span class="kn">import</span> <span class="n">ResponseFunction</span>
-<span class="kn">from</span> <span class="nn">.general_utils</span> <span class="kn">import</span> <span class="n">get_fidelity</span>
+<span class="kn">from</span> <span class="nn">.general_utils</span> <span class="kn">import</span> <span class="n">get_fidelity</span><span class="p">,</span> <span class="n">quantum_state_tomography</span>
 
 <span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span>
     <span class="s2">&quot;generate_greens_function&quot;</span><span class="p">,</span> 
@@ -88,21 +87,30 @@
 
 <div class="viewcode-block" id="generate_greens_function"><a class="viewcode-back" href="../../../fd_greens.cirq_ver.data_generation_utils.html#fd_greens.cirq_ver.data_generation_utils.generate_greens_function">[docs]</a><span class="k">def</span> <span class="nf">generate_greens_function</span><span class="p">(</span>
     <span class="n">h5fnames</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
-    <span class="n">hamiltonian</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">MolecularHamiltonian</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">omegas</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">float</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">eta</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.02</span> <span class="o">*</span> <span class="n">HARTREE_TO_EV</span>
+    <span class="n">eta</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.5</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Generates Green&#39;s function data files.&quot;&quot;&quot;</span>
-    <span class="k">if</span> <span class="n">hamiltonian</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="n">hamiltonian</span> <span class="o">=</span> <span class="n">get_nah_hamiltonian</span><span class="p">(</span><span class="mf">3.7</span><span class="p">)</span>
+    <span class="sd">&quot;&quot;&quot;Generates Green&#39;s function data files.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        h5fnames: The HDF5 file names to generate response function from.</span>
+<span class="sd">        omegas: The frequencies at which the response function is evaluated.</span>
+<span class="sd">        eta: The broadening factor.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="s2">&quot;nah&quot;</span> <span class="ow">in</span> <span class="n">h5fnames</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span>
+        <span class="n">hamiltonian</span> <span class="o">=</span> <span class="n">get_alkali_hydride_hamiltonian</span><span class="p">(</span><span class="s2">&quot;Na&quot;</span><span class="p">,</span> <span class="mf">3.7</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="s2">&quot;kh&quot;</span> <span class="ow">in</span> <span class="n">h5fnames</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span>
+        <span class="n">hamiltonian</span> <span class="o">=</span> <span class="n">get_alkali_hydride_hamiltonian</span><span class="p">(</span><span class="s2">&quot;K&quot;</span><span class="p">,</span> <span class="mf">3.9</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;The input HDF5 file name must contain </span><span class="se">\&quot;</span><span class="s2">nah</span><span class="se">\&quot;</span><span class="s2"> or </span><span class="se">\&quot;</span><span class="s2">kh</span><span class="se">\&quot;</span><span class="s2">&quot;</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">omegas</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="n">omegas</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="o">-</span><span class="mi">32</span><span class="p">,</span> <span class="mi">32</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">)</span>
+        <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="o">-</span><span class="mi">32</span><span class="p">,</span> <span class="mi">32</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">)</span>
     
     <span class="k">for</span> <span class="n">h5fname</span> <span class="ow">in</span> <span class="n">h5fnames</span><span class="p">:</span>
-        <span class="k">if</span> <span class="s1">&#39;exact&#39;</span> <span class="ow">in</span> <span class="n">h5fname</span><span class="p">:</span>
-            <span class="n">greens</span> <span class="o">=</span> <span class="n">GreensFunction</span><span class="p">(</span><span class="n">hamiltonian</span><span class="p">,</span> <span class="n">fname</span><span class="o">=</span><span class="n">h5fname</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s1">&#39;exact&#39;</span><span class="p">,</span> <span class="n">spin</span><span class="o">=</span><span class="s1">&#39;u&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="s2">&quot;exact&quot;</span> <span class="ow">in</span> <span class="n">h5fname</span><span class="p">:</span>
+            <span class="n">greens</span> <span class="o">=</span> <span class="n">GreensFunction</span><span class="p">(</span><span class="n">hamiltonian</span><span class="p">,</span> <span class="n">fname</span><span class="o">=</span><span class="n">h5fname</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s2">&quot;exact&quot;</span><span class="p">,</span> <span class="n">spin</span><span class="o">=</span><span class="s1">&#39;u&#39;</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="n">greens</span> <span class="o">=</span> <span class="n">GreensFunction</span><span class="p">(</span><span class="n">hamiltonian</span><span class="p">,</span> <span class="n">fname</span><span class="o">=</span><span class="n">h5fname</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s1">&#39;tomo&#39;</span><span class="p">,</span> <span class="n">spin</span><span class="o">=</span><span class="s1">&#39;u&#39;</span><span class="p">)</span>
+            <span class="n">greens</span> <span class="o">=</span> <span class="n">GreensFunction</span><span class="p">(</span><span class="n">hamiltonian</span><span class="p">,</span> <span class="n">fname</span><span class="o">=</span><span class="n">h5fname</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s2">&quot;tomo&quot;</span><span class="p">,</span> <span class="n">spin</span><span class="o">=</span><span class="s1">&#39;u&#39;</span><span class="p">)</span>
         <span class="n">greens</span><span class="o">.</span><span class="n">process</span><span class="p">()</span>
         <span class="n">greens</span><span class="o">.</span><span class="n">spectral_function</span><span class="p">(</span><span class="n">omegas</span><span class="p">,</span> <span class="n">eta</span><span class="p">)</span>
         <span class="n">greens</span><span class="o">.</span><span class="n">self_energy</span><span class="p">(</span><span class="n">omegas</span><span class="p">,</span> <span class="n">eta</span><span class="p">)</span></div>
@@ -110,62 +118,68 @@
 
 <div class="viewcode-block" id="generate_response_function"><a class="viewcode-back" href="../../../fd_greens.cirq_ver.data_generation_utils.html#fd_greens.cirq_ver.data_generation_utils.generate_response_function">[docs]</a><span class="k">def</span> <span class="nf">generate_response_function</span><span class="p">(</span>
     <span class="n">h5fnames</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
-    <span class="n">hamiltonian</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">MolecularHamiltonian</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">omegas</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">float</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">eta</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.02</span> <span class="o">*</span> <span class="n">HARTREE_TO_EV</span>
+    <span class="n">eta</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.5</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Generates response function data files.&quot;&quot;&quot;</span>
-    <span class="k">if</span> <span class="n">hamiltonian</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="n">hamiltonian</span> <span class="o">=</span> <span class="n">get_nah_hamiltonian</span><span class="p">(</span><span class="mf">3.7</span><span class="p">)</span>
+    <span class="sd">&quot;&quot;&quot;Generates response function data files.</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        h5fnames: The HDF5 file names to generate response function from.</span>
+<span class="sd">        omegas: The frequencies at which the response function is evaluated.</span>
+<span class="sd">        eta: The broadening factor.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="s2">&quot;nah&quot;</span> <span class="ow">in</span> <span class="n">h5fnames</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span>
+        <span class="n">hamiltonian</span> <span class="o">=</span> <span class="n">get_alkali_hydride_hamiltonian</span><span class="p">(</span><span class="s2">&quot;Na&quot;</span><span class="p">,</span> <span class="mf">3.7</span><span class="p">)</span>
+        <span class="n">fname_exact</span> <span class="o">=</span> <span class="s2">&quot;nah_resp_exact&quot;</span>
+    <span class="k">elif</span> <span class="s2">&quot;kh&quot;</span> <span class="ow">in</span> <span class="n">h5fnames</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span>
+        <span class="n">hamiltonian</span> <span class="o">=</span> <span class="n">get_alkali_hydride_hamiltonian</span><span class="p">(</span><span class="s2">&quot;K&quot;</span><span class="p">,</span> <span class="mf">3.9</span><span class="p">)</span>
+        <span class="n">fname_exact</span> <span class="o">=</span> <span class="s2">&quot;kh_resp_exact&quot;</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;The input HDF5 file names must contain </span><span class="se">\&quot;</span><span class="s2">nah</span><span class="se">\&quot;</span><span class="s2"> or </span><span class="se">\&quot;</span><span class="s2">kh</span><span class="se">\&quot;</span><span class="s2">.&quot;</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">omegas</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">omegas</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="o">-</span><span class="mi">32</span><span class="p">,</span> <span class="mi">32</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">)</span>
 
     <span class="k">for</span> <span class="n">fname</span> <span class="ow">in</span> <span class="n">h5fnames</span><span class="p">:</span>
-        <span class="k">if</span> <span class="s1">&#39;exact&#39;</span> <span class="ow">in</span> <span class="n">fname</span><span class="p">:</span>
+        <span class="k">if</span> <span class="s2">&quot;exact&quot;</span> <span class="ow">in</span> <span class="n">fname</span><span class="p">:</span>
             <span class="n">resp</span> <span class="o">=</span> <span class="n">ResponseFunction</span><span class="p">(</span><span class="n">hamiltonian</span><span class="p">,</span> <span class="n">fname</span><span class="o">=</span><span class="n">fname</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s2">&quot;exact&quot;</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="n">resp</span> <span class="o">=</span> <span class="n">ResponseFunction</span><span class="p">(</span><span class="n">hamiltonian</span><span class="p">,</span> <span class="n">fname</span><span class="o">=</span><span class="n">fname</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s2">&quot;tomo&quot;</span><span class="p">,</span> <span class="n">fname_exact</span><span class="o">=</span><span class="s1">&#39;nah_resp_exact&#39;</span><span class="p">)</span> <span class="c1"># XXX</span>
+            <span class="n">resp</span> <span class="o">=</span> <span class="n">ResponseFunction</span><span class="p">(</span><span class="n">hamiltonian</span><span class="p">,</span> <span class="n">fname</span><span class="o">=</span><span class="n">fname</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s2">&quot;tomo&quot;</span><span class="p">,</span> <span class="n">fname_exact</span><span class="o">=</span><span class="n">fname_exact</span><span class="p">)</span>
         <span class="n">resp</span><span class="o">.</span><span class="n">process</span><span class="p">()</span>
         <span class="n">resp</span><span class="o">.</span><span class="n">response_function</span><span class="p">(</span><span class="n">omegas</span><span class="p">,</span> <span class="n">eta</span><span class="p">)</span></div>
 
 
-<div class="viewcode-block" id="generate_fidelity_vs_depth"><a class="viewcode-back" href="../../../fd_greens.cirq_ver.data_generation_utils.html#fd_greens.cirq_ver.data_generation_utils.generate_fidelity_vs_depth">[docs]</a><span class="k">def</span> <span class="nf">generate_fidelity_vs_depth</span><span class="p">(</span>
-    <span class="n">h5fname0</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
-    <span class="n">h5fname1</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
-    <span class="n">dirname</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;data/traj&quot;</span><span class="p">,</span> 
-    <span class="n">datfname</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Generates fidelity vs depth on a single circuit.&quot;&quot;&quot;</span>
-    <span class="k">if</span> <span class="n">datfname</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="n">datfname</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;fid_vs_depth_</span><span class="si">{</span><span class="n">h5fname1</span><span class="si">}</span><span class="s2">&quot;</span>
-    
+<div class="viewcode-block" id="generate_fidelity_vs_depth"><a class="viewcode-back" href="../../../fd_greens.cirq_ver.data_generation_utils.html#fd_greens.cirq_ver.data_generation_utils.generate_fidelity_vs_depth">[docs]</a><span class="k">def</span> <span class="nf">generate_fidelity_vs_depth</span><span class="p">(</span><span class="n">h5fname</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">dirname</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;data/traj&quot;</span><span class="p">,</span> <span class="n">datfname</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Generates fidelity vs depth on a single circuit.</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        h5fname: The HDF5 file name on which to generate the </span>
+<span class="sd">        dirname: The directory to save the fidelity vs depth data.</span>
+<span class="sd">        datfname: The data file name.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
     <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;&gt; Generating fidelity vs depth&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">datfname</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">datfname</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;fid_vs_depth_</span><span class="si">{</span><span class="n">h5fname</span><span class="si">}</span><span class="s2">&quot;</span>
     <span class="n">letter_to_int</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;s&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="s1">&#39;d&#39;</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span> <span class="s1">&#39;t&#39;</span><span class="p">:</span> <span class="mi">3</span><span class="p">}</span>
 
-    <span class="n">h5file0</span> <span class="o">=</span> <span class="n">h5py</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="n">h5fname0</span> <span class="o">+</span> <span class="s2">&quot;.h5&quot;</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">)</span>
-    <span class="n">h5file1</span> <span class="o">=</span> <span class="n">h5py</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="n">h5fname1</span> <span class="o">+</span> <span class="s2">&quot;.h5&quot;</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">)</span>
-
-    <span class="n">group0</span> <span class="o">=</span> <span class="n">h5file0</span><span class="p">[</span><span class="s2">&quot;psi&quot;</span><span class="p">]</span> <span class="k">if</span> <span class="s2">&quot;psi&quot;</span> <span class="ow">in</span> <span class="n">h5file0</span> <span class="k">else</span> <span class="n">h5file0</span><span class="p">[</span><span class="s2">&quot;rho&quot;</span><span class="p">]</span>
-    <span class="n">group1</span> <span class="o">=</span> <span class="n">h5file1</span><span class="p">[</span><span class="s2">&quot;psi&quot;</span><span class="p">]</span> <span class="k">if</span> <span class="s2">&quot;psi&quot;</span> <span class="ow">in</span> <span class="n">h5file1</span> <span class="k">else</span> <span class="n">h5file1</span><span class="p">[</span><span class="s2">&quot;rho&quot;</span><span class="p">]</span>
+    <span class="n">h5file</span> <span class="o">=</span> <span class="n">h5py</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="n">h5fname</span> <span class="o">+</span> <span class="s2">&quot;.h5&quot;</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">)</span>
 
     <span class="n">nq_gates_dict</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
     <span class="n">fidelity_dict</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
-    <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">group0</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
-        <span class="n">state0</span> <span class="o">=</span> <span class="n">group0</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
-        <span class="n">state1</span> <span class="o">=</span> <span class="n">group1</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
+    <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">h5file</span><span class="p">[</span><span class="s2">&quot;psi&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+        <span class="n">state_vector</span> <span class="o">=</span> <span class="n">h5file</span><span class="p">[</span><span class="s2">&quot;psi&quot;</span><span class="p">][</span><span class="n">key</span><span class="p">]</span>
+        <span class="n">density_matrix</span> <span class="o">=</span> <span class="n">quantum_state_tomography</span><span class="p">(</span><span class="n">h5file</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="n">circuit_label</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;circ</span><span class="si">{</span><span class="nb">int</span><span class="p">(</span><span class="n">key</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">suffix</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">)</span>
 
         <span class="n">nq_gates</span> <span class="o">=</span> <span class="n">letter_to_int</span><span class="p">[</span><span class="n">key</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]]</span>
         <span class="n">nq_gates_dict</span><span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="n">key</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">])]</span> <span class="o">=</span> <span class="n">nq_gates</span>
 
-        <span class="n">fidelity</span> <span class="o">=</span> <span class="n">get_fidelity</span><span class="p">(</span><span class="n">state0</span><span class="p">,</span> <span class="n">state1</span><span class="p">)</span>
+        <span class="n">fidelity</span> <span class="o">=</span> <span class="n">get_fidelity</span><span class="p">(</span><span class="n">state_vector</span><span class="p">,</span> <span class="n">density_matrix</span><span class="p">)</span>
         <span class="n">fidelity_dict</span><span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="n">key</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">])]</span> <span class="o">=</span> <span class="n">fidelity</span>
 
     <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">dirname</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">datfname</span><span class="si">}</span><span class="s2">.dat&quot;</span><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
         <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">fidelity_dict</span><span class="o">.</span><span class="n">keys</span><span class="p">()):</span>
-            <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">key</span><span class="si">:</span><span class="s2">2d</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">nq_gates_dict</span><span class="p">[</span><span class="n">key</span><span class="p">]</span><span class="si">:</span><span class="s2">2d</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">fidelity_dict</span><span class="p">[</span><span class="n">key</span><span class="p">]</span><span class="si">:</span><span class="s2">.8f</span><span class="si">}</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">key</span><span class="si">:</span><span class="s2">3d</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">nq_gates_dict</span><span class="p">[</span><span class="n">key</span><span class="p">]</span><span class="si">:</span><span class="s2">3d</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">fidelity_dict</span><span class="p">[</span><span class="n">key</span><span class="p">]</span><span class="si">:</span><span class="s2">.8f</span><span class="si">}</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
 
-    <span class="n">h5file0</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
-    <span class="n">h5file1</span><span class="o">.</span><span class="n">close</span><span class="p">()</span></div>
+    <span class="n">h5file</span><span class="o">.</span><span class="n">close</span><span class="p">()</span></div>
 
 
 <div class="viewcode-block" id="generate_fidelity_matrix"><a class="viewcode-back" href="../../../fd_greens.cirq_ver.data_generation_utils.html#fd_greens.cirq_ver.data_generation_utils.generate_fidelity_matrix">[docs]</a><span class="k">def</span> <span class="nf">generate_fidelity_matrix</span><span class="p">(</span>
@@ -176,7 +190,18 @@
     <span class="n">dirname</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;data/mat&quot;</span><span class="p">,</span>
     <span class="n">datfname</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Generates the fidelity matrix.&quot;&quot;&quot;</span>
+    <span class="sd">&quot;&quot;&quot;Generates the fidelity matrix data file.</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        h5fname_exact: HDF5 file name of the exact data.</span>
+<span class="sd">        h5fname_expt: HDF5 file name of the experimental data.</span>
+<span class="sd">        subscript: The subscript of the quantities, ``&#39;e&#39;``, ``&#39;h&#39;`` for Green&#39;s function</span>
+<span class="sd">            and ``&#39;n&#39;`` for response function.</span>
+<span class="sd">        spin: The spin state of the quantity, ``&#39;u&#39;`` or ``&#39;d&#39;`` for Green&#39;s function</span>
+<span class="sd">            and ``&#39;&#39;`` for response function.</span>
+<span class="sd">        dirname: Directory name of the data file.</span>
+<span class="sd">        datfname: The data file name.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
     <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;&gt; Generating fidelity matrix of </span><span class="si">{</span><span class="n">h5fname_expt</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">subscript</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">subscript</span> <span class="o">=</span> <span class="s2">&quot;e&quot;</span> <span class="k">if</span> <span class="s2">&quot;greens&quot;</span> <span class="ow">in</span> <span class="n">h5fname_expt</span> <span class="k">else</span> <span class="s2">&quot;n&quot;</span>
@@ -221,7 +246,17 @@
     <span class="n">dirname</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;data/mat&quot;</span><span class="p">,</span>
     <span class="n">datfname</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Genreates the ancilla bitstring probabilities.&quot;&quot;&quot;</span>
+    <span class="sd">&quot;&quot;&quot;Genreates the ancilla bitstring probability matrix data file.</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        h5fname: HDF5 file name of the data.</span>
+<span class="sd">        subscript: The subscript of the quantities, ``&#39;e&#39;``, ``&#39;h&#39;`` for Green&#39;s function</span>
+<span class="sd">            and ``&#39;n&#39;`` for response function.</span>
+<span class="sd">        spin: The spin state of the quantity, ``&#39;u&#39;`` or ``&#39;d&#39;`` for Green&#39;s function</span>
+<span class="sd">            and ``&#39;&#39;`` for response function.</span>
+<span class="sd">        dirname: Directory name of the data file.</span>
+<span class="sd">        datfname: The data file name.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
     <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;&gt; Generating trace matrix of </span><span class="si">{</span><span class="n">h5fname</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">subscript</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">subscript</span> <span class="o">=</span> <span class="s2">&quot;e&quot;</span> <span class="k">if</span> <span class="s2">&quot;greens&quot;</span> <span class="ow">in</span> <span class="n">h5fname</span> <span class="k">else</span> <span class="s2">&quot;n&quot;</span>

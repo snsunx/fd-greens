@@ -10,6 +10,7 @@ import numpy as np
 
 from .molecular_hamiltonian import MolecularHamiltonian
 from .qubit_indices import QubitIndices
+from .general_utils import count_electrons
 
 
 np.set_printoptions(precision=6)
@@ -31,7 +32,10 @@ class ClassicalAmplitudesSolver:
 
         # Calculate the ground state.
         _, states = np.linalg.eigh(self.hamiltonian.matrix)
-        self.state_gs = states[:, 0]
+        gs_index = 0
+        while count_electrons(states[:, gs_index]) != 2:
+            gs_index += 1
+        self.state_gs = states[:, gs_index]
     
     def _get_a_operator(self, m: int, spin: str = '', dagger: bool = False) -> np.ndarray:
         """Returns a creation/annihilation operator."""

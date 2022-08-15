@@ -37,6 +37,22 @@ def reverse_qubit_order(array: np.ndarray) -> np.ndarray:
         array_new = array[indices][:, indices]
     return array_new
 
+def count_electrons(state: np.ndarray) -> int:
+    """Counts the number of electrons in a state.
+    
+    Args:
+        state: The state vector.
+        
+    Returns:
+        n_electrons: Number of electrons.
+    """
+    n_qubits = int(np.log2(state.shape[0]))
+    for i, v in enumerate(state):
+        if abs(v) > 1e-8:
+            binary_str = format(i, f"0{n_qubits}b")
+    n_electrons = sum([int(i) for i in binary_str])
+    return n_electrons
+
 def unitary_equal(unitary1: Union[cirq.Circuit, np.ndarray], 
                   unitary2: Union[cirq.Circuit, np.ndarray], 
                   initial_state_0: bool = True

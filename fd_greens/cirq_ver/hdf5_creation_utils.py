@@ -68,13 +68,18 @@ def create_hdf5(
     if method == 'exact':
         N = resp.N['n']
 
-        classical_solver = ClassicalAmplitudesSolver(hamiltonian, verbose=False)
+        classical_solver = ClassicalAmplitudesSolver(hamiltonian, verbose=True)
         classical_solver.compute_N()
         N_classical = classical_solver.N['n']
 
         is_all_close = np.allclose(N, N_classical)
-        if not is_all_close:
+        if is_all_close:
+            print("Passed")
+        else:
             print(np.linalg.norm(N - N_classical))
+
+        # print(N)
+        # print(N_classical)
 
 def create_hdf5_by_depth(
     h5fname: str,
