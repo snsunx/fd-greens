@@ -485,12 +485,12 @@ def quantum_state_tomography(
 
     bitstring_array_all = []
     for tomography_label in tomography_labels:
-        print(f"{circuit_label}/{tomography_label}")
+        # print(f"{circuit_label}/{tomography_label}")
         if isinstance(h5file, h5py.File):
             bitstring_array_raw = h5file[f"{circuit_label}/{tomography_label}"].attrs[f"counts{suffix}"]
         else:
             bitstring_array_raw = h5file[tomography_label]
-        print(bitstring_array_raw)
+        # print(bitstring_array_raw)
         
         # repetitions = np.sum(bitstring_array_raw)
         if reverse:

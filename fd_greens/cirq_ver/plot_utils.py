@@ -4,11 +4,11 @@ Plot Utilities (:mod:`fd_greens.plot_utils`)
 ============================================
 """
 
-from inspect import trace
 import os
+import warnings
 from typing import Sequence, Optional
 from itertools import product
-import warnings
+from deprecated import deprecated
 
 import pickle
 import json
@@ -317,6 +317,7 @@ def plot_bitstring_counts(
 
 plot_counts = plot_bitstring_counts
 
+@deprecated
 def plot_fidelity_by_depth(
     fname_sim: str,
     fname_expt: str,
@@ -400,6 +401,46 @@ def plot_fidelity_by_depth(
     if not os.path.exists(dirname):
         os.makedirs(dirname)
     fig.savefig(f'{dirname}/{figname}.png', dpi=FIGURE_DPI, bbox_inches='tight')
+
+
+def plot_fidelity_vs_depth(
+    datfname_3q: str,
+    datfname_2q: str,
+    datdirname: str = "data/traj",
+    figdirname: str = "figs/traj",
+    figfname: Optional[str] = None
+) -> None:
+    """Plots fidelities vs depth.
+    
+    Args:
+        datfname: The data file name with iToffoli decomposition.
+        datfname_2q: The data file name with CZ decomposition.
+        datdirname: Name of the directory of data files.
+        figdirname: Name of the directory of the figures.
+        figfname: The figure name.
+    """
+    if not os.path.exists(figdirname):
+        os.makedirs(figdirname)
+    if figfname is None:
+        figfname = datfname_3q
+    
+    depths_3q, nq_gates_3q, fidelities_3q = np.loadtxt(f"{datdirname}/{datfname_3q}.dat").T
+    depths_2q, nq_gates_2q, fidelities_2q = np.loadtxt(f"{datdirname}/{datfname_2q}.dat").T
+
+    locations_itoffoli = [i for i in range(len(depths_3q)) if nq_gates_3q[i] == 3]
+    fidelities_itoffoli = [fidelities_3q[i] for i in locations_itoffoli]
+
+    fig, ax = plt.subplots()
+    ax.plot(np.arange(len(depths_3q)) + 1, fidelities_3q, marker='.', label="iToffoli")
+    ax.plot(np.arange(len(depths_2q)) + 1, fidelities_2q, marker='x', label="CZ")
+    ax.plot(np.array(locations_itoffoli) + 1, fidelities_itoffoli, ls='', color='r', marker='x', ms=10, mew=2)
+
+    ax.legend()
+    ax.set_xlabel("Circuit depth")
+    ax.set_ylabel("Fidelity")
+
+    fig.savefig(f"{figdirname}/{figfname}.png", dpi=200)
+
 
 def display_fidelities(
     datfname: str,

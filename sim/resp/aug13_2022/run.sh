@@ -9,7 +9,7 @@ then
     # python3 create_hdf5.py nah_resp_exact  
     # python3 create_hdf5.py kh_resp_exact  
     # python3 create_hdf5.py nah_resp_tomo --method tomo
-    python3 create_hdf5.py kh_resp_tomo --method tomo
+    # python3 create_hdf5.py kh_resp_tomo --method tomo
 
     export CONVERT_CCZ_TO_ITOFFOLI=0
     # python3 create_hdf5.py nah_resp_exact2q
@@ -18,22 +18,22 @@ then
     # python3 create_hdf5.py kh_resp_tomo2q --method tomo
 
     # python3 create_hdf5.py nah_resp_exact -c circ0u1d
-    # python3 create_hdf5.py kh_resp_exact -c circ0u1d
-    # python3 create_hdf5.py nah_resp_exact -c circ0u1d -n ../../../expt/params/gate_fidelities_0708
-    # python3 create_hdf5.py kh_resp_exact -c circ0u1d -n ../../../expt/params/gate_fidelities_0708
-
-    
-    # python3 create_hdf5.py nah_resp_exact2q -c circ0u1d
-    # python3 create_hdf5.py kh_resp_exact2q -c circ0u1d
+    # python3 create_hdf5.py kh_resp_exact  -c circ0u1d
+    # python3 create_hdf5.py nah_resp_exact -c circ0u1d -n ../../../expt/params/gate_fidelities_0813
+    # python3 create_hdf5.py kh_resp_exact -c circ0u1d -n ../../../expt/params/gate_fidelities_0813
+  
+    python3 create_hdf5.py nah_resp_exact2q -c circ0u1d
+    # python3 create_hdf5.py kh_resp_exact2q  -c circ0u1d
     # python3 create_hdf5.py nah_resp_exact2q -c circ0u1d -n ../../../expt/params/gate_fidelities_0708
     # python3 create_hdf5.py kh_resp_exact2q -c circ0u1d -n ../../../expt/params/gate_fidelities_0708
-
 fi
 
 if [ $generate_data = true ]
 then
-    # python3 generate_data.py -f nah_resp_circ0u1d
-    # python3 generate_data.py -f nah_resp_circ0u1d2q
-    python3 generate_data.py -f nah_resp_circ0u1d_n0708
-    python3 generate_data.py -f nah_resp_circ0u1d2q_n0708
+    python3 generate_data.py -f nah_resp_circ0u1d
+    python3 generate_data.py -f nah_resp_circ0u1d2q
+    python3 generate_data.py -f kh_resp_circ0u1d
+    python3 generate_data.py -f kh_resp_circ0u1d2q
+    # python3 generate_data.py -f nah_resp_circ0u1d_n0708
+    # python3 generate_data.py -f nah_resp_circ0u1d2q_n0708
 fi

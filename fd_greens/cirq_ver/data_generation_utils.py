@@ -4,6 +4,7 @@ Data Generation Utilities (:mod:`fd_greens.data_generation_utils`)
 ==================================================================
 """
 
+import os
 from typing import Sequence, Optional
 
 import numpy as np
@@ -89,13 +90,15 @@ def generate_fidelity_vs_depth(h5fname: str, dirname: str = "data/traj", datfnam
     """Generates fidelity vs depth on a single circuit.
     
     Args:
-        h5fname: The HDF5 file name on which to generate the 
+        h5fname: The HDF5 file name on which to generate the fidelty vs depth data.
         dirname: The directory to save the fidelity vs depth data.
         datfname: The data file name.
     """
     print("> Generating fidelity vs depth")
     if datfname is None:
         datfname = f"fid_vs_depth_{h5fname}"
+    if not os.path.exists(dirname):
+        os.makedirs(dirname)
     letter_to_int = {'s': 1, 'd': 2, 't': 3}
 
     h5file = h5py.File(h5fname + ".h5", "r")
@@ -111,6 +114,7 @@ def generate_fidelity_vs_depth(h5fname: str, dirname: str = "data/traj", datfnam
 
         fidelity = get_fidelity(state_vector, density_matrix)
         fidelity_dict[int(key[:-1])] = fidelity
+        print(f"key = {key}, fidelity = {fidelity}")
 
     with open(f"{dirname}/{datfname}.dat", "w") as f:
         for key in sorted(fidelity_dict.keys()):
@@ -146,6 +150,8 @@ def generate_fidelity_matrix(
         spin = "u" if "greens" in h5fname_expt else ""
     if datfname is None:
         datfname = "fid_mat_" + '_'.join(h5fname_expt.split('_')[1:])
+    if not os.path.exists(dirname):
+        os.makedirs(dirname)
     
     h5file_exact = h5py.File(h5fname_exact + ".h5", "r")
     h5file_expt = h5py.File(h5fname_expt + ".h5", "r")
@@ -201,6 +207,8 @@ def generate_trace_matrix(
         spin = "u" if "greens" in h5fname else ""
     if datfname is None:
         datfname = "trace_mat_" + '_'.join(h5fname.split('_')[1:])
+    if not os.path.exists(dirname):
+        os.makedirs(dirname)
 
     h5file = h5py.File(h5fname + ".h5", "r")
 

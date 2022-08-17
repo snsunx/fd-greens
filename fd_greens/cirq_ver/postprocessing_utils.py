@@ -6,18 +6,18 @@ Postprocessing Utilities (:mod:`fd_greens.postprocessing_utils`)
 
 import os
 import pickle
-
-import h5py
-from typing import Optional
+from typing import Optional, Tuple, List
 from itertools import product
-
-import numpy as np
 from deprecated import deprecated
+
+import json
+import h5py
+import numpy as np
 
 from .general_utils import reverse_qubit_order, histogram_to_array
 from .helpers import initialize_hdf5
 
-__all__ = ["process_all_bitstring_counts"]
+__all__ = ["process_all_bitstring_counts", "process_all_bitstring_counts_by_depth"]
 
 @deprecated
 def restrict_to_qubit_subspace(
@@ -165,26 +165,28 @@ def process_bitstring_counts(
     else:
         return array
 
-def copy_simulation_data(fname_expt: str, fname_exact: str, mode: str = 'greens') -> None:
+def copy_simulation_data(fname_expt: str, fname_exact: str, calculation_type: str = "greens") -> None:
     """Copy ground- and excited-states simulation data to experimental HDF5 file.
     
     Args:
         fname_expt: The experimental HDF5 file name.
         fname_exact: The simulation HDF5 file name.
-        mode: The calculation mode. Either ``'greens'`` or ``'resp'``.
+        calculation_type: The calculation type. Either ``'greens'`` or ``'resp'``.
     """
-    assert mode in ['greens', 'resp']
+    assert calculation_type in ['greens', 'resp']
 
     h5file_exact = h5py.File(fname_exact + '.h5', 'r')
     h5file_expt = h5py.File(fname_expt + '.h5', 'r+')
 
+    # Copy ground state energy over.
     if 'gs' in h5file_expt:
         del h5file_expt['gs']
     h5file_expt['gs/energy'] = h5file_exact['gs/energy'][()]
     
+    # Copy excited state energy and states over.
     if 'es' in h5file_expt:
         del h5file_expt['es']    
-    if mode == 'greens':
+    if calculation_type== 'greens':
         h5file_expt['es/energies_e'] = h5file_exact['es/energies_e'][:]
         h5file_expt['es/energies_h'] = h5file_exact['es/energies_h'][:]
         h5file_expt['es/states_e'] = h5file_exact['es/states_e'][:]
@@ -196,16 +198,56 @@ def copy_simulation_data(fname_expt: str, fname_exact: str, mode: str = 'greens'
     h5file_expt.close()
     h5file_exact.close()
 
+
+def get_subspace_indices(
+    is_diagonal: bool,
+    zero_padding_location: str = "front",
+    n_qubits: int = 4,
+    base: int = 2
+) -> Tuple[List[int], List[int]]:
+    """Returns the subspace indices with or without zero padding.
+    
+    Args:
+        is_diagonal: Whether the circuit is a diagonal circuit and needs zero padding.
+        pad_zero: Whether to pad zeros in front or end.
+        n_qubits: Total number of qubits. Defaults to 4.
+        base: The base to convert the subspace indices.
+
+    Returns:
+        subspace_indices: The subspace indices.
+    """
+    assert zero_padding_location in ["front", "end"]
+    
+    if is_diagonal:
+        subspace_indices = [''.join(x) for x in product("01", repeat=n_qubits - 1)]
+        if zero_padding_location == 'front':
+            subspace_indices = [int('0' + x, base) for x in subspace_indices]
+        elif zero_padding_location == 'end':
+            subspace_indices = [int(x + '0', base) for x in subspace_indices]
+        else:
+            raise ValueError("zero_padding_location must be specified when the circuit is diagonal")
+    else:
+        subspace_indices = [int(''.join(x), base) for x in product("01", repeat=n_qubits)]
+    return subspace_indices
+
+def readout_error_mitigation(
+    counts_array: np.ndarray,
+    confusion_matrix: np.ndarray,
+    mitigation_first: bool = True,
+    normalize: bool = True
+) -> np.ndarray:
+    return
+
 def process_all_bitstring_counts(
     h5fname_expt: str,
     h5fname_exact: str,
     pklfname: str,
     pkldsetname: str = 'full',
     npyfname: Optional[str] = None,
-    mode: str = 'greens',
-    counts_name: str = 'counts',
-    counts_name_miti: str = 'counts_miti',
-    pad_zero: str = 'end', 
+    calculation_mode: str = "greens",
+    counts_name: str = "counts",
+    counts_name_miti: str = "counts_miti",
+    zero_padding_location: str = "end", 
     mitigation_first: bool = False,
     normalize_counts: bool = True
 ) -> None:
@@ -224,81 +266,74 @@ def process_all_bitstring_counts(
         mitigation_first: Whether to perform error mitigation first.
         normalize_counts: Whether to normalize bitstring counts.
     """
-    assert pad_zero in ['front', 'end', None]
-    assert mode in ['greens', 'resp']
+    assert zero_padding_location in ["front", "end"]
+    assert calculation_mode in ["greens", "resp"]
 
-    print("Start processing results.")
+    print("> Start processing results.")
 
-    if not os.path.exists(h5fname_expt + '.h5'):
-        if mode == 'greens':
-            initialize_hdf5(h5fname_expt, spin='ud', mode=mode)
+    if not os.path.exists(h5fname_expt + ".h5"):
+        if calculation_mode == "greens":
+            initialize_hdf5(h5fname_expt, spin="ud", mode=calculation_mode)
         else:
-            initialize_hdf5(h5fname_expt, mode=mode)
+            initialize_hdf5(h5fname_expt, mode=calculation_mode)
 
     # Load circuits, circuit labels and bitstring counts from files.
-    with open(pklfname + '.pkl', 'rb') as f:
+    with open(pklfname + ".pkl", "rb") as f:
         pkl_data = pickle.load(f)
-    circuits = pkl_data[pkldsetname]['circs']
-    labels = pkl_data[pkldsetname]['labels']
-    results = pkl_data[pkldsetname]['results']
+    # circuits = pkl_data[pkldsetname]['circs']
+    labels = pkl_data[pkldsetname]["labels"]
+    results = pkl_data[pkldsetname]["results"]
 
     # Load the confusion matrix if npyfname is given.
-    confusion_matrix = np.load(npyfname + '.npy') if npyfname is None else None
+    if npyfname is not None:
+        confusion_matrix = np.load(npyfname + ".npy")
+        if confusion_matrix.shape == (16, 16):
+            base = 2
+        else:
+            base = 3
+    else:
+        confusion_matrix = None
 
     # Initialize HDF5 files to store processed bitstring counts.
-    copy_simulation_data(h5fname_expt, h5fname_exact, mode=mode)
+    copy_simulation_data(h5fname_expt, h5fname_exact, mode=calculation_mode)
     h5file = h5py.File(h5fname_expt + '.h5', 'r+')
 
-    for qtrl_strings, dset_name, histogram in zip(circuits, labels, results):
-        print(f"> Processing circuit {dset_name}.")
+    for dsetname, histogram in zip(labels, results):
+        print(f"> Processing circuit {dsetname}.")
 
-        # Save circuit to HDF5 file.
-        if dset_name in h5file:
-            del h5file[dset_name]
-        dset = h5file.create_dataset(dset_name, data=json.dumps(qtrl_strings))
-
+        if dsetname in h5file:
+            del h5file[dsetname]
+        # dset = h5file.create_dataset(dsetname, data=json.dumps(qtrl_strings))
+        dset = h5file.create_dataset(dsetname, shape=())
         n_qubits = len(list(histogram.keys())[0])
-        counts_array = histogram_to_array(histogram, n_qubits=n_qubits, base=3)
-        # print(f"{n_qubits = }, {counts_array.shape = }")
-        
-        # Obtain the subspace indices.
-        if pad_zero and len(dset_name) == 9:
-            if pad_zero == 'front':
-                subspace_indices = [int('0' + ''.join(x), 3) for x in product('01', repeat=n_qubits - 1)]
-                subspace_indices_base2 = [int('0' + ''.join(x), 2) for x in product('01', repeat=n_qubits - 1)]
-            elif pad_zero == 'end':
-                subspace_indices = [int(''.join(x) + '0', 3) for x in product('01', repeat=n_qubits - 1)]
-                subspace_indices_base2 = [int(''.join(x) + '0', 2) for x in product('01', repeat=n_qubits - 1)]
-        else:
-            subspace_indices = [int(''.join(x), 3) for x in product('01', repeat=n_qubits)]
-            subspace_indices_base2 = [int(''.join(x), 2) for x in product('01', repeat=n_qubits)]
+        counts_array = histogram_to_array(histogram, n_qubits=n_qubits, base=base)
 
+        subspace_indices = get_subspace_indices(
+            len(dsetname) == 9, # XXX
+            zero_padding_location=zero_padding_location,
+            n_qubits=n_qubits,
+            base=base
+        )
 
-        # If confusion_matrix is given, calculate counts_array_miti first. 
-        # Otherwise counts_array will be modified into the subspace.
-        if confusion_matrix is not None:
-            # print("Confusion matrix dimension", confusion_matrix.shape)
-            if mitigation_first:
-                counts_array_miti = np.linalg.lstsq(confusion_matrix, counts_array)[0]
-                counts_array_miti = counts_array_miti[subspace_indices]
-            else:
-                counts_array_miti = counts_array[subspace_indices]
-                if confusion_matrix.shape[0] == 16:
-                    confusion_matrix1 = confusion_matrix[subspace_indices_base2][:, subspace_indices_base2]
-                else: # 81 by 81
-                    confusion_matrix1 = confusion_matrix[subspace_indices][:, subspace_indices]
+        # # If confusion_matrix is given, calculate the mitigated bitstring array counts_array_miti. 
+        # if confusion_matrix is not None:
+        #     counts_array_miti = readout_error_mitigation(counts_array, confusion_matrix)
 
-                # print(f"{confusion_matrix1.shape = }")
-                # print(f"{counts_array_miti.shape = }")
-                counts_array_miti = np.linalg.lstsq(confusion_matrix1, counts_array_miti)[0]
+        #     if mitigation_first:
+        #         counts_array_miti = np.linalg.lstsq(confusion_matrix, counts_array)[0]
+        #         counts_array_miti = counts_array_miti[subspace_indices]
+        #     else:
+        #         confusion_matrix_subspace = confusion_matrix[subspace_indices][:, subspace_indices]
+        #         counts_array_miti = counts_array[subspace_indices]
+        #         counts_array_miti = np.linalg.lstsq(confusion_matrix_subspace, counts_array_miti)[0]
             
-            if normalize_counts:
-                counts_array_miti /= np.sum(counts_array_miti)
+        #     if normalize_counts:
+        #         counts_array_miti /= np.sum(counts_array_miti)
         
+        # Slice and normalize (unmitigated) bitstring counts.
         counts_array = counts_array[subspace_indices]
         if normalize_counts:
             counts_array /= np.sum(counts_array)
-        # print(f"{counts_array.shape = }")
         
         # Save the processed bitstring counts to HDF5 file.
         dset.attrs[counts_name] = counts_array
@@ -307,4 +342,62 @@ def process_all_bitstring_counts(
 
     h5file.close()
 
-    print("Finish processing results.")
+    print("> Finish processing results.")
+
+def process_all_bitstring_counts_by_depth(
+    h5fname_expt: str,
+    pklfname: str,
+    npyfname: Optional[str] = None,
+    counts_name: str = "counts",
+    counts_miti_name: str = "counts_miti",
+) -> None:
+
+    if not os.path.exists(h5fname_expt + ".h5"):
+        initialize_hdf5(h5fname_expt, mode="resp")
+
+    # Load circuits, circuit labels and bitstring counts from .pkl file.
+    with open(pklfname + ".pkl", "rb") as f:
+        pkl_data = pickle.load(f)
+    labels = pkl_data["labels"]
+    results = pkl_data["results"]
+
+    # Load the confusion matrix if npyfname is given.
+    if npyfname is not None:
+        confusion_matrix = np.load(npyfname + ".npy")
+        if confusion_matrix.shape == (16, 16):
+            base = 2
+        else:
+            base = 3
+    else:
+        confusion_matrix = None
+
+    # Initialize HDF5 file to store processed bitstring counts.
+    h5file_expt = h5py.File(h5fname_expt + ".h5", "r+")
+
+    # # Copy exact statevectors over.
+    # if "psi" in h5file_expt:
+    #     del h5file_expt["psi"]
+    # with h5py.File(h5fname_exact + ".h5", "r") as h5file_exact:
+    #     for key in h5file_exact["psi"].keys():
+    #         h5file_expt[f"psi/{key}"] = h5file_exact[f"psi/{key}"][:]
+    #     # h5file_expt["psi"] = h5file_exact["psi"]
+
+    for dsetname, histogram in zip(labels, results):
+        print(f"> Processing circuit {dsetname}")
+        if dsetname not in h5file_expt:
+            dset = h5file_expt.create_dataset(dsetname, shape=())
+        else:
+            dset = h5file_expt[dsetname]
+        
+        n_qubits = len(list(histogram.keys())[0])        
+        counts_array = histogram_to_array(histogram, n_qubits=n_qubits, base=base)
+        dset.attrs[counts_name] = counts_array
+
+        if confusion_matrix is not None:
+            print("confusion_matrix.shape = ", confusion_matrix.shape)
+            print("counts_array.shape = ", counts_array.shape)
+            if counts_array.shape[0] == 16:
+                counts_array_miti = np.linalg.lstsq(confusion_matrix, counts_array)[0]
+            dset.attrs[counts_miti_name] = counts_array_miti
+
+    h5file_expt.close()

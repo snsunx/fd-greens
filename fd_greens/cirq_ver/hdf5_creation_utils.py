@@ -117,7 +117,6 @@ def create_hdf5_by_depth(
     
     h5file = h5py.File(h5fname_new, 'w')
     for i in non_z_locations:
-        print(f"i = {i}")
         # Get the index string, which consists of the current depth and the nq_gates letter.
         for n in [1, 2, 3]:
             if get_gate_counts(circuit[i], num_qubits=n) > 0:
@@ -132,6 +131,8 @@ def create_hdf5_by_depth(
         # Obtain the state vector and save to file.
         state_vector = cirq.final_state_vector(circuit_i)
         h5file[f"psi/{index_string}"] = state_vector
+        print(f"{i = }, {state_vector.shape = }")
+        print("state_vector\n", state_vector)
         
         for tomo_label, tomo_circuit in tomography_circuits.items():
             converter.save_circuit(h5file, f"circ{i}/{tomo_label}", tomo_circuit, return_dataset=True)
