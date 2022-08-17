@@ -103,7 +103,7 @@ def plot_trace_self_energy(
     suffixes: Sequence[str],
     labels: Optional[Sequence[str]] = None,
     annotations: Optional[Sequence[str]] = None,
-    datdirname: str = "data",
+    datdirname: str = "data/obs",
     dirname: str = "figs/obs",
     figname: str = "TrSigma",
     linestyles: Sequence[dict] = LINESTYLES_TRSIGMA,
@@ -177,7 +177,7 @@ def plot_response_function(
     suffixes: Optional[Sequence[str]] = None,
     labels: Optional[Sequence[str]] = None,
     annotations: Optional[Sequence[str]] = None,
-    datdirname: str = "data",
+    datdirname: str = "data/obs",
     dirname: str = "figs/obs",
     figname: str = "chi",
     circ_label: str = "00",
@@ -460,6 +460,8 @@ def display_fidelities(
         figdirname: The figure directory name.
         figfname: The figure file name.
     """
+    if not os.path.exists(figdirname):
+        os.makedirs(figdirname)
     if figfname is None:
         figfname = datfname
     
@@ -496,6 +498,8 @@ def display_traces(
         dirname: The directory name.
         figname: The figure name.
     """
+    if not os.path.exists(figdirname):
+        os.makedirs(figdirname)
     if figfname is None:
         figfname = datfname_expt
     

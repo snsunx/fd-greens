@@ -204,7 +204,7 @@ def get_subspace_indices(
     zero_padding_location: str = "front",
     n_qubits: int = 4,
     base: int = 2
-) -> Tuple[List[int], List[int]]:
+) -> List[int]:
     """Returns the subspace indices with or without zero padding.
     
     Args:
@@ -242,14 +242,14 @@ def process_all_bitstring_counts(
     h5fname_expt: str,
     h5fname_exact: str,
     pklfname: str,
-    pkldsetname: str = 'full',
+    # pkldsetname: str = 'full',
     npyfname: Optional[str] = None,
-    calculation_mode: str = "greens",
+    calculation_type: str = "greens",
     counts_name: str = "counts",
-    counts_name_miti: str = "counts_miti",
+    counts_miti_name: str = "counts_miti",
     zero_padding_location: str = "end", 
-    mitigation_first: bool = False,
-    normalize_counts: bool = True
+    # mitigation_first: bool = False,
+    # normalize_counts: bool = True
 ) -> None:
     """Processes all bitstring counts.
     
@@ -267,22 +267,22 @@ def process_all_bitstring_counts(
         normalize_counts: Whether to normalize bitstring counts.
     """
     assert zero_padding_location in ["front", "end"]
-    assert calculation_mode in ["greens", "resp"]
+    assert calculation_type in ["greens", "resp"]
 
     print("> Start processing results.")
 
     if not os.path.exists(h5fname_expt + ".h5"):
-        if calculation_mode == "greens":
-            initialize_hdf5(h5fname_expt, spin="ud", mode=calculation_mode)
+        if calculation_type == "greens":
+            initialize_hdf5(h5fname_expt, spin="ud", mode=calculation_type)
         else:
-            initialize_hdf5(h5fname_expt, mode=calculation_mode)
+            initialize_hdf5(h5fname_expt, mode=calculation_type)
 
     # Load circuits, circuit labels and bitstring counts from files.
     with open(pklfname + ".pkl", "rb") as f:
         pkl_data = pickle.load(f)
     # circuits = pkl_data[pkldsetname]['circs']
-    labels = pkl_data[pkldsetname]["labels"]
-    results = pkl_data[pkldsetname]["results"]
+    labels = pkl_data["labels"]
+    results = pkl_data["results"]
 
     # Load the confusion matrix if npyfname is given.
     if npyfname is not None:
@@ -295,7 +295,7 @@ def process_all_bitstring_counts(
         confusion_matrix = None
 
     # Initialize HDF5 files to store processed bitstring counts.
-    copy_simulation_data(h5fname_expt, h5fname_exact, mode=calculation_mode)
+    copy_simulation_data(h5fname_expt, h5fname_exact, calculation_type=calculation_type)
     h5file = h5py.File(h5fname_expt + '.h5', 'r+')
 
     for dsetname, histogram in zip(labels, results):
@@ -303,17 +303,17 @@ def process_all_bitstring_counts(
 
         if dsetname in h5file:
             del h5file[dsetname]
-        # dset = h5file.create_dataset(dsetname, data=json.dumps(qtrl_strings))
         dset = h5file.create_dataset(dsetname, shape=())
         n_qubits = len(list(histogram.keys())[0])
-        counts_array = histogram_to_array(histogram, n_qubits=n_qubits, base=base)
+        counts_array = histogram_to_array(histogram, n_qubits=n_qubits, base=2)
+        dset.attrs[counts_name] = counts_array
 
-        subspace_indices = get_subspace_indices(
-            len(dsetname) == 9, # XXX
-            zero_padding_location=zero_padding_location,
-            n_qubits=n_qubits,
-            base=base
-        )
+        # subspace_indices = get_subspace_indices(
+        #     len(dsetname) == 9, # XXX
+        #     zero_padding_location=zero_padding_location,
+        #     n_qubits=n_qubits,
+        #     base=base
+        # )
 
         # # If confusion_matrix is given, calculate the mitigated bitstring array counts_array_miti. 
         # if confusion_matrix is not None:
@@ -331,14 +331,12 @@ def process_all_bitstring_counts(
         #         counts_array_miti /= np.sum(counts_array_miti)
         
         # Slice and normalize (unmitigated) bitstring counts.
-        counts_array = counts_array[subspace_indices]
-        if normalize_counts:
-            counts_array /= np.sum(counts_array)
+        # counts_array = counts_array[subspace_indices]
         
         # Save the processed bitstring counts to HDF5 file.
-        dset.attrs[counts_name] = counts_array
         if confusion_matrix is not None:
-            dset.attrs[counts_name_miti] = counts_array_miti
+            counts_array_miti = np.linalg.lstsq(confusion_matrix, counts_array)[0]
+            dset.attrs[counts_miti_name] = counts_array_miti
 
     h5file.close()
 
@@ -396,7 +394,7 @@ def process_all_bitstring_counts_by_depth(
         if confusion_matrix is not None:
             print("confusion_matrix.shape = ", confusion_matrix.shape)
             print("counts_array.shape = ", counts_array.shape)
-            if counts_array.shape[0] == 16:
+            if counts_array.shape[0] == 16: # XXX: circ3 is not of shape 16 by 16
                 counts_array_miti = np.linalg.lstsq(confusion_matrix, counts_array)[0]
             dset.attrs[counts_miti_name] = counts_array_miti
 
