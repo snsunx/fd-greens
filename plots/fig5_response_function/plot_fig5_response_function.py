@@ -70,32 +70,49 @@ def main():
 
     plot_chi(
         ax_a, 
-        [f'../../expt/resp/jul20_2022/data/obs/nah_resp_exact_chi00.dat',
-         f'../../expt/resp/jul20_2022/data/obs/nah_resp_tomo_pur_chi00.dat',
-         f'../../expt/resp/aug03_2022/data/obs/nah_resp_tomo_rc_pur_chi00.dat'],
-        ["Exact", "No RC", "RC"],
+        [f'../../expt/resp/aug13_2022_nah/data/obs/nah_resp_exact_chi01.dat',
+         f'../../expt/resp/aug13_2022_nah/data/obs/nah_resp_tomo_pur_chi01.dat',
+         f'../../expt/resp/aug13_2022_nah/data/obs/nah_resp_tomo_trace_chi01.dat',
+         f'../../expt/resp/aug13_2022_nah/data/obs/nah_resp_tomo_rc_pur_chi01.dat',
+         f'../../expt/resp/aug13_2022_nah/data/obs/nah_resp_tomo_rc_trace_chi01.dat'],
+        ["Exact", "Purified", "Trace", "Purified w/ RC", "Trace w/ RC"],
         use_real_part=False,
         panel_name="(a)"
     )
+
     plot_chi(
         ax_b,
-        [f'../../expt/resp/jul20_2022/data/obs/nah_resp_exact_chi00.dat',
-         f'../../expt/resp/jul20_2022/data/obs/nah_resp_tomo_pur_chi00.dat',
-         f'../../expt/resp/jul20_2022/data/obs/nah_resp_tomo2q_pur_chi00.dat'],
-        ["Exact", "iToffoli", "CZ"],
+        [f'../../expt/resp/aug13_2022_nah/data/obs/nah_resp_exact_chi00.dat',
+         f'../../expt/resp/aug13_2022_nah/data/obs/nah_resp_tomo_pur_chi00.dat',
+         f'../../expt/resp/aug13_2022_nah/data/obs/nah_resp_tomo2q_pur_chi00.dat',
+         f'../../expt/resp/aug13_2022_nah/data/obs/nah_resp_tomo_rc_pur_chi00.dat',
+         f'../../expt/resp/aug13_2022_nah/data/obs/nah_resp_tomo2q_rc_pur_chi00.dat',],
+        ["Exact", "iToffoli w/o RC", "CZ w/o RC", "iToffoli w/ RC", "CZ w/ RC"],
         use_real_part=False,
         panel_name="(b)"
     )
+    
     plot_chi(
-        ax_c, 
-        [f'../../expt/resp/jul20_2022/data/obs/nah_resp_exact_chi00.dat',
-         f'../../expt/resp/jul20_2022/data/obs/nah_resp_tomo_raw_chi00.dat',
-         f'../../expt/resp/jul20_2022/data/obs/nah_resp_tomo_pur_chi00.dat',
-         f'../../expt/resp/jul20_2022/data/obs/nah_resp_tomo_trace_chi00.dat'],
-        ["Exact", "Raw", "Purified", "Purified + \nTrace Corr."],
+        ax_c,
+        [f'../../expt/resp/aug13_2022_nah/data/obs/nah_resp_exact_chi01.dat',
+         f'../../expt/resp/aug13_2022_nah/data/obs/nah_resp_tomo_pur_chi01.dat',
+         f'../../expt/resp/aug13_2022_nah/data/obs/nah_resp_tomo2q_pur_chi01.dat',
+         f'../../expt/resp/aug13_2022_nah/data/obs/nah_resp_tomo_rc_pur_chi01.dat',
+         f'../../expt/resp/aug13_2022_nah/data/obs/nah_resp_tomo2q_rc_pur_chi01.dat',],
+        ["Exact", "iToffoli w/o RC", "CZ w/o RC", "iToffoli w/ RC", "CZ w/ RC"],
         use_real_part=False,
         panel_name="(c)"
     )
+    # plot_chi(
+    #     ax_c, 
+    #     [f'../../expt/resp/jul20_2022/data/obs/nah_resp_exact_chi00.dat',
+    #      f'../../expt/resp/jul20_2022/data/obs/nah_resp_tomo_raw_chi00.dat',
+    #      f'../../expt/resp/jul20_2022/data/obs/nah_resp_tomo_pur_chi00.dat',
+    #      f'../../expt/resp/jul20_2022/data/obs/nah_resp_tomo_trace_chi00.dat'],
+    #     ["Exact", "Raw", "Purified", "Purified + \nTrace Corr."],
+    #     use_real_part=False,
+    #     panel_name="(c)"
+    # )
     
 
     fig.savefig(f"{sys.argv[0][5:-3]}.png", dpi=200)    

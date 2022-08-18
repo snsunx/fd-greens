@@ -131,8 +131,8 @@ def create_hdf5_by_depth(
         # Obtain the state vector and save to file.
         state_vector = cirq.final_state_vector(circuit_i)
         h5file[f"psi/{index_string}"] = state_vector
-        print(f"{i = }, {state_vector.shape = }")
-        print("state_vector\n", state_vector)
+        # print(f"{i = }, {state_vector.shape = }")
+        # print("state_vector\n", state_vector)
         
         for tomo_label, tomo_circuit in tomography_circuits.items():
             converter.save_circuit(h5file, f"circ{i}/{tomo_label}", tomo_circuit, return_dataset=True)

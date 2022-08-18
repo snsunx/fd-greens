@@ -107,7 +107,10 @@ def generate_fidelity_vs_depth(h5fname: str, dirname: str = "data/traj", datfnam
     fidelity_dict = dict()
     for key in h5file["psi"].keys():
         state_vector = h5file["psi"][key]
+        print(state_vector)
         density_matrix = quantum_state_tomography(h5file, 4, circuit_label=f"circ{int(key[:-1])}", suffix='')
+        if key == "1s":
+            print(key, '\n', density_matrix)
 
         nq_gates = letter_to_int[key[-1]]
         nq_gates_dict[int(key[:-1])] = nq_gates

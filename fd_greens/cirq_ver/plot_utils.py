@@ -253,7 +253,7 @@ def plot_response_function(
 
         if not os.path.exists(dirname):
             os.makedirs(dirname)
-        fig.savefig(f"{dirname}/{figname}{circ_label}.png", dpi=FIGURE_DPI, bbox_inches="tight")
+        fig.savefig(f"{dirname}/{figname}_chi{circ_label}.png", dpi=FIGURE_DPI, bbox_inches="tight")
 
 plot_chi = plot_response_function
 

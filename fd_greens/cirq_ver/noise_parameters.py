@@ -24,7 +24,7 @@ class NoiseParameters:
         """Constructs a ``NoiseParameter`` object from a ``.yml`` file.
         
         Args:
-            fname: The ``.yml`` file name.
+            fname: The ``.yml`` file name with the gate fidelities.
         """
         with open(fname + '.yml', 'r') as f:
             lines = [line.strip() for line in f.readlines() if line.strip()]
