@@ -368,6 +368,7 @@ def process_all_bitstring_counts_by_depth(
             base = 3
     else:
         confusion_matrix = None
+        base = 2
 
     # Initialize HDF5 file to store processed bitstring counts.
     h5file_expt = h5py.File(h5fname_expt + ".h5", "r+")

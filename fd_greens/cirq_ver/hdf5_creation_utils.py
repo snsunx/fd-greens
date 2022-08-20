@@ -95,6 +95,7 @@ def create_hdf5_by_depth(
         noise_fname: The noise parameter file name.
         repetitions: The repetitions for noisy simulation.
     """
+    print("CALLED THIS FUNCTION")
     int_to_letter = {1: 's', 2: 'd', 3: 't'}
 
     h5fname_new = '_'.join(h5fname.split('_')[:-1])
@@ -112,21 +113,31 @@ def create_hdf5_by_depth(
     converter = CircuitStringConverter(qubits)
 
     circuit = converter.load_circuit(h5fname, circuit_name + '/transpiled')
-    non_z_locations = get_non_z_locations(circuit)
+    non_z_locations = get_non_z_locations(circuit) + [None]
     # print("non_z_locations =", non_z_locations)
     
     h5file = h5py.File(h5fname_new, 'w')
     for i in non_z_locations:
         # Get the index string, which consists of the current depth and the nq_gates letter.
+        if i is not None:
+            circuit_component = circuit[i]
+        else:
+            circuit_component = circuit[-1]
         for n in [1, 2, 3]:
-            if get_gate_counts(circuit[i], num_qubits=n) > 0:
-                index_string = str(i) + int_to_letter[n]
+            if get_gate_counts(circuit_component, num_qubits=n) > 0:
+                if i is not None:
+                    index_string = str(i) + int_to_letter[n]
+                else:
+                    index_string = "last" + int_to_letter[n]
         
         # Save transpiled and tomography circuits to file.
         circuit_i = circuit[:i]
-        converter.save_circuit(h5file, f"circ{i}/transpiled", circuit_i)
-        tomography_circuits = CircuitConstructor.build_tomography_circuits(
-            circuit_i, tomographed_qubits=qubits)
+        if i is not None:
+            converter.save_circuit(h5file, f"circ{i}/transpiled", circuit_i)
+        else:
+            converter.save_circuit(h5file, f"circlast/transpiled", circuit_i)
+        # tomography_circuits = CircuitConstructor.build_tomography_circuits(
+        #     circuit_i, tomographed_qubits=qubits)
 
         # Obtain the state vector and save to file.
         state_vector = cirq.final_state_vector(circuit_i)
@@ -134,14 +145,14 @@ def create_hdf5_by_depth(
         # print(f"{i = }, {state_vector.shape = }")
         # print("state_vector\n", state_vector)
         
-        for tomo_label, tomo_circuit in tomography_circuits.items():
-            converter.save_circuit(h5file, f"circ{i}/{tomo_label}", tomo_circuit, return_dataset=True)
+        # for tomo_label, tomo_circuit in tomography_circuits.items():
+        #     converter.save_circuit(h5file, f"circ{i}/{tomo_label}", tomo_circuit, return_dataset=True)
 
-            # Save simulated counts to the dataset.
-            if noise_params is not None:
-                tomo_circuit = noise_params.add_noise_to_circuit(tomo_circuit)
-            result = simulator.run(tomo_circuit, repetitions=repetitions)
-            histogram = result.multi_measurement_histogram(keys=[str(q) for q in qubits])
-            h5file[f"circ{i}/{tomo_label}"].attrs["counts"] = histogram_to_array(histogram, n_qubits=4)
+        #     # Save simulated counts to the dataset.
+        #     if noise_params is not None:
+        #         tomo_circuit = noise_params.add_noise_to_circuit(tomo_circuit)
+        #     result = simulator.run(tomo_circuit, repetitions=repetitions)
+        #     histogram = result.multi_measurement_histogram(keys=[str(q) for q in qubits])
+        #     h5file[f"circ{i}/{tomo_label}"].attrs["counts"] = histogram_to_array(histogram, n_qubits=4)
     
     h5file.close()

@@ -106,22 +106,28 @@ def generate_fidelity_vs_depth(h5fname: str, dirname: str = "data/traj", datfnam
     nq_gates_dict = dict()
     fidelity_dict = dict()
     for key in h5file["psi"].keys():
-        state_vector = h5file["psi"][key]
-        print(state_vector)
-        density_matrix = quantum_state_tomography(h5file, 4, circuit_label=f"circ{int(key[:-1])}", suffix='')
-        if key == "1s":
-            print(key, '\n', density_matrix)
+        if key[:-1] == "last":
+            key_int = 999
+        else:
+            key_int = int(key[:-1])
+        if True: # key[:-1] != "1" and key[:-1] != "3":
+            print(f"key = {key}")
+            state_vector = h5file["psi"][key]
+            print(f"{state_vector.shape =}")
+            density_matrix = quantum_state_tomography(h5file, 4, circuit_label=f"circ{key[:-1]}", suffix='')
+            # if key == "1s":
+            #     print(key, '\n', density_matrix)
 
-        nq_gates = letter_to_int[key[-1]]
-        nq_gates_dict[int(key[:-1])] = nq_gates
+            nq_gates = letter_to_int[key[-1]]
+            nq_gates_dict[key_int] = nq_gates
 
-        fidelity = get_fidelity(state_vector, density_matrix)
-        fidelity_dict[int(key[:-1])] = fidelity
-        print(f"key = {key}, fidelity = {fidelity}")
+            fidelity = get_fidelity(state_vector, density_matrix)
+            fidelity_dict[key_int] = fidelity
+            print(f"fidelity = {fidelity}")
 
     with open(f"{dirname}/{datfname}.dat", "w") as f:
         for key in sorted(fidelity_dict.keys()):
-            f.write(f"{key:3d} {nq_gates_dict[key]:3d} {fidelity_dict[key]:.8f}\n")
+            f.write(f"{key:5d} {nq_gates_dict[key]:5d} {fidelity_dict[key]:.8f}\n")
 
     h5file.close()
 
