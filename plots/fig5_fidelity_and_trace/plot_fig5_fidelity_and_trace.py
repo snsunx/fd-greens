@@ -7,7 +7,7 @@ plt.rcParams.update({
 	'text.latex.preamble': r'\usepackage{amsmath}',
     'font.family': 'sans-serif',
     'font.sans-serif': 'Helvetica',
-    'font.size': 20,
+    'font.size': 23,
     'figure.subplot.left': 0.08,
     'figure.subplot.right': 0.97,
     'figure.subplot.top': 0.93,
@@ -52,7 +52,7 @@ def plot_fidelity_matrix(
 
     # Set the panel name and observable name.
     ax.text(-0.05, 1.2, r"$\textbf{" + panel_name + "}$", transform=ax.transAxes)
-    ax.text(0.25, 1.17, "Fidelity:", transform=ax.transAxes)
+    ax.text(0.24, 1.17, "Fidelity:", transform=ax.transAxes)
 
     # Display the sample tile.
     ax_sample = fig.add_axes([(bbox.xmin + bbox.xmax) / 2 + 0.005, bbox.ymax + 0.035, 0.075, 0.075])
@@ -109,14 +109,14 @@ def plot_trace_matrix(
 
     # Set the panel name and observable name.
     ax.text(-0.05, 1.2, r"$\textbf{" + panel_name + "}$", transform=ax.transAxes)
-    ax.text(0.2, 1.16, "Trace\n(ancilla prob.):", transform=ax.transAxes)
+    ax.text(0.2, 1.16, "Trace\n(ancilla prob.):", transform=ax.transAxes, fontsize=20)
 
     # Display the sample tile.
     ax_sample = fig.add_axes([(bbox.xmin + bbox.xmax) / 2 + 0.045, bbox.ymax + 0.035, 0.075, 0.075])
     ax_sample.imshow([[trace_diff_max * 0.25]], vmin=trace_diff_min, vmax=trace_diff_max, cmap=cmap)
     ax_sample.set_xticks([])
     ax_sample.set_yticks([])
-    ax_sample.text(0, 0, "Expt.\n(Exact)", color='k', ha='center', va='center')
+    ax_sample.text(0, 0, "Expt.\n(Exact)", color='k', ha='center', va='center', fontsize=20)
 
     # Display the color bar.
     ax_cbar = fig.add_axes([bbox.xmax + 0.02, bbox.ymin, 0.025, 0.35], transform=ax.transAxes)
@@ -127,6 +127,8 @@ def main():
     print("Start plotting data.")
     global fig
 
+    mol_name = "nah"
+
     fig = plt.figure(figsize=(12, 12))
     ax_a = fig.add_axes([0.05, 0.52, 0.35, 0.35])
     ax_b = fig.add_axes([0.55, 0.52, 0.35, 0.35])
@@ -135,30 +137,30 @@ def main():
 
     plot_fidelity_matrix(
         ax_a,
-        f'../../expt/resp/aug13_2022_nah/data/mat/fid_mat_resp_tomo_raw.dat',
-        f'../../expt/resp/aug13_2022_nah/data/mat/fid_mat_resp_tomo_pur.dat',
+        f'../../expt/resp/aug13_2022_{mol_name}/data/mat/fid_mat_resp_tomo_raw.dat',
+        f'../../expt/resp/aug13_2022_{mol_name}/data/mat/fid_mat_resp_tomo_pur.dat',
         panel_name='A'
     )
     plot_fidelity_matrix(
         ax_b,
-        f'../../expt/resp/aug13_2022_nah/data/mat/fid_mat_resp_tomo_rc_raw.dat',
-        f'../../expt/resp/aug13_2022_nah/data/mat/fid_mat_resp_tomo_rc_pur.dat',
+        f'../../expt/resp/aug13_2022_{mol_name}/data/mat/fid_mat_resp_tomo_rc_raw.dat',
+        f'../../expt/resp/aug13_2022_{mol_name}/data/mat/fid_mat_resp_tomo_rc_pur.dat',
         panel_name='B'
     )
     plot_trace_matrix(
         ax_c,
-        f'../../expt/resp/aug13_2022_nah/data/mat/trace_mat_resp_exact.dat',
-        f'../../expt/resp/aug13_2022_nah/data/mat/trace_mat_resp_tomo_raw.dat',
+        f'../../expt/resp/aug13_2022_{mol_name}/data/mat/trace_mat_resp_exact.dat',
+        f'../../expt/resp/aug13_2022_{mol_name}/data/mat/trace_mat_resp_tomo_raw.dat',
         panel_name='C'
     )
     plot_trace_matrix(
         ax_d,
-        f'../../expt/resp/aug13_2022_nah/data/mat/trace_mat_resp_exact.dat',
-        f'../../expt/resp/aug13_2022_nah/data/mat/trace_mat_resp_tomo_rc_raw.dat',
+        f'../../expt/resp/aug13_2022_{mol_name}/data/mat/trace_mat_resp_exact.dat',
+        f'../../expt/resp/aug13_2022_{mol_name}/data/mat/trace_mat_resp_tomo_rc_raw.dat',
         panel_name='D'
     )
 
-    fig.savefig(f"fig5_fidelity_and_trace.png", dpi=300)    
+    fig.savefig(f"fig5_fidelity_and_trace.png", dpi=200)    
 
     print("Finished plotting data.")
 
