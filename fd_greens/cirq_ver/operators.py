@@ -124,8 +124,10 @@ class ChargeOperators(OperatorsBase):
 
         self.pauli_strings = []
         for i in range(self.n_qubits):
-            pauli_string_i = cirq.PauliString([cirq.Z(qubits[j]) for j in range(i)])
-            pauli_string_z = cirq.PauliString([cirq.Z(qubits[j]) for j in range(i + 1)])
+            # pauli_string_i = cirq.PauliString([cirq.Z(qubits[j]) for j in range(i)])
+            # pauli_string_z = cirq.PauliString([cirq.Z(qubits[j]) for j in range(i + 1)])
+            pauli_string_i = cirq.PauliString()
+            pauli_string_z = cirq.PauliString(cirq.Z(qubits[i]))
             self.pauli_strings.append(pauli_string_i)
             self.pauli_strings.append(pauli_string_z)
 

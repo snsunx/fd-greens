@@ -165,23 +165,24 @@ def main():
     print("Start plotting data.")
 
     global fig
+    mol_name = "nah"
 
     fig, axes = plt.subplots(3, 2, figsize=(10, 13), sharex='col')
 
     plot_chi_itoffoli_vs_cz(
         axes[0, 0],
-        f'../../expt/resp/aug13_2022_nah/data/obs/nah_resp_exact_chi00',
-        datfname_pur=f'../../expt/resp/aug13_2022_nah/data/obs/nah_resp_tomo_pur_chi00',
-        datfname_2q_pur=f'../../expt/resp/aug13_2022_nah/data/obs/nah_resp_tomo2q_pur_chi00',
+        f'../../expt/resp/aug13_2022_{mol_name}/data/obs/{mol_name}_resp_exact_chi00',
+        datfname_pur=f'../../expt/resp/aug13_2022_{mol_name}/data/obs/{mol_name}_resp_tomo_pur_chi00',
+        datfname_2q_pur=f'../../expt/resp/aug13_2022_{mol_name}/data/obs/{mol_name}_resp_tomo2q_pur_chi00',
         use_real_part=False,
         panel_name="A",
     )
 
     plot_chi_itoffoli_vs_cz(
         axes[0, 1],
-        f'../../expt/resp/aug13_2022_nah/data/obs/nah_resp_exact_chi00',
-        datfname_pur_rc=f'../../expt/resp/aug13_2022_nah/data/obs/nah_resp_tomo_rc_pur_chi00',
-        datfname_2q_pur_rc=f'../../expt/resp/aug13_2022_nah/data/obs/nah_resp_tomo2q_rc_pur_chi00',
+        f'../../expt/resp/aug13_2022_{mol_name}/data/obs/{mol_name}_resp_exact_chi00',
+        datfname_pur_rc=f'../../expt/resp/aug13_2022_{mol_name}/data/obs/{mol_name}_resp_tomo_rc_pur_chi00',
+        datfname_2q_pur_rc=f'../../expt/resp/aug13_2022_{mol_name}/data/obs/{mol_name}_resp_tomo2q_rc_pur_chi00',
         use_real_part=False,
         panel_name="B",
         include_ylabel=False
@@ -190,18 +191,18 @@ def main():
 
     plot_chi_itoffoli_vs_cz(
         axes[1, 0],
-        f'../../expt/resp/aug13_2022_nah/data/obs/nah_resp_exact_chi01',
-        datfname_pur=f'../../expt/resp/aug13_2022_nah/data/obs/nah_resp_tomo_pur_chi01',
-        datfname_2q_pur=f'../../expt/resp/aug13_2022_nah/data/obs/nah_resp_tomo2q_pur_chi01',
+        f'../../expt/resp/aug13_2022_{mol_name}/data/obs/{mol_name}_resp_exact_chi01',
+        datfname_pur=f'../../expt/resp/aug13_2022_{mol_name}/data/obs/{mol_name}_resp_tomo_pur_chi01',
+        datfname_2q_pur=f'../../expt/resp/aug13_2022_{mol_name}/data/obs/{mol_name}_resp_tomo2q_pur_chi01',
         use_real_part=False,
         panel_name="C",
     )
 
     plot_chi_itoffoli_vs_cz(
         axes[1, 1],
-        f'../../expt/resp/aug13_2022_nah/data/obs/nah_resp_exact_chi01',
-        datfname_pur_rc=f'../../expt/resp/aug13_2022_nah/data/obs/nah_resp_tomo_rc_pur_chi01',
-        datfname_2q_pur_rc=f'../../expt/resp/aug13_2022_nah/data/obs/nah_resp_tomo2q_rc_pur_chi01',
+        f'../../expt/resp/aug13_2022_{mol_name}/data/obs/{mol_name}_resp_exact_chi01',
+        datfname_pur_rc=f'../../expt/resp/aug13_2022_{mol_name}/data/obs/{mol_name}_resp_tomo_rc_pur_chi01',
+        datfname_2q_pur_rc=f'../../expt/resp/aug13_2022_{mol_name}/data/obs/{mol_name}_resp_tomo2q_rc_pur_chi01',
         use_real_part=False,
         panel_name="D",
         include_ylabel=False
@@ -209,18 +210,18 @@ def main():
 
     plot_chi_purified_vs_trace_corr(
         axes[2, 0],
-        f'../../expt/resp/aug13_2022_nah/data/obs/nah_resp_exact_chi01',
-        datfname_pur=f'../../expt/resp/aug13_2022_nah/data/obs/nah_resp_tomo_pur_chi01',
-        datfname_trace=f'../../expt/resp/aug13_2022_nah/data/obs/nah_resp_tomo_trace_chi01',
+        f'../../expt/resp/aug13_2022_{mol_name}/data/obs/{mol_name}_resp_exact_chi01',
+        datfname_pur=f'../../expt/resp/aug13_2022_{mol_name}/data/obs/{mol_name}_resp_tomo_pur_chi01',
+        datfname_trace=f'../../expt/resp/aug13_2022_{mol_name}/data/obs/{mol_name}_resp_tomo_trace_chi01',
         use_real_part=False,
         panel_name="E",
     )
 
     plot_chi_purified_vs_trace_corr(
         axes[2, 1],
-        f'../../expt/resp/aug13_2022_nah/data/obs/nah_resp_exact_chi01',
-        datfname_pur_rc=f'../../expt/resp/aug13_2022_nah/data/obs/nah_resp_tomo_rc_pur_chi01',
-        datfname_trace_rc=f'../../expt/resp/aug13_2022_nah/data/obs/nah_resp_tomo_rc_trace_chi01',
+        f'../../expt/resp/aug13_2022_{mol_name}/data/obs/{mol_name}_resp_exact_chi01',
+        datfname_pur_rc=f'../../expt/resp/aug13_2022_{mol_name}/data/obs/{mol_name}_resp_tomo_rc_pur_chi01',
+        datfname_trace_rc=f'../../expt/resp/aug13_2022_{mol_name}/data/obs/{mol_name}_resp_tomo_rc_trace_chi01',
         use_real_part=False,
         panel_name="F",
         include_ylabel=False

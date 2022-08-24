@@ -293,13 +293,14 @@ def print_circuit_statistics(circuit: cirq.Circuit, latex_form: bool = True) -> 
     
     Args:
         circuit: The circuit on which statistics are to be printed.
+        latex_form: Whether to print circuit statistics in latex form.
     """
     depth = get_circuit_depth(circuit)
     n_2q = get_gate_counts(circuit, num_qubits=2)
     n_3q = get_gate_counts(circuit, num_qubits=3)
     if latex_form:
         print("Circuit depth | # 2q gates | # 3q gates")
-        print(f"{depth} & {n_2q} & {n_3q}")
+        print(f"{depth:8d}      & {n_2q:6d}     & {n_3q:6d}")
         return
 
     print(f"Circuit depth = {depth}")

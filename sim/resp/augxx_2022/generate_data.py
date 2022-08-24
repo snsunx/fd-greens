@@ -6,7 +6,7 @@ from fd_greens import generate_fidelity_vs_depth, generate_response_function
 
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("-o", "--observable", nargs="+", type=str, dest="observable_fnames")
+    parser.add_argument("--observable", nargs="+", type=str, dest="observable_fnames")
     parser.add_argument("-f", "--fidelity", nargs=2, type=str, dest="fidelity_fnames")
     args = parser.parse_args()
 

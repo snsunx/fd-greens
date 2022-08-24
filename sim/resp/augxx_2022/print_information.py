@@ -1,5 +1,6 @@
 import sys
 sys.path.append('../../..')
+import argparse
 
 import cirq
 import h5py
@@ -11,8 +12,8 @@ qubits = cirq.LineQubit.range(4)
 converter = CircuitStringConverter(qubits)
 
 
-def print_parameters():
-    with h5py.File('lih_resp_pur2q.h5', 'r') as h5file:
+def print_parameters(h5fname: str) -> None:
+    with h5py.File(h5fname + '.h5', 'r') as h5file:
         print("Circuit Parameters:")
         for key, val in h5file['params/circ'].attrs.items():
             print(f'{key} = {val}')
@@ -22,18 +23,27 @@ def print_parameters():
         for key, val in h5file['params/miti'].attrs.items():
             print(f'{key} = {val}')
 
-def print_circuit_information():
-    with h5py.File('nah_resp_tomo2q.h5', 'r') as h5file:
-        for key in h5file.keys():
-            if key[:4] == 'circ':
-                print('=' * 25 + ' ' + key + ' ' + '=' * 25) 
-                qtrl_strings = json.loads(h5file[f'{key}/transpiled'][()])
-                circuit = converter.convert_strings_to_circuit(qtrl_strings)
-                print_circuit_statistics(circuit)
+def print_circuit_information(h5fname: str) -> None:
+    with h5py.File(h5fname + '.h5', 'r') as h5file:
+        for key in ["circ0u", "circ0d", "circ1u", "circ1d", "circ0u0d", "circ0u1u", "circ0u1d", "circ0d1u", "circ0d1d", "circ1u1d"]:
+            # if key[:4] == 'circ':
+            print('=' * 15 + ' ' + key + ' ' + '=' * 15) 
+            qtrl_strings = json.loads(h5file[f'{key}/transpiled'][()])
+            circuit = converter.convert_strings_to_circuit(qtrl_strings)
+            print_circuit_statistics(circuit)
 
-def main():
-    # print_parameters()
-    print_circuit_information()
+def main() -> None:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--parameters", dest="parameters_h5fname")
+    parser.add_argument("--circuit", dest="circuit_h5fname")
+    args = parser.parse_args()
+    print(args)
+
+    if args.parameters_h5fname is not None:
+        print_parameters(args.parameters_h5fname)
+
+    if args.circuit_h5fname is not None:
+        print_circuit_information(args.circuit_h5fname)
     
 if __name__ == '__main__':
     main()

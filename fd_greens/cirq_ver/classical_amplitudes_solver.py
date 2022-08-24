@@ -61,7 +61,8 @@ class ClassicalAmplitudesSolver:
         Z_matrix = np.diag([1.0, -1.0])
         n_matrix = np.diag([0.0, 1.0])
 
-        matrices = [Z_matrix] * i + [n_matrix] + [I_matrix] * (n - i - 1)
+        # matrices = [Z_matrix] * i + [n_matrix] + [I_matrix] * (n - i - 1)
+        matrices = [I_matrix] * i + [n_matrix] + [I_matrix] * (n - i - 1)
         return reduce(np.kron, matrices)
 
     def compute_B(self, spin: str = '') -> None:
