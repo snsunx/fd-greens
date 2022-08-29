@@ -20,50 +20,43 @@ __all__ = [
     "print_circuit"
 ]
 
-def get_circuit_labels(n_orbitals: int, mode: str = 'greens', spin: str = '') -> List[str]:
+def get_circuit_labels(n_orbitals: int, mode: str = 'greens', spin: str = ' ') -> List[str]:
     """Returns the circuit labels of a greens or resp calculation.
     
     Args:
         n_orbitals: Number of orbitals.
         mode: Calculation mode. ``'greens'`` or ``'resp'``.
-        spin: Spin states included in the calculation. If ``'greens'``, ``spin`` must be
-            ``'u'`` or ``'d'``; if ``'resp'``, ``spin`` must be ``''``.
+        spin: Spin states included in the calculation. If ``mode`` is ``'greens'``, ``spin`` must be
+            ``'u'`` or ``'d'``; if ``mode`` is ``'resp'``, ``spin`` must be ``' '``.
         
     Returns:
         circuit_labels: A list of strings corresponding to the circuit labels.
     """
-    assert mode in ['greens', 'resp']
-    if mode == 'greens':
-        assert spin in ['u', 'd', 'ud']
-    else:
-        assert spin == ''
-
-    if spin == 'ud':
-        return get_circuit_labels(n_orbitals, spin='u') + get_circuit_labels(n_orbitals, spin='d')
+    assert mode in ["greens", "resp"]
+    spin = "ud" if mode == "greens" else " "
 
     # For Green's function, orbital labels are just strings of the orbital indices.
     # For response function, orbital labels are orbital indices with 'u' or 'd' suffix.
-    if mode == 'greens':
+    if mode == "greens":
         orbital_labels = [str(i) for i in range(n_orbitals)]
-    elif mode == 'resp':
+    elif mode == "resp":
         orbital_labels = list(product(range(n_orbitals), ['u', 'd']))
         orbital_labels = [f'{x[0]}{x[1]}' for x in orbital_labels]
 
     # Circuit labels include diagonal and off-diagonal combinations of orbital labels.
     circuit_labels = []
     for i in range(len(orbital_labels)):
-        circuit_labels.append(f'circ{orbital_labels[i]}{spin}')
+        circuit_labels.append(f'circ{orbital_labels[i]}{spin.strip()}')
         for j in range(i + 1, len(orbital_labels)):
-            circuit_labels.append(f'circ{orbital_labels[i]}{orbital_labels[j]}{spin}')
+            circuit_labels.append(f'circ{orbital_labels[i]}{orbital_labels[j]}{spin.strip()}')
     
     return circuit_labels
 
 def initialize_hdf5(
-    fname: str = 'lih',
+    h5fname: str,
     mode: str = 'greens',
-    spin: str = '',
     n_orbitals: int = 2,
-    n_tomography: int = 2,
+    n_tomographed_qubits: int = 2,
     create_datasets: bool = False
 ) -> None:
     """Initializes an HDF5 file for Green's function or response function calculation.
@@ -73,44 +66,27 @@ def initialize_hdf5(
         mode: Calculation mode. Either ``'greens'`` or ``'resp'``.
         spin: Spin of the second-quantized operators.
         n_orbitals: Number of orbitals. Defaults to 2.
-        n_tomography: Number of qubits to be tomographed. Defaults to 2.
+        n_tomographed_qubits: Number of qubits to be tomographed. Defaults to 2.
         overwrite: Whether to overwrite groups if they are found in the HDF5 file.
         create_datasets: Whether to create datasets in the HDF5 file.
     """
     assert mode in ['greens', 'resp']
-    if mode == 'greens':
-        assert spin in ['u', 'd', 'ud']
-    else:
-        assert spin == ''
-
-    if spin == 'ud':
-        initialize_hdf5(
-            fname=fname, 
-            mode=mode,
-            spin='u',
-            n_orbitals=n_orbitals,
-            n_tomography=n_tomography,
-            create_datasets=create_datasets
-        )
-        initialize_hdf5(
-            fname=fname, 
-            mode=mode,
-            spin='d',
-            n_orbitals=n_orbitals,
-            n_tomography=n_tomography,
-            create_datasets=create_datasets
-        )
-        return
+    spin = "ud" if mode == "greens" else " "
     
-    h5fname = fname + '.h5'
-    if os.path.exists(h5fname):
-        h5file = h5py.File(h5fname, 'r+')
+    if os.path.exists(h5fname + ".h5"):
+        h5file = h5py.File(h5fname + ".h5", 'r+')
     else:
-        h5file = h5py.File(h5fname, 'w')
+        h5file = h5py.File(h5fname + ".h5", 'w')
 
     # Groups contain observable groups and circuit groups.
-    circuit_labels = get_circuit_labels(n_orbitals, mode=mode, spin=spin)
-    group_names = ['gs', 'es', 'amp', 'psi', 'rho', 'params/circ', 'params/miti'] + circuit_labels
+    # circuit_labels = get_circuit_labels(n_orbitals, mode=mode, spin=spin)
+    group_names = []
+    for spin_ in spin:
+        group_names += [f"gs{spin_.strip()}", f"es{spin_.strip()}"]
+        group_names += [f"amp{spin_.strip()}", f"psi{spin_.strip()}", f"rho{spin_.strip()}"]
+        group_names += get_circuit_labels(n_orbitals, mode=mode, spin=spin_)
+    group_names += ["params/circ", "params/miti"]
+    # group_names = [f'gs{spin.strip()}', f'es{spin.strip()}', 'amp', 'psi', 'rho', 'params/circ', 'params/miti'] + circuit_labels
 
     for group_name in group_names:
         # Create the group if it does not exist. If overwrite is set to True then overwrite the group.
@@ -118,10 +94,10 @@ def initialize_hdf5(
             h5file.create_group(group_name)
 
         # Create datasets if create_datasets is set to True.
-        if create_datasets and group_name not in ['gs', 'es', 'amp']:
-            tomography_labels = [''.join(x) for x in product('xyz', repeat=n_tomography)]
+        if create_datasets:
+            tomography_labels = [''.join(x) for x in product('xyz', repeat=n_tomographed_qubits)]
             for tomography_label in tomography_labels:
-                print(f'Creating {group_name}/{tomography_label} in {fname}.h5.')
+                print(f'> Creating {group_name}/{tomography_label} in {h5fname}.h5.')
                 h5file.create_dataset(f'{group_name}/{tomography_label}', data='')
     
     h5file.close()

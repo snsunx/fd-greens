@@ -80,7 +80,7 @@ class GroundStateSolver:
 
         assert unitary_equal(cirq.unitary(circuit), U)
         self.ansatz = circuit
-        print(f"Ground state energy is {self.energy:.3f} eV")
+        print(f"# Ground state energy is {self.energy:.3f} eV")
 
     def _get_AB_operations(self, U: np.ndarray) -> List[cirq.Operation]:
         """Returns the operations of :math:`A\otimes B` in :math:`O(4)` gate decomposition.
@@ -167,14 +167,14 @@ class GroundStateSolver:
             save_to_hdf5(h5file, f"gs{spin.strip()}/energy", self.energy)
             # qtrl_strings = self.converter.convert_circuit_to_strings(self.ansatz)
             # save_to_hdf5(h5file, f"gs{spin.strip()}/ansatz", json.dumps(qtrl_strings))
-            self.converter.save_circuit(self.h5fname, f"gs{spin.strip()}/ansatz", self.ansatz)
+            self.converter.save_circuit(h5file, f"gs{spin.strip()}/ansatz", self.ansatz, return_dataset=False)
 
             
 
     def run(self) -> None:
         """Runs the ground-state calculation with exact two-qubit gate decomposition."""
-        print("Start ground state solver.")
+        print("> Start ground state solver.")
         for spin in self.spin:
             self._run_exact(spin)
             self._save_data(spin)
-        print("Ground state solver finished.")
+        print("> Ground state solver finished.")
