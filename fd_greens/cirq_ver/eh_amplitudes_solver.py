@@ -81,8 +81,8 @@ class EHAmplitudesSolver:
 
         # Create dictionary of the second quantized operators.
         method_indices_pairs = MethodIndicesPairs.get_pairs(spin)
-        self.second_quantized_operators = SecondQuantizedOperators(
-            self.qubits, self.spin, factor=(-1) ** (self.spin == 'd'))
+        self.second_quantized_operators = SecondQuantizedOperators(self.qubits, self.spin)
+        # , factor=(-1) ** (self.spin == 'd'))
         self.second_quantized_operators.transform(method_indices_pairs)
 
         self.n_system_qubits = self.n_spin_orbitals - method_indices_pairs.n_tapered

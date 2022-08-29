@@ -46,7 +46,7 @@ def create_hdf5(
 
     initialize_hdf5(h5fname, mode='resp', spin='')
 
-    gs_solver = GroundStateSolver(hamiltonian, qubits, fname=h5fname)
+    gs_solver = GroundStateSolver(hamiltonian, qubits, spin='', fname=h5fname)
     gs_solver.run()
 
     es_solver = ExcitedStatesSolver(hamiltonian, fname=h5fname)
@@ -74,9 +74,9 @@ def create_hdf5(
 
         is_all_close = np.allclose(N, N_classical)
         if is_all_close:
-            print("Passed")
+            print("###### Passed #####")
         else:
-            print(np.linalg.norm(N - N_classical))
+            print("##### Not equal, norm is ", np.linalg.norm(N - N_classical), "#####")
 
         # print(N)
         # print(N_classical)

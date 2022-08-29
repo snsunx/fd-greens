@@ -1,8 +1,8 @@
 #!/bin/bash
 
-create_hdf5=false
+create_hdf5=true
 generate_data=false
-plot_data=true
+plot_data=false
 
 if [ $create_hdf5 = true ]
 then
@@ -11,8 +11,8 @@ then
     python3 create_hdf5.py nah_resp_tomo --method tomo
 
     export CONVERT_CCZ_TO_ITOFFOLI=0
-    # python3 create_hdf5.py nah_resp_exact2q
-    # python3 create_hdf5.py nah_resp_tomo2q --method tomo
+    python3 create_hdf5.py nah_resp_exact2q
+    python3 create_hdf5.py nah_resp_tomo2q --method tomo
 
     # python3 create_hdf5.py nah_resp_exact -c circ0u1d
     # python3 create_hdf5.py nah_resp_exact -c circ0u1d -n ../../../expt/params/gate_fidelities_0720
@@ -30,5 +30,5 @@ fi
 
 if [ $plot_data = true ]
 then
-    python3 plot_data.py nah_resp_exact nah_resp_tomo --labels EXACT TOMO
+    python3 plot_data.py nah_resp_exact nah_resp_tomo --labels exact tomo
 fi

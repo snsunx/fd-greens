@@ -116,12 +116,18 @@ class MethodIndicesPairs:
             methods = ['cnot', 'cnot', 'taper']
             indices = [(2, 0), (3, 1), (0, 1)]
 
+            # methods = ['cnot', 'cnot', 'cnot', 'taper']
+            # indices = [(2, 0), (3, 1), (2, 3), (0, 1)]
+
         elif spin == 'd':
-            methods = ['cnot', 'cnot', 'swap', 'taper']
-            indices = [(2, 0), (3, 1), (2, 3), (0, 1)]
+            # methods = ['cnot', 'cnot', 'swap', 'taper']
+            # indices = [(2, 0), (3, 1), (2, 3), (0, 1)]
+
+            methods = ['cnot', 'cnot', 'cnot', 'taper']
+            indices = [(2, 0), (3, 1), (3, 2), (0, 1)]
 
         elif spin == '':
-            methods = ['cnot', 'cnot', 'swap', 'taper']
+            methods = ['cnot', 'cnot', 'cnot', 'taper']
             indices = [(2, 0), (3, 1), (2, 3), (0, 1)]
 
         method_indices_pairs = cls(methods, indices)

@@ -242,8 +242,8 @@ class ResponseFunction:
                             ).real)
                         self.T[subscript][i, j] = self.T[subscript][j, i] = T_element
 
-                    if self.verbose:
-                        print(f'T[{subscript}][{i}, {j}] = {self.T[subscript][i, j]}')
+                    # if self.verbose:
+                    #     print(f'T[{subscript}][{i}, {j}] = {self.T[subscript][i, j]}')
 
         # Unpack T values to N values according to Eq. (18) of Kosugi and Matsushita 2021.
         for subscript in ['n']:

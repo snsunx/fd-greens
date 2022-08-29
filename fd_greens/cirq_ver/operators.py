@@ -87,6 +87,8 @@ class SecondQuantizedOperators(OperatorsBase):
         self.n_qubits = len(qubits)
         self.n_tapered = 0
 
+        print("##### factor =", factor)
+
         self.pauli_strings = []
         for i in range(self.n_qubits // 2):
             z_chain = [cirq.Z(qubits[j]) for j in range(2 * i + (spin == 'd'))]

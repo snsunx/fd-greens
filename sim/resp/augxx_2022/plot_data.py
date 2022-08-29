@@ -7,10 +7,6 @@ import argparse
 from fd_greens import plot_response_function
 
 def main():
-    # h5fnames = ['lih_resp_exact', 'lih_resp_noisy']
-    # suffixes = ['', '']
-    # labels = ['Exact', 'Noisy']
-
     parser = argparse.ArgumentParser()
     parser.add_argument("h5fnames", nargs="+")
     parser.add_argument("-l", "--labels", nargs="+")

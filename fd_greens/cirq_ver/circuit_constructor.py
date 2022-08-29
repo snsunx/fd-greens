@@ -69,6 +69,7 @@ class CircuitConstructor:
             if coeffient != 1:
                 angle = polar(coeffient)[1]
                 # assert abs(angle) in [np.pi / 2, np.pi]
+                print("***** angle =", angle)
                 if abs(angle) == np.pi / 2:
                     operations += [cirq.CZPowGate(exponent=angle / np.pi)(self.qubits[0], self.qubits[1])]
                 elif abs(angle) == np.pi:

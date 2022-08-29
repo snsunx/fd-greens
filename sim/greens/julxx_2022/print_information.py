@@ -24,23 +24,19 @@ def print_parameters(h5fname: str) -> None:
             print(f'{key} = {val}')
 
 def print_circuit_information(h5fname: str) -> None:
-    circuit_labels =  [
-        "circ0u", "circ0d", "circ1u", "circ1d", 
-        "circ0u0d", "circ0u1u", "circ0u1d", "circ0d1u", "circ0d1d", "circ1u1d"
-    ]
     with h5py.File(h5fname + '.h5', 'r') as h5file:
-        for key in circuit_labels:
-            print('=' * 15 + ' ' + key + ' ' + '=' * 15) 
-            qtrl_strings = json.loads(h5file[f'{key}/transpiled'][()])
-            circuit = converter.convert_strings_to_circuit(qtrl_strings)
-            print_circuit_statistics(circuit)
+        for key in ['circ0u', 'circ1u', 'circ0d', 'circ1d', 'circ01u', 'circ01d']:
+            if key in h5file:
+                print('=' * 25 + ' ' + key + ' ' + '=' * 25)
+                qtrl_strings = json.loads(h5file[f'{key}/transpiled'][()])
+                circuit = converter.convert_strings_to_circuit(qtrl_strings)
+                print_circuit_statistics(circuit, True)
 
-def main() -> None:
+def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--parameters", dest="parameters_h5fname")
     parser.add_argument("--circuit", dest="circuit_h5fname")
     args = parser.parse_args()
-    print(args)
 
     if args.parameters_h5fname is not None:
         print_parameters(args.parameters_h5fname)

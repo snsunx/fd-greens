@@ -111,8 +111,10 @@ class ClassicalAmplitudesSolver:
                 self.B['e'][m, n][np.abs(self.B['e'][m, n]) < 1e-8] = 0.0
                 self.B['h'][m, n][np.abs(self.B['h'][m, n]) < 1e-8] = 0.0
                 if self.verbose:
-                    print(f"B['e'][{m}, {n}] = ", self.B['e'][m, n])
-                    print(f"B['h'][{m}, {n}] = ", self.B['h'][m, n])
+                    if np.sum(np.abs(self.B['e'][m, n])) > 1e-8:
+                        print(f"B['e'][{m}, {n}] = ", self.B['e'][m, n])
+                    if np.sum(np.abs(self.B['h'][m, n])) > 1e-8:
+                        print(f"B['h'][{m}, {n}] = ", self.B['h'][m, n])
 
     def compute_N(self) -> None:
         """Computes the N matrix in response function calculation."""
