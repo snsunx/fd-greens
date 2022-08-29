@@ -90,11 +90,15 @@ class GreensFunction:
         self.G = dict()
         for subscript in self.subscripts_diagonal:
             self.B[subscript] = np.zeros(
-                (self.n_spatial_orbitals, self.n_spatial_orbitals, self.n_states[subscript]), dtype=complex)
+                (self.n_spatial_orbitals, self.n_spatial_orbitals, self.n_states[subscript]),
+                dtype=complex
+            )
             self.G[subscript] = np.zeros((self.n_spatial_orbitals, self.n_spatial_orbitals), dtype=complex)
         for subscript in self.subscripts_off_diagonal:
             self.D[subscript] = np.zeros(
-                (self.n_spatial_orbitals, self.n_spatial_orbitals, self.n_states[subscript[0]]), dtype=complex)
+                (self.n_spatial_orbitals, self.n_spatial_orbitals, self.n_states[subscript[0]]),
+                dtype=complex
+            )
 
     def _process_diagonal_results(self) -> None:
         """Processes diagonal transition amplitude results."""
@@ -217,9 +221,10 @@ class GreensFunction:
                                 circuit_label=circuit_label,
                                 suffix=self.suffix,
                                 ancilla_index=int(qubit_indices.ancilla.str[0], 2),
-                                reverse=REVERSE_QUBIT_ORDER)
+                                reverse=REVERSE_QUBIT_ORDER
+                            )
 
-                            # Optionally project or purify the density matrix
+                            # Optionally project or purify the density matrix.
                             trace = np.trace(density_matrix)
                             density_matrix /= trace
                             if self.mitigation_params.PROJECT_DENSITY_MATRICES:
@@ -234,7 +239,8 @@ class GreensFunction:
                                 n_qubits=self.n_system_qubits + 2,
                                 circuit_label=circuit_label,
                                 suffix=self.suffix,
-                                reverse=REVERSE_QUBIT_ORDER)
+                                reverse=REVERSE_QUBIT_ORDER
+                            )
 
                             if self.mitigation_params.PROJECT_DENSITY_MATRICES:
                                 density_matrix = project_density_matrix(density_matrix)
@@ -256,8 +262,8 @@ class GreensFunction:
                             D_element.append(trace * (
                                 state_vectors_exact[:, k].conj()
                                 @ density_matrix
-                                @ state_vectors_exact[:, k]
-                            ).real)
+                                @ state_vectors_exact[:, k]).real
+                            )
                         self.D[subscript][m, n] = self.D[subscript][n, m] = D_element
 
                     if self.verbose:

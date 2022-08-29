@@ -84,7 +84,7 @@ class ErrorMitigationParameters:
                 dset.attrs[key] = value
 
 @dataclass
-class MethodIndicesPairs:
+class Z2TransformInstructions:
     """Method indices pairs used in Z2 symmetry conversion."""
     methods: List[str]
     indices: List[Sequence[int]]
@@ -101,16 +101,16 @@ class MethodIndicesPairs:
         return zip(self.methods, self.indices)
 
     @classmethod
-    def get_pairs(cls, spin: str) -> "MethodIndicesPairs":
+    def get_instructions(cls, spin: str) -> "Z2TransformInstructions":
         """Returns the method indices pairs corresponding to a given spin label.
         
         Args:
-            spin: The spin label. Either ``'u'`` or ``'d'``.
+            spin: The spin label, ``'u'``, ``'d'`` or ``' '``.
         
         Returns:
             method_indices_pairs: The method indices pairs.
         """
-        assert spin in ['u', 'd', '']
+        assert spin in ['u', 'd', ' ']
 
         if spin == 'u':
             methods = ['cnot', 'cnot', 'taper']
@@ -126,9 +126,13 @@ class MethodIndicesPairs:
             methods = ['cnot', 'cnot', 'cnot', 'taper']
             indices = [(2, 0), (3, 1), (3, 2), (0, 1)]
 
-        elif spin == '':
+        elif spin == ' ':
             methods = ['cnot', 'cnot', 'cnot', 'taper']
             indices = [(2, 0), (3, 1), (2, 3), (0, 1)]
 
-        method_indices_pairs = cls(methods, indices)
-        return method_indices_pairs
+        instructions = cls(methods, indices)
+        return instructions
+    
+    get_pairs = get_instructions
+
+MethodIndicesPairs = Z2TransformInstructions

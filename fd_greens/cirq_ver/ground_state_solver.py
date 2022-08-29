@@ -14,7 +14,7 @@ import json
 from .molecular_hamiltonian import MolecularHamiltonian
 from .circuit_string_converter import CircuitStringConverter
 from .transpilation import convert_phxz_to_xpi2, transpile_into_berkeley_gates
-from .parameters import MethodIndicesPairs
+from .parameters import Z2TransformInstructions
 from .general_utils import unitary_equal
 from .helpers import save_to_hdf5
 
@@ -23,7 +23,10 @@ class GroundStateSolver:
     """Ground state solver."""
 
     def __init__(
-        self, hamiltonian: MolecularHamiltonian, qubits: Sequence[cirq.Qid], spin: str = 'd', fname: str = "lih"
+        self, hamiltonian: MolecularHamiltonian, 
+        qubits: Sequence[cirq.Qid],
+        spin: str = " ",
+        h5fname: str = "lih"
     ) -> None:
         """Initializes a ``GroudStateSolver`` object.
         
@@ -32,21 +35,29 @@ class GroundStateSolver:
             qubits: The qubits on which the ground state is prepared.
             fname: The HDF5 file name.
         """
-        self.hamiltonian = hamiltonian.copy()
-        self.hamiltonian.transform(MethodIndicesPairs.get_pairs(spin))
-        self.qubits = qubits
-        self.h5fname = fname + ".h5"
+        assert spin in ["ud", " "]
+        self.spin = spin
         
-        self.circuit_string_converter = CircuitStringConverter(qubits)
+        self.hamiltonian = dict()
+        for spin_ in spin:
+            hamiltonian_ = hamiltonian.copy()
+            instructions = Z2TransformInstructions.get_instructions(spin_)
+            hamiltonian_.transform(instructions)
+            self.hamiltonian[spin_] = hamiltonian_
 
-    def _run_exact(self) -> None:
+        self.qubits = qubits
+        self.h5fname = h5fname
+
+        self.converter = CircuitStringConverter(qubits)
+
+    def _run_exact(self, spin: str = "") -> None:
         """Calculates the ground state using exact two-qubit gate decomposition."""
         # Solve for the eigenvalue and eigenvectors of the Hamiltonian. The energy is the smallest
         # eigenvalue. The ansatz is prepared by the unitary with the lowest eigenvector as the first
         # column and the rest filled in randomly. The matrix after going through a QR factorization
         # and a KAK decomposition is assigned as the ansatz.
         # TODO: This part should be cleaned up.
-        e, v = np.linalg.eigh(self.hamiltonian.matrix)
+        e, v = np.linalg.eigh(self.hamiltonian[spin].matrix)
         self.energy = e[0]
         # v0 = [ 0.6877791696238387+0j, 0.07105690514886635+0j, 0.07105690514886635+0j, -0.7189309050895454+0j]
         v0 = v[:, 0] # [abs(v[:, 0]) > 1e-8]
@@ -150,17 +161,20 @@ class GroundStateSolver:
         assert unitary_equal(cirq.Circuit(operations).unitary(), unitary)
         return operations
 
-    def _save_data(self) -> None:
+    def _save_data(self, spin: str = "") -> None:
         """Saves ground state energy and ansatz to hdf5 file."""
-        with h5py.File(self.h5fname, 'r+') as h5file:
-            # h5file['gs/energy'] = self.energy
-            save_to_hdf5(h5file, "gs/energy", self.energy)
-            qtrl_strings = self.circuit_string_converter.convert_circuit_to_strings(self.ansatz)
-            save_to_hdf5(h5file, "gs/ansatz", json.dumps(qtrl_strings))
+        with h5py.File(self.h5fname + ".h5", 'r+') as h5file:
+            save_to_hdf5(h5file, f"gs{spin.strip()}/energy", self.energy)
+            # qtrl_strings = self.converter.convert_circuit_to_strings(self.ansatz)
+            # save_to_hdf5(h5file, f"gs{spin.strip()}/ansatz", json.dumps(qtrl_strings))
+            self.converter.save_circuit(self.h5fname, f"gs{spin.strip()}/ansatz", self.ansatz)
+
+            
 
     def run(self) -> None:
         """Runs the ground-state calculation with exact two-qubit gate decomposition."""
         print("Start ground state solver.")
-        self._run_exact()
-        self._save_data()
+        for spin in self.spin:
+            self._run_exact(spin)
+            self._save_data(spin)
         print("Ground state solver finished.")

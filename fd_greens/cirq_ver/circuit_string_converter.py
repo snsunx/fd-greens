@@ -300,7 +300,7 @@ class CircuitStringConverter:
         h5fname: Union[str, h5py.File],
         dsetname: str, 
         circuit: cirq.Circuit,
-        return_dataset: bool = True
+        # return_dataset: bool = True
     ) -> None:
         """Saves a circuit to an HDF5 file."""
         if isinstance(h5fname, str):
@@ -309,6 +309,8 @@ class CircuitStringConverter:
             h5file = h5fname
         
         qtrl_strings = self.convert_circuit_to_strings(circuit)
+        if dsetname in h5file:
+            del h5file[dsetname]
         h5file[dsetname] = json.dumps(qtrl_strings)
         
         if isinstance(h5fname, str):

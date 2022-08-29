@@ -71,14 +71,16 @@ class ClassicalAmplitudesSolver:
         Args:
             spin: The spin label. Either ``'u'``, ``'d'`` or ``''`` (both spins).
         """
-
         assert spin in ['u', 'd', '']
+        
         if spin in ['u', 'd']:
+            # Calculate only up or down spin.
             qubit_indices = QubitIndices.get_eh_qubit_indices_dict(self.n_qubits, spin, system_only=True)
             indices_e = qubit_indices['e'].int
             indices_h = qubit_indices['h'].int
             dim_B = self.n_orbitals
         else:
+            # Calculate both up and down spins.
             indices_e = [int(x, 2) for x in ['0111', '1011', '1101', '1110']]
             indices_h = [int(x, 2) for x in ['0001', '0010', '0100', '1000']]
             dim_B = 2 * self.n_orbitals
@@ -112,9 +114,9 @@ class ClassicalAmplitudesSolver:
                 self.B['h'][m, n][np.abs(self.B['h'][m, n]) < 1e-8] = 0.0
                 if self.verbose:
                     if np.sum(np.abs(self.B['e'][m, n])) > 1e-8:
-                        print(f"B['e'][{m}, {n}] = ", self.B['e'][m, n])
+                        print(f"# B['e'][{m}, {n}] = ", self.B['e'][m, n])
                     if np.sum(np.abs(self.B['h'][m, n])) > 1e-8:
-                        print(f"B['h'][{m}, {n}] = ", self.B['h'][m, n])
+                        print(f"# B['h'][{m}, {n}] = ", self.B['h'][m, n])
 
     def compute_N(self) -> None:
         """Computes the N matrix in response function calculation."""
@@ -137,9 +139,9 @@ class ClassicalAmplitudesSolver:
             for j in range(2 * self.n_orbitals):
                 n_j = self._get_n_operator(j)
 
-                self.N['n'][i, j] = (self.state_gs @ n_i @ self.states_es)\
+                self.N['n'][i, j] = (self.state_gs @ n_i @ self.states_es) \
                     * (self.states_es.conj().T @ n_j @ self.state_gs)
                 
                 self.N['n'][i, j][np.abs(self.N['n'][i, j]) < 1e-8] = 0.0
                 if self.verbose:
-                    print(f"N['n'][{i}, {j}] = ", self.N['n'][i, j])
+                    print(f"# N['n'][{i}, {j}] = ", self.N['n'][i, j])

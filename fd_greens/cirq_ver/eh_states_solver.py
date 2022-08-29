@@ -9,7 +9,7 @@ import numpy as np
 
 from .molecular_hamiltonian import MolecularHamiltonian
 from .qubit_indices import QubitIndices
-from .parameters import REVERSE_QUBIT_ORDER, MethodIndicesPairs
+from .parameters import MethodIndicesPairs
 from .helpers import save_to_hdf5
 
 
@@ -30,8 +30,6 @@ class EHStatesSolver:
         
         method_indices_pairs = MethodIndicesPairs.get_pairs(spin)
         tapered_state = [0, 1] if spin == 'u' else [1, 0]
-        if REVERSE_QUBIT_ORDER:
-            tapered_state.reverse()
 
         self.hamiltonian.transform(method_indices_pairs, tapered_state=tapered_state)
         

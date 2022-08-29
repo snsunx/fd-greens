@@ -24,6 +24,10 @@ from .noise_parameters import NoiseParameters
 
 __all__ = ["create_hdf5", "create_hdf5_by_depth"]
 
+
+def create_greens_hdf5():
+    return
+
 def create_hdf5(
     h5fname: str,
     method: str = "exact",
@@ -49,37 +53,37 @@ def create_hdf5(
     gs_solver = GroundStateSolver(hamiltonian, qubits, spin='', fname=h5fname)
     gs_solver.run()
 
-    es_solver = ExcitedStatesSolver(hamiltonian, fname=h5fname)
-    es_solver.run()
+    # es_solver = ExcitedStatesSolver(hamiltonian, fname=h5fname)
+    # es_solver.run()
 
-    amp_solver = ExcitedAmplitudesSolver(
-        hamiltonian,
-        qubits,
-        method=method,
-        fname=h5fname,
-        noise_fname=noise_fname,
-        repetitions=repetitions
-    )
-    amp_solver.run()
+    # amp_solver = ExcitedAmplitudesSolver(
+    #     hamiltonian,
+    #     qubits,
+    #     method=method,
+    #     fname=h5fname,
+    #     noise_fname=noise_fname,
+    #     repetitions=repetitions
+    # )
+    # amp_solver.run()
 
-    resp = ResponseFunction(hamiltonian, fname=h5fname, method=method)
-    resp.process()
+    # resp = ResponseFunction(hamiltonian, fname=h5fname, method=method)
+    # resp.process()
 
-    if method == 'exact':
-        N = resp.N['n']
+    # if method == 'exact':
+    #     N = resp.N['n']
 
-        classical_solver = ClassicalAmplitudesSolver(hamiltonian, verbose=True)
-        classical_solver.compute_N()
-        N_classical = classical_solver.N['n']
+    #     classical_solver = ClassicalAmplitudesSolver(hamiltonian, verbose=True)
+    #     classical_solver.compute_N()
+    #     N_classical = classical_solver.N['n']
 
-        is_all_close = np.allclose(N, N_classical)
-        if is_all_close:
-            print("###### Passed #####")
-        else:
-            print("##### Not equal, norm is ", np.linalg.norm(N - N_classical), "#####")
+    #     is_all_close = np.allclose(N, N_classical)
+    #     if is_all_close:
+    #         print("###### Passed #####")
+    #     else:
+    #         print("##### Not equal, norm is ", np.linalg.norm(N - N_classical), "#####")
 
-        # print(N)
-        # print(N_classical)
+    #     # print(N)
+    #     # print(N_classical)
 
 def create_hdf5_by_depth(
     h5fname: str,
