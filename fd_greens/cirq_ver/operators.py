@@ -75,7 +75,7 @@ class OperatorsBase:
 class SecondQuantizedOperators(OperatorsBase):
     """Second quantized operators."""
 
-    def __init__(self, qubits: Sequence[cirq.Qid], spin: str, factor: float = -1.0) -> None:
+    def __init__(self, qubits: Sequence[cirq.Qid], spin: str, factor: float = 1.0) -> None:
         """Initializes a ``SecondQuantizedOperators`` object.
         
         Args:

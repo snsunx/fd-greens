@@ -11,12 +11,11 @@ import numpy as np
 
 from .molecular_hamiltonian import MolecularHamiltonian
 from .qubit_indices import QubitIndices
-from .parameters import REVERSE_QUBIT_ORDER, ErrorMitigationParameters, MethodIndicesPairs
+from .parameters import ErrorMitigationParameters, Z2TransformInstructions
 from .general_utils import (
     project_density_matrix,
     purify_density_matrix,
     quantum_state_tomography,
-    reverse_qubit_order
 )
 from .helpers import save_data_to_file, save_to_hdf5
 
@@ -28,104 +27,106 @@ class GreensFunction:
     def __init__(
         self,
         hamiltonian: MolecularHamiltonian,
-        fname: str = "lih",
+        h5fname: str = "lih",
         suffix: str = "",
-        spin: str = "d",
         method: str = "exact",
         verbose: bool = True,
-        fname_exact: Optional[str] = None,
+        h5fname_exact: Optional[str] = None,
     ) -> None:
         """Initializes a ``GreensFunction`` object.
         
         Args:
             hamiltonian: The molecular Hamiltonian.
-            fname: The HDF5 file name.
+            h5fname: The HDF5 file name.
             suffix: The suffix for a specific experimental run.
             spin: Spin of the second quantized operators.
             method: The method used for calculating the transition amplitudes.
             verbose: Whether to print out transition amplitude values.
-            fname_exact: The exact HDF5 file name, if USE_EXACT_TRACES is set to True.
+            h5fname_exact: The exact HDF5 file name, if USE_EXACT_TRACES is set to True.
         """
-        assert spin in ['u', 'd']
         assert method in ["exact", "tomo", "alltomo"]
         
         # Input attributes.
         self.hamiltonian = hamiltonian
-        self.fname = fname
-        self.h5fname = fname + ".h5"
+        self.h5fname = h5fname
         self.suffix = suffix
-        self.spin = spin
         self.method = method
         self.verbose = verbose
-        self.fname_exact = fname_exact
+        self.h5fname_exact = h5fname_exact
+
+        self.subscripts_diagonal = ["e", "h"]
+        self.subscripts_off_diagonal = ["ep", "em", "hp", "hm"]
 
         # Load error mitigation parameters.
         self.mitigation_params = ErrorMitigationParameters()
-        self.mitigation_params.write(fname)
+        self.mitigation_params.write(h5fname)
         if "tomo" in method and self.mitigation_params.USE_EXACT_TRACES:
-            assert fname_exact is not None
+            assert h5fname_exact is not None
 
         # Load energies and state vectors from HDF5 file.
-        with h5py.File(self.fname + '.h5', "r") as h5file:
-            self.energies = {"gs": h5file["gs/energy"][()], 
-                             "e": h5file["es/energies_e"][:],
-                             "h": h5file["es/energies_h"][:]}
-            self.state_vectors = {"e": h5file["es/states_e"][:], 
-                                  "h": h5file["es/states_h"][:]}
+        self.energies = dict()
+        self.state_vectors = dict()
+        self.n_states = dict()
+        self.qubit_indices = dict()
+        h5file = h5py.File(h5fname + ".h5", "r")
 
-        # Derived attributes.
-        method_indices_pairs = MethodIndicesPairs.get_pairs(spin)
-        self.n_states = {subscript: self.state_vectors[subscript].shape[1] for subscript in ['e', 'h']}
-        self.n_spatial_orbitals = len(self.hamiltonian.active_indices)
-        self.n_system_qubits = 2 * self.n_spatial_orbitals - method_indices_pairs.n_tapered
+        for spin in ["u", "d"]:
+            self.energies[spin] = h5file[f"gs{spin}/energy"][()]
+            # XXX: Same for "u" and "d".
+            instructions = Z2TransformInstructions.get_instructions(spin)
+            self.n_spatial_orbitals = len(self.hamiltonian.active_indices)
+            self.n_system_qubits = 2 * self.n_spatial_orbitals - instructions.n_tapered
+            self.qubit_indices[spin] = QubitIndices.get_eh_qubit_indices_dict(
+                2 * self.n_spatial_orbitals, spin, instructions)
 
-        self.qubit_indices_dict = QubitIndices.get_eh_qubit_indices_dict(
-            2 * self.n_spatial_orbitals, spin, method_indices_pairs)
+            for s in self.subscripts_diagonal:
+                self.energies[s + spin] = h5file[f"es{spin}/energies_{s}"][:]
+                self.state_vectors[s + spin] = h5file[f"es{spin}/states_{s}"][:]
+                print(self.state_vectors[s + spin])
+                self.n_states[s + spin] = self.state_vectors[s + spin].shape[1]
+
+        h5file.close()
 
         # Initialize array quantities B, D and G.
-        self.subscripts_diagonal = ["e", "h"]
-        self.subscripts_off_diagonal = ["ep", "em", "hp", "hm"]
-        self.B = dict()
-        self.D = dict()
+        B_zeros_array = np.zeros(
+            (self.n_spatial_orbitals, self.n_spatial_orbitals, self.n_states["eu"]), dtype=complex)
+        D_zeros_array = np.zeros(
+            (self.n_spatial_orbitals, self.n_spatial_orbitals, self.n_states["eu"]), dtype=complex)
+        G_zeros_array = np.zeros((self.n_spatial_orbitals, self.n_spatial_orbitals), dtype=complex)
+        self.B = {"u": dict(), "d": dict()}
+        self.D = {"u": dict(), "d": dict()}
         self.G = dict()
-        for subscript in self.subscripts_diagonal:
-            self.B[subscript] = np.zeros(
-                (self.n_spatial_orbitals, self.n_spatial_orbitals, self.n_states[subscript]),
-                dtype=complex
-            )
-            self.G[subscript] = np.zeros((self.n_spatial_orbitals, self.n_spatial_orbitals), dtype=complex)
-        for subscript in self.subscripts_off_diagonal:
-            self.D[subscript] = np.zeros(
-                (self.n_spatial_orbitals, self.n_spatial_orbitals, self.n_states[subscript[0]]),
-                dtype=complex
-            )
+        for spin in ["u", "d"]:
+            self.G[spin] = G_zeros_array.copy()
+            for subscript in self.subscripts_diagonal:
+                self.B[spin][subscript] = B_zeros_array.copy()
+            for subscript in self.subscripts_off_diagonal:
+                self.D[spin][subscript] = D_zeros_array.copy()
 
-    def _process_diagonal_results(self) -> None:
+    def _process_diagonal_results(self, spin: str) -> None:
         """Processes diagonal transition amplitude results."""
-        h5file = h5py.File(self.fname + '.h5', "r+")
+        h5file = h5py.File(self.h5fname + ".h5", "r+")
 
         for m in range(self.n_spatial_orbitals):
-            circuit_label = f"circ{m}{self.spin}"
+            circuit_label = f"circ{m}{spin}"
 
-            for subscript in self.subscripts_diagonal:
-                qubit_indices = self.qubit_indices_dict[subscript]
-                state_vectors_exact = self.state_vectors[subscript]
+            for s in self.subscripts_diagonal:
+                qubit_indices = self.qubit_indices[spin][s]
+                state_vectors_exact = self.state_vectors[s + spin]
 
                 # Define dataset names for convenience.
-                trace_dsetname = f"trace{self.suffix}/{subscript}{m}{self.spin}"
-                psi_dsetname = f"psi{self.suffix}/{subscript}{m}{self.spin}"
-                rho_dsetname = f"rho{self.suffix}/{subscript}{m}{self.spin}"
+                trace_dsetname = f"trace{self.suffix}/{s}{m}{spin}"
+                psi_dsetname = f"psi{self.suffix}/{s}{m}{spin}"
+                rho_dsetname = f"rho{self.suffix}/{s}{m}{spin}"
 
                 if self.method == 'exact':
                     state_vector = h5file[f'{circuit_label}/transpiled'].attrs[f'psi{self.suffix}']
-                    if REVERSE_QUBIT_ORDER:
-                        state_vector = reverse_qubit_order(state_vector)
                     state_vector = qubit_indices(state_vector)
 
                     save_to_hdf5(h5file, trace_dsetname, np.linalg.norm(state_vector) ** 2)
                     save_to_hdf5(h5file, psi_dsetname, state_vector)
 
-                    self.B[subscript][m, m] = np.abs(state_vectors_exact.conj().T @ state_vector) ** 2
+                    self.B[spin][s][m, m] = np.abs(state_vectors_exact.conj().T @ state_vector) ** 2
 
                 else:
                     if self.method == 'tomo':
@@ -135,8 +136,7 @@ class GreensFunction:
                             n_qubits=self.n_system_qubits,
                             circuit_label=circuit_label,
                             suffix=self.suffix, 
-                            ancilla_index = int(qubit_indices.ancilla.str[0], 2),
-                            reverse=REVERSE_QUBIT_ORDER)
+                            ancilla_index = int(qubit_indices.ancilla.str[0], 2))
 
                         # Optionally project or purify the density matrix.
                         trace = np.trace(density_matrix).real
@@ -152,8 +152,7 @@ class GreensFunction:
                             h5file, 
                             n_qubits=self.n_system_qubits + 1,
                             circuit_label=circuit_label,
-                            suffix=self.suffix, 
-                            reverse=REVERSE_QUBIT_ORDER)
+                            suffix=self.suffix)
 
                         if self.mitigation_params.PROJECT_DENSITY_MATRICES:
                             density_matrix = project_density_matrix(density_matrix)
@@ -171,45 +170,43 @@ class GreensFunction:
                             trace = h5file_exact[trace_dsetname][()]
 
                     B_element = []
-                    for k in range(self.n_states[subscript]):
+                    for k in range(self.n_states[s + spin]):
                         B_element.append(trace * (
                             state_vectors_exact[:, k].conj()
                             @ density_matrix
                             @ state_vectors_exact[:, k]
                         ).real)
-                    self.B[subscript][m, m] = B_element
+                    self.B[spin][s][m, m] = B_element
 
                 if self.verbose:
-                    print(f"B[{subscript}][{m}, {m}] = {self.B[subscript][m, m]}")
+                    print(f"# B[{spin}][{s}][{m}, {m}] = {self.B[spin][s][m, m]}")
                     
         h5file.close()
 
-    def _process_off_diagonal_results(self) -> None:
+    def _process_off_diagonal_results(self, spin: str) -> None:
         """Processes off-diagonal transition amplitude results."""
-        h5file = h5py.File(self.fname + '.h5', "r+")
+        h5file = h5py.File(self.h5fname + ".h5", "r+")
 
         for m in range(self.n_spatial_orbitals):
             for n in range(m + 1, self.n_spatial_orbitals):
-                circuit_label = f"circ{m}{n}{self.spin}"
+                circuit_label = f"circ{m}{n}{spin}"
 
-                for subscript in self.subscripts_off_diagonal:
-                    qubit_indices = self.qubit_indices_dict[subscript]
-                    state_vectors_exact = self.state_vectors[subscript[0]]
+                for s in self.subscripts_off_diagonal:
+                    qubit_indices = self.qubit_indices[spin][s]
+                    state_vectors_exact = self.state_vectors[s[0] + spin]
 
-                    trace_dsetname = f"trace{self.suffix}/{subscript}{m}{n}{self.spin}"
-                    psi_dsetname = f"psi{self.suffix}/{subscript}{m}{n}{self.spin}"
-                    rho_dsetname = f"rho{self.suffix}/{subscript}{m}{n}{self.spin}"
+                    trace_dsetname = f"trace{self.suffix}/{s}{m}{n}{spin}"
+                    psi_dsetname = f"psi{self.suffix}/{s}{m}{n}{spin}"
+                    rho_dsetname = f"rho{self.suffix}/{s}{m}{n}{spin}"
 
                     if self.method == 'exact':
                         state_vector = h5file[f'{circuit_label}/transpiled'].attrs[f"psi{self.suffix}"]
-                        if REVERSE_QUBIT_ORDER:
-                            state_vector = reverse_qubit_order(state_vector)
                         state_vector = qubit_indices(state_vector)
                     
                         save_to_hdf5(h5file, trace_dsetname, np.linalg.norm(state_vector) ** 2)
                         save_to_hdf5(h5file, psi_dsetname, state_vector)
 
-                        self.D[subscript][m, n] = self.D[subscript][n, m] = \
+                        self.D[spin][s][m, n] = self.D[spin][s][n, m] = \
                             np.abs(state_vectors_exact.conj().T @ state_vector) ** 2
 
                     else:
@@ -220,9 +217,7 @@ class GreensFunction:
                                 n_qubits=self.n_system_qubits,
                                 circuit_label=circuit_label,
                                 suffix=self.suffix,
-                                ancilla_index=int(qubit_indices.ancilla.str[0], 2),
-                                reverse=REVERSE_QUBIT_ORDER
-                            )
+                                ancilla_index=int(qubit_indices.ancilla.str[0], 2))
 
                             # Optionally project or purify the density matrix.
                             trace = np.trace(density_matrix)
@@ -238,9 +233,7 @@ class GreensFunction:
                                 h5file,
                                 n_qubits=self.n_system_qubits + 2,
                                 circuit_label=circuit_label,
-                                suffix=self.suffix,
-                                reverse=REVERSE_QUBIT_ORDER
-                            )
+                                suffix=self.suffix)
 
                             if self.mitigation_params.PROJECT_DENSITY_MATRICES:
                                 density_matrix = project_density_matrix(density_matrix)
@@ -258,42 +251,40 @@ class GreensFunction:
                                 trace = h5file_exact[trace_dsetname][()]
                     
                         D_element = []
-                        for k in range(self.n_states[subscript[0]]):
+                        for k in range(self.n_states[s[0] + spin]):
                             D_element.append(trace * (
                                 state_vectors_exact[:, k].conj()
                                 @ density_matrix
-                                @ state_vectors_exact[:, k]).real
-                            )
-                        self.D[subscript][m, n] = self.D[subscript][n, m] = D_element
+                                @ state_vectors_exact[:, k]).real)
+                        self.D[spin][s][m, n] = self.D[spin][s][n, m] = D_element
 
                     if self.verbose:
-                        print(f"D[{subscript}][{m}, {n}] =", self.D[subscript][m, n])
+                        print(f"# D[{spin}][{s}][{m}, {n}] =", self.D[spin][s][m, n])
 
         # Unpack D values to B values according to Eq. (18) of Kosugi and Matsushita 2020.
         for m in range(self.n_spatial_orbitals):
             for n in range(m + 1, self.n_spatial_orbitals):
-                for subscript in self.subscripts_diagonal:
-                    self.B[subscript][m, n] = self.B[subscript][n, m] = \
-                        np.exp(-1j * np.pi / 4) * (self.D[subscript + "p"][m, n] - self.D[subscript + "m"][m, n]) \
-                        + np.exp(1j * np.pi / 4) * (self.D[subscript + "p"][n, m] - self.D[subscript + "m"][n, m])
+                for s in self.subscripts_diagonal:
+                    self.B[spin][s][m, n] = self.B[spin][s][n, m] = \
+                        np.exp(-1j * np.pi / 4) * (self.D[spin][s + "p"][m, n] - self.D[spin][s + "m"][m, n]) \
+                        + np.exp(1j * np.pi / 4) * (self.D[spin][s + "p"][n, m] - self.D[spin][s + "m"][n, m])
                     
                     if self.verbose:
-                        print(f"B[{subscript}][{m}, {n}] =", self.B[subscript][m, n])
+                        print(f"# B[{spin}][{s}][{m}, {n}] =", self.B[spin][s][m, n])
 
         h5file.close()
 
     def process(self):
-        """Processes both diagonal and off-diagonal results and saves data to file."""
-        # Call the private functions to process results.
-        self._process_diagonal_results()
-        self._process_off_diagonal_results()
-
-        # Save B and D to HDF5 file.
-        with h5py.File(self.fname + '.h5', 'r+') as h5file:
-            for subscript, array in self.B.items():
-                save_to_hdf5(h5file, f"amp{self.suffix}/B_{subscript}", array)
-            for subscript, array in self.D.items():
-                save_to_hdf5(h5file, f"amp{self.suffix}/D_{subscript}", array)
+        """Processes both diagonal and off-diagonal results and saves data to file."""        
+        h5file = h5py.File(self.h5fname + ".h5", "r+")
+        for spin in ["u", "d"]:
+            self._process_diagonal_results(spin)
+            self._process_off_diagonal_results(spin)
+            for s, array in self.B[spin].items():
+                save_to_hdf5(h5file, f"amp{spin}{self.suffix}/B_{s}", array)
+            for s, array in self.D[spin].items():
+                save_to_hdf5(h5file, f"amp{spin}{self.suffix}/D_{s}", array)
+        h5file.close()
 
     def mean_field_greens_function(self, omega: float, eta: float = 0.0) -> np.ndarray:
         """Returns the mean-field Green's function.
@@ -322,13 +313,13 @@ class GreensFunction:
         Returns:
             G: The Green's function.
         """
-        for m in range(self.n_spatial_orbitals):
-            for n in range(self.n_spatial_orbitals):
-                # 2 is for both up and down spins.
-                self.G["e"][m, n] = 2 * np.sum(self.B["e"][m, n]
-                    / (omega + 1j * eta + self.energies["gs"] - self.energies["e"]))
-                self.G["h"][m, n] = 2 * np.sum(self.B["h"][m, n]
-                    / (omega + 1j * eta - self.energies["gs"] + self.energies["h"]))
+        for spin in ["u", "d"]:
+            for m in range(self.n_spatial_orbitals):
+                for n in range(self.n_spatial_orbitals):
+                    self.G["e"][m, n] += np.sum(self.B[spin]["e"][m, n]
+                        / (omega + 1j * eta + self.energies["gs" + spin] - self.energies["e" + spin]))
+                    self.G["h"][m, n] += np.sum(self.B[spin]["h"][m, n]
+                        / (omega + 1j * eta - self.energies["gs" + spin] + self.energies["h" + spin]))
         G = self.G["e"] + self.G["h"]
         return G
 

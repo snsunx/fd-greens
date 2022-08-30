@@ -4,7 +4,7 @@ HDF5 Creation Utilities (:mod:`fd_greens.hdf5_creation_utils`)
 ==============================================================
 """
 
-from typing import Optional
+from typing import Optional, Sequence
 
 import cirq
 import numpy as np
@@ -15,6 +15,7 @@ from .helpers import initialize_hdf5
 from .ground_state_solver import GroundStateSolver
 from .excited_states_solver import ExcitedStatesSolver
 from .excited_amplitudes_solver import ExcitedAmplitudesSolver
+from .greens_function import GreensFunction
 from .response_function import ResponseFunction
 from .classical_amplitudes_solver import ClassicalAmplitudesSolver
 from .circuit_string_converter import CircuitStringConverter
@@ -25,10 +26,16 @@ from .noise_parameters import NoiseParameters
 __all__ = ["create_hdf5", "create_hdf5_by_depth"]
 
 
-def create_greens_hdf5():
+def create_greens_hdf5(
+    h5fname: str,
+    qubits: Optional[Sequence[cirq.Qid]] = None,
+    method: str = "exact",
+    noise_fname: Optional[str] = None,
+    repetitions: int = 10000
+) -> None:
     return
 
-def create_hdf5(
+def create_resp_hdf5(
     h5fname: str,
     method: str = "exact",
     noise_fname: Optional[str] = None,
@@ -42,32 +49,32 @@ def create_hdf5(
         noise_fname: The noise parameter file name.
         repetitions: The number of repetitions to run the quantum circuits.
     """
-    qubits = cirq.LineQubit.range(4)
+    if qubits is None:
+        qubits = cirq.LineQubit.range(4)
     if "nah" in h5fname:
         hamiltonian = get_alkali_hydride_hamiltonian("Na", 3.7)
     else:
         hamiltonian = get_alkali_hydride_hamiltonian("K", 3.9)
 
-    initialize_hdf5(h5fname, mode='resp', spin='')
+    initialize_hdf5(h5fname, calculation_mode="greens")
 
-    gs_solver = GroundStateSolver(hamiltonian, qubits, spin='', fname=h5fname)
+    gs_solver = GroundStateSolver(hamiltonian, qubits, h5fname=h5fname)
     gs_solver.run()
 
-    # es_solver = ExcitedStatesSolver(hamiltonian, fname=h5fname)
-    # es_solver.run()
+    es_solver = ExcitedStatesSolver(hamiltonian, h5fname=h5fname)
+    es_solver.run()
 
-    # amp_solver = ExcitedAmplitudesSolver(
-    #     hamiltonian,
-    #     qubits,
-    #     method=method,
-    #     fname=h5fname,
-    #     noise_fname=noise_fname,
-    #     repetitions=repetitions
-    # )
-    # amp_solver.run()
+    amp_solver = ExcitedAmplitudesSolver(
+        hamiltonian, 
+        qubits,
+        method=method,
+        h5fname=h5fname,
+        noise_fname=noise_fname,
+        repetitions=repetitions)
+    amp_solver.run()
 
-    # resp = ResponseFunction(hamiltonian, fname=h5fname, method=method)
-    # resp.process()
+    obs_solver = GreensFunction(hamiltonian, h5fname=h5fname, method=method)
+    obs_solver.process()
 
     # if method == 'exact':
     #     N = resp.N['n']
@@ -84,6 +91,8 @@ def create_hdf5(
 
     #     # print(N)
     #     # print(N_classical)
+
+create_hdf5 = create_resp_hdf5
 
 def create_hdf5_by_depth(
     h5fname: str,

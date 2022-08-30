@@ -153,7 +153,7 @@ class EHAmplitudesSolver:
                 # Run simulation and save results to HDF5 file.
                 state_vector = cirq.sim.final_state_vector(circuit)
                 dset_transpiled.attrs[f"psi{self.suffix}"] = state_vector
-                print(f"In run_off_diagonal_circuits, {state_vector.shape = }")
+                # print(f"In run_off_diagonal_circuits, {state_vector.shape = }")
 
                 # Apply tomography and measurement gates and save to HDF5 file.
                 if self.method in ["tomo", "alltomo"]:
@@ -183,10 +183,10 @@ class EHAmplitudesSolver:
 
     def run(self) -> None:
         """Runs all transition amplitude circuits."""
-        print("Start (N±1)-electron amplitudes solver.")
+        print("> Start (N±1)-electron amplitudes solver.")
         for spin in ["u", "d"]:
             ansatz = self.converter.load_circuit(self.h5fname, f"gs{spin}/ansatz")
             self.constructor = CircuitConstructor(ansatz, self.qubits)
             self._run_diagonal_circuits(spin)
             self._run_off_diagonal_circuits(spin)
-        print("(N±1)-electron amplitudes solver finshed.")
+        print("> Finish (N±1)-electron amplitudes solver.")

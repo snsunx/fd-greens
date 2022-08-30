@@ -24,10 +24,6 @@ class EHStatesSolver:
             spin: Spin of the second-quantized operators. Either ``'u'`` or ``'d'``.
             h5fname: The HDF5 file name.
         """
-        # self.hamiltonian = hamiltonian.copy()
-        # method_indices_pairs = MethodIndicesPairs.get_pairs(spin)
-        # tapered_state = [0, 1] if spin == 'u' else [1, 0]
-
         self.hamiltonian = dict()
         self.qubit_indices = dict()
         for spin in ["u", "d"]:
@@ -82,4 +78,4 @@ class EHStatesSolver:
             self.state_vectors = dict()
             self._run_exact(spin)
             self._save_data(spin)
-        print("> (N±1)-electron states solver finished.")
+        print("> Finish (N±1)-electron states solver.")

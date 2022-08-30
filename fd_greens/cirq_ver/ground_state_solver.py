@@ -25,7 +25,7 @@ class GroundStateSolver:
     def __init__(
         self, hamiltonian: MolecularHamiltonian, 
         qubits: Sequence[cirq.Qid],
-        spin: str = " ",
+        mode = "greens",
         h5fname: str = "lih"
     ) -> None:
         """Initializes a ``GroudStateSolver`` object.
@@ -33,17 +33,16 @@ class GroundStateSolver:
         Args:
             hamiltonian: The molecular Hamiltonian object.
             qubits: The qubits on which the ground state is prepared.
-            fname: The HDF5 file name.
+            h5fname: The HDF5 file name.
         """
-        assert spin in ["ud", " "]
-        self.spin = spin
+        self.spin = "ud" if mode == "greens" else " "
         
         self.hamiltonian = dict()
-        for spin_ in spin:
+        for spin in self.spin:
             hamiltonian_ = hamiltonian.copy()
-            instructions = Z2TransformInstructions.get_instructions(spin_)
+            instructions = Z2TransformInstructions.get_instructions(spin)
             hamiltonian_.transform(instructions)
-            self.hamiltonian[spin_] = hamiltonian_
+            self.hamiltonian[spin] = hamiltonian_
 
         self.qubits = qubits
         self.h5fname = h5fname

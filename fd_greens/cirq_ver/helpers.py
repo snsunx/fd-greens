@@ -20,7 +20,7 @@ __all__ = [
     "print_circuit"
 ]
 
-def get_circuit_labels(n_orbitals: int, mode: str = 'greens', spin: str = ' ') -> List[str]:
+def get_circuit_labels(n_orbitals: int, calculation_mode: str = 'greens', spin: str = ' ') -> List[str]:
     """Returns the circuit labels of a greens or resp calculation.
     
     Args:
@@ -32,14 +32,14 @@ def get_circuit_labels(n_orbitals: int, mode: str = 'greens', spin: str = ' ') -
     Returns:
         circuit_labels: A list of strings corresponding to the circuit labels.
     """
-    assert mode in ["greens", "resp"]
-    spin = "ud" if mode == "greens" else " "
+    assert calculation_mode in ["greens", "resp"]
+    spin = "ud" if calculation_mode == "greens" else " "
 
     # For Green's function, orbital labels are just strings of the orbital indices.
     # For response function, orbital labels are orbital indices with 'u' or 'd' suffix.
-    if mode == "greens":
+    if calculation_mode == "greens":
         orbital_labels = [str(i) for i in range(n_orbitals)]
-    elif mode == "resp":
+    elif calculation_mode == "resp":
         orbital_labels = list(product(range(n_orbitals), ['u', 'd']))
         orbital_labels = [f'{x[0]}{x[1]}' for x in orbital_labels]
 
@@ -54,7 +54,7 @@ def get_circuit_labels(n_orbitals: int, mode: str = 'greens', spin: str = ' ') -
 
 def initialize_hdf5(
     h5fname: str,
-    mode: str = 'greens',
+    calculation_mode: str = 'greens',
     n_orbitals: int = 2,
     n_tomographed_qubits: int = 2,
     create_datasets: bool = False
@@ -70,8 +70,8 @@ def initialize_hdf5(
         overwrite: Whether to overwrite groups if they are found in the HDF5 file.
         create_datasets: Whether to create datasets in the HDF5 file.
     """
-    assert mode in ['greens', 'resp']
-    spin = "ud" if mode == "greens" else " "
+    assert calculation_mode in ['greens', 'resp']
+    spin = "ud" if calculation_mode == "greens" else " "
     
     if os.path.exists(h5fname + ".h5"):
         h5file = h5py.File(h5fname + ".h5", 'r+')
@@ -84,7 +84,7 @@ def initialize_hdf5(
     for spin_ in spin:
         group_names += [f"gs{spin_.strip()}", f"es{spin_.strip()}"]
         group_names += [f"amp{spin_.strip()}", f"psi{spin_.strip()}", f"rho{spin_.strip()}"]
-        group_names += get_circuit_labels(n_orbitals, mode=mode, spin=spin_)
+        group_names += get_circuit_labels(n_orbitals, calculation_mode=calculation_mode, spin=spin_)
     group_names += ["params/circ", "params/miti"]
     # group_names = [f'gs{spin.strip()}', f'es{spin.strip()}', 'amp', 'psi', 'rho', 'params/circ', 'params/miti'] + circuit_labels
 
