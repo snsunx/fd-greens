@@ -14,6 +14,7 @@ from .molecular_hamiltonian import get_alkali_hydride_hamiltonian
 from .greens_function import GreensFunction
 from .response_function import ResponseFunction
 from .general_utils import get_fidelity, quantum_state_tomography
+from .parameters import HARTREE_TO_EV
 
 __all__ = [
     "generate_greens_function", 
@@ -24,9 +25,9 @@ __all__ = [
 ]
 
 def generate_greens_function(
-    h5fnames: Sequence[str],
+    h5fname: str,
     omegas: Optional[Sequence[float]] = None,
-    eta: float = 1.5
+    eta: float = 0.75
 ) -> None:
     """Generates Green's function data files.
 
@@ -35,23 +36,23 @@ def generate_greens_function(
         omegas: The frequencies at which the response function is evaluated.
         eta: The broadening factor.
     """
-    if "nah" in h5fnames[0]:
-        hamiltonian = get_alkali_hydride_hamiltonian("Na", 3.0)
-    elif "kh" in h5fnames[0]:
+    if "lih" in h5fname:
+        hamiltonian = get_alkali_hydride_hamiltonian("Li", 3.0)
+    elif "nah" in h5fname:
+        hamiltonian = get_alkali_hydride_hamiltonian("Na", 3.7)
+    elif "kh" in h5fname:
         hamiltonian = get_alkali_hydride_hamiltonian("K", 3.9)
-    else:
-        raise ValueError("The input HDF5 file name must contain \"nah\" or \"kh\"")
-    if omegas is None:
-        np.arange(-32, 32, 0.1)
     
-    for h5fname in h5fnames:
-        if "exact" in h5fname:
-            greens = GreensFunction(hamiltonian, fname=h5fname, method="exact", spin='u')
-        else:
-            greens = GreensFunction(hamiltonian, fname=h5fname, method="tomo", spin='u')
-        greens.process()
-        greens.spectral_function(omegas, eta)
-        greens.self_energy(omegas, eta)
+    if omegas is None:
+        omegas = np.arange(-32, 32, 0.1)
+    
+    if "exact" in h5fname:
+        greens = GreensFunction(hamiltonian, h5fname=h5fname, method="exact")
+    else:
+        greens = GreensFunction(hamiltonian, h5fname=h5fname, method="tomo")
+    greens.process()
+    greens.spectral_function(omegas, eta)
+    greens.self_energy(omegas, eta)
 
 
 def generate_response_function(

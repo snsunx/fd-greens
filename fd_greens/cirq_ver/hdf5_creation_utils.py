@@ -13,6 +13,8 @@ import h5py
 from .molecular_hamiltonian import get_alkali_hydride_hamiltonian
 from .helpers import initialize_hdf5
 from .ground_state_solver import GroundStateSolver
+from .eh_states_solver import EHStatesSolver
+from .eh_amplitudes_solver import EHAmplitudesSolver
 from .excited_states_solver import ExcitedStatesSolver
 from .excited_amplitudes_solver import ExcitedAmplitudesSolver
 from .greens_function import GreensFunction
@@ -23,7 +25,7 @@ from .circuit_constructor import CircuitConstructor
 from .general_utils import get_non_z_locations, get_gate_counts, histogram_to_array, quantum_state_tomography
 from .noise_parameters import NoiseParameters
 
-__all__ = ["create_hdf5", "create_hdf5_by_depth"]
+__all__ = ["create_greens_hdf5", "create_resp_hdf5", "create_hdf5_by_depth"]
 
 
 def create_greens_hdf5(
@@ -33,10 +35,38 @@ def create_greens_hdf5(
     noise_fname: Optional[str] = None,
     repetitions: int = 10000
 ) -> None:
-    return
+    if qubits is None:
+        qubits = cirq.LineQubit.range(4)
+    if "lih" in h5fname:
+        hamiltonian = get_alkali_hydride_hamiltonian("Li", 3.0)
+    elif "nah" in h5fname:
+        hamiltonian = get_alkali_hydride_hamiltonian("Na", 3.7)
+    elif "kh" in h5fname:
+        hamiltonian = get_alkali_hydride_hamiltonian("K", 3.9)
+
+    initialize_hdf5(h5fname, calculation_mode="greens")
+
+    gs_solver = GroundStateSolver(hamiltonian, qubits, h5fname=h5fname)
+    gs_solver.run()
+
+    es_solver = EHStatesSolver(hamiltonian, h5fname=h5fname)
+    es_solver.run()
+
+    amp_solver = EHAmplitudesSolver(
+        hamiltonian,
+        qubits,
+        method=method,
+        h5fname=h5fname,
+        noise_fname=noise_fname,
+        repetitions=repetitions)
+    amp_solver.run()
+
+    obs_solver = GreensFunction(hamiltonian, h5fname=h5fname, method=method)
+    obs_solver.process()
 
 def create_resp_hdf5(
     h5fname: str,
+    qubits: Optional[Sequence[cirq.Qid]] = None,
     method: str = "exact",
     noise_fname: Optional[str] = None,
     repetitions: int = 10000
@@ -73,24 +103,24 @@ def create_resp_hdf5(
         repetitions=repetitions)
     amp_solver.run()
 
-    obs_solver = GreensFunction(hamiltonian, h5fname=h5fname, method=method)
+    obs_solver = ResponseFunction(hamiltonian, h5fname=h5fname, method=method)
     obs_solver.process()
 
-    # if method == 'exact':
-    #     N = resp.N['n']
+    if method == 'exact':
+        N = obs_solver.N['n']
 
-    #     classical_solver = ClassicalAmplitudesSolver(hamiltonian, verbose=True)
-    #     classical_solver.compute_N()
-    #     N_classical = classical_solver.N['n']
+        classical_solver = ClassicalAmplitudesSolver(hamiltonian, verbose=True)
+        classical_solver.compute_N()
+        N_classical = classical_solver.N['n']
 
-    #     is_all_close = np.allclose(N, N_classical)
-    #     if is_all_close:
-    #         print("###### Passed #####")
-    #     else:
-    #         print("##### Not equal, norm is ", np.linalg.norm(N - N_classical), "#####")
+        is_all_close = np.allclose(N, N_classical)
+        if is_all_close:
+            print("###### Passed #####")
+        else:
+            print("##### Not equal, norm is ", np.linalg.norm(N - N_classical), "#####")
 
-    #     # print(N)
-    #     # print(N_classical)
+        # print(N)
+        # print(N_classical)
 
 create_hdf5 = create_resp_hdf5
 

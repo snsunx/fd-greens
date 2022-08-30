@@ -39,7 +39,6 @@ class GreensFunction:
             hamiltonian: The molecular Hamiltonian.
             h5fname: The HDF5 file name.
             suffix: The suffix for a specific experimental run.
-            spin: Spin of the second quantized operators.
             method: The method used for calculating the transition amplitudes.
             verbose: Whether to print out transition amplitude values.
             h5fname_exact: The exact HDF5 file name, if USE_EXACT_TRACES is set to True.
@@ -71,7 +70,7 @@ class GreensFunction:
         h5file = h5py.File(h5fname + ".h5", "r")
 
         for spin in ["u", "d"]:
-            self.energies[spin] = h5file[f"gs{spin}/energy"][()]
+            self.energies["gs" + spin] = h5file[f"gs{spin}/energy"][()]
             # XXX: Same for "u" and "d".
             instructions = Z2TransformInstructions.get_instructions(spin)
             self.n_spatial_orbitals = len(self.hamiltonian.active_indices)
@@ -82,7 +81,6 @@ class GreensFunction:
             for s in self.subscripts_diagonal:
                 self.energies[s + spin] = h5file[f"es{spin}/energies_{s}"][:]
                 self.state_vectors[s + spin] = h5file[f"es{spin}/states_{s}"][:]
-                print(self.state_vectors[s + spin])
                 self.n_states[s + spin] = self.state_vectors[s + spin].shape[1]
 
         h5file.close()
@@ -92,12 +90,9 @@ class GreensFunction:
             (self.n_spatial_orbitals, self.n_spatial_orbitals, self.n_states["eu"]), dtype=complex)
         D_zeros_array = np.zeros(
             (self.n_spatial_orbitals, self.n_spatial_orbitals, self.n_states["eu"]), dtype=complex)
-        G_zeros_array = np.zeros((self.n_spatial_orbitals, self.n_spatial_orbitals), dtype=complex)
         self.B = {"u": dict(), "d": dict()}
         self.D = {"u": dict(), "d": dict()}
-        self.G = dict()
         for spin in ["u", "d"]:
-            self.G[spin] = G_zeros_array.copy()
             for subscript in self.subscripts_diagonal:
                 self.B[spin][subscript] = B_zeros_array.copy()
             for subscript in self.subscripts_off_diagonal:
@@ -115,9 +110,9 @@ class GreensFunction:
                 state_vectors_exact = self.state_vectors[s + spin]
 
                 # Define dataset names for convenience.
-                trace_dsetname = f"trace{self.suffix}/{s}{m}{spin}"
-                psi_dsetname = f"psi{self.suffix}/{s}{m}{spin}"
-                rho_dsetname = f"rho{self.suffix}/{s}{m}{spin}"
+                trace_dsetname = f"trace{spin}{self.suffix}/{s}{m}{spin}"
+                psi_dsetname = f"psi{spin}{self.suffix}/{s}{m}{spin}"
+                rho_dsetname = f"rho{spin}{self.suffix}/{s}{m}{spin}"
 
                 if self.method == 'exact':
                     state_vector = h5file[f'{circuit_label}/transpiled'].attrs[f'psi{self.suffix}']
@@ -166,7 +161,7 @@ class GreensFunction:
                     save_to_hdf5(h5file, rho_dsetname, density_matrix)
 
                     if self.mitigation_params.USE_EXACT_TRACES:
-                        with h5py.File(self.fname_exact + '.h5', 'r') as h5file_exact:
+                        with h5py.File(self.h5fname_exact + '.h5', 'r') as h5file_exact:
                             trace = h5file_exact[trace_dsetname][()]
 
                     B_element = []
@@ -195,9 +190,9 @@ class GreensFunction:
                     qubit_indices = self.qubit_indices[spin][s]
                     state_vectors_exact = self.state_vectors[s[0] + spin]
 
-                    trace_dsetname = f"trace{self.suffix}/{s}{m}{n}{spin}"
-                    psi_dsetname = f"psi{self.suffix}/{s}{m}{n}{spin}"
-                    rho_dsetname = f"rho{self.suffix}/{s}{m}{n}{spin}"
+                    trace_dsetname = f"trace{spin}{self.suffix}/{s}{m}{n}{spin}"
+                    psi_dsetname = f"psi{spin}{self.suffix}/{s}{m}{n}{spin}"
+                    rho_dsetname = f"rho{spin}{self.suffix}/{s}{m}{n}{spin}"
 
                     if self.method == 'exact':
                         state_vector = h5file[f'{circuit_label}/transpiled'].attrs[f"psi{self.suffix}"]
@@ -247,7 +242,7 @@ class GreensFunction:
                         save_to_hdf5(h5file, rho_dsetname, density_matrix)
 
                         if self.mitigation_params.USE_EXACT_TRACES:
-                            with h5py.File(self.fname_exact + '.h5', 'r') as h5file_exact:
+                            with h5py.File(self.h5fname_exact + '.h5', 'r') as h5file_exact:
                                 trace = h5file_exact[trace_dsetname][()]
                     
                         D_element = []
@@ -303,7 +298,7 @@ class GreensFunction:
             G0[i, i] = 1 / (omega + 1j * eta - orbital_energies[i])
         return G0
 
-    def greens_function(self, omega: float, eta: float = 0.0) -> np.ndarray:
+    def greens_function(self, omega: float, eta: float = 0.5) -> np.ndarray:
         """Returns the the Green's function at given frequency and broadening.
 
         Args:
@@ -313,14 +308,16 @@ class GreensFunction:
         Returns:
             G: The Green's function.
         """
+        G_e = np.zeros((self.n_spatial_orbitals, self.n_spatial_orbitals), dtype=complex)
+        G_h = np.zeros((self.n_spatial_orbitals, self.n_spatial_orbitals), dtype=complex)
         for spin in ["u", "d"]:
             for m in range(self.n_spatial_orbitals):
                 for n in range(self.n_spatial_orbitals):
-                    self.G["e"][m, n] += np.sum(self.B[spin]["e"][m, n]
+                    G_e[m, n] += np.sum(self.B[spin]["e"][m, n]
                         / (omega + 1j * eta + self.energies["gs" + spin] - self.energies["e" + spin]))
-                    self.G["h"][m, n] += np.sum(self.B[spin]["h"][m, n]
+                    G_h[m, n] += np.sum(self.B[spin]["h"][m, n]
                         / (omega + 1j * eta - self.energies["gs" + spin] + self.energies["h" + spin]))
-        G = self.G["e"] + self.G["h"]
+        G = G_e + G_h
         return G
 
     def spectral_function(
@@ -343,7 +340,7 @@ class GreensFunction:
             As: The spectral function numpy array.
         """
         if datfname is None:
-            datfname = f"{self.fname}{self.suffix}_A"
+            datfname = f"{self.h5fname}{self.suffix}_A"
         
         As = []
         for omega in omegas:
@@ -374,7 +371,7 @@ class GreensFunction:
             TrSigmas: Trace of the self-energy.
         """
         if datfname is None:
-            datfname = f"{self.fname}{self.suffix}_TrSigma"
+            datfname = f"{self.h5fname}{self.suffix}_TrSigma"
         
         TrSigmas = []
         for omega in omegas:

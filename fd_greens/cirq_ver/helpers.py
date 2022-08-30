@@ -20,7 +20,7 @@ __all__ = [
     "print_circuit"
 ]
 
-def get_circuit_labels(n_orbitals: int, calculation_mode: str = 'greens', spin: str = ' ') -> List[str]:
+def get_circuit_labels(n_orbitals: int, calculation_mode: str = "greens") -> List[str]:
     """Returns the circuit labels of a greens or resp calculation.
     
     Args:
@@ -45,10 +45,11 @@ def get_circuit_labels(n_orbitals: int, calculation_mode: str = 'greens', spin: 
 
     # Circuit labels include diagonal and off-diagonal combinations of orbital labels.
     circuit_labels = []
-    for i in range(len(orbital_labels)):
-        circuit_labels.append(f'circ{orbital_labels[i]}{spin.strip()}')
-        for j in range(i + 1, len(orbital_labels)):
-            circuit_labels.append(f'circ{orbital_labels[i]}{orbital_labels[j]}{spin.strip()}')
+    for spin_ in spin:
+        for i in range(len(orbital_labels)):
+            circuit_labels.append(f'circ{orbital_labels[i]}{spin_.strip()}')
+            for j in range(i + 1, len(orbital_labels)):
+                circuit_labels.append(f'circ{orbital_labels[i]}{orbital_labels[j]}{spin_.strip()}')
     
     return circuit_labels
 
@@ -84,8 +85,9 @@ def initialize_hdf5(
     for spin_ in spin:
         group_names += [f"gs{spin_.strip()}", f"es{spin_.strip()}"]
         group_names += [f"amp{spin_.strip()}", f"psi{spin_.strip()}", f"rho{spin_.strip()}"]
-        group_names += get_circuit_labels(n_orbitals, calculation_mode=calculation_mode, spin=spin_)
+        group_names += get_circuit_labels(n_orbitals, calculation_mode=calculation_mode)
     group_names += ["params/circ", "params/miti"]
+    print("group_names =", sorted(group_names))
     # group_names = [f'gs{spin.strip()}', f'es{spin.strip()}', 'amp', 'psi', 'rho', 'params/circ', 'params/miti'] + circuit_labels
 
     for group_name in group_names:

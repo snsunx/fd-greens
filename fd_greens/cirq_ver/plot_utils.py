@@ -46,11 +46,11 @@ FIGURE_DPI = 250
 
 def plot_spectral_function(
     fnames: Sequence[str],
-    suffixes: Sequence[str],
-    labels: Sequence[str] = None,
+    suffixes: Optional[Sequence[str]] = None,
+    labels: Optional[Sequence[str]] = None,
     annotations: Optional[Sequence[dict]] = None,
     linestyles: Sequence[dict] = LINESTYLES_A,
-    datdirname: str = "data",
+    datdirname: str = "data/obs",
     dirname: str = "figs/obs",
     figname: str = "A",
     text: str = "legend",
@@ -70,6 +70,8 @@ def plot_spectral_function(
     """
     assert text in [None, "legend", "annotation"]
 
+    if suffixes is None:
+        suffixes = [""] * len(fnames)
     if n_curves is None:
         n_curves = max(len(fnames), len(suffixes))
     if labels is None:
@@ -100,7 +102,7 @@ plot_A = plot_spectral_function
 
 def plot_trace_self_energy(
     fnames: Sequence[str],
-    suffixes: Sequence[str],
+    suffixes: Optional[Sequence[str]] = None,
     labels: Optional[Sequence[str]] = None,
     annotations: Optional[Sequence[str]] = None,
     datdirname: str = "data/obs",
@@ -125,6 +127,8 @@ def plot_trace_self_energy(
     """
     assert text in [None, "legend", "annotation"]
 
+    if suffixes is None:
+        suffixes = [""] * len(fnames)
     if n_curves is None:
         n_curves = 2 * max(len(fnames), len(suffixes))
     if labels is None:
