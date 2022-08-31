@@ -12,7 +12,7 @@ import numpy as np
 
 from .molecular_hamiltonian import MolecularHamiltonian
 from .qubit_indices import QubitIndices
-from .parameters import ErrorMitigationParameters, MethodIndicesPairs, REVERSE_QUBIT_ORDER
+from .parameters import ErrorMitigationParameters, REVERSE_QUBIT_ORDER, Z2TransformInstructions
 from .general_utils import project_density_matrix, purify_density_matrix, quantum_state_tomography, reverse_qubit_order
 from .helpers import save_to_hdf5, save_data_to_file
 
@@ -24,17 +24,17 @@ class ResponseFunction:
     def __init__(
         self,
         hamiltonian: MolecularHamiltonian,
-        fname: str = 'lih_resp_expt',
+        h5fname: str = 'lih',
         suffix: str = '',
         method: str = 'exact',
         verbose: bool = True,
-        fname_exact: Optional[str] = None
+        h5fname_exact: Optional[str] = None
     ) -> None:
         """Initializes a ``ResponseFunction`` object.
         
         Args:
             hamiltonian: The molecular Hamiltonian.
-            fname: The HDF5 file name.
+            h5fname: The HDF5 file name.
             suffix: The suffix for a specific experimental run.
             method: The method for extracting transition amplitudes.
             verbose: Whether to print out observable values.
@@ -44,32 +44,32 @@ class ResponseFunction:
 
         # Input attributes.
         self.hamiltonian = hamiltonian
-        self.fname = fname
+        self.h5fname = h5fname
         self.suffix = suffix
         self.method = method
         self.verbose = verbose
-        self.fname_exact = fname_exact
+        self.h5fname_exact = h5fname_exact
 
         # Load error mitigation parameters.
         self.mitigation_params = ErrorMitigationParameters()
-        self.mitigation_params.write(fname)
+        self.mitigation_params.write(self.h5fname)
         if "tomo" in method and self.mitigation_params.USE_EXACT_TRACES:
-            assert fname_exact is not None
+            assert h5fname_exact is not None
 
         # Load energies and state vectors from HDF5 file.
-        with h5py.File(self.fname + '.h5', 'r') as h5file:
+        with h5py.File(self.h5fname + '.h5', 'r') as h5file:
             self.energies = {'gs': h5file['gs/energy'][()], 'n': h5file['es/energies'][:]}
             self.state_vectors = {'n': h5file['es/states'][:]}
 
         # Derived attributes.
-        method_indices_pairs = MethodIndicesPairs.get_pairs('')
+        instructions = Z2TransformInstructions.get_instructions(" ")
         self.n_states = {'n': self.state_vectors['n'].shape[1]}
         self.n_spatial_orbitals = len(hamiltonian.active_indices)
         self.n_spin_orbitals = 2 * self.n_spatial_orbitals
         self.orbital_labels = list(product(range(self.n_spatial_orbitals), ['u', 'd']))
-        self.n_system_qubits = self.n_spin_orbitals - method_indices_pairs.n_tapered
+        self.n_system_qubits = self.n_spin_orbitals - instructions.n_tapered
         self.qubit_indices_dict = QubitIndices.get_excited_qubit_indices_dict(
-            self.n_spin_orbitals, method_indices_pairs)
+            self.n_spin_orbitals, instructions)
 
         # Initialize array quantities N and T.
         self.subscripts_diagonal = ['n']
@@ -85,7 +85,7 @@ class ResponseFunction:
 
     def _process_diagonal(self) -> None:
         """Processes diagonal transition amplitudes results."""
-        h5file = h5py.File(self.fname + '.h5', 'r+')
+        h5file = h5py.File(self.h5fname + '.h5', 'r+')
         for i in range(self.n_spin_orbitals):
             m, s = self.orbital_labels[i]
             circuit_label = f'circ{m}{s}'
@@ -146,7 +146,7 @@ class ResponseFunction:
                     save_to_hdf5(h5file, rho_dsetname, density_matrix)
 
                     if self.mitigation_params.USE_EXACT_TRACES:
-                        with h5py.File(self.fname_exact + '.h5', 'r') as h5file_exact:
+                        with h5py.File(self.h5fname_exact + '.h5', 'r') as h5file_exact:
                             trace = h5file_exact[trace_dsetname][()]
 
                     N_element = []
@@ -165,7 +165,7 @@ class ResponseFunction:
 
     def _process_off_diagonal(self) -> None:
         """Processes off-diagonal transition amplitude results."""
-        h5file = h5py.File(self.fname + '.h5', "r+")
+        h5file = h5py.File(self.h5fname + '.h5', "r+")
 
         for i in range(self.n_spin_orbitals):
             m, s = self.orbital_labels[i]
@@ -230,7 +230,7 @@ class ResponseFunction:
                         save_to_hdf5(h5file, rho_dsetname, density_matrix)
 
                         if self.mitigation_params.USE_EXACT_TRACES:
-                            with h5py.File(self.fname_exact + '.h5', 'r') as h5file_exact:
+                            with h5py.File(self.h5fname_exact + '.h5', 'r') as h5file_exact:
                                 trace = h5file_exact[trace_dsetname][()]
                         
                         T_element = []
@@ -272,7 +272,7 @@ class ResponseFunction:
             ).sum((1, 3))
 
         # Save N, N_summed and T to HDF5 file.
-        with h5py.File(self.fname + '.h5', 'r+') as h5file:
+        with h5py.File(self.h5fname + '.h5', 'r+') as h5file:
             for subscript in self.subscripts_diagonal:
                 save_to_hdf5(h5file, f"amp{self.suffix}/N_{subscript}", self.N[subscript])
                 save_to_hdf5(h5file, f"amp{self.suffix}/N_summed_{subscript}", self.N_summed[subscript])
@@ -296,7 +296,7 @@ class ResponseFunction:
             datfname: Name of the data file.
         """
         if datfname is None:
-            datfname = f"{self.fname}{self.suffix}_chi"
+            datfname = f"{self.h5fname}{self.suffix}_chi"
         for i in range(self.n_spatial_orbitals):
             for j in range(self.n_spatial_orbitals):  
                 chis = []

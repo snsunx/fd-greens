@@ -10,7 +10,7 @@ from typing import Mapping, Iterable, Optional, List
 import copy
 import numpy as np
 
-from .parameters import REVERSE_QUBIT_ORDER, MethodIndicesPairs
+from .parameters import REVERSE_QUBIT_ORDER, Z2TransformInstructions
 
 
 class QubitIndices:
@@ -60,12 +60,9 @@ class QubitIndices:
     def expand(self, array: np.ndarray) -> np.ndarray:
         """Expands a 1D or 2D array by the qubit indices."""
         if len(array.shape) == 1:
-            # print("Expand 1d array")
             array_new = np.zeros((2 ** self.n_qubits,), dtype=complex)
-            # print(f'{self.int = }')
             array_new[self.int] = array
         elif len(array.shape) == 2:
-            # print("Expand 2d array")
             array_new = np.zeros((2 ** self.n_qubits, 2 ** self.n_qubits), dtype=complex)
             array_new[np.repeat(self.int, self.n_qubits), self.int * self.n_qubits] = array.flatten()
         else:
@@ -114,10 +111,10 @@ class QubitIndices:
         for i, qubit_index in enumerate(self.system_indices):
             self.system_indices[i] = [q for j, q in enumerate(qubit_index) if j not in tapered_indices]
 
-    def transform(self, method_indices_pairs: MethodIndicesPairs) -> None:
+    def transform(self, instructions: Z2TransformInstructions) -> None:
         """Transforms a ``QubitIndices`` object."""
         method_dict = {"cnot": self._cnot, "swap": self._swap, "taper": self._taper}
-        for method_key, indices in method_indices_pairs:
+        for method_key, indices in instructions:
             method_dict[method_key](*indices)
         self._build()
 
@@ -159,7 +156,7 @@ class QubitIndices:
     def get_eh_qubit_indices_dict(
         n_qubits: int,
         spin: str,
-        method_indices_pairs: MethodIndicesPairs = [],
+        instructions: Z2TransformInstructions = [],
         system_only: bool = False
     ) -> Mapping[str, 'QubitIndices']:
         """Returns the qubit indices of (N±1)-electron states.
@@ -181,7 +178,7 @@ class QubitIndices:
             # Build qubit indices only on system indices.
             for subscript, system_indices in system_indices_dict.items():
                 qubit_indices = QubitIndices(system_indices)
-                qubit_indices.transform(method_indices_pairs)
+                qubit_indices.transform(instructions)
                 qubit_indices_dict[subscript] = qubit_indices
         else:
             # Create dictionaries of ancilla indices.
@@ -193,7 +190,7 @@ class QubitIndices:
             # Build the qubit indices for all six subscripts.
             for subscript, ancilla_indices in ancilla_indices_dict.items():
                 qubit_indices = QubitIndices(copy.deepcopy(system_indices_dict[subscript[0]]), ancilla_indices)
-                qubit_indices.transform(method_indices_pairs)
+                qubit_indices.transform(instructions)
                 qubit_indices_dict[subscript] = qubit_indices
 
         return qubit_indices_dict
@@ -202,7 +199,7 @@ class QubitIndices:
     @staticmethod
     def get_excited_qubit_indices_dict(
         n_qubits: int,
-        method_indices_pairs: MethodIndicesPairs = [],
+        instructions: Z2TransformInstructions = [],
         system_only: bool = False
     ) -> Mapping[str, 'QubitIndices']:
         """Returns the qubit indices of N-electron excited states.
@@ -221,13 +218,13 @@ class QubitIndices:
         if system_only:
             for subscript, system_indices in system_indices_dict.items():
                 qubit_indices = QubitIndices(system_indices)
-                qubit_indices.transform(method_indices_pairs)
+                qubit_indices.transform(instructions)
                 qubit_indices_dict[subscript] = qubit_indices
         else:
             ancilla_indices_dict = {'n': [[1]], 'np': [[1, 0]], 'nm': [[1, 1]]}
             for subscript, ancilla_indices in ancilla_indices_dict.items():
                 qubit_indices = QubitIndices(copy.deepcopy(system_indices_dict[subscript[0]]), ancilla_indices)
-                qubit_indices.transform(method_indices_pairs)
+                qubit_indices.transform(instructions)
                 qubit_indices_dict[subscript] = qubit_indices
 
         return qubit_indices_dict

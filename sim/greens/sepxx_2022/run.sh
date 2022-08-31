@@ -1,22 +1,22 @@
 #!/bin/bash
 
-create_hdf5=false
-generate_data=true
-plot_data=true
+create_hdf5=true
+generate_data=false
+plot_data=false
 
 if [ $create_hdf5 = true ]
 then
     export CONVERT_CCZ_TO_ITOFFOLI=1
     python3 create_hdf5.py nah_greens_exact
-    python3 create_hdf5.py nah_greens_tomo --method tomo
-    python3 create_hdf5.py kh_greens_exact
-    python3 create_hdf5.py kh_greens_tomo --method tomo
+    # python3 create_hdf5.py nah_greens_tomo --method tomo
+    # python3 create_hdf5.py kh_greens_exact
+    # python3 create_hdf5.py kh_greens_tomo --method tomo
 
     export CONVERT_CCZ_TO_ITOFFOLI=0
-    python3 create_hdf5.py nah_greens_exact2q
-    python3 create_hdf5.py nah_greens_tomo2q --method tomo
-    python3 create_hdf5.py kh_greens_exact2q
-    python3 create_hdf5.py kh_greens_tomo2q --method tomo
+    # python3 create_hdf5.py nah_greens_exact2q
+    # python3 create_hdf5.py nah_greens_tomo2q --method tomo
+    # python3 create_hdf5.py kh_greens_exact2q
+    # python3 create_hdf5.py kh_greens_tomo2q --method tomo
 fi
 
 if [ $generate_data = true ]

@@ -8,7 +8,7 @@ import h5py
 import numpy as np
 
 from .molecular_hamiltonian import MolecularHamiltonian
-from .parameters import MethodIndicesPairs
+from .parameters import Z2TransformInstructions
 from .qubit_indices import QubitIndices
 from .helpers import save_to_hdf5
 
@@ -18,23 +18,22 @@ class ExcitedStatesSolver:
     def __init__(
         self,
         hamiltonian: MolecularHamiltonian,
-        fname: str = "lih",
+        h5fname: str = "lih",
     ) -> None:
         """Initializes a ``EHStatesSolver`` object.
         
         Args:
             hamiltonian: The molecular Hamiltonian.
-            fname: The HDF5 file name.
+            h5fname: The HDF5 file name.
         """
         self.hamiltonian = hamiltonian.copy()
-        method_indices_pairs = MethodIndicesPairs.get_pairs('')
-        self.hamiltonian.transform(method_indices_pairs, tapered_state=[1, 1])
-        self.fname = fname
-        self.h5fname = fname + '.h5'
+        instructions = Z2TransformInstructions.get_instructions(' ')
+        self.hamiltonian.transform(instructions, tapered_state=[1, 1])
+        self.h5fname = h5fname
 
         n_qubits = 2 * len(self.hamiltonian.active_indices)
         self.qubit_indices_dict = QubitIndices.get_excited_qubit_indices_dict(
-            n_qubits, method_indices_pairs, system_only=True)
+            n_qubits, instructions, system_only=True)
 
         self.energies = None
         self.state_vectors = None
@@ -53,7 +52,7 @@ class ExcitedStatesSolver:
 
     def _save_data(self):
         """Saves N-electron excited-state energies and states to HDF5 file."""
-        with h5py.File(self.fname + '.h5', 'r+') as h5file:
+        with h5py.File(self.h5fname + '.h5', 'r+') as h5file:
             save_to_hdf5(h5file, "es/energies", self.energies)
             save_to_hdf5(h5file, "es/states", self.state_vectors)
 

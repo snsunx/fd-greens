@@ -25,7 +25,7 @@ class GroundStateSolver:
     def __init__(
         self, hamiltonian: MolecularHamiltonian, 
         qubits: Sequence[cirq.Qid],
-        mode = "greens",
+        calculation_mode = "greens",
         h5fname: str = "lih"
     ) -> None:
         """Initializes a ``GroudStateSolver`` object.
@@ -35,7 +35,7 @@ class GroundStateSolver:
             qubits: The qubits on which the ground state is prepared.
             h5fname: The HDF5 file name.
         """
-        self.spin = "ud" if mode == "greens" else " "
+        self.spin = "ud" if calculation_mode == "greens" else " "
         
         self.hamiltonian = dict()
         for spin in self.spin:
@@ -167,6 +167,8 @@ class GroundStateSolver:
             # qtrl_strings = self.converter.convert_circuit_to_strings(self.ansatz)
             # save_to_hdf5(h5file, f"gs{spin.strip()}/ansatz", json.dumps(qtrl_strings))
             self.converter.save_circuit(h5file, f"gs{spin.strip()}/ansatz", self.ansatz, return_dataset=False)
+
+            # print("!!!!!!!!!!!!!!!!!!!!!!!! Saved data in GS Solver")
 
             
 

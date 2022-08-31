@@ -25,7 +25,7 @@ from .circuit_constructor import CircuitConstructor
 from .general_utils import get_non_z_locations, get_gate_counts, histogram_to_array, quantum_state_tomography
 from .noise_parameters import NoiseParameters
 
-__all__ = ["create_greens_hdf5", "create_resp_hdf5", "create_hdf5_by_depth"]
+__all__ = ["create_greens_hdf5", "create_resp_hdf5", "create_resp_hdf5_by_depth"]
 
 
 def create_greens_hdf5(
@@ -86,9 +86,9 @@ def create_resp_hdf5(
     else:
         hamiltonian = get_alkali_hydride_hamiltonian("K", 3.9)
 
-    initialize_hdf5(h5fname, calculation_mode="greens")
+    initialize_hdf5(h5fname, calculation_mode="resp")
 
-    gs_solver = GroundStateSolver(hamiltonian, qubits, h5fname=h5fname)
+    gs_solver = GroundStateSolver(hamiltonian, qubits, h5fname=h5fname, calculation_mode="resp")
     gs_solver.run()
 
     es_solver = ExcitedStatesSolver(hamiltonian, h5fname=h5fname)
@@ -106,7 +106,7 @@ def create_resp_hdf5(
     obs_solver = ResponseFunction(hamiltonian, h5fname=h5fname, method=method)
     obs_solver.process()
 
-    if method == 'exact':
+    if method == "exact":
         N = obs_solver.N['n']
 
         classical_solver = ClassicalAmplitudesSolver(hamiltonian, verbose=True)
@@ -124,7 +124,7 @@ def create_resp_hdf5(
 
 create_hdf5 = create_resp_hdf5
 
-def create_hdf5_by_depth(
+def create_resp_hdf5_by_depth(
     h5fname: str,
     circuit_name: str,
     noise_fname: Optional[str] = None,

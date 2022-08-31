@@ -8,7 +8,7 @@ from typing import Sequence, Optional, List
 
 import cirq
 
-from .parameters import MethodIndicesPairs
+from .parameters import MethodIndicesPairs, Z2TransformInstructions
 
 class OperatorsBase:
     """Operators base."""
@@ -83,6 +83,10 @@ class SecondQuantizedOperators(OperatorsBase):
             spin: The spin of the second quantized operators. Either ``'u'`` or ``'d'``.
             factor: Multiplication factor of the operators for simpler gate construction.
         """
+        assert spin in ['u', 'd']
+        if spin == 'd':
+            factor = -1.0
+        
         self.qubits = qubits
         self.n_qubits = len(qubits)
         self.n_tapered = 0
@@ -97,7 +101,7 @@ class SecondQuantizedOperators(OperatorsBase):
             self.pauli_strings.append(factor * pauli_string_x)
             self.pauli_strings.append(factor * 1j * pauli_string_y)
 
-    def transform(self, method_indices_pairs: MethodIndicesPairs, tapered_state: Optional[List[int]] = None) -> None:
+    def transform(self, instructions: Z2TransformInstructions, tapered_state: Optional[List[int]] = None) -> None:
         """Transforms the second quantized operators with Z2 symmetries and qubit tapering.
         
         Args:
@@ -106,10 +110,10 @@ class SecondQuantizedOperators(OperatorsBase):
             tapered_state: A sequence of 0 and 1 indicating the states on the tapered qubits.
                 Defaults to 1 on all qubits.
         """
-        self.n_tapered = method_indices_pairs.n_tapered
+        self.n_tapered = instructions.n_tapered
         if tapered_state is None:
             tapered_state = [1] * self.n_tapered
-        OperatorsBase.transform(self, method_indices_pairs, tapered_state=tapered_state)
+        OperatorsBase.transform(self, instructions, tapered_state=tapered_state)
 
 class ChargeOperators(OperatorsBase):
     """Charge operators."""
@@ -133,7 +137,7 @@ class ChargeOperators(OperatorsBase):
             self.pauli_strings.append(pauli_string_i)
             self.pauli_strings.append(pauli_string_z)
 
-    def transform(self, method_indices_pairs: MethodIndicesPairs, tapered_state: Optional[List[int]] = None) -> None:
+    def transform(self, instructions: Z2TransformInstructions, tapered_state: Optional[List[int]] = None) -> None:
         """Transforms the charge operators with Z2 symmetries and qubit tapering.
         
         Args:
@@ -142,7 +146,7 @@ class ChargeOperators(OperatorsBase):
             tapered_state: A sequence of 0 and 1 indicating the states on the tapered qubits.
                 Defaults to 1 on all qubits.
         """
-        self.n_tapered = method_indices_pairs.n_tapered
+        self.n_tapered = instructions.n_tapered
         if tapered_state is None:
             tapered_state = [1] * self.n_tapered
-        OperatorsBase.transform(self, method_indices_pairs, tapered_state=tapered_state)
+        OperatorsBase.transform(self, instructions, tapered_state=tapered_state)
