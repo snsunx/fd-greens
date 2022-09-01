@@ -14,7 +14,6 @@ from .molecular_hamiltonian import get_alkali_hydride_hamiltonian
 from .greens_function import GreensFunction
 from .response_function import ResponseFunction
 from .general_utils import get_fidelity, quantum_state_tomography
-from .parameters import HARTREE_TO_EV
 
 __all__ = [
     "generate_greens_function", 
@@ -136,57 +135,57 @@ def generate_fidelity_vs_depth(h5fname: str, dirname: str = "data/traj", datfnam
 def generate_fidelity_matrix(
     h5fname_exact: str,
     h5fname_expt: str,
-    subscript: Optional[str] = None,
-    spin: Optional[str] = None,
     dirname: str = "data/mat",
-    datfname: Optional[str] = None
+    datfname: Optional[str] = None,
+    calculation_mode: Optional[str] = None
 ) -> None:
     """Generates the fidelity matrix data file.
     
     Args:
         h5fname_exact: HDF5 file name of the exact data.
         h5fname_expt: HDF5 file name of the experimental data.
-        subscript: The subscript of the quantities, ``'e'``, ``'h'`` for Green's function
-            and ``'n'`` for response function.
-        spin: The spin state of the quantity, ``'u'`` or ``'d'`` for Green's function
-            and ``''`` for response function.
-        dirname: Directory name of the data file.
+        dirname: Name of the data file directory.
         datfname: The data file name.
+        calculation_mode: Mode of the calculation.
     """
     print(f"> Generating fidelity matrix of {h5fname_expt}")
-    if subscript is None:
-        subscript = "e" if "greens" in h5fname_expt else "n"
-    if spin is None:
-        spin = "u" if "greens" in h5fname_expt else ""
+    if calculation_mode is None:
+        # Infer calculation mode from the file name.
+        calculation_mode = h5fname_expt.split("_")[1]
+    assert calculation_mode in ["greens", "resp"]
     if datfname is None:
-        datfname = "fid_mat_" + '_'.join(h5fname_expt.split('_')[1:])
+        datfname = "fid_mat_" + h5fname_expt
     if not os.path.exists(dirname):
         os.makedirs(dirname)
     
     h5file_exact = h5py.File(h5fname_exact + ".h5", "r")
     h5file_expt = h5py.File(h5fname_expt + ".h5", "r")
 
-    dim = 2 if spin in ['u', 'd'] else 4
-    fidelity_matrix = np.zeros((dim, dim))
+    subscripts  = "eh" if calculation_mode == "greens" else "n"
+    spins = "ud" if calculation_mode == "greens" else " "
+    dim = 2 if calculation_mode == "greens" else 4
 
-    for i in range(dim):
-        state_exact = h5file_exact[f"psi/{subscript}{i}{spin}"][:]
-        state_expt = h5file_expt[f"rho/{subscript}{i}{spin}"][:]
-        
-        fidelity_matrix[i, i] = get_fidelity(state_exact, state_expt)
+    for s in subscripts:
+        for spin in spins:
+            fidelity_matrix = np.zeros((dim, dim))
 
-        for j in range(i + 1, dim):
-            # p is filled on the upper triangle.
-            state_exact = h5file_exact[f"psi/{subscript}p{i}{j}{spin}"][:]
-            state_expt = h5file_expt[f"rho/{subscript}p{i}{j}{spin}"][:]
-            fidelity_matrix[i, j] = get_fidelity(state_exact, state_expt)
+            for i in range(dim):
+                state_exact = h5file_exact[f"psi/{s}{i}{spin.strip()}"][:]
+                state_expt = h5file_expt[f"rho/{s}{i}{spin.strip()}"][:]
+                fidelity_matrix[i, i] = get_fidelity(state_exact, state_expt)
 
-            # m is filled on the lower triangle.
-            state_exact = h5file_exact[f"psi/{subscript}m{i}{j}{spin}"][:]
-            state_expt = h5file_expt[f"rho/{subscript}m{i}{j}{spin}"][:]
-            fidelity_matrix[j, i] = get_fidelity(state_exact, state_expt)
+                for j in range(i + 1, dim):
+                    # p values is filled on the upper triangle.
+                    state_exact = h5file_exact[f"psi/{s}p{i}{j}{spin.strip()}"][:]
+                    state_expt = h5file_expt[f"rho/{s}p{i}{j}{spin.strip()}"][:]
+                    fidelity_matrix[i, j] = get_fidelity(state_exact, state_expt)
 
-    np.savetxt(f"{dirname}/{datfname}.dat", fidelity_matrix)
+                    # m values is filled on the lower triangle.
+                    state_exact = h5file_exact[f"psi/{s}m{i}{j}{spin.strip()}"][:]
+                    state_expt = h5file_expt[f"rho/{s}m{i}{j}{spin.strip()}"][:]
+                    fidelity_matrix[j, i] = get_fidelity(state_exact, state_expt)
+
+            np.savetxt(f"{dirname}/{datfname}{s}{spin.strip()}.dat", fidelity_matrix)
 
     h5file_exact.close()
     h5file_expt.close()
@@ -194,43 +193,43 @@ def generate_fidelity_matrix(
 
 def generate_trace_matrix(
     h5fname: str,
-    subscript: Optional[str] = None,
-    spin: Optional[str] = None,
     dirname: str = "data/mat",
     datfname: Optional[str] = None,
+    calculation_mode: Optional[str] = None
 ) -> None:
     """Genreates the ancilla bitstring probability matrix data file.
     
     Args:
         h5fname: HDF5 file name of the data.
-        subscript: The subscript of the quantities, ``'e'``, ``'h'`` for Green's function
-            and ``'n'`` for response function.
-        spin: The spin state of the quantity, ``'u'`` or ``'d'`` for Green's function
-            and ``''`` for response function.
-        dirname: Directory name of the data file.
+        dirname: Name of the data file directory.
         datfname: The data file name.
+        calculation_mode: The calculation mode.
     """
     print(f"> Generating trace matrix of {h5fname}")
-    if subscript is None:
-        subscript = "e" if "greens" in h5fname else "n"
-    if spin is None:
-        spin = "u" if "greens" in h5fname else ""
+    if calculation_mode is None:
+        # Infer calculation mode from the file name.
+        calculation_mode = h5fname.split("_")[1]
+    assert calculation_mode in ["greens", "resp"]
     if datfname is None:
-        datfname = "trace_mat_" + '_'.join(h5fname.split('_')[1:])
+        datfname = "trace_mat_" + h5fname
     if not os.path.exists(dirname):
         os.makedirs(dirname)
 
+    subscripts = "eh" if calculation_mode == "greens" else "n"
+    spins = "ud" if calculation_mode == "greens" else " "
+    dim = 2 if calculation_mode == "greens" else 4
+
     h5file = h5py.File(h5fname + ".h5", "r")
 
-    dim = 2 if spin in ['u', 'd'] else 4
-
-    trace_matrix = np.zeros((dim, dim))
-    for i in range(dim):
-        trace_matrix[i, i] = h5file[f"trace/{subscript}{i}{spin}"][()]
-        for j in range(i + 1, dim):
-            trace_matrix[i, j] = h5file[f"trace/{subscript}p{i}{j}{spin}"][()]
-            trace_matrix[j, i] = h5file[f"trace/{subscript}m{i}{j}{spin}"][()]
-    
-    np.savetxt(f"{dirname}/{datfname}.dat", trace_matrix)
+    for s in subscripts:
+        for spin in spins:
+            trace_matrix = np.zeros((dim, dim))
+            for i in range(dim):
+                trace_matrix[i, i] = h5file[f"trace{spin.strip()}/{s}{i}"][()]
+                for j in range(i + 1, dim):
+                    trace_matrix[i, j] = h5file[f"trace{spin.strip()}/{s}p{i}{j}"][()]
+                    trace_matrix[j, i] = h5file[f"trace{spin.strip()}/{s}m{i}{j}"][()]
+        
+            np.savetxt(f"{dirname}/{datfname}{s}{spin.strip()}.dat", trace_matrix)
 
     h5file.close()

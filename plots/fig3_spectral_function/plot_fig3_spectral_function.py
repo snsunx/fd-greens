@@ -1,5 +1,5 @@
-import sys
 import numpy as np
+from scipy.signal import find_peaks
 
 import matplotlib.pyplot as plt
 
@@ -42,9 +42,18 @@ def plot_A(
 
     omegas, As = np.loadtxt(datfname_exact + ".dat").T
     ax.plot(omegas, As, color='k', label="Exact")
+    peaks, _ = find_peaks(As)
+    amps_exact = As[peaks]
+    
 
     omegas, As = np.loadtxt(datfname_expt + ".dat").T
     ax.plot(omegas, As, ls='--', lw=3, color='xkcd:medium blue', marker='x', markevery=0.12, label="Expt.")
+    peaks, _ = find_peaks(As)
+    amps_expt = As[peaks]
+
+    print("amps_exact", amps_exact)
+    print("amps_expt", amps_expt)
+    print("percentage difference", (amps_expt - amps_exact) / amps_exact)
 
     ax.text(0.92, 0.9, r"\textbf{" + panel_name + "}", transform=ax.transAxes)
 

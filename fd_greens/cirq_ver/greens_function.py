@@ -110,9 +110,9 @@ class GreensFunction:
                 state_vectors_exact = self.state_vectors[s + spin]
 
                 # Define dataset names for convenience.
-                trace_dsetname = f"trace{spin}{self.suffix}/{s}{m}{spin}"
-                psi_dsetname = f"psi{spin}{self.suffix}/{s}{m}{spin}"
-                rho_dsetname = f"rho{spin}{self.suffix}/{s}{m}{spin}"
+                trace_dsetname = f"trace{spin}{self.suffix}/{s}{m}"
+                psi_dsetname = f"psi{spin}{self.suffix}/{s}{m}"
+                rho_dsetname = f"rho{spin}{self.suffix}/{s}{m}"
 
                 if self.method == 'exact':
                     state_vector = h5file[f'{circuit_label}/transpiled'].attrs[f'psi{self.suffix}']
@@ -190,9 +190,9 @@ class GreensFunction:
                     qubit_indices = self.qubit_indices[spin][s]
                     state_vectors_exact = self.state_vectors[s[0] + spin]
 
-                    trace_dsetname = f"trace{spin}{self.suffix}/{s}{m}{n}{spin}"
-                    psi_dsetname = f"psi{spin}{self.suffix}/{s}{m}{n}{spin}"
-                    rho_dsetname = f"rho{spin}{self.suffix}/{s}{m}{n}{spin}"
+                    trace_dsetname = f"trace{spin}{self.suffix}/{s}{m}{n}"
+                    psi_dsetname = f"psi{spin}{self.suffix}/{s}{m}{n}"
+                    rho_dsetname = f"rho{spin}{self.suffix}/{s}{m}{n}"
 
                     if self.method == 'exact':
                         state_vector = h5file[f'{circuit_label}/transpiled'].attrs[f"psi{self.suffix}"]
