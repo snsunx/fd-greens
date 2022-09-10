@@ -55,7 +55,7 @@ def generate_greens_function(
 
 
 def generate_response_function(
-    h5fnames: Sequence[str],
+    h5fname: Sequence[str],
     omegas: Optional[Sequence[float]] = None,
     eta: float = 1.5
 ) -> None:
@@ -66,27 +66,30 @@ def generate_response_function(
         omegas: The frequencies at which the response function is evaluated.
         eta: The broadening factor.
     """
-    if "nah" in h5fnames[0]:
-        hamiltonian = get_alkali_hydride_hamiltonian("Na", 1.7)
-        fname_exact = "nah_resp_exact"
-    elif "kh" in h5fnames[0]:
+    if "nah" in h5fname:
+        hamiltonian = get_alkali_hydride_hamiltonian("Na", 3.7)
+        h5fname_exact = "nah_resp_exact"
+    elif "kh" in h5fname:
         hamiltonian = get_alkali_hydride_hamiltonian("K", 3.9)
-        fname_exact = "kh_resp_exact"
+        h5fname_exact = "kh_resp_exact"
     else:
         raise ValueError("The input HDF5 file names must contain \"nah\" or \"kh\".")
     if omegas is None:
         omegas = np.arange(-32, 32, 0.1)
 
-    for fname in h5fnames:
-        if "exact" in fname:
-            resp = ResponseFunction(hamiltonian, fname=fname, method="exact")
-        else:
-            resp = ResponseFunction(hamiltonian, fname=fname, method="tomo", fname_exact=fname_exact)
-        resp.process()
-        resp.response_function(omegas, eta)
+    if "exact" in h5fname:
+        resp = ResponseFunction(hamiltonian, h5fname=h5fname, method="exact")
+    else:
+        resp = ResponseFunction(hamiltonian, h5fname=h5fname, method="tomo", h5fname_exact=h5fname_exact)
+    resp.process()
+    resp.response_function(omegas, eta)
 
 
-def generate_fidelity_vs_depth(h5fname: str, dirname: str = "data/traj", datfname: Optional[str] = None) -> None:
+def generate_fidelity_vs_depth(
+    h5fname: str,
+    dirname: str = "data/traj",
+    datfname: Optional[str] = None
+) -> None:
     """Generates fidelity vs depth on a single circuit.
     
     Args:
@@ -162,7 +165,7 @@ def generate_fidelity_matrix(
     h5file_expt = h5py.File(h5fname_expt + ".h5", "r")
 
     subscripts  = "eh" if calculation_mode == "greens" else "n"
-    spins = "ud" if calculation_mode == "greens" else " "
+    spins = "u" if calculation_mode == "greens" else " " # XXX: Should be changed to "ud"
     dim = 2 if calculation_mode == "greens" else 4
 
     for s in subscripts:
@@ -170,19 +173,21 @@ def generate_fidelity_matrix(
             fidelity_matrix = np.zeros((dim, dim))
 
             for i in range(dim):
-                state_exact = h5file_exact[f"psi/{s}{i}{spin.strip()}"][:]
-                state_expt = h5file_expt[f"rho/{s}{i}{spin.strip()}"][:]
+                print(h5file_exact)
+                print(f"!!!!! psi{spin.strip()}/{s}{i}")
+                state_exact = h5file_exact[f"psi{spin.strip()}/{s}{i}"][:]
+                state_expt = h5file_expt[f"rho{spin.strip()}/{s}{i}"][:]
                 fidelity_matrix[i, i] = get_fidelity(state_exact, state_expt)
 
                 for j in range(i + 1, dim):
                     # p values is filled on the upper triangle.
-                    state_exact = h5file_exact[f"psi/{s}p{i}{j}{spin.strip()}"][:]
-                    state_expt = h5file_expt[f"rho/{s}p{i}{j}{spin.strip()}"][:]
+                    state_exact = h5file_exact[f"psi{spin.strip()}/{s}p{i}{j}"][:]
+                    state_expt = h5file_expt[f"rho{spin.strip()}/{s}p{i}{j}"][:]
                     fidelity_matrix[i, j] = get_fidelity(state_exact, state_expt)
 
                     # m values is filled on the lower triangle.
-                    state_exact = h5file_exact[f"psi/{s}m{i}{j}{spin.strip()}"][:]
-                    state_expt = h5file_expt[f"rho/{s}m{i}{j}{spin.strip()}"][:]
+                    state_exact = h5file_exact[f"psi{spin.strip()}/{s}m{i}{j}"][:]
+                    state_expt = h5file_expt[f"rho{spin.strip()}/{s}m{i}{j}"][:]
                     fidelity_matrix[j, i] = get_fidelity(state_exact, state_expt)
 
             np.savetxt(f"{dirname}/{datfname}{s}{spin.strip()}.dat", fidelity_matrix)
@@ -216,7 +221,7 @@ def generate_trace_matrix(
         os.makedirs(dirname)
 
     subscripts = "eh" if calculation_mode == "greens" else "n"
-    spins = "ud" if calculation_mode == "greens" else " "
+    spins = "u" if calculation_mode == "greens" else " " # XXX: Should be changed to "ud"
     dim = 2 if calculation_mode == "greens" else 4
 
     h5file = h5py.File(h5fname + ".h5", "r")

@@ -83,9 +83,9 @@ def plot_chi_itoffoli_vs_cz(
         ax.legend(loc='center', bbox_to_anchor=(0.25, 0.25, 0.0, 0.0), frameon=False, fontsize=22)
     
     if panel_name == "A":
-        ax.text(0.45, 1.04, "RC", transform=ax.transAxes)
+        ax.text(0.5, 1.04, "Without RC", ha='center', transform=ax.transAxes)
     elif panel_name == "B":
-        ax.text(0.45, 1.04, "No RC", transform=ax.transAxes)
+        ax.text(0.5, 1.04, "With RC", ha='center', transform=ax.transAxes)
 
     handles1, labels1 = ax.get_legend_handles_labels()
 

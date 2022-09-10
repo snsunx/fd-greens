@@ -3,15 +3,16 @@
 Transpilation (:mod:`fd_greens.transpilation`)
 ==============================================
 """
-
+import os
 from typing import Optional, Tuple
 import warnings
 
 import numpy as np
 import cirq
+from cirq.contrib.qasm_import import circuit_from_qasm
 
 from .general_utils import unitary_equal
-from .parameters import CircuitConstructionParameters, CHECK_CIRCUITS
+from .parameters import CircuitConstructionParameters, CHECK_CIRCUITS, SYNTHESIZE_WITH_BQSKIT
 
 class C0C0iXGate(cirq.Gate):
     """The Berkeley iToffoli gate."""
@@ -172,27 +173,67 @@ def convert_ccz_to_cz(circuit: cirq.Circuit) -> cirq.Circuit:
         for op in moment:
             if op.gate.__str__() == "CCZ":
                 qubits = op.qubits
+                if SYNTHESIZE_WITH_BQSKIT:
+                    print("> Synthesize with BQskit")
+                    qasm_str = """OPENQASM 2.0;
+include "qelib1.inc";
+qreg q[3];
+u3(-1.5704498526160793, 2.347165319631653, 9.105617284690338) q[0];
+u3(-1.570791974014007, 2.8931923819384826, 2.032905420195417) q[1];
+u3(-9.111957770878731e-23, 1.166243864141404, 6.337282727827317) q[2];
+cz q[0], q[1];
+u3(4.699826538690047, 5.047405432461273, -2.3468188332590545) q[0];
+u3(1.570449852636876, 2.2775508022122035, 4.960788279773917) q[1];
+cz q[1], q[2];
+u3(1.5707963267946075, 3.734252996837955, 5.5889932745478506) q[1];
+u3(3.141592653589793, 1.122570935823188, 1.8114154066967805) q[2];
+cz q[0], q[1];
+u3(1.5707963267950922, 6.435940946679477, 4.377373500646986) q[0];
+u3(2.3561944301608424, 0.24436817897049987, 5.690871465430451) q[1];
+cz q[0], q[1];
+u3(1.5707963267948968, 4.435313033435187, 3.7742351774873515) q[0];
+u3(5.497787170600082, 4.527145873531501, -0.24387815184137246) q[1];
+cz q[1], q[2];
+u3(3.926990818484793, 5.395333768572616, 4.897709483745008) q[1];
+u3(6.283185307179586, 4.314978661687423, 2.4999895140649824) q[2];
+cz q[0], q[1];
+u3(4.7123882928914655, 1.049587584556453, 1.8353098312956908) q[0];
+u3(4.712388980970318, 2.296970791437661, 0.8879062662019785) q[1];
+cz q[1], q[2];
+u3(3.1290206591070877, -4.833690399469691, 3.9472290073267575) q[1];
+u3(3.141592653589793, 2.8968112698778037, 1.918019666775366) q[2];
+cz q[0], q[1];
+u3(4.7123342571079325, 4.246151519879995, 3.6632913842920525) q[0];
+u3(7.853982321467928, 14.460456011155228, -1.4884780258587462) q[1];
+                    """
+                    # with open("../../../ccz_circuit.txt", "r") as f:
+                    #     qasm_str = f.read()
+                    ccz_circuit = circuit_from_qasm(qasm_str)
+                    qubit_map = {cirq.NamedQubit(f"q_{i}"): qubits[i] for i in range(3)}
+                    ccz_circuit_new = ccz_circuit.transform_qubits(qubit_map)
+                    # {cirq.NamedQubit(f"q_{i}"): qubits[i] for i in range(3)})
+                    circuit_new += ccz_circuit_new
+                    print(circuit_new.all_qubits())
+                else:
+                    circuit_new.append(cirq.H(qubits[2]))
+                    circuit_new.append(cirq.CZ(qubits[1], qubits[2]))
+                    circuit_new.append(HTdaggerHGate(qubits[2]))
+                    circuit_new.append(cirq.SWAP(qubits[1], qubits[2]))
 
-                circuit_new.append(cirq.H(qubits[2]))
-                circuit_new.append(cirq.CZ(qubits[1], qubits[2]))
-                circuit_new.append(HTdaggerHGate(qubits[2]))
-                circuit_new.append(cirq.SWAP(qubits[1], qubits[2]))
+                    circuit_new.append(cirq.CZ(qubits[0], qubits[1]))
+                    circuit_new.append(HTHGate(qubits[1]))
+                    circuit_new.append(cirq.CZ(qubits[1], qubits[2]))
+                    circuit_new.append(HTdaggerHGate(qubits[1]))
+                    circuit_new.append(cirq.CZ(qubits[0], qubits[1]))
 
-                circuit_new.append(cirq.CZ(qubits[0], qubits[1]))
-                circuit_new.append(HTHGate(qubits[1]))
-                circuit_new.append(cirq.CZ(qubits[1], qubits[2]))
-                circuit_new.append(HTdaggerHGate(qubits[1]))
-                circuit_new.append(cirq.CZ(qubits[0], qubits[1]))
-
-                circuit_new.append(cirq.SWAP(qubits[1], qubits[2]))
-                circuit_new.append(HTGate(qubits[1]))
-                circuit_new.append(THGate(qubits[2]))
-                circuit_new.append(cirq.CZ(qubits[0], qubits[1]))
-                circuit_new.append(cirq.T(qubits[0]))
-                circuit_new.append(HTdaggerHGate(qubits[1]))
-                circuit_new.append(cirq.CZ(qubits[0], qubits[1]))
-                circuit_new.append(cirq.H(qubits[1]))
-
+                    circuit_new.append(cirq.SWAP(qubits[1], qubits[2]))
+                    circuit_new.append(HTGate(qubits[1]))
+                    circuit_new.append(THGate(qubits[2]))
+                    circuit_new.append(cirq.CZ(qubits[0], qubits[1]))
+                    circuit_new.append(cirq.T(qubits[0]))
+                    circuit_new.append(HTdaggerHGate(qubits[1]))
+                    circuit_new.append(cirq.CZ(qubits[0], qubits[1]))
+                    circuit_new.append(cirq.H(qubits[1]))
             else:
                 circuit_new.append(op)
 

@@ -165,35 +165,34 @@ def process_bitstring_counts(
     else:
         return array
 
-def copy_simulation_data(fname_expt: str, fname_exact: str, calculation_type: str = "greens") -> None:
+def copy_simulation_data(h5fname_expt: str, h5fname_exact: str, calculation_mode: str = "greens") -> None:
     """Copy ground- and excited-states simulation data to experimental HDF5 file.
     
     Args:
         fname_expt: The experimental HDF5 file name.
         fname_exact: The simulation HDF5 file name.
-        calculation_type: The calculation type. Either ``'greens'`` or ``'resp'``.
+        calculation_mode: The calculation type. Either ``'greens'`` or ``'resp'``.
     """
-    assert calculation_type in ['greens', 'resp']
+    assert calculation_mode in ["greens", "resp"]
 
-    h5file_exact = h5py.File(fname_exact + '.h5', 'r')
-    h5file_expt = h5py.File(fname_expt + '.h5', 'r+')
+    h5file_exact = h5py.File(h5fname_exact + '.h5', 'r')
+    h5file_expt = h5py.File(h5fname_expt + '.h5', 'r+')
 
-    # Copy ground state energy over.
-    if 'gs' in h5file_expt:
-        del h5file_expt['gs']
-    h5file_expt['gs/energy'] = h5file_exact['gs/energy'][()]
+    subscripts = "eh" if calculation_mode == "greens" else "n"
+    spins = "u" if calculation_mode == "greens" else " " # XXX
+
+    for spin in spins:
+        if f"gs{spin.strip()}" in h5file_expt:
+            del h5file_expt[f"gs{spin.strip()}"]
+        h5file_expt[f"gs{spin.strip()}/energy"] = h5file_exact[f"gs{spin.strip()}/energy"][()]
     
     # Copy excited state energy and states over.
-    if 'es' in h5file_expt:
-        del h5file_expt['es']    
-    if calculation_type== 'greens':
-        h5file_expt['es/energies_e'] = h5file_exact['es/energies_e'][:]
-        h5file_expt['es/energies_h'] = h5file_exact['es/energies_h'][:]
-        h5file_expt['es/states_e'] = h5file_exact['es/states_e'][:]
-        h5file_expt['es/states_h'] = h5file_exact['es/states_h'][:]
-    else:
-        h5file_expt['es/energies'] = h5file_exact['es/energies'][:]
-        h5file_expt['es/states'] = h5file_exact['es/states'][:]
+    if spin in spins:
+        if f"es{spin}" in h5file_expt:
+            del h5file_expt[f"es{spin}"]
+        for s in subscripts:
+            h5file_expt[f"es{spin.strip()}/energies_{s}"] = h5file_exact[f"es{spin.strip()}/energies_{s}"][:]
+            h5file_expt[f"es{spin.strip()}/states_{s}"] = h5file_exact[f"es{spin.strip()}/states_{s}"][:]
 
     h5file_expt.close()
     h5file_exact.close()
@@ -242,9 +241,9 @@ def process_all_bitstring_counts(
     h5fname_expt: str,
     h5fname_exact: str,
     pklfname: str,
-    # pkldsetname: str = 'full',
+    pkldsetname: Optional[str]= "full",
     npyfname: Optional[str] = None,
-    calculation_type: str = "greens",
+    calculation_mode: str = "greens",
     counts_name: str = "counts",
     counts_miti_name: str = "counts_miti",
     zero_padding_location: str = "end", 
@@ -267,20 +266,20 @@ def process_all_bitstring_counts(
         normalize_counts: Whether to normalize bitstring counts.
     """
     assert zero_padding_location in ["front", "end"]
-    assert calculation_type in ["greens", "resp"]
+    assert calculation_mode in ["greens", "resp"]
 
     print("> Start processing results.")
-
     if not os.path.exists(h5fname_expt + ".h5"):
-        if calculation_type == "greens":
-            initialize_hdf5(h5fname_expt, spin="ud", mode=calculation_type)
+        if calculation_mode == "greens":
+            initialize_hdf5(h5fname_expt, calculation_mode=calculation_mode)
         else:
-            initialize_hdf5(h5fname_expt, mode=calculation_type)
+            initialize_hdf5(h5fname_expt, calculation_mode=calculation_mode)
 
-    # Load circuits, circuit labels and bitstring counts from files.
+    # Load labels and bitstring counts from files.
     with open(pklfname + ".pkl", "rb") as f:
         pkl_data = pickle.load(f)
-    # circuits = pkl_data[pkldsetname]['circs']
+    if pkldsetname is not None:
+        pkl_data = pkl_data[pkldsetname]
     labels = pkl_data["labels"]
     results = pkl_data["results"]
 
@@ -293,19 +292,23 @@ def process_all_bitstring_counts(
             base = 3
     else:
         confusion_matrix = None
+        base = 2
 
     # Initialize HDF5 files to store processed bitstring counts.
-    copy_simulation_data(h5fname_expt, h5fname_exact, calculation_type=calculation_type)
-    h5file = h5py.File(h5fname_expt + '.h5', 'r+')
+    copy_simulation_data(h5fname_expt, h5fname_exact, calculation_mode=calculation_mode)
+    h5file = h5py.File(h5fname_expt + ".h5", "r+")
 
     for dsetname, histogram in zip(labels, results):
         print(f"> Processing circuit {dsetname}.")
 
+        # Load the dataset from the HDF5 file.
         if dsetname in h5file:
             del h5file[dsetname]
         dset = h5file.create_dataset(dsetname, shape=())
+
+        # Save the raw bitstring counts to HDF5 file.
         n_qubits = len(list(histogram.keys())[0])
-        counts_array = histogram_to_array(histogram, n_qubits=n_qubits, base=2)
+        counts_array = histogram_to_array(histogram, n_qubits=n_qubits, base=base)
         dset.attrs[counts_name] = counts_array
 
         # subspace_indices = get_subspace_indices(
@@ -333,7 +336,7 @@ def process_all_bitstring_counts(
         # Slice and normalize (unmitigated) bitstring counts.
         # counts_array = counts_array[subspace_indices]
         
-        # Save the processed bitstring counts to HDF5 file.
+        # Save the RO-mitigated bitstring counts to HDF5 file.
         if confusion_matrix is not None:
             counts_array_miti = np.linalg.lstsq(confusion_matrix, counts_array)[0]
             dset.attrs[counts_miti_name] = counts_array_miti
@@ -351,7 +354,7 @@ def process_all_bitstring_counts_by_depth(
 ) -> None:
 
     if not os.path.exists(h5fname_expt + ".h5"):
-        initialize_hdf5(h5fname_expt, mode="resp")
+        initialize_hdf5(h5fname_expt, calculation_mode="resp")
 
     # Load circuits, circuit labels and bitstring counts from .pkl file.
     with open(pklfname + ".pkl", "rb") as f:

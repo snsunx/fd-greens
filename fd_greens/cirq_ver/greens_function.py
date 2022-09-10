@@ -69,7 +69,9 @@ class GreensFunction:
         self.qubit_indices = dict()
         h5file = h5py.File(h5fname + ".h5", "r")
 
-        for spin in ["u", "d"]:
+        for spin in ["u"]: #, "d"]:
+            print(h5file)
+            print(h5file.keys())
             self.energies["gs" + spin] = h5file[f"gs{spin}/energy"][()]
             # XXX: Same for "u" and "d".
             instructions = Z2TransformInstructions.get_instructions(spin)
@@ -79,6 +81,7 @@ class GreensFunction:
                 2 * self.n_spatial_orbitals, spin, instructions)
 
             for s in self.subscripts_diagonal:
+                print("h5file =", h5file)
                 self.energies[s + spin] = h5file[f"es{spin}/energies_{s}"][:]
                 self.state_vectors[s + spin] = h5file[f"es{spin}/states_{s}"][:]
                 self.n_states[s + spin] = self.state_vectors[s + spin].shape[1]
@@ -92,7 +95,7 @@ class GreensFunction:
             (self.n_spatial_orbitals, self.n_spatial_orbitals, self.n_states["eu"]), dtype=complex)
         self.B = {"u": dict(), "d": dict()}
         self.D = {"u": dict(), "d": dict()}
-        for spin in ["u", "d"]:
+        for spin in ["u"]: #, "d"]:
             for subscript in self.subscripts_diagonal:
                 self.B[spin][subscript] = B_zeros_array.copy()
             for subscript in self.subscripts_off_diagonal:
@@ -113,6 +116,7 @@ class GreensFunction:
                 trace_dsetname = f"trace{spin}{self.suffix}/{s}{m}"
                 psi_dsetname = f"psi{spin}{self.suffix}/{s}{m}"
                 rho_dsetname = f"rho{spin}{self.suffix}/{s}{m}"
+                print(f"{rho_dsetname = }")
 
                 if self.method == 'exact':
                     state_vector = h5file[f'{circuit_label}/transpiled'].attrs[f'psi{self.suffix}']
@@ -215,7 +219,7 @@ class GreensFunction:
                                 ancilla_index=int(qubit_indices.ancilla.str[0], 2))
 
                             # Optionally project or purify the density matrix.
-                            trace = np.trace(density_matrix)
+                            trace = np.trace(density_matrix).real
                             density_matrix /= trace
                             if self.mitigation_params.PROJECT_DENSITY_MATRICES:
                                 density_matrix = project_density_matrix(density_matrix)
@@ -272,7 +276,7 @@ class GreensFunction:
     def process(self):
         """Processes both diagonal and off-diagonal results and saves data to file."""        
         h5file = h5py.File(self.h5fname + ".h5", "r+")
-        for spin in ["u", "d"]:
+        for spin in ["u"]: # , "d"]:
             self._process_diagonal_results(spin)
             self._process_off_diagonal_results(spin)
             for s, array in self.B[spin].items():
@@ -310,7 +314,7 @@ class GreensFunction:
         """
         G_e = np.zeros((self.n_spatial_orbitals, self.n_spatial_orbitals), dtype=complex)
         G_h = np.zeros((self.n_spatial_orbitals, self.n_spatial_orbitals), dtype=complex)
-        for spin in ["u", "d"]:
+        for spin in ["u"]: # , "d"]:
             for m in range(self.n_spatial_orbitals):
                 for n in range(self.n_spatial_orbitals):
                     G_e[m, n] += np.sum(self.B[spin]["e"][m, n]
