@@ -151,39 +151,39 @@ def create_resp_hdf5_by_depth(
         noise_params = NoiseParameters.from_file(noise_fname)
         simulator = cirq.DensityMatrixSimulator()
 
+    # print(noise_params.noise_channels)
+
     qubits = cirq.LineQubit.range(4)
     converter = CircuitStringConverter(qubits)
 
     circuit = converter.load_circuit(h5fname, circuit_name + '/transpiled')
-    non_z_locations = get_non_z_locations(circuit) + [None]
+    non_z_locations = get_non_z_locations(circuit)
+    # last_non_z_location = non_z_locations[-1]
+    # non_z_locations = non_z_locations[:-1] + [None]
     # print("non_z_locations =", non_z_locations)
     
     h5file = h5py.File(h5fname_new, 'w')
     for i in non_z_locations:
         print("i = ", i)
+
         # Get the index string, which consists of the current depth and the nq_gates letter.
-        if i is not None:
-            circuit_component = circuit[i]
-        else:
-            circuit_component = circuit[-1]
+        circuit_component = circuit[i]
         for n in [1, 2, 3]:
             if get_gate_counts(circuit_component, num_qubits=n) > 0:
-                if i is not None:
-                    index_string = str(i) + int_to_letter[n]
-                else:
-                    index_string = "last" + int_to_letter[n]
+                index_string = str(i) + int_to_letter[n]
         
         # Save transpiled and tomography circuits to file.
-        circuit_i = circuit[:i]
-        if i is not None:
-            converter.save_circuit(h5file, f"circ{i}/transpiled", circuit_i)
+        if i != non_z_locations[-1]:
+            circuit_current = circuit[:i + 1] # i + 1 is for including the first i elements in front
+            # converter.save_circuit(h5file, f"circ{i}/transpiled", circuit_current)
         else:
-            converter.save_circuit(h5file, f"circlast/transpiled", circuit_i)
+            circuit_current = circuit[:]
+        converter.save_circuit(h5file, f"circ{i}/transpiled", circuit_current)
         tomography_circuits = CircuitConstructor.build_tomography_circuits(
-            circuit_i, tomographed_qubits=qubits)
+            circuit_current, tomographed_qubits=qubits)
 
         # Obtain the state vector and save to file.
-        state_vector = cirq.final_state_vector(circuit_i)
+        state_vector = cirq.final_state_vector(circuit_current)
         h5file[f"psi/{index_string}"] = state_vector
         # print(f"{i = }, {state_vector.shape = }")
         # print("state_vector\n", state_vector)

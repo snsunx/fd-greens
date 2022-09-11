@@ -55,7 +55,7 @@ def generate_greens_function(
 
 
 def generate_response_function(
-    h5fname: Sequence[str],
+    h5fname: str,
     omegas: Optional[Sequence[float]] = None,
     eta: float = 1.5
 ) -> None:
@@ -109,14 +109,16 @@ def generate_fidelity_vs_depth(
     nq_gates_dict = dict()
     fidelity_dict = dict()
     for key in h5file["psi"].keys():
-        if key[:-1] == "last":
-            key_int = 999
-        else:
-            key_int = int(key[:-1])
+        key_int = int(key[:-1])
+        # if key[:-1] == "last":
+        #     key_int = 999
+        # else:
+        #     key_int = int(key[:-1])
+        
         if True: # key[:-1] != "1" and key[:-1] != "3":
-            print(f"key = {key}")
+            # print(f"key = {key}")
             state_vector = h5file["psi"][key]
-            print(f"{state_vector.shape =}")
+            # print(f"{state_vector.shape =}")
             density_matrix = quantum_state_tomography(h5file, 4, circuit_label=f"circ{key[:-1]}", suffix='')
             # if key == "1s":
             #     print(key, '\n', density_matrix)
@@ -126,7 +128,7 @@ def generate_fidelity_vs_depth(
 
             fidelity = get_fidelity(state_vector, density_matrix)
             fidelity_dict[key_int] = fidelity
-            print(f"fidelity = {fidelity}")
+            print(f"key = {key}, fidelity = {fidelity}")
 
     with open(f"{dirname}/{datfname}.dat", "w") as f:
         for key in sorted(fidelity_dict.keys()):
@@ -173,8 +175,8 @@ def generate_fidelity_matrix(
             fidelity_matrix = np.zeros((dim, dim))
 
             for i in range(dim):
-                print(h5file_exact)
-                print(f"!!!!! psi{spin.strip()}/{s}{i}")
+                # print(h5file_exact)
+                # print(f"!!!!! psi{spin.strip()}/{s}{i}")
                 state_exact = h5file_exact[f"psi{spin.strip()}/{s}{i}"][:]
                 state_expt = h5file_expt[f"rho{spin.strip()}/{s}{i}"][:]
                 fidelity_matrix[i, i] = get_fidelity(state_exact, state_expt)
@@ -189,8 +191,9 @@ def generate_fidelity_matrix(
                     state_exact = h5file_exact[f"psi{spin.strip()}/{s}m{i}{j}"][:]
                     state_expt = h5file_expt[f"rho{spin.strip()}/{s}m{i}{j}"][:]
                     fidelity_matrix[j, i] = get_fidelity(state_exact, state_expt)
-
-            np.savetxt(f"{dirname}/{datfname}{s}{spin.strip()}.dat", fidelity_matrix)
+            
+            if s == 'n': s_ = ''
+            np.savetxt(f"{dirname}/{datfname}{s_}{spin.strip()}.dat", fidelity_matrix)
 
     h5file_exact.close()
     h5file_expt.close()
@@ -235,6 +238,7 @@ def generate_trace_matrix(
                     trace_matrix[i, j] = h5file[f"trace{spin.strip()}/{s}p{i}{j}"][()]
                     trace_matrix[j, i] = h5file[f"trace{spin.strip()}/{s}m{i}{j}"][()]
         
-            np.savetxt(f"{dirname}/{datfname}{s}{spin.strip()}.dat", trace_matrix)
+            if s == 'n': s_ = ''
+            np.savetxt(f"{dirname}/{datfname}{s_}{spin.strip()}.dat", trace_matrix)
 
     h5file.close()

@@ -87,7 +87,7 @@ def initialize_hdf5(
         group_names += [f"amp{spin_.strip()}", f"psi{spin_.strip()}", f"rho{spin_.strip()}"]
         group_names += get_circuit_labels(n_orbitals, calculation_mode=calculation_mode)
     group_names += ["params/circ", "params/miti"]
-    print("group_names =", sorted(group_names))
+    # print("group_names =", sorted(group_names))
     # group_names = [f'gs{spin.strip()}', f'es{spin.strip()}', 'amp', 'psi', 'rho', 'params/circ', 'params/miti'] + circuit_labels
 
     for group_name in group_names:

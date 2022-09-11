@@ -15,7 +15,7 @@ fi
 if [ $generate_data = true ]
 then
     python3 generate_data.py nah_resp_circ0u1d
-    python3 generate_data.py nah_resp_circ0u1d2q
+    python3 generate_data.py nah_resp_circ0u1d2qGG
     # python3 generate_data.py kh_resp_circ0u1d_expt
     # python3 generate_data.py kh_resp_circ0u1d2q_expt
 fi
