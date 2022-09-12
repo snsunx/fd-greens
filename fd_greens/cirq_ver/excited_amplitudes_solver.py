@@ -96,7 +96,11 @@ class ExcitedAmplitudesSolver:
                 self.charge_operators[2 * i], self.charge_operators[2 * i + 1])
 
             # Transpile the circuit and save to HDF5 file.
-            circuit = transpile_into_berkeley_gates(circuit, circuit_params=self.circuit_params)
+            circuit = transpile_into_berkeley_gates(
+                circuit,
+                circuit_label=circuit_label,
+                circuit_params=self.circuit_params
+            )
             circuit = self.converter.adapt_to_hardware(circuit)
             self.circuits[circuit_label] = circuit
             dset_transpiled = self.converter.save_circuit(h5file, f"{circuit_label}/transpiled", circuit)
@@ -143,7 +147,11 @@ class ExcitedAmplitudesSolver:
                     self.charge_operators[2 * j], self.charge_operators[2 * j + 1])
 
                 # Transpile the circuit and save to HDF5 file.
-                circuit = transpile_into_berkeley_gates(circuit, circuit_params=self.circuit_params)
+                circuit = transpile_into_berkeley_gates(
+                    circuit,
+                    circuit_label=circuit_label,
+                    circuit_params=self.circuit_params
+                )
                 circuit = self.converter.adapt_to_hardware(circuit)
                 self.circuits[circuit_label] = circuit
                 dset_transpiled = self.converter.save_circuit(h5file, f"{circuit_label}/transpiled", circuit)

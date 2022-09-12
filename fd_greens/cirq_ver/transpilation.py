@@ -136,9 +136,13 @@ def convert_ccz_to_c0c0ix(circuit: cirq.Circuit, spin: str, constrain_cs_csd: bo
                 ]
 
                 # Long-range CS dagger gate absent an equivalent iSWAP gate.
-                cs_ops = [cirq.CZPowGate(exponent=-0.5)(*qubits_csd),
-                          cirq.CZ(*qubits_swap),
-                          cirq.SWAP(*qubits_swap)]
+                cs_ops = [
+                    # cirq.CZPowGate(exponent=-0.5)(*qubits_csd),
+                    cirq.CZPowGate(exponent=0.5)(*qubits_csd),
+                    cirq.CZ(*qubits_csd),
+                    cirq.CZ(*qubits_swap),
+                    cirq.SWAP(*qubits_swap)
+                ]
 
                 # For easy circuit optimization, the extra gates are placed alternately before or after CiZC.
                 if count % 2 == (spin == 'u'):
@@ -309,6 +313,7 @@ def transpile_1q_gates(circuit: cirq.Circuit) -> cirq.Circuit:
 def transpile_into_berkeley_gates(
     circuit: cirq.Circuit,
     spin: str = 'd',
+    circuit_label: str = 'circ',
     circuit_params: Optional[CircuitConstructionParameters] = None
 ) -> cirq.Circuit:
     """Transpiles a circuit into native gates on the Berkeley device.
@@ -333,7 +338,10 @@ def transpile_into_berkeley_gates(
     # Three-qubit gate transpilation.
     if circuit_params.CONVERT_CCZ_TO_ITOFFOLI:
         circuit_new = convert_ccz_to_itoffoli(
-            circuit_new, spin, constrain_cs_csd=circuit_params.CONSTRAIN_CS_CSD)
+            circuit_new, 
+            spin,
+            constrain_cs_csd=circuit_params.CONSTRAIN_CS_CSD
+        )
     else:
         circuit_new = convert_ccz_to_cz(circuit_new)
     cirq.MergeInteractions(allow_partial_czs=True).optimize_circuit(circuit_new)

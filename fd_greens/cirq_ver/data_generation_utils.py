@@ -51,7 +51,7 @@ def generate_greens_function(
         greens = GreensFunction(hamiltonian, h5fname=h5fname, method="tomo")
     greens.process()
     greens.spectral_function(omegas, eta)
-    greens.self_energy(omegas, eta)
+    # greens.self_energy(omegas, eta)
 
 
 def generate_response_function(
@@ -175,8 +175,6 @@ def generate_fidelity_matrix(
             fidelity_matrix = np.zeros((dim, dim))
 
             for i in range(dim):
-                # print(h5file_exact)
-                # print(f"!!!!! psi{spin.strip()}/{s}{i}")
                 state_exact = h5file_exact[f"psi{spin.strip()}/{s}{i}"][:]
                 state_expt = h5file_expt[f"rho{spin.strip()}/{s}{i}"][:]
                 fidelity_matrix[i, i] = get_fidelity(state_exact, state_expt)
@@ -192,7 +190,7 @@ def generate_fidelity_matrix(
                     state_expt = h5file_expt[f"rho{spin.strip()}/{s}m{i}{j}"][:]
                     fidelity_matrix[j, i] = get_fidelity(state_exact, state_expt)
             
-            if s == 'n': s_ = ''
+            s_ = '' if s == 'n' else s
             np.savetxt(f"{dirname}/{datfname}{s_}{spin.strip()}.dat", fidelity_matrix)
 
     h5file_exact.close()
@@ -238,7 +236,7 @@ def generate_trace_matrix(
                     trace_matrix[i, j] = h5file[f"trace{spin.strip()}/{s}p{i}{j}"][()]
                     trace_matrix[j, i] = h5file[f"trace{spin.strip()}/{s}m{i}{j}"][()]
         
-            if s == 'n': s_ = ''
+            s_ = '' if s == 'n' else s
             np.savetxt(f"{dirname}/{datfname}{s_}{spin.strip()}.dat", trace_matrix)
 
     h5file.close()

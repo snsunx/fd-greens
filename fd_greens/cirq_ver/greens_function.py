@@ -278,7 +278,7 @@ class GreensFunction:
         h5file = h5py.File(self.h5fname + ".h5", "r+")
         for spin in ["u"]: # , "d"]:
             self._process_diagonal_results(spin)
-            self._process_off_diagonal_results(spin)
+            # self._process_off_diagonal_results(spin)
             for s, array in self.B[spin].items():
                 save_to_hdf5(h5file, f"amp{spin}{self.suffix}/B_{s}", array)
             for s, array in self.D[spin].items():

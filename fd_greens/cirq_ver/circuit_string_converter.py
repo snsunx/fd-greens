@@ -228,7 +228,6 @@ class CircuitStringConverter:
             circuit_new: The new circuit after gate adaptation.
         """
         # print("Before adapting to hardware")
-        # print_circuit(circuit)
         circuit_new = cirq.Circuit()
 
         i_moment = 0
@@ -254,7 +253,6 @@ class CircuitStringConverter:
                 else:
                     moment_new.append(operation)
 
-            # print(f"{moment_new = }")
             if self.parameters.SPLIT_SIMULTANEOUS_CZS:
                 is_cz_pow_gates = [isinstance(op.gate, cirq.CZPowGate) for op in moment_new]
                 if is_cz_pow_gates == [True, True]:

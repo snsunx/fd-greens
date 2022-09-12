@@ -188,5 +188,5 @@ class EHAmplitudesSolver:
             ansatz = self.converter.load_circuit(self.h5fname, f"gs{spin}/ansatz")
             self.constructor = CircuitConstructor(ansatz, self.qubits)
             self._run_diagonal_circuits(spin)
-            self._run_off_diagonal_circuits(spin)
+            # self._run_off_diagonal_circuits(spin)
         print("> Finish (N±1)-electron amplitudes solver.")

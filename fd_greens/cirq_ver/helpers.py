@@ -48,8 +48,9 @@ def get_circuit_labels(n_orbitals: int, calculation_mode: str = "greens") -> Lis
     for spin_ in spin:
         for i in range(len(orbital_labels)):
             circuit_labels.append(f'circ{orbital_labels[i]}{spin_.strip()}')
-            for j in range(i + 1, len(orbital_labels)):
-                circuit_labels.append(f'circ{orbital_labels[i]}{orbital_labels[j]}{spin_.strip()}')
+            if calculation_mode == "resp":
+                for j in range(i + 1, len(orbital_labels)):
+                    circuit_labels.append(f'circ{orbital_labels[i]}{orbital_labels[j]}{spin_.strip()}')
     
     return circuit_labels
 
