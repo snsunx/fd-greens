@@ -158,9 +158,6 @@ def create_resp_hdf5_by_depth(
 
     circuit = converter.load_circuit(h5fname, circuit_name + '/transpiled')
     non_z_locations = get_non_z_locations(circuit)
-    # last_non_z_location = non_z_locations[-1]
-    # non_z_locations = non_z_locations[:-1] + [None]
-    # print("non_z_locations =", non_z_locations)
     
     h5file = h5py.File(h5fname_new, 'w')
     for i in non_z_locations:
@@ -175,9 +172,8 @@ def create_resp_hdf5_by_depth(
         # Save transpiled and tomography circuits to file.
         if i != non_z_locations[-1]:
             circuit_current = circuit[:i + 1] # i + 1 is for including the first i elements in front
-            # converter.save_circuit(h5file, f"circ{i}/transpiled", circuit_current)
         else:
-            circuit_current = circuit[:]
+            circuit_current = circuit[:] # For the last location, include all gate layers
         converter.save_circuit(h5file, f"circ{i}/transpiled", circuit_current)
         tomography_circuits = CircuitConstructor.build_tomography_circuits(
             circuit_current, tomographed_qubits=qubits)
@@ -185,8 +181,6 @@ def create_resp_hdf5_by_depth(
         # Obtain the state vector and save to file.
         state_vector = cirq.final_state_vector(circuit_current)
         h5file[f"psi/{index_string}"] = state_vector
-        # print(f"{i = }, {state_vector.shape = }")
-        # print("state_vector\n", state_vector)
         
         for tomo_label, tomo_circuit in tomography_circuits.items():
             converter.save_circuit(h5file, f"circ{i}/{tomo_label}", tomo_circuit, return_dataset=True)
