@@ -1,15 +1,15 @@
 #!/bin/bash
 
-create_hdf5=false
-generate_data=true
+create_hdf5=true
+generate_data=false
 plot_data=false
 
 if [ $create_hdf5 = true ]
 then
     # export CONVERT_CCZ_TO_ITOFFOLI=1
-    # python3 create_hdf5.py nah_resp_exact    
+    python3 create_hdf5.py nah_resp_exact    
     # python3 create_hdf5.py nah_resp_tomo --method tomo
-    # python3 create_hdf5.py kh_resp_exact
+    python3 create_hdf5.py kh_resp_exact
     # python3 create_hdf5.py kh_resp_tomo --method tomo
 
     # export CONVERT_CCZ_TO_ITOFFOLI=0
@@ -18,12 +18,12 @@ then
     # python3 create_hdf5.py kh_resp_exact2q
     # python3 create_hdf5.py kh_resp_tomo2q --method tomo
 
-    for h5fname in nah_resp_exact nah_resp_exact2q kh_resp_exact kh_resp_exact2q
-    do
-        echo "Generating fidelity vs depth circuits for ${h5fname}"
-        python3 create_hdf5.py $h5fname --circuit circ0u1u
-        python3 create_hdf5.py $h5fname --circuit circ0u1u --noise ../../../expt/params/gate_fidelities_0708
-    done
+    # for h5fname in nah_resp_exact nah_resp_exact2q kh_resp_exact kh_resp_exact2q
+    # do
+    #     echo "Generating fidelity vs depth circuits for ${h5fname}"
+    #     python3 create_hdf5.py $h5fname --circuit circ0u1u
+    #     python3 create_hdf5.py $h5fname --circuit circ0u1u --noise ../../../expt/params/gate_fidelities_0708
+    # done
 
     # python3 create_hdf5.py nah_resp_exact --circuit circ0u1u
     # python3 create_hdf5.py nah_resp_exact --circuit circ0u1u --noise ../../../expt/params/gate_fidelities_0708

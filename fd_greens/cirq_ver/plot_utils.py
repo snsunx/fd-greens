@@ -68,6 +68,8 @@ def plot_spectral_function(
         text: Whether to add labels by legend, annotation or none.
         n_curves: Number of curves.
     """
+    print("> Plotting spectral function")
+
     assert text in [None, "legend", "annotation"]
 
     if suffixes is None:
@@ -125,6 +127,8 @@ def plot_trace_self_energy(
         text: Whether to add labels by legend, annotation or none.
         n_curves: Number of curves.
     """
+    print("> Plotting trace of self-energy")
+
     assert text in [None, "legend", "annotation"]
 
     if suffixes is None:
@@ -205,6 +209,8 @@ def plot_response_function(
         text: Whether to add labels by legend, annotation or none.
         n_curves: Number of curves.
     """
+    print("> Plotting response function")
+
     if suffixes is None:
         suffixes = [""] * len(fnames)
     if n_curves is None:
@@ -284,6 +290,7 @@ def plot_bitstring_counts(
         counts_name_expt: Name fo the experimental bitstring counts.
         width: Width of bars in the bar chart.
     """
+    print("> Plotting bitstring counts")
     # print(fname_sim)
     # h5file_sim = h5py.File(fname_sim + '.h5', 'r')
     # h5file_expt = h5py.File(fname_expt + '.h5', 'r')
@@ -423,6 +430,8 @@ def plot_fidelity_vs_depth(
         figdirname: Name of the directory of the figures.
         figfname: The figure name.
     """
+    print("> Plotting fidelity vs depth")
+
     if not os.path.exists(figdirname):
         os.makedirs(figdirname)
     if figfname is None:
@@ -464,6 +473,8 @@ def display_fidelities(
         figdirname: The figure directory name.
         figfname: The figure file name.
     """
+    print("> Plotting fidelity matrix")
+
     if not os.path.exists(figdirname):
         os.makedirs(figdirname)
     if figfname is None:
@@ -502,6 +513,8 @@ def display_traces(
         dirname: The directory name.
         figname: The figure name.
     """
+    print("> Plotting trace matrix")
+
     if not os.path.exists(figdirname):
         os.makedirs(figdirname)
     if figfname is None:

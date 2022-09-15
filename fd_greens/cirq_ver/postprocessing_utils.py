@@ -241,7 +241,7 @@ def process_all_bitstring_counts(
     h5fname_expt: str,
     h5fname_exact: str,
     pklfname: str,
-    pkldsetname: Optional[str]= "full",
+    pkldsetname: Optional[str]= None,
     npyfname: Optional[str] = None,
     calculation_mode: str = "greens",
     counts_name: str = "counts",

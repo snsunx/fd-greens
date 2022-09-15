@@ -58,8 +58,8 @@ class ResponseFunction:
 
         # Load energies and state vectors from HDF5 file.
         with h5py.File(self.h5fname + '.h5', 'r') as h5file:
-            self.energies = {'gs': h5file['gs/energy'][()], 'n': h5file['es/energies'][:]}
-            self.state_vectors = {'n': h5file['es/states'][:]}
+            self.energies = {'gs': h5file['gs/energy'][()], 'n': h5file['es/energies_n'][:]}
+            self.state_vectors = {'n': h5file['es/states_n'][:]}
 
         # Derived attributes.
         instructions = Z2TransformInstructions.get_instructions(" ")

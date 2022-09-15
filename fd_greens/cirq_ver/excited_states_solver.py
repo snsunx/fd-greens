@@ -53,8 +53,8 @@ class ExcitedStatesSolver:
     def _save_data(self):
         """Saves N-electron excited-state energies and states to HDF5 file."""
         with h5py.File(self.h5fname + '.h5', 'r+') as h5file:
-            save_to_hdf5(h5file, "es/energies", self.energies)
-            save_to_hdf5(h5file, "es/states", self.state_vectors)
+            save_to_hdf5(h5file, "es/energies_n", self.energies)
+            save_to_hdf5(h5file, "es/states_n", self.state_vectors)
 
     def run(self) -> None:
         """Runs the excited state calculation."""
