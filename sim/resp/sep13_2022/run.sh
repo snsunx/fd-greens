@@ -7,9 +7,9 @@ plot_data=false
 if [ $create_hdf5 = true ]
 then
     # export CONVERT_CCZ_TO_ITOFFOLI=1
-    python3 create_hdf5.py nah_resp_exact    
+    # python3 create_hdf5.py nah_resp_exact    
     # python3 create_hdf5.py nah_resp_tomo --method tomo
-    python3 create_hdf5.py kh_resp_exact
+    # python3 create_hdf5.py kh_resp_exact
     # python3 create_hdf5.py kh_resp_tomo --method tomo
 
     # export CONVERT_CCZ_TO_ITOFFOLI=0
@@ -26,16 +26,16 @@ then
     # done
 
     # python3 create_hdf5.py nah_resp_exact --circuit circ0u1u
-    # python3 create_hdf5.py nah_resp_exact --circuit circ0u1u --noise ../../../expt/params/gate_fidelities_0708
+    python3 create_hdf5.py nah_resp_exact --circuit circ0u1u --noise ../../../expt/params/gate_fidelities_0814
     
     # python3 create_hdf5.py nah_resp_exact2q --circuit circ0u1u
-    # python3 create_hdf5.py nah_resp_exact2q --circuit circ0u1u --noise ../../../expt/params/gate_fidelities_0708
+    python3 create_hdf5.py nah_resp_exact2q --circuit circ0u1u --noise ../../../expt/params/gate_fidelities_0814
 
     # python3 create_hdf5.py kh_resp_exact --circuit circ0u1u
     # python3 create_hdf5.py kh_resp_exact --circuit circ0u1u --noise ../../../expt/params/gate_fidelities_0708
 
     # python3 create_hdf5.py kh_resp_exact2q --circuit circ0u1u
-    # python3 create_hdf5.py kh_resp_exact2q --circuit circ0u1u --noise ../../../expt/params/gate_fidelities_0708
+    # python3 create_hdf5.py kh_resp_exact2q --circuit circ0u1u --noise ../../../expt/params/gate_fidelities_0814
 fi
 
 if [ $generate_data = true ]
@@ -101,6 +101,6 @@ then
     #     python3 plot_data.py --trace-matrix trace_mat_kh_resp_exact $datfname
     # done
 
-    python3 plot_data.py --fidelity fid_vs_depth_nah_resp_circ0u1u_n0708 fid_vs_depth_nah_resp_circ0u1u2q_n0708
-    python3 plot_data.py --fidelity fid_vs_depth_kh_resp_circ0u1u_n0708  fid_vs_depth_kh_resp_circ0u1u2q_n0708
+    python3 plot_data.py --fidelity fid_vs_depth_nah_resp_circ0u1u_n0814 fid_vs_depth_nah_resp_circ0u1u2q_n0814
+    # python3 plot_data.py --fidelity fid_vs_depth_kh_resp_circ0u1u_n0708  fid_vs_depth_kh_resp_circ0u1u2q_n0708
 fi

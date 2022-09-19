@@ -14,6 +14,7 @@ from .molecular_hamiltonian import get_alkali_hydride_hamiltonian
 from .greens_function import GreensFunction
 from .response_function import ResponseFunction
 from .general_utils import get_fidelity, quantum_state_tomography
+from .parameters import HARTREE_TO_EV
 
 __all__ = [
     "generate_greens_function", 
@@ -26,7 +27,7 @@ __all__ = [
 def generate_greens_function(
     h5fname: str,
     omegas: Optional[Sequence[float]] = None,
-    eta: float = 0.75
+    eta: float = 0.75 # 0.02 * HARTREE_TO_EV
 ) -> None:
     """Generates Green's function data files.
 

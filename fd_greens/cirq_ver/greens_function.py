@@ -69,7 +69,7 @@ class GreensFunction:
         self.qubit_indices = dict()
         h5file = h5py.File(h5fname + ".h5", "r")
 
-        for spin in ["u"]: #, "d"]:
+        for spin in ["u", "d"]:
             print(h5file)
             print(h5file.keys())
             self.energies["gs" + spin] = h5file[f"gs{spin}/energy"][()]
@@ -95,7 +95,7 @@ class GreensFunction:
             (self.n_spatial_orbitals, self.n_spatial_orbitals, self.n_states["eu"]), dtype=complex)
         self.B = {"u": dict(), "d": dict()}
         self.D = {"u": dict(), "d": dict()}
-        for spin in ["u"]: #, "d"]:
+        for spin in ["u", "d"]:
             for subscript in self.subscripts_diagonal:
                 self.B[spin][subscript] = B_zeros_array.copy()
             for subscript in self.subscripts_off_diagonal:
@@ -276,7 +276,7 @@ class GreensFunction:
     def process(self):
         """Processes both diagonal and off-diagonal results and saves data to file."""        
         h5file = h5py.File(self.h5fname + ".h5", "r+")
-        for spin in ["u"]: # , "d"]:
+        for spin in ["u", "d"]:
             self._process_diagonal_results(spin)
             # self._process_off_diagonal_results(spin)
             for s, array in self.B[spin].items():
@@ -314,7 +314,7 @@ class GreensFunction:
         """
         G_e = np.zeros((self.n_spatial_orbitals, self.n_spatial_orbitals), dtype=complex)
         G_h = np.zeros((self.n_spatial_orbitals, self.n_spatial_orbitals), dtype=complex)
-        for spin in ["u"]: # , "d"]:
+        for spin in ["u", "d"]:
             for m in range(self.n_spatial_orbitals):
                 for n in range(self.n_spatial_orbitals):
                     G_e[m, n] += np.sum(self.B[spin]["e"][m, n]

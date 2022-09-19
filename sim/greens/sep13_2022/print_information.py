@@ -24,7 +24,7 @@ def print_parameters(h5fname: str) -> None:
             print(f'{key} = {val}')
 
 def print_circuit_information(h5fname: str) -> None:
-    circuit_labels =  ["circ0u", "circ0d", "circ1u", "circ1d", "circ01u"]
+    circuit_labels =  ["circ0u", "circ0d", "circ1u", "circ1d"]
     with h5py.File(h5fname + '.h5', 'r') as h5file:
         for key in circuit_labels:
             print('=' * 15 + ' ' + key + ' ' + '=' * 15) 

@@ -179,7 +179,7 @@ def copy_simulation_data(h5fname_expt: str, h5fname_exact: str, calculation_mode
     h5file_expt = h5py.File(h5fname_expt + '.h5', 'r+')
 
     subscripts = "eh" if calculation_mode == "greens" else "n"
-    spins = "u" if calculation_mode == "greens" else " " # XXX
+    spins = "ud" if calculation_mode == "greens" else " "
 
     for spin in spins:
         if f"gs{spin.strip()}" in h5file_expt:
