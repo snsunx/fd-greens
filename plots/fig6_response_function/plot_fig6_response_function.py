@@ -1,6 +1,7 @@
-import numpy as np
 from typing import Optional
 
+import numpy as np
+from scipy.signal import find_peaks
 import matplotlib.pyplot as plt
 
 plt.rcParams.update({
@@ -17,7 +18,7 @@ plt.rcParams.update({
     'figure.subplot.wspace': 0.28,
     'lines.linewidth': 3,
     'lines.markersize': 11,
-    'lines.markeredgewidth': 2,
+    'lines.markeredgewidth': 3,
 })
 
 
@@ -42,27 +43,50 @@ def plot_chi_itoffoli_vs_cz(
 
     omegas, reals, imags = np.loadtxt(datfname_exact + ".dat").T
     obs = reals if use_real_part else imags
+    peaks, _ = find_peaks(obs, height=0.01)
+    amps_exact = obs[peaks]
     ax.plot(omegas, obs, color='k', label="Exact")
 
     if datfname_pur is not None:
         omegas, reals, imags = np.loadtxt(datfname_pur + ".dat").T
         obs = reals if use_real_part else imags
-        ax.plot(omegas, obs, ls='--', marker='x', markevery=0.15, color='xkcd:medium blue', label="iToffoli")
+        print('len(obs) = ', len(obs))
+        peaks_itof, _ = find_peaks(obs, height=0.01)
+        amps_itof = obs[peaks_itof]
+        ax.plot(omegas, obs, ls='--', marker='+', ms=plt.rcParams['lines.markersize'] + 2, markevery=0.12, color='xkcd:medium blue', label="iToffoli")
 
     if datfname_2q_pur is not None:
         omegas, reals, imags = np.loadtxt(datfname_2q_pur + ".dat").T
         obs = reals if use_real_part else imags
-        ax.plot(omegas, obs, ls='--', marker='x', markevery=0.15, color='xkcd:pinkish', label="CZ")
+        peaks_cz, _ = find_peaks(obs, height=0.01)
+        amps_cz = obs[peaks_cz]
+        ax.plot(omegas, obs, ls='--', marker='x', markevery=0.12, color='xkcd:pinkish', label="CZ")
 
     if datfname_pur_rc is not None:
         omegas, reals, imags = np.loadtxt(datfname_pur_rc + ".dat").T
         obs = reals if use_real_part else imags
-        ax.plot(omegas, obs, ls='--', marker='x', markevery=0.12, color='xkcd:medium blue', label="iToffoli")
+        peaks_itof, _ = find_peaks(obs, height=0.01)
+        amps_itof = obs[peaks_itof]
+        ax.plot(omegas, obs, ls='--', marker='+', ms=plt.rcParams['lines.markersize'] + 2, markevery=0.12, color='xkcd:medium blue', label="iToffoli")
 
     if datfname_2q_pur_rc is not None:
         omegas, reals, imags = np.loadtxt(datfname_2q_pur_rc + ".dat").T
         obs = reals if use_real_part else imags
+        peaks_cz, _ = find_peaks(obs, height=0.01)
+        amps_cz = obs[peaks_cz]
         ax.plot(omegas, obs, ls='--', marker='x', markevery=0.12, color='xkcd:pinkish', label="CZ")
+
+    try:
+        print("peaks_itof      ", peaks_itof)
+        print("peaks_cz        ", peaks_cz)
+        print("amps_itof      ", amps_itof)
+        print("amps_cz        ", amps_cz)
+        percentage_itof = (amps_itof - amps_exact) / amps_exact * 100
+        percentage_cz = (amps_cz - amps_exact) / amps_exact * 100
+        print("percentage itof", np.array_str(percentage_itof, precision=2), "%")
+        print("percentage cz  ", np.array_str(percentage_cz, precision=2), "%")
+    except:
+        pass
 
     ax.text(0.92, 0.9, r"\textbf{" + panel_name + "}", transform=ax.transAxes)
 
@@ -87,70 +111,6 @@ def plot_chi_itoffoli_vs_cz(
         ax.text(0.5, 1.04, "With RC", ha='center', transform=ax.transAxes)
 
     handles1, labels1 = ax.get_legend_handles_labels()
-
-
-
-def plot_chi_purified_vs_trace_corr(
-    ax: plt.Axes,
-    datfname_exact: str,
-    datfname_pur: Optional[str] = None,
-    datfname_trace: Optional[str] = None,
-    datfname_pur_rc: Optional[str] = None,
-    datfname_trace_rc: Optional[str] = None,
-    use_real_part: bool = False,
-    include_legend: bool = True,
-    include_xlabel: bool = True,
-    include_ylabel: bool = True,
-    panel_name: str = '(a)',
-    component: str ='00', 
-) -> None:    
-    """Plots the response function by comparing purified and trace corrected results."""
-    global handles2, labels2
-
-    component = datfname_exact[-2:]
-    print("component =", component)
-    
-    omegas, reals, imags = np.loadtxt(datfname_exact + ".dat").T
-    obs = reals if use_real_part else imags
-    ax.plot(omegas, obs, color='k', label="Exact")
-
-    if datfname_pur is not None:
-        omegas, reals, imags = np.loadtxt(datfname_pur + ".dat").T
-        obs = reals if use_real_part else imags
-        ax.plot(omegas, obs, ls='--', marker='+', markevery=0.15, color='xkcd:medium blue', label="Purified w/o RC")
-
-    if datfname_trace is not None:
-        omegas, reals, imags = np.loadtxt(datfname_trace + ".dat").T
-        obs = reals if use_real_part else imags
-        ax.plot(omegas, obs, ls='--', marker='+', markevery=0.15, color='xkcd:grass green', label="Trace-corrected\nw/o RC")
-
-    if datfname_pur_rc is not None:
-        omegas, reals, imags = np.loadtxt(datfname_pur_rc + ".dat").T
-        obs = reals if use_real_part else imags
-        ax.plot(omegas, obs, ls='--', marker='x', markevery=0.12, color='xkcd:medium blue', label="Purified w/ RC")
-
-    if datfname_trace_rc is not None:
-        omegas, reals, imags = np.loadtxt(datfname_trace_rc + ".dat").T
-        obs = reals if use_real_part else imags
-        ax.plot(omegas, obs, ls='--', marker='x', markevery=0.12, color='xkcd:grass green', label="Trace-corrected\nw/ RC")
-
-    ax.text(0.92, 0.9, r"\textbf{" + panel_name + "}", transform=ax.transAxes)
-
-    if include_xlabel:
-        ax.set_xlabel("$\omega$ (eV)")
-    if panel_name == "E":
-        ax.set_yticks([-0.2, -0.1, 0.0, 0.1, 0.2])
-    else:
-        ax.set_yticks([-0.1, 0.0, 0.1])
-    if include_ylabel:
-        prefix = "Re" if use_real_part else "Im"
-        ylabel_string = prefix + " $\chi_{" + datfname_exact[-2:] + "}$ (eV$^{-1}$)"
-        ax.set_ylabel(ylabel_string)
-
-    # if include_legend:
-    #     ax.legend(loc='center', bbox_to_anchor=(0.75, 0.25, 0.0, 0.0), frameon=False, fontsize=19)
-    
-    handles2, labels2 = ax.get_legend_handles_labels()
 
 def place_legend() -> None:
     global fig, handles1, labels1, handles2, labels2
@@ -177,25 +137,25 @@ def main():
 
     fig, axes = plt.subplots(2, 2, figsize=(13, 12))
 
-    plot_chi_itoffoli_vs_cz(
-        axes[0, 0],
-        f'../../expt/resp/sep13_2022_{mol_name}/data/obs/{mol_name}_resp_exact_chi00',
-        datfname_pur=f'../../expt/resp/sep13_2022_{mol_name}/data/obs/{mol_name}_resp_tomo_pur_chi00',
-        datfname_2q_pur=f'../../expt/resp/sep13_2022_{mol_name}/data/obs/{mol_name}_resp_tomo2q_pur_chi00',
-        use_real_part=False,
-        panel_name="A",
-        include_legend=True
-    )
+    # plot_chi_itoffoli_vs_cz(
+    #     axes[0, 0],
+    #     f'../../expt/resp/sep13_2022_{mol_name}/data/obs/{mol_name}_resp_exact_chi00',
+    #     datfname_pur=f'../../expt/resp/sep13_2022_{mol_name}/data/obs/{mol_name}_resp_tomo_pur_chi00',
+    #     datfname_2q_pur=f'../../expt/resp/sep13_2022_{mol_name}/data/obs/{mol_name}_resp_tomo2q_pur_chi00',
+    #     use_real_part=False,
+    #     panel_name="A",
+    #     include_legend=True
+    # )
 
-    plot_chi_itoffoli_vs_cz(
-        axes[0, 1],
-        f'../../expt/resp/sep13_2022_{mol_name}/data/obs/{mol_name}_resp_exact_chi00',
-        datfname_pur_rc=f'../../expt/resp/sep13_2022_{mol_name}/data/obs/{mol_name}_resp_tomo_rc_pur_chi00',
-        datfname_2q_pur_rc=f'../../expt/resp/sep13_2022_{mol_name}/data/obs/{mol_name}_resp_tomo2q_rc_pur_chi00',
-        use_real_part=False,
-        panel_name="B",
-        # include_ylabel=False
-    )
+    # plot_chi_itoffoli_vs_cz(
+    #     axes[0, 1],
+    #     f'../../expt/resp/sep13_2022_{mol_name}/data/obs/{mol_name}_resp_exact_chi00',
+    #     datfname_pur_rc=f'../../expt/resp/sep13_2022_{mol_name}/data/obs/{mol_name}_resp_tomo_rc_pur_chi00',
+    #     datfname_2q_pur_rc=f'../../expt/resp/sep13_2022_{mol_name}/data/obs/{mol_name}_resp_tomo2q_rc_pur_chi00',
+    #     use_real_part=False,
+    #     panel_name="B",
+    #     # include_ylabel=False
+    # )
 
     plot_chi_itoffoli_vs_cz(
         axes[1, 0],
@@ -216,31 +176,15 @@ def main():
         # include_ylabel=False
     )
 
-    # plot_chi_purified_vs_trace_corr(
-    #     axes[2, 0],
-    #     f'../../expt/resp/sep13_2022_{mol_name}/data/obs/{mol_name}_resp_exact_chi01',
-    #     datfname_pur=f'../../expt/resp/sep13_2022_{mol_name}/data/obs/{mol_name}_resp_tomo_pur_chi01',
-    #     datfname_trace=f'../../expt/resp/sep13_2022_{mol_name}/data/obs/{mol_name}_resp_tomo_trace_chi01',
-    #     use_real_part=False,
-    #     panel_name="E",
-    # )
-
-    # plot_chi_purified_vs_trace_corr(
-    #     axes[2, 1],
-    #     f'../../expt/resp/sep13_2022_{mol_name}/data/obs/{mol_name}_resp_exact_chi01',
-    #     datfname_pur_rc=f'../../expt/resp/sep13_2022_{mol_name}/data/obs/{mol_name}_resp_tomo_rc_pur_chi01',
-    #     datfname_trace_rc=f'../../expt/resp/sep13_2022_{mol_name}/data/obs/{mol_name}_resp_tomo_rc_trace_chi01',
-    #     use_real_part=False,
-    #     panel_name="F",
-    #     include_ylabel=False
-    # )
-
     # axes[0, 0].text(0.9, 0.9, "RC", transform=axes[0, 0].transAxes)
     # axes[0, 1].text(0.6, 0.6, "No RC", transform=axes[0, 1].transAxes)
     
     # place_legend()
 
-    fig.savefig(f"fig6_response_function.png", dpi=300)    
+    if mol_name == 'nah':
+        fig.savefig(f"fig6_response_function.png", dpi=300)
+    elif mol_name == 'kh':
+        fig.savefig(f"fig6_response_function_kh.png", dpi=300)    
 
     print("Finished plotting data.")
 
