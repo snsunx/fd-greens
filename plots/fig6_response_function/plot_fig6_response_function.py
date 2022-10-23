@@ -21,6 +21,8 @@ plt.rcParams.update({
     'lines.markeredgewidth': 3,
 })
 
+def rms_error(predictions, targets):
+    return np.sqrt(((predictions - targets) ** 2).mean()) * 1000
 
 def plot_chi_itoffoli_vs_cz(
     ax: plt.Axes,
@@ -38,22 +40,25 @@ def plot_chi_itoffoli_vs_cz(
     """Plots the response function by comparing iToffoli vs CZ decompositions."""
     global handles1, labels1
 
-    component = datfname_exact[-2:]
-    print("component =", component)
-
     omegas, reals, imags = np.loadtxt(datfname_exact + ".dat").T
-    obs = reals if use_real_part else imags
-    peaks, _ = find_peaks(obs, height=0.01)
-    amps_exact = obs[peaks]
-    ax.plot(omegas, obs, color='k', label="Exact")
+    obs_exact = reals if use_real_part else imags
+    peaks, _ = find_peaks(obs_exact, height=0.01)
+    amps_exact = obs_exact[peaks]
+    ax.plot(omegas, obs_exact, color='k', label="Exact")
 
     if datfname_pur is not None:
         omegas, reals, imags = np.loadtxt(datfname_pur + ".dat").T
         obs = reals if use_real_part else imags
-        print('len(obs) = ', len(obs))
         peaks_itof, _ = find_peaks(obs, height=0.01)
         amps_itof = obs[peaks_itof]
-        ax.plot(omegas, obs, ls='--', marker='+', ms=plt.rcParams['lines.markersize'] + 2, markevery=0.12, color='xkcd:medium blue', label="iToffoli")
+        print('omegas[peaks_itof] = ', np.array_str(omegas[peaks_itof], precision=6))
+        ax.plot(
+            omegas, obs, ls='--', marker='+', 
+            ms=plt.rcParams['lines.markersize'] + 2, 
+            markevery=0.12, color='xkcd:medium blue',
+            label="iToffoli")
+        print(f'rms_error (itof) = {rms_error(obs_exact, obs):.1f}')
+
 
     if datfname_2q_pur is not None:
         omegas, reals, imags = np.loadtxt(datfname_2q_pur + ".dat").T
@@ -61,6 +66,7 @@ def plot_chi_itoffoli_vs_cz(
         peaks_cz, _ = find_peaks(obs, height=0.01)
         amps_cz = obs[peaks_cz]
         ax.plot(omegas, obs, ls='--', marker='x', markevery=0.12, color='xkcd:pinkish', label="CZ")
+        print(f'rms_error (2q)   = {rms_error(obs_exact, obs):.1f}')
 
     if datfname_pur_rc is not None:
         omegas, reals, imags = np.loadtxt(datfname_pur_rc + ".dat").T
@@ -68,6 +74,7 @@ def plot_chi_itoffoli_vs_cz(
         peaks_itof, _ = find_peaks(obs, height=0.01)
         amps_itof = obs[peaks_itof]
         ax.plot(omegas, obs, ls='--', marker='+', ms=plt.rcParams['lines.markersize'] + 2, markevery=0.12, color='xkcd:medium blue', label="iToffoli")
+        print(f'rms_error (itof) = {rms_error(obs_exact, obs):.1f}')
 
     if datfname_2q_pur_rc is not None:
         omegas, reals, imags = np.loadtxt(datfname_2q_pur_rc + ".dat").T
@@ -75,18 +82,20 @@ def plot_chi_itoffoli_vs_cz(
         peaks_cz, _ = find_peaks(obs, height=0.01)
         amps_cz = obs[peaks_cz]
         ax.plot(omegas, obs, ls='--', marker='x', markevery=0.12, color='xkcd:pinkish', label="CZ")
+        print(f'rms_error (2q)   = {rms_error(obs_exact, obs):.1f}')
 
-    try:
-        print("peaks_itof      ", peaks_itof)
-        print("peaks_cz        ", peaks_cz)
-        print("amps_itof      ", amps_itof)
-        print("amps_cz        ", amps_cz)
-        percentage_itof = (amps_itof - amps_exact) / amps_exact * 100
-        percentage_cz = (amps_cz - amps_exact) / amps_exact * 100
-        print("percentage itof", np.array_str(percentage_itof, precision=2), "%")
-        print("percentage cz  ", np.array_str(percentage_cz, precision=2), "%")
-    except:
-        pass
+
+    # try:
+    #     print("peaks_itof      ", peaks_itof)
+    #     print("peaks_cz        ", peaks_cz)
+    #     print("amps_itof      ", amps_itof)
+    #     print("amps_cz        ", amps_cz)
+    #     percentage_itof = (amps_itof - amps_exact) / amps_exact * 100
+    #     percentage_cz = (amps_cz - amps_exact) / amps_exact * 100
+    #     print("deviation itof", np.array_str(percentage_itof, precision=2), "%")
+    #     print("deviation cz  ", np.array_str(percentage_cz, precision=2), "%")
+    # except:
+    #     pass
 
     ax.text(0.92, 0.9, r"\textbf{" + panel_name + "}", transform=ax.transAxes)
 
@@ -133,30 +142,33 @@ def main():
     print("Start plotting data.")
 
     global fig
-    mol_name = "nah"
+    mol_name = "kh"
 
     fig, axes = plt.subplots(2, 2, figsize=(13, 12))
 
-    # plot_chi_itoffoli_vs_cz(
-    #     axes[0, 0],
-    #     f'../../expt/resp/sep13_2022_{mol_name}/data/obs/{mol_name}_resp_exact_chi00',
-    #     datfname_pur=f'../../expt/resp/sep13_2022_{mol_name}/data/obs/{mol_name}_resp_tomo_pur_chi00',
-    #     datfname_2q_pur=f'../../expt/resp/sep13_2022_{mol_name}/data/obs/{mol_name}_resp_tomo2q_pur_chi00',
-    #     use_real_part=False,
-    #     panel_name="A",
-    #     include_legend=True
-    # )
+    print("========== Panel A ==========")
+    plot_chi_itoffoli_vs_cz(
+        axes[0, 0],
+        f'../../expt/resp/sep13_2022_{mol_name}/data/obs/{mol_name}_resp_exact_chi00',
+        datfname_pur=f'../../expt/resp/sep13_2022_{mol_name}/data/obs/{mol_name}_resp_tomo_pur_chi00',
+        datfname_2q_pur=f'../../expt/resp/sep13_2022_{mol_name}/data/obs/{mol_name}_resp_tomo2q_pur_chi00',
+        use_real_part=False,
+        panel_name="A",
+        include_legend=True
+    )
 
-    # plot_chi_itoffoli_vs_cz(
-    #     axes[0, 1],
-    #     f'../../expt/resp/sep13_2022_{mol_name}/data/obs/{mol_name}_resp_exact_chi00',
-    #     datfname_pur_rc=f'../../expt/resp/sep13_2022_{mol_name}/data/obs/{mol_name}_resp_tomo_rc_pur_chi00',
-    #     datfname_2q_pur_rc=f'../../expt/resp/sep13_2022_{mol_name}/data/obs/{mol_name}_resp_tomo2q_rc_pur_chi00',
-    #     use_real_part=False,
-    #     panel_name="B",
-    #     # include_ylabel=False
-    # )
+    print("========== Panel B ===========")
+    plot_chi_itoffoli_vs_cz(
+        axes[0, 1],
+        f'../../expt/resp/sep13_2022_{mol_name}/data/obs/{mol_name}_resp_exact_chi00',
+        datfname_pur_rc=f'../../expt/resp/sep13_2022_{mol_name}/data/obs/{mol_name}_resp_tomo_rc_pur_chi00',
+        datfname_2q_pur_rc=f'../../expt/resp/sep13_2022_{mol_name}/data/obs/{mol_name}_resp_tomo2q_rc_pur_chi00',
+        use_real_part=False,
+        panel_name="B",
+        # include_ylabel=False
+    )
 
+    print("========== Panel C ===========")
     plot_chi_itoffoli_vs_cz(
         axes[1, 0],
         f'../../expt/resp/sep13_2022_{mol_name}/data/obs/{mol_name}_resp_exact_chi01',
@@ -166,6 +178,7 @@ def main():
         panel_name="C",
     )
 
+    print("========== Panel D ==========")
     plot_chi_itoffoli_vs_cz(
         axes[1, 1],
         f'../../expt/resp/sep13_2022_{mol_name}/data/obs/{mol_name}_resp_exact_chi01',

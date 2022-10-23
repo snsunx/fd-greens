@@ -7,7 +7,7 @@ plt.rcParams.update({
 	'text.latex.preamble': r'\usepackage{amsmath}',
     'font.family': 'sans-serif',
     'font.sans-serif': 'Helvetica',
-    'font.size': 24,
+    'font.size': 26,
     'figure.subplot.left': 0.02,
     'figure.subplot.right': 0.97,
     'figure.subplot.top': 0.93,
@@ -24,23 +24,26 @@ def plot_fidelity_matrix(
 ) -> None:
     """Plots the fidelity matrix  in Fig. 3."""
     global fig, height, width
+    print("=" * 20 + " " + panel_name + " " + "=" * 20)
 
     bbox = ax.get_position()
 
     # Load fidelities from experimental files.
-    # fid_raw = np.loadtxt(datfname_raw)
-    fid_pur = np.loadtxt(datfname_pur)
+    fid_pur = np.loadtxt(datfname_pur) * 100
 
     dim = fid_pur.shape[0]
     cmap = plt.get_cmap("viridis")
 
     # Display the fidelities of raw and purified results.
-    im = ax.imshow(fid_pur, vmin=0.0, vmax=1.0, cmap=cmap)
+    im = ax.imshow(fid_pur, vmin=0, vmax=100, cmap=cmap)
     for i in range(dim):
         for j in range(dim):
             # Here x is the column index and y is the row index.
-            color = 'black' if fid_pur[i, j] > 0.5 else 'white'
-            ax.text(j, i, f"{fid_pur[i, j]:.2f}", color=color, ha='center', va='center')
+            color = 'black' if fid_pur[i, j] > 50 else 'white'
+            ax.text(j, i, f"{fid_pur[i, j]:.1f}", color=color, ha='center', va='center')
+
+    print(f"average diagonal fidelity is     {np.mean(np.diag(fid_pur)):.1f}")
+    print(f"average off-diagonal fidelity is {(np.sum(fid_pur) - np.trace(fid_pur)) / 12:.1f}")
 
     # Set ticks and tick labels.
     ax.tick_params(length=0)
@@ -63,6 +66,7 @@ def plot_fidelity_matrix(
 
     # Display the color bar.
     ax_cbar = fig.add_axes([bbox.xmax + 0.02, bbox.ymin, 0.025, width * 12 / height], transform=ax.transAxes)
+    fig.text(0.5, 1.03, '\%', ha='center', transform=ax_cbar.transAxes)
     fig.colorbar(im, cax=ax_cbar)
 
     if panel_name == "A":
