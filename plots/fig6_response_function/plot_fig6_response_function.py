@@ -38,7 +38,7 @@ def plot_chi_itoffoli_vs_cz(
     include_ylabel: bool = True,
 ) -> None:
     """Plots the response function by comparing iToffoli vs CZ decompositions."""
-    global handles1, labels1
+    # global handles1, labels1
 
     omegas, reals, imags = np.loadtxt(datfname_exact + ".dat").T
     obs_exact = reals if use_real_part else imags
@@ -51,13 +51,13 @@ def plot_chi_itoffoli_vs_cz(
         obs = reals if use_real_part else imags
         peaks_itof, _ = find_peaks(obs, height=0.01)
         amps_itof = obs[peaks_itof]
-        print('omegas[peaks_itof] = ', np.array_str(omegas[peaks_itof], precision=6))
+        # print('omegas[peaks_itof] = ', np.array_str(omegas[peaks_itof], precision=6))
         ax.plot(
             omegas, obs, ls='--', marker='+', 
             ms=plt.rcParams['lines.markersize'] + 2, 
             markevery=0.12, color='xkcd:medium blue',
             label="iToffoli")
-        print(f'rms_error (itof) = {rms_error(obs_exact, obs):.1f}')
+        print(f'rms_error (itof) = {rms_error(obs_exact, obs):.1f} meV')
 
 
     if datfname_2q_pur is not None:
@@ -66,7 +66,7 @@ def plot_chi_itoffoli_vs_cz(
         peaks_cz, _ = find_peaks(obs, height=0.01)
         amps_cz = obs[peaks_cz]
         ax.plot(omegas, obs, ls='--', marker='x', markevery=0.12, color='xkcd:pinkish', label="CZ")
-        print(f'rms_error (2q)   = {rms_error(obs_exact, obs):.1f}')
+        print(f'rms_error (2q)   = {rms_error(obs_exact, obs):.1f} meV')
 
     if datfname_pur_rc is not None:
         omegas, reals, imags = np.loadtxt(datfname_pur_rc + ".dat").T
@@ -74,7 +74,7 @@ def plot_chi_itoffoli_vs_cz(
         peaks_itof, _ = find_peaks(obs, height=0.01)
         amps_itof = obs[peaks_itof]
         ax.plot(omegas, obs, ls='--', marker='+', ms=plt.rcParams['lines.markersize'] + 2, markevery=0.12, color='xkcd:medium blue', label="iToffoli")
-        print(f'rms_error (itof) = {rms_error(obs_exact, obs):.1f}')
+        print(f'rms_error (itof) = {rms_error(obs_exact, obs):.1f} meV')
 
     if datfname_2q_pur_rc is not None:
         omegas, reals, imags = np.loadtxt(datfname_2q_pur_rc + ".dat").T
@@ -82,7 +82,7 @@ def plot_chi_itoffoli_vs_cz(
         peaks_cz, _ = find_peaks(obs, height=0.01)
         amps_cz = obs[peaks_cz]
         ax.plot(omegas, obs, ls='--', marker='x', markevery=0.12, color='xkcd:pinkish', label="CZ")
-        print(f'rms_error (2q)   = {rms_error(obs_exact, obs):.1f}')
+        print(f'rms_error (2q)   = {rms_error(obs_exact, obs):.1f} meV')
 
 
     # try:
@@ -95,7 +95,7 @@ def plot_chi_itoffoli_vs_cz(
     #     print("deviation itof", np.array_str(percentage_itof, precision=2), "%")
     #     print("deviation cz  ", np.array_str(percentage_cz, precision=2), "%")
     # except:
-    #     pass
+    #     print("Failed to calculate RMS error")
 
     ax.text(0.92, 0.9, r"\textbf{" + panel_name + "}", transform=ax.transAxes)
 
@@ -119,34 +119,34 @@ def plot_chi_itoffoli_vs_cz(
     elif panel_name == "B":
         ax.text(0.5, 1.04, "With RC", ha='center', transform=ax.transAxes)
 
-    handles1, labels1 = ax.get_legend_handles_labels()
+    # handles1, labels1 = ax.get_legend_handles_labels()
 
-def place_legend() -> None:
-    global fig, handles1, labels1, handles2, labels2
+# def place_legend() -> None:
+#     global fig, handles1, labels1, handles2, labels2
 
-    handles = [handles1[0], handles1[2], handles1[1]]
-    labels = ["Exact", "CZ", "iToffoli"]
+#     handles = [handles1[0], handles1[2], handles1[1]]
+#     labels = ["Exact", "CZ", "iToffoli"]
 
-    plt.legend(
-        ncol=3,
-        handles=handles,
-        labels=labels,
-        frameon=False,
-        bbox_to_anchor=(0.52, 0.96, 0.0, 0.0),
-        loc='center',
-        bbox_transform=fig.transFigure,
-        columnspacing=7
-    )
+#     plt.legend(
+#         ncol=3,
+#         handles=handles,
+#         labels=labels,
+#         frameon=False,
+#         bbox_to_anchor=(0.52, 0.96, 0.0, 0.0),
+#         loc='center',
+#         bbox_transform=fig.transFigure,
+#         columnspacing=7
+#     )
     
 def main():
     print("Start plotting data.")
 
-    global fig
-    mol_name = "kh"
+    # NOTE: mol_name should be set to 'nah' or 'kh'
+    mol_name = 'nah'
 
     fig, axes = plt.subplots(2, 2, figsize=(13, 12))
 
-    print("========== Panel A ==========")
+    print("========== Panel A: chi00 without RC ==========")
     plot_chi_itoffoli_vs_cz(
         axes[0, 0],
         f'../../expt/resp/sep13_2022_{mol_name}/data/obs/{mol_name}_resp_exact_chi00',
@@ -157,7 +157,7 @@ def main():
         include_legend=True
     )
 
-    print("========== Panel B ===========")
+    print("========== Panel B: chi00 with RC ===========")
     plot_chi_itoffoli_vs_cz(
         axes[0, 1],
         f'../../expt/resp/sep13_2022_{mol_name}/data/obs/{mol_name}_resp_exact_chi00',
@@ -168,7 +168,7 @@ def main():
         # include_ylabel=False
     )
 
-    print("========== Panel C ===========")
+    print("========== Panel C: chi01 without RC ===========")
     plot_chi_itoffoli_vs_cz(
         axes[1, 0],
         f'../../expt/resp/sep13_2022_{mol_name}/data/obs/{mol_name}_resp_exact_chi01',
@@ -178,7 +178,7 @@ def main():
         panel_name="C",
     )
 
-    print("========== Panel D ==========")
+    print("========== Panel D: chi01 with RC ==========")
     plot_chi_itoffoli_vs_cz(
         axes[1, 1],
         f'../../expt/resp/sep13_2022_{mol_name}/data/obs/{mol_name}_resp_exact_chi01',
@@ -188,11 +188,6 @@ def main():
         panel_name="D",
         # include_ylabel=False
     )
-
-    # axes[0, 0].text(0.9, 0.9, "RC", transform=axes[0, 0].transAxes)
-    # axes[0, 1].text(0.6, 0.6, "No RC", transform=axes[0, 1].transAxes)
-    
-    # place_legend()
 
     if mol_name == 'nah':
         fig.savefig(f"fig6_response_function.png", dpi=300)

@@ -67,6 +67,7 @@ def plot_fidelity_by_depth(
         ax.set_ylabel("Fidelity", fontsize=16)
         ax.set_xticks([0, 10, 20, 30, 40, 50])
         ax.set_yticks([0.5, 0.6, 0.7, 0.8, 0.9])
+        ax.text(0.635, 0.9, "Classical simulation", transform=ax.transAxes, fontsize=16, ha='center', va='center')
     else:
         if include_legend:
             ax.legend(loc='center', bbox_to_anchor=(0.17, 0.12, 0.0, 0.0), frameon=False)
