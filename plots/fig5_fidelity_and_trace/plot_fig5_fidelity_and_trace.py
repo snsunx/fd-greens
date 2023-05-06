@@ -77,24 +77,24 @@ def plot_fidelity_matrix(
     # Add labels for the panels
     rc_text_h = 0.5
     rc_text_v = 1.18
-    pur_text_h = -0.26
+    pur_text_h = -0.2
     pur_text_v = 0.5
     if panel_name == "A":
         ax.text(rc_text_h, rc_text_v, "Without RC", ha='center', va='center', transform=ax.transAxes)
-        ax.text(pur_text_h, pur_text_v, "Raw", ha='center', va='center', transform=ax.transAxes)
+        ax.text(pur_text_h, pur_text_v, "Raw", ha='center', va='center', rotation=90, transform=ax.transAxes)
     elif panel_name == "B":
         ax.text(rc_text_h, rc_text_v, "With RC", ha='center', va='center', transform=ax.transAxes)
     if panel_name == "C":
-        ax.text(pur_text_h, pur_text_v, "Purified", ha='center', va='center', transform=ax.transAxes)
+        ax.text(pur_text_h, pur_text_v, "Purified", ha='center', va='center', rotation=90, transform=ax.transAxes)
 
 if __name__ == '__main__':
     print("> Start plotting data.")
 
     # Set molecule name
-    mol_name = "nah"
+    mol_name = 'nah'
 
     # Figure parameters
-    fig_width = 12
+    fig_width = 11.5
     fig_height = 9.5
     fig_width_height_ratio = fig_width / fig_height 
 
@@ -102,9 +102,9 @@ if __name__ == '__main__':
     panel_width = 0.48
     panel_height = panel_width / fig_width_height_ratio
     panel_width = panel_height
-    panel_hstart = 0.1
-    panel_hsep = 0.46
-    panel_vstart = 0.035
+    panel_hstart = 0.07
+    panel_hsep = 0.475
+    panel_vstart = 0.03
     panel_vsep = 0.465
 
     # Create the figure and axes
@@ -130,6 +130,6 @@ if __name__ == '__main__':
     if mol_name == 'nah':
         fig.savefig(f"fig5_fidelity_matrix.png", dpi=200)
     elif mol_name == 'kh':
-        fig.savefig(f"fig5_fidelity_matrix_kh.png", dpi=200)
+        fig.savefig(f"figs2_fidelity_matrix_kh.png", dpi=200)
 
     print("> Finished plotting data.")

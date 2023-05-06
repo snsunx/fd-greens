@@ -22,15 +22,15 @@ plt.rcParams.update({
 })
 
 def rms_error(predictions, targets):
+    """RMS error between experimental and exact data."""
     return np.sqrt(((predictions - targets) ** 2).mean()) * 1000
 
 def plot_chi_itoffoli_vs_cz(
+    fig: plt.Figure,
     ax: plt.Axes,
     datfname_exact: str,
-    datfname_pur: Optional[str] = None,
-    datfname_2q_pur: Optional[str] = None,
-    datfname_pur_rc: Optional[str] = None,
-    datfname_2q_pur_rc: Optional[str] = None,
+    datfname_itof: str,
+    datfname_cz: str,
     use_real_part: bool = False,
     panel_name: str = 'B',
     include_legend: bool = False,
@@ -38,51 +38,57 @@ def plot_chi_itoffoli_vs_cz(
     include_ylabel: bool = True,
 ) -> None:
     """Plots the response function by comparing iToffoli vs CZ decompositions."""
-    # global handles1, labels1
-
+    # Print header
+    if panel_name == 'A':
+        print(f"========== Panel A: chi00 without RC ==========")
+    elif panel_name == 'B':
+        print("========== Panel B: chi00 with RC ===========")
+    elif panel_name == 'C':
+        print("========== Panel C: chi01 without RC ===========")
+    elif panel_name == 'D':
+        print("========== Panel D: chi01 with RC ==========")
+    
+    # Load response function from data file
     omegas, reals, imags = np.loadtxt(datfname_exact + ".dat").T
     obs_exact = reals if use_real_part else imags
     peaks, _ = find_peaks(obs_exact, height=0.01)
     amps_exact = obs_exact[peaks]
     ax.plot(omegas, obs_exact, color='k', label="Exact")
 
-    if datfname_pur is not None:
-        omegas, reals, imags = np.loadtxt(datfname_pur + ".dat").T
-        obs = reals if use_real_part else imags
-        peaks_itof, _ = find_peaks(obs, height=0.01)
-        amps_itof = obs[peaks_itof]
-        # print('omegas[peaks_itof] = ', np.array_str(omegas[peaks_itof], precision=6))
-        ax.plot(
-            omegas, obs, ls='--', marker='+', 
-            ms=plt.rcParams['lines.markersize'] + 2, 
-            markevery=0.12, color='xkcd:medium blue',
-            label="iToffoli")
-        print(f'rms_error (itof) = {rms_error(obs_exact, obs):.1f} meV')
+    # Plot the iToffoli data
+    omegas, reals, imags = np.loadtxt(datfname_itof + ".dat").T
+    obs = reals if use_real_part else imags
+    ax.plot(
+        omegas, obs, ls='--', marker='+', 
+        ms=plt.rcParams['lines.markersize'] + 2, 
+        markevery=0.12, color='xkcd:medium blue',
+        label="iToffoli")
+
+    # Calculate and print out the RMS error
+    # print(f'rms_error (itof) = {rms_error(obs_exact, obs):.1f} meV')
+
+    # Calculate and print out the peak height deviation
+    peaks_itof, _ = find_peaks(obs, height=0.01)
+    amps_itof = obs[peaks_itof]
+    deviation_itof = (amps_itof - amps_exact) / amps_exact * 100
+    print(f'peak height deviation (itof) = {np.array_str(deviation_itof, precision=2)} %')
 
 
-    if datfname_2q_pur is not None:
-        omegas, reals, imags = np.loadtxt(datfname_2q_pur + ".dat").T
-        obs = reals if use_real_part else imags
-        peaks_cz, _ = find_peaks(obs, height=0.01)
-        amps_cz = obs[peaks_cz]
-        ax.plot(omegas, obs, ls='--', marker='x', markevery=0.12, color='xkcd:pinkish', label="CZ")
-        print(f'rms_error (2q)   = {rms_error(obs_exact, obs):.1f} meV')
+    # Plot the CZ data
+    omegas, reals, imags = np.loadtxt(datfname_cz + ".dat").T
+    obs = reals if use_real_part else imags
+    ax.plot(omegas, obs, ls='--', marker='x', markevery=0.12, color='xkcd:pinkish', label="CZ")
+    
+    # Calculate and print out the RMS error
+    # print(f'rms_error (cz) = {rms_error(obs_exact, obs):.1f} meV')
 
-    if datfname_pur_rc is not None:
-        omegas, reals, imags = np.loadtxt(datfname_pur_rc + ".dat").T
-        obs = reals if use_real_part else imags
-        peaks_itof, _ = find_peaks(obs, height=0.01)
-        amps_itof = obs[peaks_itof]
-        ax.plot(omegas, obs, ls='--', marker='+', ms=plt.rcParams['lines.markersize'] + 2, markevery=0.12, color='xkcd:medium blue', label="iToffoli")
-        print(f'rms_error (itof) = {rms_error(obs_exact, obs):.1f} meV')
+    # Calculate and print out the peak height deviation
+    peaks_cz, _ = find_peaks(obs, height=0.01)
+    amps_cz = obs[peaks_cz]
+    deviation_cz = (amps_cz - amps_exact) / amps_exact * 100
+    print(amps_cz, amps_exact)
+    print(f'peak height deviation (cz) = {np.array_str(deviation_cz, precision=2)} %')
 
-    if datfname_2q_pur_rc is not None:
-        omegas, reals, imags = np.loadtxt(datfname_2q_pur_rc + ".dat").T
-        obs = reals if use_real_part else imags
-        peaks_cz, _ = find_peaks(obs, height=0.01)
-        amps_cz = obs[peaks_cz]
-        ax.plot(omegas, obs, ls='--', marker='x', markevery=0.12, color='xkcd:pinkish', label="CZ")
-        print(f'rms_error (2q)   = {rms_error(obs_exact, obs):.1f} meV')
 
 
     # try:
@@ -106,6 +112,7 @@ def plot_chi_itoffoli_vs_cz(
         ax.set_yticks([-0.2, -0.1, 0.0, 0.1, 0.2])
     else:
         ax.set_yticks([-0.1, 0.0, 0.1])
+    
     if include_ylabel:
         prefix = "Re" if use_real_part else "Im"
         ylabel_string = prefix + " $\chi_{" + datfname_exact[-2:] + "}$ (eV$^{-1}$)"
@@ -120,81 +127,51 @@ def plot_chi_itoffoli_vs_cz(
         ax.text(0.5, 1.04, "With RC", ha='center', transform=ax.transAxes)
 
     # handles1, labels1 = ax.get_legend_handles_labels()
-
-# def place_legend() -> None:
-#     global fig, handles1, labels1, handles2, labels2
-
-#     handles = [handles1[0], handles1[2], handles1[1]]
-#     labels = ["Exact", "CZ", "iToffoli"]
-
-#     plt.legend(
-#         ncol=3,
-#         handles=handles,
-#         labels=labels,
-#         frameon=False,
-#         bbox_to_anchor=(0.52, 0.96, 0.0, 0.0),
-#         loc='center',
-#         bbox_transform=fig.transFigure,
-#         columnspacing=7
-#     )
     
 def main():
-    print("Start plotting data.")
+    print("> Start plotting data.")
 
     # NOTE: mol_name should be set to 'nah' or 'kh'
     mol_name = 'nah'
 
-    fig, axes = plt.subplots(2, 2, figsize=(13, 12))
+    # Figure parameters
+    nrows = 2
+    ncols = 2
+    width = 13
+    height = 12
 
-    print("========== Panel A: chi00 without RC ==========")
-    plot_chi_itoffoli_vs_cz(
-        axes[0, 0],
-        f'../../expt/resp/sep13_2022_{mol_name}/data/obs/{mol_name}_resp_exact_chi00',
-        datfname_pur=f'../../expt/resp/sep13_2022_{mol_name}/data/obs/{mol_name}_resp_tomo_pur_chi00',
-        datfname_2q_pur=f'../../expt/resp/sep13_2022_{mol_name}/data/obs/{mol_name}_resp_tomo2q_pur_chi00',
-        use_real_part=False,
-        panel_name="A",
-        include_legend=True
-    )
+    # Data file names
+    datfname_exact_00 = f'../../expt/resp/sep13_2022_{mol_name}/data/obs/{mol_name}_resp_exact_chi00'
+    datfname_exact_01 = f'../../expt/resp/sep13_2022_{mol_name}/data/obs/{mol_name}_resp_exact_chi01'
+    datfname_itof_a   = f'../../expt/resp/sep13_2022_{mol_name}/data/obs/{mol_name}_resp_tomo_pur_chi00'
+    datfname_cz_a     = f'../../expt/resp/sep13_2022_{mol_name}/data/obs/{mol_name}_resp_tomo2q_pur_chi00'
+    datfname_itof_b   = f'../../expt/resp/sep13_2022_{mol_name}/data/obs/{mol_name}_resp_tomo_rc_pur_chi00'
+    datfname_cz_b     = f'../../expt/resp/sep13_2022_{mol_name}/data/obs/{mol_name}_resp_tomo2q_rc_pur_chi00'
+    datfname_itof_c   = f'../../expt/resp/sep13_2022_{mol_name}/data/obs/{mol_name}_resp_tomo_pur_chi01'
+    datfname_cz_c     = f'../../expt/resp/sep13_2022_{mol_name}/data/obs/{mol_name}_resp_tomo2q_pur_chi01'
+    datfname_itof_d   = f'../../expt/resp/sep13_2022_{mol_name}/data/obs/{mol_name}_resp_tomo_rc_pur_chi01'
+    datfname_cz_d     = f'../../expt/resp/sep13_2022_{mol_name}/data/obs/{mol_name}_resp_tomo2q_rc_pur_chi01'
 
-    print("========== Panel B: chi00 with RC ===========")
-    plot_chi_itoffoli_vs_cz(
-        axes[0, 1],
-        f'../../expt/resp/sep13_2022_{mol_name}/data/obs/{mol_name}_resp_exact_chi00',
-        datfname_pur_rc=f'../../expt/resp/sep13_2022_{mol_name}/data/obs/{mol_name}_resp_tomo_rc_pur_chi00',
-        datfname_2q_pur_rc=f'../../expt/resp/sep13_2022_{mol_name}/data/obs/{mol_name}_resp_tomo2q_rc_pur_chi00',
-        use_real_part=False,
-        panel_name="B",
-        # include_ylabel=False
-    )
+    # Create the figure and axes
+    fig, axes = plt.subplots(nrows, ncols, figsize=(width, height))
+    ax_a = axes[0, 0]
+    ax_b = axes[0, 1]
+    ax_c = axes[1, 0]
+    ax_d = axes[1, 1]
 
-    print("========== Panel C: chi01 without RC ===========")
-    plot_chi_itoffoli_vs_cz(
-        axes[1, 0],
-        f'../../expt/resp/sep13_2022_{mol_name}/data/obs/{mol_name}_resp_exact_chi01',
-        datfname_pur=f'../../expt/resp/sep13_2022_{mol_name}/data/obs/{mol_name}_resp_tomo_pur_chi01',
-        datfname_2q_pur=f'../../expt/resp/sep13_2022_{mol_name}/data/obs/{mol_name}_resp_tomo2q_pur_chi01',
-        use_real_part=False,
-        panel_name="C",
-    )
+    # Plot the figures
+    plot_chi_itoffoli_vs_cz(fig, ax_a, datfname_exact_00, datfname_itof_a, datfname_cz_a, panel_name='A', include_legend=True)
+    plot_chi_itoffoli_vs_cz(fig, ax_b, datfname_exact_00, datfname_itof_b, datfname_cz_b, panel_name='B')
+    plot_chi_itoffoli_vs_cz(fig, ax_c, datfname_exact_01, datfname_itof_c, datfname_cz_c, panel_name='C')
+    plot_chi_itoffoli_vs_cz(fig, ax_d, datfname_exact_01, datfname_itof_d, datfname_cz_d, panel_name='D')
 
-    print("========== Panel D: chi01 with RC ==========")
-    plot_chi_itoffoli_vs_cz(
-        axes[1, 1],
-        f'../../expt/resp/sep13_2022_{mol_name}/data/obs/{mol_name}_resp_exact_chi01',
-        datfname_pur_rc=f'../../expt/resp/sep13_2022_{mol_name}/data/obs/{mol_name}_resp_tomo_rc_pur_chi01',
-        datfname_2q_pur_rc=f'../../expt/resp/sep13_2022_{mol_name}/data/obs/{mol_name}_resp_tomo2q_rc_pur_chi01',
-        use_real_part=False,
-        panel_name="D",
-        # include_ylabel=False
-    )
-
+    # Save the figure
     if mol_name == 'nah':
         fig.savefig(f"fig6_response_function.png", dpi=300)
     elif mol_name == 'kh':
-        fig.savefig(f"fig6_response_function_kh.png", dpi=300)    
+        fig.savefig(f"figs3_response_function_kh.png", dpi=300)    
 
-    print("Finished plotting data.")
+    print("> Finished plotting data.")
 
 
 if __name__ == '__main__':

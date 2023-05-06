@@ -29,9 +29,11 @@ class OperatorsBase:
     def _taper(self, tapered_state: Sequence[int], *tapered_indices: Sequence[int]) -> None:
         """Tapers qubits off the first two qubits, assuming the symmetry operators are both Z."""
         for i, pauli_string in enumerate(self.pauli_strings):
+            print('!!!', i, pauli_string)
             coefficient = pauli_string.coefficient
             pauli_mask = pauli_string.dense(self.qubits).pauli_mask
             for state, index in zip(tapered_state, tapered_indices):
+                print("state =", state, "index =", index)
                 # If Y, multiply coefficient by 1j when the state is 0 and by -1j when the state is 1.
                 # If Z, multiply coefficient by -1 when the state is -1.
                 if pauli_mask[index] == 2:
@@ -40,6 +42,7 @@ class OperatorsBase:
                     coefficient *= (-1) ** state
             pauli_mask_new = [pauli_mask[i] for i in range(self.n_qubits) if i not in tapered_indices]
             self.pauli_strings[i] = cirq.DensePauliString(pauli_mask_new, coefficient=coefficient).sparse()
+            print('>>>', cirq.DensePauliString(pauli_mask_new, coefficient=coefficient).sparse())
 
     def transform(
         self, 

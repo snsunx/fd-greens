@@ -75,6 +75,7 @@ class EHAmplitudesSolver:
             instructions = Z2TransformInstructions.get_instructions(spin)
             operators.transform(instructions)
             self.operators[spin] = operators
+            print(spin, operators)
 
         self.n_spatial_orbitals = len(self.hamiltonian.active_indices)
         self.n_spin_orbitals = 2 * self.n_spatial_orbitals

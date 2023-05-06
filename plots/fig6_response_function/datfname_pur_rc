@@ -1,0 +1,17 @@
+        omegas, reals, imags = np.loadtxt(datfname_pur_rc + ".dat").T
+        obs = reals if use_real_part else imags
+        peaks_itof, _ = find_peaks(obs, height=0.01)
+        amps_itof = obs[peaks_itof]
+        ax.plot(
+            omegas, obs, ls='--', marker='+', 
+            ms=plt.rcParams['lines.markersize'] + 2, 
+            markevery=0.12, color='xkcd:medium blue', 
+            label="iToffoli")
+        print(f'rms_error (itof) = {rms_error(obs_exact, obs):.1f} meV')
+
+        omegas, reals, imags = np.loadtxt(datfname_2q_pur_rc + ".dat").T
+        obs = reals if use_real_part else imags
+        peaks_cz, _ = find_peaks(obs, height=0.01)
+        amps_cz = obs[peaks_cz]
+        ax.plot(omegas, obs, ls='--', marker='x', markevery=0.12, color='xkcd:pinkish', label="CZ")
+        print(f'rms_error (2q)   = {rms_error(obs_exact, obs):.1f} meV')
