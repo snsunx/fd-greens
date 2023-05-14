@@ -17,6 +17,7 @@ CHECK_CIRCUITS: bool = True     # Whether to check circuits in each transpilatio
 QUBIT_OFFSET = 4                # Qubit offset on the Berkeley device
 SYNTHESIZE_WITH_BQSKIT = True   # Synthesize the CCZ gate with BQskit
 
+
 @dataclass
 class CircuitConstructionParameters:
     """Circuit construction parameters.
@@ -49,6 +50,16 @@ class CircuitConstructionParameters:
             variables = vars(self)
             for key, value in variables.items():
                 dset.attrs[key] = value
+
+
+@dataclass
+class GateDurationParameters:
+    """Gate duration parameters."""
+    x_gate: int = 30
+    cs_gate: int = 150
+    cz_gate: int = 201
+    itoffoli_gate: int = 292 + 121
+
 
 @dataclass
 class ErrorMitigationParameters:

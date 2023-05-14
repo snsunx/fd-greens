@@ -15,7 +15,8 @@ import numpy as np
 import cirq
 import h5py
 
-from .parameters import REVERSE_QUBIT_ORDER
+from .parameters import REVERSE_QUBIT_ORDER, GateDurationParameters
+
 
 def reverse_qubit_order(array: np.ndarray) -> np.ndarray:
     """Reverses qubit order in a 1D or 2D array.
@@ -533,3 +534,23 @@ def quantum_state_tomography(
     dim = int(np.sqrt(density_matrix.shape[0]))
     density_matrix = density_matrix.reshape(dim, dim, order='F')
     return density_matrix
+
+
+def calculate_circuit_duration(circuit: cirq.Circuit) -> int:
+    """Calculate circuit duration in nanoseconds."""
+    duration = 0.0
+    for moment in circuit:
+        operation = moment.operations[0]
+        if isinstance(operation.gate, cirq.ZPowGate):
+            pass
+        elif isinstance(operation.gate, cirq.XPowGate):
+            duration += GateDurationParameters.x_gate
+        elif isinstance(operation.gate, cirq.CZPowGate):
+            if abs(operation.gate.exponent) == 0.5:
+                duration += GateDurationParameters.cs_gate
+            elif operation.gate.exponent == 1.0:
+                duration += GateDurationParameters.cz_gate
+        elif operation.gate._name == 'C0C0iX':
+            duration += GateDurationParameters.itoffoli_gate
+
+    return duration

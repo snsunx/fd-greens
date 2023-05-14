@@ -12,7 +12,7 @@ converter = CircuitStringConverter(qubits)
 
 
 def print_parameters():
-    with h5py.File('lih_resp_pur2q.h5', 'r') as h5file:
+    with h5py.File('nah_resp_circ0u1u2q.h5', 'r') as h5file:
         print("Circuit Parameters:")
         for key, val in h5file['params/circ'].attrs.items():
             print(f'{key} = {val}')
@@ -32,8 +32,8 @@ def print_circuit_information():
                 print_circuit_statistics(circuit)
 
 def main():
-    # print_parameters()
-    print_circuit_information()
+    print_parameters()
+    # print_circuit_information()
     
 if __name__ == '__main__':
     main()

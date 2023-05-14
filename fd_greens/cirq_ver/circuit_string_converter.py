@@ -134,7 +134,7 @@ class CircuitStringConverter:
             qtrl_strings: Qtrl strings.
             
         Returns:
-            circuit: A Cirq circuit corresponding to the Qtrl strings. 
+            circuit: A Cirq circuit corresponding to the Qtrl strings.
         """
         circuit = cirq.Circuit()
 
