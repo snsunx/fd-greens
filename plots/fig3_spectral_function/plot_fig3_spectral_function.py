@@ -56,7 +56,8 @@ def plot_spectral_function(
     if panel_name == 'A':
         ax.set_ylabel("$A$ (eV$^{-1}$)")
         ax.legend(loc='center', bbox_to_anchor=(0.23, 0.87, 0.0, 0.0), frameon=False)
-    ax.set_yticks([0.0, 0.1, 0.2, 0.3, 0.4, 0.5])
+    ax.set_xticks(np.arange(-30, 30 + 1e-8, 10))
+    ax.set_yticks(np.arange(0.0, 0.5 + 1e-8, 0.1))
 
     # Print out information about amplitudes
     print("Exact peaks (eV^-1):       ", amps_exact)

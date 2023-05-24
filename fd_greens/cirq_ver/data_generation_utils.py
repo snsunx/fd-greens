@@ -24,21 +24,20 @@ __all__ = [
     "generate_trace_matrix"
 ]
 
+
 def generate_greens_function(
     h5fname: str,
     omegas: Optional[Sequence[float]] = None,
-    eta: float = 0.75 # 0.02 * HARTREE_TO_EV
+    eta: float = 0.75  # 0.02 * HARTREE_TO_EV
 ) -> None:
     """Generates Green's function data files.
 
     Args:
-        h5fnames: The HDF5 file names to generate response function from.
+        h5fname: The HDF5 file name to generate spectral function from.
         omegas: The frequencies at which the response function is evaluated.
         eta: The broadening factor.
     """
-    if "lih" in h5fname:
-        hamiltonian = get_alkali_hydride_hamiltonian("Li", 3.0)
-    elif "nah" in h5fname:
+    if "nah" in h5fname:
         hamiltonian = get_alkali_hydride_hamiltonian("Na", 3.7)
     elif "kh" in h5fname:
         hamiltonian = get_alkali_hydride_hamiltonian("K", 3.9)
@@ -52,7 +51,6 @@ def generate_greens_function(
         greens = GreensFunction(hamiltonian, h5fname=h5fname, method="tomo")
     greens.process()
     greens.spectral_function(omegas, eta)
-    # greens.self_energy(omegas, eta)
 
 
 def generate_response_function(
@@ -163,7 +161,7 @@ def generate_fidelity_matrix(
         datfname = "fid_mat_" + h5fname_expt
     if not os.path.exists(dirname):
         os.makedirs(dirname)
-    
+
     h5file_exact = h5py.File(h5fname_exact + ".h5", "r")
     h5file_expt = h5py.File(h5fname_expt + ".h5", "r")
 
