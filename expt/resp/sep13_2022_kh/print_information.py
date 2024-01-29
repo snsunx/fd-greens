@@ -10,9 +10,10 @@ from fd_greens import CircuitStringConverter, print_circuit_statistics
 qubits = cirq.LineQubit.range(4)
 converter = CircuitStringConverter(qubits)
 
+filename = "kh_resp_exact.h5"
 
 def print_parameters():
-    with h5py.File('lih_resp_pur2q.h5', 'r') as h5file:
+    with h5py.File(filename, 'r') as h5file:
         print("Circuit Parameters:")
         for key, val in h5file['params/circ'].attrs.items():
             print(f'{key} = {val}')
@@ -23,7 +24,7 @@ def print_parameters():
             print(f'{key} = {val}')
 
 def print_circuit_information():
-    with h5py.File('lih_resp_sim.h5', 'r') as h5file:
+    with h5py.File(filename, 'r') as h5file:
         for key in h5file.keys():
             if key[:4] == 'circ':
                 print('=' * 25 + ' ' + key + ' ' + '=' * 25) 
