@@ -408,7 +408,6 @@ def purify_density_matrix(density_matrix: np.ndarray, niter: int = 10) -> np.nda
     dim = density_matrix.shape[0]
     for _ in range(niter):
         density_matrix = density_matrix @ density_matrix @ (3 * np.eye(dim) - 2 * density_matrix)
-        # print("<<< Density matrix eigvals = ", np.linalg.eigh(density_matrix)[0])
         density_matrix = density_matrix / np.trace(density_matrix)
         # print(">>> Density matrix eigvals = ", np.linalg.eigh(density_matrix)[0])
         # print("Trace = ", np.trace(density_matrix))
